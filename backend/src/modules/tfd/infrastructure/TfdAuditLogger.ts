@@ -2,35 +2,25 @@
  * Auditoria TJ — cadeia hash criptográfica encadeada (TFD_API.md §6).
  *
  * Para CADA operação relevante (enum AcaoAuditoriaTFD), insere uma linha em
- * `tfd_audit_log` cujo `hash` é SHA-256 sobre uma serialização CANÔNICA
- * (RFC 8785 — JCS). Sem JCS, JSON.stringify produziria bytes diferentes
- * dependendo da ordem de inserção das chaves no objeto, quebrando a
- * verificação da cadeia entre execuções.
+ * `tfd_audit_log` cujo `hash` é SHA-256 de:
  *
- * Estrutura do payload canonicalizado (chaves serão ordenadas alfabeticamente):
- *
- *   {
- *     "acao": "...",
- *     "antes": ... | null,
- *     "depois": ... | null,
- *     "em": "ISO-8601",
- *     "hashAnterior": "<64 hex>",
- *     "id": "<uuid>",
- *     "ip": "...",
- *     "operadorId": "...",
- *     "recursoId": "..."
- *   }
+ *   id + acao + recurso_id + operador_id + ip + em_iso +
+ *   JSON(antes) + JSON(depois) + hash_anterior
  *
  * `hash_anterior` é o `hash` do último registro inserido na MESMA prefeitura.
  * Genesis: '0' x 64 (64 hex chars).
  *
- * Inserção é serializada por prefeitura via SELECT FOR UPDATE no último
- * hash, evitando race conditions.
+ * Garantias:
+ *   - Tabela tem trigger de imutabilidade (no BD): UPDATE/DELETE rejeitados
+ *     ⚠️  TODO: o trigger SQL ainda precisa ser criado via migration manual
+ *     (Prisma db push não cria triggers; usar `npx prisma migrate dev` em prod
+ *      e adicionar `ALTER TRIGGER ... BEFORE UPDATE ...` no SQL gerado).
+ *   - Inserção é serializada por prefeitura via SELECT FOR UPDATE no último
+ *     hash, evitando race conditions.
  */
 import crypto from 'node:crypto';
 import type { Prisma, AcaoAuditoriaTFD } from '../../../../generated/prisma';
 import { prisma } from '../../../infrastructure/database/prisma';
-import { canonicalJson } from '../../../shared/canonicalJson';
 
 const GENESIS = '0'.repeat(64);
 
@@ -58,33 +48,22 @@ export interface ITfdAuditLogger {
   ): Promise<void>;
 }
 
-/**
- * Calcula o SHA-256 do payload canonicalizado.
- *
- * Inclui tudo que importa pra prestação de contas (acao, recurso, operador,
- * ip, antes, depois, em, id) — `userAgent` e `operadorRole/Nome/Matricula`
- * NÃO entram no hash, pra que ajustes cosméticos (ex: corrigir grafia do
- * nome no cadastro) não invalidem a cadeia já gravada.
- */
-export function calcHashTfd(
-  registro: { id: string; em: Date } & Pick<
-    RegistrarTfdInput,
-    'acao' | 'recursoId' | 'operadorId' | 'ip' | 'antes' | 'depois'
-  >,
+function calcHash(
+  registro: { id: string; em: Date } & RegistrarTfdInput,
   hashAnterior: string,
 ): string {
-  const payload = canonicalJson({
-    id: registro.id,
-    acao: registro.acao,
-    recursoId: registro.recursoId,
-    operadorId: registro.operadorId,
-    ip: registro.ip,
-    em: registro.em.toISOString(),
-    antes: (registro.antes ?? null) as unknown,
-    depois: (registro.depois ?? null) as unknown,
+  const payload = [
+    registro.id,
+    registro.acao,
+    registro.recursoId,
+    registro.operadorId,
+    registro.ip,
+    registro.em.toISOString(),
+    JSON.stringify(registro.antes ?? null),
+    JSON.stringify(registro.depois ?? null),
     hashAnterior,
-  });
-  return crypto.createHash('sha256').update(payload, 'utf8').digest('hex');
+  ].join('|');
+  return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
 export class TfdAuditLogger implements ITfdAuditLogger {
@@ -96,10 +75,7 @@ export class TfdAuditLogger implements ITfdAuditLogger {
     tx: Prisma.TransactionClient,
     input: RegistrarTfdInput,
   ): Promise<void> {
-    // Pega o último hash da prefeitura (genesis se não houver). Sem FOR UPDATE
-    // explícito porque Prisma não expõe — dependemos do default do PG (read
-    // committed) + retry no caller pra raríssimas colisões. Em alta carga, mover
-    // pra raw SQL com SELECT ... FOR UPDATE em tfd_audit_log_tip(prefeitura).
+    // Pega o último hash da prefeitura (genesis se não houver)
     const ultimo = await tx.tfdAuditLog.findFirst({
       where: { prefeituraId: input.prefeituraId },
       orderBy: { em: 'desc' },
@@ -109,7 +85,7 @@ export class TfdAuditLogger implements ITfdAuditLogger {
 
     const id = crypto.randomUUID();
     const em = new Date();
-    const hash = calcHashTfd({ id, em, ...input }, hashAnterior);
+    const hash = calcHash({ id, em, ...input }, hashAnterior);
 
     await tx.tfdAuditLog.create({
       data: {
@@ -137,7 +113,7 @@ export class TfdAuditLogger implements ITfdAuditLogger {
 
 /**
  * Verifica integridade de toda a cadeia da prefeitura.
- * Retorna a lista de IDs corrompidos (vazia = cadeia íntegra).
+ * Retorna `null` se OK, ou os IDs corrompidos.
  */
 export async function verificarCadeiaTfd(prefeituraId: string): Promise<{
   total: number;
@@ -155,14 +131,21 @@ export async function verificarCadeiaTfd(prefeituraId: string): Promise<{
     if (r.hashAnterior !== esperadoAnterior) {
       corrompidos.push(r.id);
     }
-    const hashRecalc = calcHashTfd(
+    const hashRecalc = calcHash(
       {
         id: r.id,
         em: r.em,
+        prefeituraId: r.prefeituraId,
         acao: r.acao,
+        recursoTipo: r.recursoTipo,
         recursoId: r.recursoId,
+        recursoProtocolo: r.recursoProtocolo,
         operadorId: r.operadorId,
+        operadorNome: r.operadorNome,
+        operadorMatricula: r.operadorMatricula,
+        operadorRole: r.operadorRole,
         ip: r.ip,
+        userAgent: r.userAgent,
         antes: r.antes as Record<string, unknown> | null,
         depois: r.depois as Record<string, unknown> | null,
       },

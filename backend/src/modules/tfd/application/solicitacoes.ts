@@ -5,7 +5,7 @@
  *                  ↘ NEGADA / CANCELADA
  */
 import type { Request } from 'express';
-import { BadRequest, Conflict, NotFound, Unprocessable } from '../../../shared/errors';
+import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
 import type { AccessScope } from '../../../shared/scope';
@@ -21,46 +21,9 @@ import {
   resolverPrefeituraIdEfetiva,
 } from './_helpers';
 
-export interface DadosPacienteInline {
-  nome: string;
-  cpf: string;
-  dataNascimento: string;
-  sexo: 'M' | 'F' | 'OUTRO';
-  telefone: string;
-  endereco: string;
-  cartaoSus?: string;
-  nomeMae?: string;
-  rg?: string;
-  bairro?: string;
-  municipio?: string;
-  uf?: string;
-  cep?: string;
-}
-
-export interface DadosAcompanhante {
-  nome: string;
-  cpf: string;
-  dataNascimento: string;
-  telefone: string;
-  parentesco:
-    | 'CONJUGE'
-    | 'FILHO_A'
-    | 'PAI'
-    | 'MAE'
-    | 'IRMAO_A'
-    | 'AVO'
-    | 'NETO_A'
-    | 'TIO_A'
-    | 'SOBRINHO_A'
-    | 'CUIDADOR'
-    | 'OUTRO';
-  rg?: string;
-}
-
 export interface CriarSolicitacaoInput {
-  pacienteId?: string;
-  paciente?: DadosPacienteInline;
-  ubsId?: string;
+  pacienteId: string;
+  ubsId: string;
   encaminhamentoOrigemId?: string;
   destino: string;
   unidadeDestino?: string;
@@ -68,7 +31,6 @@ export interface CriarSolicitacaoInput {
   motivo: string;
   dataDesejada: string; // YYYY-MM-DD
   acompanhanteNecessario?: boolean;
-  acompanhante?: DadosAcompanhante;
   prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
   observacoes?: string;
 }
@@ -96,15 +58,12 @@ function rowParaSolicitacao(r: any) {
     motivo: r.motivo,
     dataDesejada: r.dataDesejada.toISOString().slice(0, 10),
     acompanhanteNecessario: r.acompanhanteNecessario,
-    acompanhante: (r.acompanhante as DadosAcompanhante | null) ?? null,
     prioridade: r.prioridade,
     status: r.status,
     observacoes: r.observacoes,
     motivoNegacao: r.motivoNegacao,
     viagemId: r.viagemId,
     criadaEm: r.criadaEm.toISOString(),
-    criadaPorId: r.criadaPorId ?? null,
-    criadaPorNome: r.criadaPorNome ?? null,
     decididaEm: r.decididaEm?.toISOString() ?? null,
     decididaPorId: r.decididaPorId,
     anexos: (r.anexos ?? []).map((a: any) => ({
@@ -138,15 +97,12 @@ export class SolicitacoesTfdUseCases {
   async listar(
     scope: AccessScope,
     req: Request,
-    filtros: { status?: string; prioridade?: string; q?: string; criadaPorMim?: boolean; autorId?: string },
+    filtros: { status?: string; prioridade?: string; q?: string },
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const where: any = { prefeituraId, deletadaEm: null };
     if (filtros.status) where.status = filtros.status;
     if (filtros.prioridade) where.prioridade = filtros.prioridade;
-    if (filtros.criadaPorMim && filtros.autorId) {
-      where.criadaPorId = filtros.autorId;
-    }
     if (filtros.q && filtros.q.trim()) {
       const q = filtros.q.trim();
       where.OR = [
@@ -179,63 +135,21 @@ export class SolicitacoesTfdUseCases {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const op = await resolverOperador(this.atendentes, autorId, prefeituraId);
 
-    // XOR paciente / pacienteId — códigos canônicos do v0.10
-    if (!input.paciente && !input.pacienteId) {
-      throw BadRequest(
-        'PACIENTE_OU_ID_OBRIGATORIO',
-        'Informe `paciente` (cadastro inline) ou `pacienteId` (já cadastrado)',
-      );
+    // Verifica que a UBS pertence à prefeitura
+    const ubs = await prisma.ubs.findUnique({
+      where: { id: input.ubsId },
+      select: { prefeituraId: true },
+    });
+    if (!ubs || ubs.prefeituraId !== prefeituraId) {
+      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada na prefeitura');
     }
-    if (input.paciente && input.pacienteId) {
-      throw BadRequest(
-        'PACIENTE_E_ID_CONFLITAM',
-        '`paciente` e `pacienteId` não podem ser informados juntos',
-      );
-    }
-    if (input.acompanhanteNecessario === true && !input.acompanhante) {
-      throw BadRequest(
-        'ACOMPANHANTE_OBRIGATORIO',
-        '`acompanhante` é obrigatório quando `acompanhanteNecessario=true`',
-      );
-    }
-
-    // Resolve UBS — opcional para REGULADOR_TFD; se não informado, fallback
-    // para a primeira UBS ativa da prefeitura (paciente inline precisa de uma).
-    let ubsId: string | null = null;
-    if (input.ubsId) {
-      const ubs = await prisma.ubs.findUnique({
-        where: { id: input.ubsId },
-        select: { id: true, prefeituraId: true, ativa: true },
-      });
-      if (!ubs || ubs.prefeituraId !== prefeituraId) {
-        throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada na prefeitura');
-      }
-      ubsId = ubs.id;
-    }
-
-    // Resolve paciente: existente OU upsert por CPF (mescla campos vazios)
-    let pacienteId: string;
-    if (input.pacienteId) {
-      const pac = await prisma.paciente.findUnique({
-        where: { id: input.pacienteId },
-        include: { ubs: { select: { prefeituraId: true } } },
-      });
-      if (!pac || pac.ubs.prefeituraId !== prefeituraId) {
-        throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado na prefeitura');
-      }
-      pacienteId = pac.id;
-    } else {
-      pacienteId = await this.upsertPacienteInline(input.paciente!, prefeituraId, ubsId);
-      // Se a UBS não foi informada, usa a UBS do paciente recém-resolvido
-      if (!ubsId) {
-        const pac = await prisma.paciente.findUnique({
-          where: { id: pacienteId },
-          select: { ubsId: true, ubs: { select: { prefeituraId: true } } },
-        });
-        if (pac && pac.ubs.prefeituraId === prefeituraId) {
-          ubsId = pac.ubsId;
-        }
-      }
+    // Paciente também precisa ser da prefeitura
+    const pac = await prisma.paciente.findUnique({
+      where: { id: input.pacienteId },
+      include: { ubs: { select: { prefeituraId: true } } },
+    });
+    if (!pac || pac.ubs.prefeituraId !== prefeituraId) {
+      throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado na prefeitura');
     }
 
     const protocolo = await proximoProtocoloTfd('TFD');
@@ -243,8 +157,8 @@ export class SolicitacoesTfdUseCases {
       data: {
         protocolo,
         prefeituraId,
-        pacienteId,
-        ubsId,
+        pacienteId: input.pacienteId,
+        ubsId: input.ubsId,
         encaminhamentoOrigemId: input.encaminhamentoOrigemId ?? null,
         destino: input.destino.trim(),
         unidadeDestino: input.unidadeDestino?.trim() || null,
@@ -252,11 +166,8 @@ export class SolicitacoesTfdUseCases {
         motivo: input.motivo.trim(),
         dataDesejada: new Date(`${input.dataDesejada}T00:00:00.000Z`),
         acompanhanteNecessario: input.acompanhanteNecessario ?? false,
-        acompanhante: input.acompanhante ? (input.acompanhante as any) : null,
         prioridade: input.prioridade,
         observacoes: input.observacoes?.trim() || null,
-        criadaPorId: op.id,
-        criadaPorNome: op.nome,
       },
       include: INCLUDE_FULL,
     });
@@ -277,88 +188,10 @@ export class SolicitacoesTfdUseCases {
         destino: novo.destino,
         especialidade: novo.especialidade,
         prioridade: novo.prioridade,
-        criadaPorId: op.id,
       },
     });
 
     return rowParaSolicitacao(novo);
-  }
-
-  /**
-   * Upsert de paciente por CPF (Face 4 v0.10 — cadastro inline pelo REGULADOR_TFD).
-   * Se já existir paciente com este CPF, mescla campos não-informados (preserva
-   * dados clínicos existentes; atualiza apenas o que veio no payload).
-   * Se não existir, cria vinculado à UBS informada (ou primeira ATIVA da prefeitura).
-   */
-  private async upsertPacienteInline(
-    p: DadosPacienteInline,
-    prefeituraId: string,
-    ubsIdHint: string | null,
-  ): Promise<string> {
-    const existente = await prisma.paciente.findUnique({
-      where: { cpf: p.cpf },
-      include: { ubs: { select: { prefeituraId: true } } },
-    });
-    if (existente) {
-      if (existente.ubs.prefeituraId !== prefeituraId) {
-        // CPF já cadastrado em outra prefeitura — não é nosso paciente
-        throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado na prefeitura');
-      }
-      // Merge: preserva campos não-vazios já cadastrados, complementa com o payload
-      const merge = (atual: string | null | undefined, novo: string | undefined) =>
-        atual && atual.trim() ? atual : (novo?.trim() || null);
-      await prisma.paciente.update({
-        where: { id: existente.id },
-        data: {
-          nome: existente.nome?.trim() ? existente.nome : p.nome.trim(),
-          telefone: merge(existente.telefone, p.telefone),
-          endereco: merge(existente.endereco, p.endereco),
-          cartaoSus: merge(existente.cartaoSus, p.cartaoSus),
-          nomeMae: merge(existente.nomeMae, p.nomeMae),
-          bairro: merge(existente.bairro, p.bairro),
-          municipio: merge(existente.municipio, p.municipio),
-          uf: merge(existente.uf, p.uf),
-          cep: merge(existente.cep, p.cep),
-        },
-      });
-      return existente.id;
-    }
-
-    // Novo paciente — precisa de uma UBS
-    let ubsId = ubsIdHint;
-    if (!ubsId) {
-      const ubs = await prisma.ubs.findFirst({
-        where: { prefeituraId, ativa: true },
-        orderBy: { criadoEm: 'asc' },
-        select: { id: true },
-      });
-      if (!ubs) {
-        throw Unprocessable(
-          'UBS_OBRIGATORIA',
-          'Prefeitura sem UBS ativa — informe `ubsId` para cadastrar paciente novo',
-        );
-      }
-      ubsId = ubs.id;
-    }
-    const novo = await prisma.paciente.create({
-      data: {
-        nome: p.nome.trim(),
-        cpf: p.cpf,
-        dataNascimento: new Date(`${p.dataNascimento}T00:00:00.000Z`),
-        sexo: p.sexo,
-        telefone: p.telefone.trim(),
-        endereco: p.endereco.trim(),
-        cartaoSus: p.cartaoSus?.trim() || null,
-        nomeMae: p.nomeMae?.trim() || null,
-        bairro: p.bairro?.trim() || null,
-        municipio: p.municipio?.trim() || null,
-        uf: p.uf?.trim() || null,
-        cep: p.cep?.trim() || null,
-        ubsId,
-      },
-      select: { id: true },
-    });
-    return novo.id;
   }
 
   async aprovar(

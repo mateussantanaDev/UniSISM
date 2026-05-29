@@ -41,6 +41,27 @@ export interface AutorRegulacao {
 export interface AprovarInput {
   nota?: string;
   agendamentoPrevisto?: string; // YYYY-MM-DD
+  /**
+   * Local físico da consulta (endereço + sala). Mostrado no bloco verde
+   * "Sua consulta" do app paciente. Sugestão de formato:
+   *   "CEM · Sala 3 · Av. Getúlio Vargas, 1100 - Centro"
+   *
+   * Opcional, mas **recomendado preencher sempre que houver agendamento**.
+   */
+  localAgendamento?: string;
+  /**
+   * Nome + CRM do profissional agendado. Mostrado no bloco verde do app.
+   * Sugestão de formato: "Dra. Beatriz Lima · CRM-PE 22189".
+   */
+  profissionalAgendado?: string;
+  /**
+   * Cidade onde a consulta ocorre — EXPLÍCITA, não derivada de parsing.
+   * Usada pra calcular `podeSolicitarTfd` (compara com município da UBS).
+   * Default na UI: município da UBS de origem.
+   */
+  cidadeAgendamento?: string;
+  /** UF do agendamento. Default "BA". 2 chars. */
+  ufAgendamento?: string;
 }
 
 export class AprovarEncaminhamentoUseCase {
@@ -84,6 +105,27 @@ export class AprovarEncaminhamentoUseCase {
     }
 
     const notaLimpa = input.nota?.trim();
+    const localAg = input.localAgendamento?.trim();
+    const profAg = input.profissionalAgendado?.trim();
+    const cidadeAg = input.cidadeAgendamento?.trim();
+    const ufAg = input.ufAgendamento?.trim().toUpperCase();
+
+    // Validações leves: se profissionalAgendado vier sem CRM, alerta no log mas aceita
+    // (não vamos quebrar UX por causa de formato — a UI sugere o padrão).
+    if (profAg && !/CRM/i.test(profAg)) {
+      logger.warn(
+        { encId: id, profissionalAgendado: profAg },
+        'profissionalAgendado sem CRM detectado — UX recomenda formato "Nome · CRM-UF 00000"',
+      );
+    }
+
+    // UF: 2 chars maiúsculos. Se vier inválido, ignora (não bloqueia).
+    if (ufAg && !/^[A-Z]{2}$/.test(ufAg)) {
+      throw Unprocessable(
+        'UF_INVALIDA',
+        'ufAgendamento deve ser 2 letras maiúsculas (ex.: BA, SP, RJ)',
+      );
+    }
 
     const atualizado = await prisma.$transaction(async (tx) => {
       // 1. nota → OBSERVACAO
@@ -125,12 +167,18 @@ export class AprovarEncaminhamentoUseCase {
           },
         });
       }
-      // 4. status + agendamento
+      // 4. status + agendamento + detalhes do agendamento
       const upd = await tx.encaminhamento.update({
         where: { id },
         data: {
           status: StatusEncaminhamento.APROVADO,
           agendamentoPrevisto: agendamento,
+          ...(localAg !== undefined ? { localAgendamento: localAg || null } : {}),
+          ...(profAg !== undefined ? { profissionalAgendado: profAg || null } : {}),
+          ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),
+          ...(ufAg !== undefined ? { ufAgendamento: ufAg || null } : {}),
+          // Aprovação limpa motivoRejeicao residual de tentativa anterior (raro).
+          motivoRejeicao: null,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

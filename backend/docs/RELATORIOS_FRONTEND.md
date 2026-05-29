@@ -611,7 +611,7 @@ Ordem sugerida pra implementar a tela `/sms/relatorios`:
 Conta do seed (ver [`README.md`](README.md)):
 
 ```
-ADM-001 / 12345678      → ADMIN da Prefeitura Feira de Santana
+ADM-001 / 12345678      → ADMIN da Prefeitura Águas Belas
 SMS-099101 / 12345678   → REGULADOR_SMS (Face 2)
 ```
 

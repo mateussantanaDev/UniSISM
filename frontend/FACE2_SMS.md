@@ -378,7 +378,7 @@ Qualquer `REGULADOR_SMS` **só enxerga** encaminhamentos da sua prefeitura. O ba
 
 Em eventos gerados pela Face 2:
 - `autor`: nome completo do regulador autenticado (ex.: `"DRA. HELENA COSTA"`)
-- `autorPapel`: `"Regulação · SMS"` (ou personalizado, ex.: `"Regulação SMS · Feira de Santana/BA"`)
+- `autorPapel`: `"Regulação · SMS"` (ou personalizado, ex.: `"Regulação SMS · Águas Belas/PE"`)
 
 Em eventos automáticos (envio de notificação, integração):
 - `autor`: `"SISTEMA"`
@@ -566,7 +566,7 @@ curl -X POST http://localhost:3333/v1/encaminhamentos/enc-uuid/rejeitar \
 
 Para testar o fluxo ponta-a-ponta (Face 1 → Face 2), adicionar ao seed:
 
-- 1 usuário REGULADOR_SMS da prefeitura Feira de Santana, ex.: `SMS-099101` / `regulador@feira.ba.gov.br`
+- 1 usuário REGULADOR_SMS da prefeitura Águas Belas, ex.: `SMS-099101` / `regulador@aguasbelas.pe.gov.br`
 - Alguns encaminhamentos em `AGUARDANDO_REGULACAO` (originados da seed UBS)
 - Ao menos 1 encaminhamento em cada estado: `AGUARDANDO_REGULACAO`, `PENDENCIA_DOCUMENTO`, `APROVADO`, `REJEITADO`
 

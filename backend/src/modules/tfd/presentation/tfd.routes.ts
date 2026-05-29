@@ -1,21 +1,17 @@
 /**
- * Rotas TFD — montadas sob `/v1/tfd`. RBAC alinhada com TFD_API.md §3 e v0.10.
+ * Rotas TFD — montadas sob `/v1/tfd`. RBAC alinhada com TFD_API.md §3.
  *
  * Convenção de roles aceitas:
- *   - rwGestor:  GESTOR_TFD, ADMIN, DEV (operações do dia-a-dia)
- *   - rwAdmin:   ADMIN, DEV apenas (saldo, exportação TJ, verificação)
- *   - rwSolic:   roles que podem criar/listar solicitações (UBS + gestores + REGULADOR_TFD)
- *   - rwReports: relatórios analíticos (gestor/admin/dev — REGULADOR_TFD não)
- *
- * Idempotência (`X-Idempotency-Key`) habilitada em mutações financeiras:
- *   - aportar saldo (frota e ajuda)
- *   - pagar ajuda de custo
- *   - registrar comprovante de abastecimento
+ *   - rwGestor: GESTOR_TFD, ADMIN, DEV (operações do dia-a-dia)
+ *   - rwAdmin:  ADMIN, DEV apenas (saldo, exportação TJ, verificação)
+ *   - rwSolic:  rwGestor + UBS (COORDENADOR_UBS, ATENDENTE_UBS) + ATENDENTE_TFD
+ *               (terminal rodoviário) — criar/listar/anexar solicitações. NÃO inclui
+ *               aprovar/negar (essas continuam só com rwGestor).
+ *   - rwUbsView: rwGestor + ATENDENTE_TFD — endpoints de apoio (listar UBSs)
  */
 import { Router, type RequestHandler } from 'express';
 import multer from 'multer';
 import { requireRole } from '../../../presentation/middlewares/requireRole';
-import { idempotency } from '../../../presentation/middlewares/idempotency';
 import type { TfdController } from './TfdController';
 
 const memoryUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -33,10 +29,9 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
       'DESENVOLVEDOR',
       'COORDENADOR_UBS',
       'ATENDENTE_UBS',
-      'REGULADOR_TFD',
+      'ATENDENTE_TFD',
     ),
   ];
-  const rwReports = [authenticate, requireRole('GESTOR_TFD', 'ADMIN', 'DESENVOLVEDOR')];
 
   // ----- Frota (7) -----
   router.get('/veiculos', ...rwGestor, c.getVeiculos);
@@ -78,38 +73,24 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
   router.post('/viagens/:id/passageiros/:pid/presenca', ...rwGestor, c.postPresenca);
 
   // ----- Abastecimento (6) -----
-  // Spec §19 (verification doc): liberar/negar é ADMIN/DEV apenas — controle
-  // financeiro centralizado. GESTOR_TFD apenas solicita e registra comprovante.
   router.get('/abastecimentos', ...rwGestor, c.getAbastecimentos);
   router.post('/abastecimentos', ...rwGestor, c.postSolicitarAbastecimento);
-  router.post('/abastecimentos/:id/liberar', ...rwAdmin, c.postLiberarAbastecimento);
-  router.post('/abastecimentos/:id/negar', ...rwAdmin, c.postNegarAbastecimento);
-  router.post('/abastecimentos/:id/comprovante', ...rwGestor, single, idempotency, c.postComprovanteAbastecimento);
+  router.post('/abastecimentos/:id/liberar', ...rwGestor, c.postLiberarAbastecimento);
+  router.post('/abastecimentos/:id/negar', ...rwGestor, c.postNegarAbastecimento);
+  router.post('/abastecimentos/:id/comprovante', ...rwGestor, single, c.postComprovanteAbastecimento);
   router.get('/abastecimentos/:id/comprovante', ...rwGestor, c.getComprovanteAbastecimento);
 
-  // ----- Saldo de Frota (4) -----
+  // ----- Saldo (2) -----
   router.get('/saldo', ...rwGestor, c.getSaldo);
   router.post('/saldo/ajustar', ...rwAdmin, c.postAjustarSaldo);
-  router.post('/saldo/aportar', ...rwGestor, idempotency, c.postAportarSaldo);
-  router.get('/saldo/aportes', ...rwGestor, c.getSaldoAportes);
-
-  // ----- Saldo de Ajuda de Custo (4) -----
-  router.get('/saldo-ajuda-custo', ...rwGestor, c.getSaldoAjuda);
-  router.post('/saldo-ajuda-custo/ajustar', ...rwAdmin, c.postAjustarSaldoAjuda);
-  router.post('/saldo-ajuda-custo/aportar', ...rwGestor, idempotency, c.postAportarSaldoAjuda);
-  router.get('/saldo-ajuda-custo/aportes', ...rwGestor, c.getSaldoAjudaAportes);
 
   // ----- Ajuda de Custo (5) -----
   router.get('/ajudas-custo', ...rwGestor, c.getAjudas);
   router.get('/ajudas-custo/:id', ...rwGestor, c.getAjudaById);
   router.post('/ajudas-custo', ...rwGestor, c.postSolicitarAjuda);
   router.post('/ajudas-custo/:id/autorizar', ...rwGestor, c.postAutorizarAjuda);
-  // Spec §19 (verification doc): pagar é ADMIN/DEV apenas — segregação financeira.
-  router.post('/ajudas-custo/:id/pagar', ...rwAdmin, single, idempotency, c.postPagarAjuda);
+  router.post('/ajudas-custo/:id/pagar', ...rwAdmin, single, c.postPagarAjuda);
   router.post('/ajudas-custo/:id/negar', ...rwGestor, c.postNegarAjuda);
-
-  // ----- Relatórios (Face 4 v0.10) -----
-  router.get('/relatorios/especialidades', ...rwReports, c.getRelatorioEspecialidades);
 
   // ----- Auditoria (3) -----
   // ⚠️  Ordem importa: rotas específicas ANTES de /:id, senão Express casa /:id primeiro.
@@ -117,6 +98,15 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
   router.get('/auditoria/exportar-tj', ...rwAdmin, c.getExportarTJ);
   router.get('/auditoria/verificar', ...rwAdmin, c.getVerificarIntegridade);
   router.get('/auditoria/:id', ...rwAdmin, c.getAuditoriaById);
+
+  // ──── Solicitações vindas do APP PACIENTE (v0.17+) ────
+  // RBAC: rwGestor — só GESTOR/ADMIN/DEV gerenciam aprovação
+  router.get('/solicitacoes-paciente', ...rwGestor, c.getSolicPacienteList);
+  router.get('/solicitacoes-paciente/:id', ...rwGestor, c.getSolicPacienteById);
+  router.post('/solicitacoes-paciente/:id/aprovar', ...rwGestor, c.postAprovarSolicPaciente);
+  router.post('/solicitacoes-paciente/:id/recusar', ...rwGestor, c.postRecusarSolicPaciente);
+  router.post('/solicitacoes-paciente/:id/embarque', ...rwGestor, c.postEmbarqueSolicPaciente);
+  router.post('/solicitacoes-paciente/:id/concluir', ...rwGestor, c.postConclusaoSolicPaciente);
 
   return router;
 }

@@ -107,20 +107,31 @@ class PacienteMe {
 
 @immutable
 class LoginPacienteResposta {
+  /// Access token opaco Base64URL · TTL 30 min (v0.18.0+)
   final String token;
-  final int expiresIn; // segundos
+  /// Refresh token rotativo Base64URL · TTL 30 dias (v0.18.0+)
+  /// Nullable para compat com backend antigo (que não enviava).
+  final String? refreshToken;
+  /// Segundos até access expirar (1800 = 30 min em v0.18.0+, era 86400 em v0.17.x)
+  final int expiresIn;
+  /// Segundos até refresh expirar (2592000 = 30 dias) — v0.18.0+
+  final int? refreshExpiresIn;
   final PacienteMe paciente;
 
   const LoginPacienteResposta({
     required this.token,
+    this.refreshToken,
     required this.expiresIn,
+    this.refreshExpiresIn,
     required this.paciente,
   });
 
   factory LoginPacienteResposta.fromJson(Map<String, dynamic> json) =>
       LoginPacienteResposta(
         token: json['token'] as String,
+        refreshToken: json['refreshToken'] as String?,
         expiresIn: json['expiresIn'] as int,
+        refreshExpiresIn: json['refreshExpiresIn'] as int?,
         paciente: PacienteMe.fromJson(json['paciente'] as Map<String, dynamic>),
       );
 }

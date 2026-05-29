@@ -10,18 +10,16 @@
  * Para mover um paciente entre UBSs, deve existir endpoint específico (roadmap).
  */
 import type { Prisma } from '../../../generated/prisma';
-import { BadRequest, Conflict, Forbidden, NotFound } from '../../shared/errors';
+import { Conflict, Forbidden, NotFound } from '../../shared/errors';
 import { prisma } from '../../infrastructure/database/prisma';
 import type { AccessScope } from '../../shared/scope';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
 import type {
   EstadoCivil,
   GrupoSanguineo as GrupoDominio,
-  PacienteCompleto,
   RacaCor,
   Sexo,
 } from '../../domain/entities/Paciente';
-import type { IPacienteRepository } from '../../domain/repositories/IPacienteRepository';
 import { grupoSanguineoToPrisma } from '../../infrastructure/database/mappers';
 
 export interface UpdatePacienteInput {
@@ -63,23 +61,14 @@ function assertScopePodeEditarPaciente(
 }
 
 export class UpdatePacienteUseCase {
-  constructor(
-    private readonly repo: IPacienteRepository,
-    private readonly audit?: IAuditLogger,
-  ) {}
+  constructor(private readonly audit?: IAuditLogger) {}
 
   async exec(
     scope: AccessScope,
     editorId: string,
     pacienteId: string,
     input: UpdatePacienteInput,
-  ): Promise<PacienteCompleto> {
-    // Spec §4.1: body sem nenhum campo → 400 NENHUMA_ALTERACAO (curto-circuita
-    // antes de bater no banco)
-    if (Object.keys(input).length === 0) {
-      throw BadRequest('NENHUMA_ALTERACAO', 'Informe ao menos um campo para alterar');
-    }
-
+  ): Promise<{ id: string; nome: string }> {
     const alvo = await prisma.paciente.findUnique({
       where: { id: pacienteId },
       include: { ubs: { select: { prefeituraId: true } } },
@@ -89,8 +78,7 @@ export class UpdatePacienteUseCase {
     }
     assertScopePodeEditarPaciente(scope, alvo.ubs.prefeituraId, alvo.ubsId);
 
-    // Cartão SUS único (mantido por compatibilidade, mas rota PATCH /pacientes/:id
-    // bloqueia o campo via Zod .strict() — só calls server-to-server passam aqui)
+    // Cartão SUS único
     if (input.cartaoSus !== undefined && input.cartaoSus !== null && input.cartaoSus !== alvo.cartaoSus) {
       const dup = await prisma.paciente.findUnique({ where: { cartaoSus: input.cartaoSus } });
       if (dup && dup.id !== pacienteId) {
@@ -130,7 +118,7 @@ export class UpdatePacienteUseCase {
     if (input.microarea !== undefined) data.microarea = input.microarea;
     if (input.equipeSaudeFamilia !== undefined) data.equipeSaudeFamilia = input.equipeSaudeFamilia;
 
-    await prisma.paciente.update({ where: { id: pacienteId }, data });
+    const atualizado = await prisma.paciente.update({ where: { id: pacienteId }, data });
 
     await this.audit?.registrar({
       acao: 'EDITAR_PACIENTE',
@@ -144,14 +132,6 @@ export class UpdatePacienteUseCase {
       },
     });
 
-    // Spec §4.1: PATCH retorna `PacienteCompleto`
-    const completo = await this.repo.buscarPorId(pacienteId, scope);
-    if (!completo) {
-      throw NotFound(
-        'PACIENTE_NAO_ENCONTRADO',
-        'Paciente não encontrado após a atualização',
-      );
-    }
-    return completo;
+    return { id: atualizado.id, nome: atualizado.nome };
   }
 }

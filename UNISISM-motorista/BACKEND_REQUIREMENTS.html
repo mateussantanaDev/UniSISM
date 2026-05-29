@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISISM Motorista — Spec de Backend</title>
+<style>
+  :root {
+    --slate-50:  #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+    --slate-300: #CBD5E1;
+    --slate-400: #94A3B8;
+    --slate-500: #64748B;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1E293B;
+    --slate-900: #0F172A;
+    --blue-50:   #EFF6FF;
+    --blue-700:  #1D4ED8;
+    --blue-900:  #1E3A8A;
+    --emerald-50:#ECFDF5;
+    --emerald-700:#047857;
+    --emerald-800:#065F46;
+    --amber-50:  #FFFBEB;
+    --amber-600: #D97706;
+    --amber-800: #92400E;
+    --red-50:    #FEF2F2;
+    --red-700:   #B91C1C;
+    --red-800:   #991B1B;
+    --sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--slate-50);
+    color: var(--slate-900);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea, select { border-radius: 0; }
+  a { color: var(--blue-900); text-decoration-color: rgba(30,58,138,.3); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--blue-900); }
+
+  .shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  aside.toc {
+    background: white;
+    border-right: 1px solid var(--slate-200);
+    padding: 26px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  main.content {
+    padding: 36px 44px 100px;
+    max-width: 1180px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--slate-200);
+    margin-bottom: 18px;
+  }
+  .brand-mark {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--blue-900);
+    color: white;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+  .brand-name {
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    line-height: 1.2;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--slate-500);
+    font-weight: 600;
+  }
+  nav.toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  nav.toc-nav a {
+    display: block;
+    padding: 9px 10px 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-700);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  nav.toc-nav a:hover {
+    background: var(--slate-50);
+    color: var(--slate-900);
+  }
+  nav.toc-nav a .n {
+    color: var(--slate-400);
+    margin-right: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  /* Headings */
+  h1.doc-title {
+    font-weight: 800;
+    font-size: 32px;
+    margin: 0 0 6px;
+    line-height: 1.1;
+  }
+  .doc-sub {
+    color: var(--slate-500);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-weight: 800;
+    font-size: 22px;
+    margin: 56px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--slate-200);
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  h2 .num {
+    background: var(--blue-900);
+    color: white;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 8px;
+    letter-spacing: 1px;
+    font-weight: 800;
+  }
+  h3 {
+    font-weight: 800;
+    font-size: 17px;
+    margin: 30px 0 10px;
+    color: var(--slate-900);
+  }
+  h4 {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 20px 0 6px;
+    color: var(--slate-700);
+  }
+  p { margin: 0 0 14px; }
+  p.lead {
+    font-size: 16px;
+    color: var(--slate-700);
+    max-width: 760px;
+  }
+
+  /* Painéis */
+  .panel {
+    background: white;
+    border: 1px solid var(--slate-200);
+    margin-bottom: 18px;
+  }
+  .panel-header {
+    background: linear-gradient(180deg, var(--slate-50), white);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 14px 16px;
+  }
+  .panel-title {
+    font-weight: 800;
+    font-size: 15px;
+  }
+  .panel-sub {
+    color: var(--slate-500);
+    font-size: 13px;
+    margin-top: 3px;
+  }
+  .panel-body { padding: 16px; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border: 1px solid;
+    letter-spacing: 0.5px;
+  }
+  .badge.success { background: var(--emerald-50); color: var(--emerald-800); border-color: var(--emerald-700); }
+  .badge.warn { background: var(--amber-50); color: var(--amber-800); border-color: var(--amber-600); }
+  .badge.crit { background: var(--red-50); color: var(--red-800); border-color: var(--red-700); }
+  .badge.info { background: var(--blue-50); color: var(--blue-900); border-color: var(--blue-700); }
+  .badge.neutral { background: var(--slate-50); color: var(--slate-700); border-color: var(--slate-600); }
+
+  /* HTTP verbos */
+  .verb {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 7px;
+    color: white;
+    letter-spacing: 0.5px;
+    min-width: 56px;
+    justify-content: center;
+  }
+  .verb.get { background: var(--blue-900); }
+  .verb.post { background: var(--emerald-700); }
+  .verb.patch { background: var(--amber-600); }
+  .verb.delete { background: var(--red-700); }
+
+  /* Tabelas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 22px;
+    font-size: 13px;
+  }
+  thead tr {
+    background: var(--slate-50);
+    border-bottom: 2px solid var(--slate-200);
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 800;
+    color: var(--slate-700);
+    border-right: 1px solid var(--slate-200);
+  }
+  th:last-child { border-right: 0; }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--slate-100);
+    border-right: 1px solid var(--slate-100);
+    vertical-align: top;
+  }
+  td:last-child { border-right: 0; }
+  td.mono, code.inline { font-family: var(--mono); font-size: 12.5px; }
+  code.inline {
+    background: var(--slate-100);
+    padding: 1.5px 5px;
+    color: var(--slate-900);
+  }
+
+  /* Code blocks */
+  pre {
+    background: #0F172A;
+    color: #E2E8F0;
+    padding: 16px 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 10px 0 20px;
+    border-left: 4px solid var(--blue-900);
+  }
+  pre.light {
+    background: white;
+    color: var(--slate-900);
+    border: 1px solid var(--slate-200);
+    border-left: 4px solid var(--blue-900);
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-family: inherit;
+  }
+  .tok-com { color: #94A3B8; }
+  .tok-key { color: #93C5FD; }
+  .tok-str { color: #86EFAC; }
+  .tok-num { color: #FCA5A5; }
+  .tok-typ { color: #FDE68A; }
+  .tok-fn { color: #C4B5FD; }
+
+  /* HTTP example block */
+  .http-block {
+    background: white;
+    border: 1px solid var(--slate-200);
+    margin: 12px 0 22px;
+  }
+  .http-block-head {
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--slate-900);
+  }
+  .http-block-body pre {
+    margin: 0;
+    border-left: none;
+  }
+
+  /* Listas */
+  ul, ol { margin: 0 0 16px 24px; padding: 0; }
+  li { margin-bottom: 5px; }
+  ul.check { list-style: none; margin-left: 0; }
+  ul.check li {
+    padding-left: 26px;
+    position: relative;
+  }
+  ul.check li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--emerald-700);
+    font-weight: 800;
+    font-family: var(--mono);
+  }
+  ul.check li.todo::before {
+    content: "▢";
+    color: var(--slate-400);
+  }
+
+  /* Callouts */
+  .callout {
+    border-left: 4px solid var(--blue-900);
+    background: var(--blue-50);
+    padding: 14px 16px;
+    margin: 16px 0 22px;
+  }
+  .callout.warn { border-color: var(--amber-600); background: var(--amber-50); }
+  .callout.crit { border-color: var(--red-700); background: var(--red-50); }
+  .callout.success { border-color: var(--emerald-700); background: var(--emerald-50); }
+  .callout-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .callout.warn .callout-label { color: var(--amber-800); }
+  .callout.crit .callout-label { color: var(--red-800); }
+  .callout.success .callout-label { color: var(--emerald-800); }
+  .callout-body { font-size: 14px; }
+  .callout-body p:last-child { margin-bottom: 0; }
+
+  /* Diagram */
+  .diagram {
+    background: white;
+    border: 1px solid var(--slate-200);
+    padding: 18px 20px;
+    margin: 10px 0 22px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--slate-700);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Q&A */
+  .qa {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .qa-q {
+    font-weight: 800;
+    color: var(--slate-900);
+    margin-bottom: 6px;
+  }
+  .qa-a {
+    color: var(--slate-700);
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--slate-200);
+    margin: 36px 0;
+  }
+  footer {
+    padding: 18px 22px;
+    background: var(--slate-100);
+    border-top: 1px solid var(--slate-200);
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--slate-500);
+    margin-top: 60px;
+  }
+
+  @media (max-width: 820px) {
+    .shell { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; }
+    main.content { padding: 24px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="toc">
+    <div class="brand">
+      <div class="brand-mark">U</div>
+      <div>
+        <div class="brand-name">UNISISM Motorista</div>
+        <div class="brand-sub">Spec de Backend</div>
+      </div>
+    </div>
+    <nav class="toc-nav">
+      <a href="#tldr"><span class="n">00</span>TL;DR</a>
+      <a href="#contexto"><span class="n">01</span>Contexto</a>
+      <a href="#schema"><span class="n">02</span>Schema Prisma</a>
+      <a href="#convencoes"><span class="n">03</span>Convenções</a>
+      <a href="#auth"><span class="n">04</span>Auth</a>
+      <a href="#viagens"><span class="n">05</span>Viagens</a>
+      <a href="#ajudas"><span class="n">06</span>Ajudas de custo</a>
+      <a href="#push"><span class="n">07</span>Push (FCM)</a>
+      <a href="#dtos"><span class="n">08</span>DTOs / schemas</a>
+      <a href="#erros"><span class="n">09</span>Códigos de erro</a>
+      <a href="#sync"><span class="n">10</span>Sync engine</a>
+      <a href="#auditoria"><span class="n">11</span>Auditoria TJ</a>
+      <a href="#checklist"><span class="n">12</span>Checklist</a>
+      <a href="#faq"><span class="n">13</span>FAQ</a>
+      <a href="#apendice-a"><span class="n">A</span>Apêndice — URLs</a>
+      <a href="#apendice-b"><span class="n">B</span>Apêndice — Arquivos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <h1 class="doc-title">UNISISM Motorista</h1>
+    <div class="doc-sub">Spec de Backend · documento de alinhamento · 2026-05-25</div>
+
+    <p class="lead">
+      Define <strong>tudo</strong> que o backend (<code class="inline">unisism-ubs/backend</code>)
+      precisa expor para o app Flutter <strong>UNISISM Motorista</strong>
+      funcionar end-to-end em produção.
+    </p>
+
+    <div class="callout">
+      <div class="callout-label">Status atual</div>
+      <div class="callout-body">
+        <p>O backend já tem o modelo TFD completo (<code class="inline">MotoristaTFD</code>,
+        <code class="inline">VeiculoTFD</code>, <code class="inline">ViagemFrota</code>,
+        <code class="inline">ViagemPassageiro</code>, <code class="inline">AjudaCusto</code>)
+        e endpoints <code class="inline">/v1/tfd/*</code> para uso do
+        <code class="inline">GESTOR_TFD</code>. O que falta é um
+        <strong>módulo paralelo <code class="inline">motorista-app</code></strong>
+        análogo ao <code class="inline">paciente-app</code>, com auth próprio e
+        rotas com escopo do motorista logado.</p>
+        <p>Enquanto isso não existir, o app Flutter roda com
+        <code class="inline">TfdApiMock</code> local (seed em memória). A
+        interface <code class="inline">TfdApi</code> no app foi desenhada para
+        ser drop-in com o contrato real — basta o backend implementar
+        <strong>exatamente as rotas e payloads deste documento</strong>.</p>
+        <p><strong>Estimativa:</strong> 3-5 dias para um dev backend que já
+        conhece o módulo <code class="inline">paciente-app</code>.</p>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="tldr"><span class="num">00</span>TL;DR</h2>
+
+    <p>O backend precisa entregar <strong>12 endpoints</strong> sob o
+    prefixo <code class="inline">/v1/motorista-app/*</code>, todos exigindo
+    JWT com role <code class="inline">MOTORISTA_TFD</code>:</p>
+
+    <pre class="light"><code><span class="tok-com"># Auth</span>
+<span class="tok-key">POST</span>   /motorista-app/auth/login                                    <span class="tok-com">← matrícula + senha</span>
+<span class="tok-key">POST</span>   /motorista-app/auth/trocar-senha                             <span class="tok-com">← 1º acesso</span>
+<span class="tok-key">POST</span>   /motorista-app/auth/logout
+<span class="tok-key">GET</span>    /motorista-app/auth/me                                       <span class="tok-com">← perfil completo</span>
+
+<span class="tok-com"># Viagens (auto-filtra por motoristaId)</span>
+<span class="tok-key">GET</span>    /motorista-app/minhas-viagens?desde=ISO&status=...           <span class="tok-com">← lista (pull)</span>
+<span class="tok-key">GET</span>    /motorista-app/viagens/:id                                   <span class="tok-com">← detalhe</span>
+<span class="tok-key">POST</span>   /motorista-app/viagens/:id/iniciar                           <span class="tok-com">← hodômetro inicial</span>
+<span class="tok-key">POST</span>   /motorista-app/viagens/:id/concluir                          <span class="tok-com">← hodômetro final</span>
+<span class="tok-key">POST</span>   /motorista-app/viagens/:id/passageiros/:pid/presenca         <span class="tok-com">← chamada digital</span>
+
+<span class="tok-com"># Ajudas de custo (read-only)</span>
+<span class="tok-key">GET</span>    /motorista-app/ajudas-custo
+
+<span class="tok-com"># Push (F15)</span>
+<span class="tok-key">POST</span>   /motorista-app/me/fcm-token
+<span class="tok-key">DELETE</span> /motorista-app/me/fcm-token</code></pre>
+
+    <p>E <strong>3 mudanças no schema Prisma</strong>:</p>
+
+    <pre><code><span class="tok-key">model</span> <span class="tok-typ">MotoristaTFD</span> {
+  <span class="tok-com">// … campos existentes …</span>
+  usuarioId     <span class="tok-typ">String?</span>   @unique           <span class="tok-com">// NOVO</span>
+  usuario       <span class="tok-typ">Usuario?</span>  @relation(<span class="tok-str">"MotoristaUsuario"</span>, fields: [usuarioId], references: [id])
+  primeiroLogin <span class="tok-typ">Boolean</span>   @default(<span class="tok-key">true</span>)
+  fcmToken      <span class="tok-typ">String?</span>
+}
+
+<span class="tok-key">enum</span> <span class="tok-typ">Role</span> {
+  <span class="tok-com">// … existentes …</span>
+  MOTORISTA_TFD                                          <span class="tok-com">// NOVA</span>
+}</code></pre>
+
+    <p>E uma <strong>migration de backfill</strong> que cria um
+    <code class="inline">Usuario</code> (com senha provisória de 8 dígitos)
+    para cada <code class="inline">MotoristaTFD</code> ATIVO existente.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="contexto"><span class="num">01</span>Contexto</h2>
+
+    <h3>1.1 Por que módulo separado e não reaproveitar <code class="inline">/v1/tfd/*</code>?</h3>
+    <p>O <code class="inline">/v1/tfd/viagens/*</code> que existe hoje exige
+    role <code class="inline">GESTOR_TFD+</code> e expõe campos sensíveis
+    (motivo de cancelamento, criadaPor, etc.) que o motorista não precisa
+    ver. Além disso, o motorista precisa de <strong>auth próprio com
+    matrícula</strong> (não email do gestor) e de uma view filtrada
+    automaticamente por <code class="inline">viagem.motoristaId = auth.motoristaId</code>.</p>
+
+    <p>O padrão a seguir é <strong>idêntico</strong> ao
+    <code class="inline">paciente-app</code>:
+    <code class="inline">src/modules/paciente-app/</code> → criar
+    <code class="inline">src/modules/motorista-app/</code>.</p>
+
+    <h3>1.2 O que reaproveitar de <code class="inline">/v1/tfd/*</code> existente</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Já implementado</th>
+          <th>Reaproveitar como?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code class="inline">POST /v1/tfd/viagens/:id/iniciar</code></td>
+          <td>Extrair use case <code class="inline">IniciarViagemUseCase</code> e chamar do motorista-app passando <code class="inline">motoristaId</code> do auth</td>
+        </tr>
+        <tr>
+          <td><code class="inline">POST .../passageiros/:pid/presenca</code></td>
+          <td>Idem, <code class="inline">MarcarPresencaUseCase</code></td>
+        </tr>
+        <tr>
+          <td><code class="inline">POST .../concluir</code></td>
+          <td>Idem, <code class="inline">ConcluirViagemUseCase</code></td>
+        </tr>
+        <tr>
+          <td><code class="inline">tfd_audit_log</code> cadeia hash</td>
+          <td>Continuar gravando — só mudar quem é o <code class="inline">usuarioId</code></td>
+        </tr>
+        <tr>
+          <td>Regras de validação (CNH vencida, hodômetro decrescente, etc.)</td>
+          <td>Reaproveitar 100%</td>
+        </tr>
+        <tr>
+          <td><code class="inline">AjudaCustoRepository</code></td>
+          <td>Filtrar <code class="inline">viagem.motoristaId = X</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>O módulo <code class="inline">motorista-app</code> é basicamente um
+    <strong>adapter HTTP</strong> que: (1) autentica via matrícula+senha
+    → emite JWT com <code class="inline">motoristaId</code>; (2) injeta
+    <code class="inline">motoristaId</code> em todos use cases;
+    (3) filtra resultados pelo <code class="inline">motoristaId</code>;
+    (4) esconde campos não-públicos no DTO de saída.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="schema"><span class="num">02</span>Schema Prisma</h2>
+
+    <h3>2.1 Mudanças em <code class="inline">MotoristaTFD</code></h3>
+    <pre><code><span class="tok-key">model</span> <span class="tok-typ">MotoristaTFD</span> {
+  id              <span class="tok-typ">String</span>  @id @default(uuid())
+  prefeituraId    <span class="tok-typ">String</span>
+  prefeitura      <span class="tok-typ">Prefeitura</span> @relation(<span class="tok-str">"MotoristaPrefeitura"</span>, fields: [prefeituraId], references: [id])
+  nome            <span class="tok-typ">String</span>
+  cpf             <span class="tok-typ">String</span>
+  cnh             <span class="tok-typ">String</span>
+  categoriaCnh    <span class="tok-typ">CategoriaCNH</span>
+  validadeCnh     <span class="tok-typ">DateTime</span>
+  telefone        <span class="tok-typ">String</span>
+  status          <span class="tok-typ">StatusMotoristaTFD</span> @default(ATIVO)
+  totalViagens    <span class="tok-typ">Int</span>     @default(<span class="tok-num">0</span>)
+  totalKmRodados  <span class="tok-typ">BigInt</span>  @default(<span class="tok-num">0</span>)
+
+  <span class="tok-com">// ── NOVOS CAMPOS ──</span>
+  usuarioId       <span class="tok-typ">String?</span>  @unique
+  usuario         <span class="tok-typ">Usuario?</span> @relation(<span class="tok-str">"MotoristaUsuario"</span>, fields: [usuarioId], references: [id])
+  primeiroLogin   <span class="tok-typ">Boolean</span>  @default(<span class="tok-key">true</span>)
+  fcmToken        <span class="tok-typ">String?</span>
+
+  criadoEm        <span class="tok-typ">DateTime</span> @default(now())
+  atualizadoEm    <span class="tok-typ">DateTime</span> @updatedAt
+  deletadoEm      <span class="tok-typ">DateTime?</span>
+  criadoPorId     <span class="tok-typ">String</span>
+
+  viagens         <span class="tok-typ">ViagemFrota</span>[]
+  abastecimentos  <span class="tok-typ">Abastecimento</span>[]
+
+  @@index([prefeituraId, status, deletadoEm])
+  @@index([cpf])
+  @@map(<span class="tok-str">"tfd_motoristas"</span>)
+}</code></pre>
+
+    <h3>2.2 Garantir <code class="inline">Usuario.matricula</code></h3>
+    <pre><code><span class="tok-key">model</span> <span class="tok-typ">Usuario</span> {
+  id           <span class="tok-typ">String</span>  @id @default(uuid())
+  matricula    <span class="tok-typ">String</span>  @unique           <span class="tok-com">// ← garantir</span>
+  senhaHash    <span class="tok-typ">String</span>                    <span class="tok-com">// bcrypt</span>
+  role         <span class="tok-typ">Role</span>
+  motoristaTfd <span class="tok-typ">MotoristaTFD?</span> @relation(<span class="tok-str">"MotoristaUsuario"</span>)
+  <span class="tok-com">// … resto …</span>
+}</code></pre>
+
+    <h3>2.3 Enum <code class="inline">Role</code></h3>
+    <pre><code><span class="tok-key">enum</span> <span class="tok-typ">Role</span> {
+  <span class="tok-com">// … existentes …</span>
+  MOTORISTA_TFD
+}</code></pre>
+
+    <h3>2.4 Migration + backfill</h3>
+    <pre><code><span class="tok-com">-- 1. ALTER TABLE</span>
+<span class="tok-key">ALTER TABLE</span> tfd_motoristas <span class="tok-key">ADD COLUMN</span> usuario_id <span class="tok-typ">text</span> <span class="tok-key">UNIQUE REFERENCES</span> usuario(id);
+<span class="tok-key">ALTER TABLE</span> tfd_motoristas <span class="tok-key">ADD COLUMN</span> primeiro_login <span class="tok-typ">boolean</span> <span class="tok-key">DEFAULT</span> <span class="tok-key">true</span>;
+<span class="tok-key">ALTER TABLE</span> tfd_motoristas <span class="tok-key">ADD COLUMN</span> fcm_token <span class="tok-typ">text</span>;
+
+<span class="tok-com">-- 2. Backfill: criar Usuario pra cada motorista ATIVO sem usuário vinculado.</span>
+<span class="tok-com">--    Senha provisória = 8 últimos dígitos do CPF, hash bcrypt.</span>
+<span class="tok-com">--    Imprimir no log do servidor (gestor pega de lá).</span>
+DO $$
+<span class="tok-key">DECLARE</span> m <span class="tok-typ">RECORD</span>;
+<span class="tok-key">BEGIN</span>
+  <span class="tok-key">FOR</span> m <span class="tok-key">IN SELECT</span> id, cpf <span class="tok-key">FROM</span> tfd_motoristas
+           <span class="tok-key">WHERE</span> usuario_id <span class="tok-key">IS NULL</span> <span class="tok-key">AND</span> status = <span class="tok-str">'ATIVO'</span> <span class="tok-key">AND</span> deletado_em <span class="tok-key">IS NULL</span>
+  <span class="tok-key">LOOP</span>
+    <span class="tok-key">INSERT INTO</span> usuario (id, matricula, senha_hash, role)
+    <span class="tok-key">VALUES</span> (
+      gen_random_uuid(),
+      m.cpf,                     <span class="tok-com">-- matrícula inicial = CPF</span>
+      crypt(<span class="tok-key">RIGHT</span>(m.cpf, <span class="tok-num">8</span>), gen_salt(<span class="tok-str">'bf'</span>)),
+      <span class="tok-str">'MOTORISTA_TFD'</span>
+    )
+    <span class="tok-key">RETURNING</span> id <span class="tok-key">INTO STRICT</span> m.usuario_id;
+    <span class="tok-key">UPDATE</span> tfd_motoristas <span class="tok-key">SET</span> usuario_id = m.usuario_id <span class="tok-key">WHERE</span> id = m.id;
+  <span class="tok-key">END LOOP</span>;
+<span class="tok-key">END</span> $$;</code></pre>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="convencoes"><span class="num">03</span>Convenções de API</h2>
+
+    <table>
+      <thead>
+        <tr><th>Convenção</th><th>Valor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Base path</td><td><code class="inline">/v1/motorista-app/*</code></td></tr>
+        <tr><td>Auth</td><td><code class="inline">Authorization: Bearer &lt;jwt&gt;</code> em toda rota exceto <code class="inline">/auth/login</code></td></tr>
+        <tr><td>Content-Type</td><td><code class="inline">application/json; charset=utf-8</code></td></tr>
+        <tr><td>Datas (datetime)</td><td>ISO 8601 com timezone (<code class="inline">2026-05-25T08:42:13.000-03:00</code>)</td></tr>
+        <tr><td>Datas (só dia)</td><td>ISO 8601 sem hora (<code class="inline">2026-05-25</code>)</td></tr>
+        <tr><td>Hora do dia</td><td>string <code class="inline">HH:mm</code> (sem fuso, hora local da prefeitura)</td></tr>
+        <tr><td>Enums</td><td>string SNAKE_CASE UPPERCASE (<code class="inline">EM_ANDAMENTO</code>, <code class="inline">AGUARDANDO</code>)</td></tr>
+        <tr><td>Casing JSON</td><td><code class="inline">camelCase</code></td></tr>
+        <tr><td>IDs</td><td>UUID v4 string</td></tr>
+        <tr><td>Valores monetários</td><td><code class="inline">number</code> em reais com até 2 decimais (ex.: <code class="inline">60.50</code>)</td></tr>
+        <tr><td>Coordenadas</td><td><code class="inline">{ lat: number, lng: number }</code> em graus decimais</td></tr>
+        <tr><td>BigInt (KM)</td><td><code class="inline">number</code> JSON (cabe em 2^53; se passar, virar string)</td></tr>
+        <tr><td>Sucesso</td><td><code class="inline">200 OK</code> com body; <code class="inline">204 No Content</code> quando sem body</td></tr>
+        <tr><td>Erro</td><td>shape <code class="inline">{ error: { code, message, details? } }</code> — ver §9</td></tr>
+        <tr><td>Header de timestamp</td><td><code class="inline">X-Server-Time</code> em toda resposta <code class="inline">GET</code> (ISO 8601 UTC)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-label">Header obrigatório em GETs</div>
+      <div class="callout-body">
+        <p><code class="inline">X-Server-Time: 2026-05-25T11:42:13.000Z</code></p>
+        <p>O app guarda esse valor como <code class="inline">lastSyncAt</code>
+        para usar em <code class="inline">?desde=</code> na próxima chamada.
+        Sem isso, o sync incremental fura por dessincronização de relógio.</p>
+      </div>
+    </div>
+
+    <p>Versionamento: tudo em <code class="inline">/v1/</code>. Quebras de
+    contrato → <code class="inline">/v2/</code>.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="auth"><span class="num">04</span>Auth</h2>
+
+    <h3>4.1 Fluxo</h3>
+
+    <div class="diagram">┌──────────────┐
+│   app abre   │
+└──────┬───────┘
+       │ tem token cached?
+       ├── sim → GET /auth/me
+       │         ├── 200 → loggedIn
+       │         ├── 401 → limpa storage → /login
+       │         └── timeout → loggedIn modo offline (usa cache local)
+       └── não → /login
+                ↓
+         POST /auth/login {matricula, senha}
+         ├── 200 {token, motorista, primeiroLogin:true}  → /login/trocar-senha
+         ├── 200 {token, motorista, primeiroLogin:false} → /home
+         └── 401 MATRICULA_OU_SENHA_INVALIDA              → erro inline
+                ↓
+         POST /auth/trocar-senha {senhaAtual, novaSenha}
+         ├── 204 → seta primeiroLogin=false → /home
+         └── 409 SENHA_FRACA → erro inline
+                ↓
+         GET /minhas-viagens (com lastSyncAt do header anterior)
+         …</div>
+
+    <h3>4.2 <span class="verb post">POST</span> <code class="inline">/auth/login</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  <span class="tok-str">"matricula"</span>: <span class="tok-str">"12345"</span>,
+  <span class="tok-str">"senha"</span>: <span class="tok-str">"trocar123"</span>
+}</code></pre></div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 200</div>
+      <div class="http-block-body"><pre><code>HTTP/1.1 <span class="tok-num">200</span> OK
+Content-Type: application/json
+X-Server-Time: 2026-05-25T11:42:13.000Z
+
+{
+  <span class="tok-str">"token"</span>: <span class="tok-str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span class="tok-str">"motorista"</span>: {
+    <span class="tok-str">"id"</span>: <span class="tok-str">"mot-001"</span>,
+    <span class="tok-str">"nome"</span>: <span class="tok-str">"João da Silva"</span>,
+    <span class="tok-str">"matricula"</span>: <span class="tok-str">"12345"</span>,
+    <span class="tok-str">"status"</span>: <span class="tok-str">"ATIVO"</span>
+  },
+  <span class="tok-str">"primeiroLogin"</span>: <span class="tok-key">true</span>
+}</code></pre></div>
+    </div>
+
+    <h4>Erros</h4>
+    <table>
+      <thead>
+        <tr><th>HTTP</th><th>Code</th><th>Quando</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td class="mono">PAYLOAD_INVALIDO</td><td>matrícula ou senha ausente / formato inválido</td></tr>
+        <tr><td>401</td><td class="mono">MATRICULA_OU_SENHA_INVALIDA</td><td>credenciais erradas (mensagem genérica — não revela qual campo)</td></tr>
+        <tr><td>403</td><td class="mono">MOTORISTA_INATIVO</td><td>motorista AFASTADO ou INATIVO</td></tr>
+        <tr><td>423</td><td class="mono">CONTA_BLOQUEADA</td><td>(opcional) 5+ tentativas erradas em 10 min</td></tr>
+      </tbody>
+    </table>
+
+    <h4>JWT claims mínimas</h4>
+    <pre class="light"><code>{
+  <span class="tok-str">"sub"</span>: <span class="tok-str">"&lt;usuario.id&gt;"</span>,
+  <span class="tok-str">"motoristaId"</span>: <span class="tok-str">"&lt;motorista.id&gt;"</span>,
+  <span class="tok-str">"role"</span>: <span class="tok-str">"MOTORISTA_TFD"</span>,
+  <span class="tok-str">"primeiroLogin"</span>: <span class="tok-key">false</span>,
+  <span class="tok-str">"exp"</span>: <span class="tok-num">&lt;unix timestamp&gt;</span>
+}</code></pre>
+
+    <ul>
+      <li>Duração: <strong>30 dias</strong> (refresh por re-login se expirar).</li>
+      <li><code class="inline">primeiroLogin: true</code> → app bloqueia todas as outras rotas e força tela de troca de senha. Backend pode também rejeitar com <code class="inline">403 PRIMEIRO_LOGIN_PENDENTE</code> se um cliente desonesto tentar pular.</li>
+    </ul>
+
+    <h3>4.3 <span class="verb post">POST</span> <code class="inline">/auth/trocar-senha</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/auth/trocar-senha HTTP/1.1
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{
+  <span class="tok-str">"senhaAtual"</span>: <span class="tok-str">"trocar123"</span>,
+  <span class="tok-str">"novaSenha"</span>: <span class="tok-str">"MinhaNovaSenha2026"</span>
+}</code></pre></div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 204</div>
+      <div class="http-block-body"><pre><code>HTTP/1.1 <span class="tok-num">204</span> No Content</code></pre></div>
+    </div>
+
+    <p>Backend deve: (1) validar <code class="inline">senhaAtual</code>;
+    (2) setar <code class="inline">usuario.senhaHash = bcrypt(novaSenha)</code>;
+    (3) setar <code class="inline">motorista.primeiroLogin = false</code>;
+    (4) auditar.</p>
+
+    <table>
+      <thead><tr><th>HTTP</th><th>Code</th><th>Quando</th></tr></thead>
+      <tbody>
+        <tr><td>401</td><td class="mono">SENHA_ATUAL_INVALIDA</td><td>hash não bate</td></tr>
+        <tr><td>409</td><td class="mono">SENHA_FRACA</td><td><code class="inline">novaSenha</code> &lt; 8 caracteres, ou só números</td></tr>
+        <tr><td>409</td><td class="mono">SENHA_IGUAL</td><td><code class="inline">novaSenha == senhaAtual</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.4 <span class="verb post">POST</span> <code class="inline">/auth/logout</code></h3>
+    <p>Resposta <code class="inline">204</code>. Backend deve invalidar o
+    token (se houver blacklist), limpar <code class="inline">motorista.fcmToken</code>
+    se setado e auditar.</p>
+
+    <h3>4.5 <span class="verb get">GET</span> <code class="inline">/auth/me</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 200</div>
+      <div class="http-block-body"><pre><code>HTTP/1.1 <span class="tok-num">200</span> OK
+Content-Type: application/json
+X-Server-Time: 2026-05-25T11:42:13.000Z
+
+{
+  <span class="tok-str">"id"</span>: <span class="tok-str">"mot-001"</span>,
+  <span class="tok-str">"nome"</span>: <span class="tok-str">"João da Silva"</span>,
+  <span class="tok-str">"cpf"</span>: <span class="tok-str">"12345678900"</span>,
+  <span class="tok-str">"matricula"</span>: <span class="tok-str">"12345"</span>,
+  <span class="tok-str">"cnh"</span>: <span class="tok-str">"99887766554"</span>,
+  <span class="tok-str">"categoriaCnh"</span>: <span class="tok-str">"D"</span>,
+  <span class="tok-str">"validadeCnh"</span>: <span class="tok-str">"2027-04-10"</span>,
+  <span class="tok-str">"telefone"</span>: <span class="tok-str">"75999990000"</span>,
+  <span class="tok-str">"status"</span>: <span class="tok-str">"ATIVO"</span>,
+  <span class="tok-str">"totalViagens"</span>: <span class="tok-num">247</span>,
+  <span class="tok-str">"totalKmRodados"</span>: <span class="tok-num">38452</span>,
+  <span class="tok-str">"prefeituraNome"</span>: <span class="tok-str">"Prefeitura de Águas Belas"</span>,
+  <span class="tok-str">"fotoUrl"</span>: <span class="tok-key">null</span>
+}</code></pre></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="viagens"><span class="num">05</span>Viagens</h2>
+
+    <h3>5.1 <span class="verb get">GET</span> <code class="inline">/minhas-viagens</code></h3>
+    <p>Lista as viagens do motorista logado. Suporta filtro incremental
+    por timestamp (pull-only-changed).</p>
+
+    <h4>Query params (todos opcionais)</h4>
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>Tipo</th><th>Default</th><th>Descrição</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">desde</td><td>ISO 8601 UTC</td><td>—</td><td>Só viagens com <code class="inline">atualizadoEm &gt;= desde</code></td></tr>
+        <tr><td class="mono">status</td><td>csv de <code class="inline">StatusViagem</code></td><td>tudo</td><td>Filtrar por status</td></tr>
+        <tr><td class="mono">cursor</td><td>string opaca</td><td>—</td><td>Paginação (quando devolvido <code class="inline">nextCursor</code>)</td></tr>
+        <tr><td class="mono">limit</td><td>int (1-100)</td><td>50</td><td>Tamanho da página</td></tr>
+      </tbody>
+    </table>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 200 (1 viagem como exemplo)</div>
+      <div class="http-block-body"><pre><code>HTTP/1.1 <span class="tok-num">200</span> OK
+Content-Type: application/json
+X-Server-Time: 2026-05-25T11:42:13.000Z
+
+[
+  {
+    <span class="tok-str">"id"</span>: <span class="tok-str">"viag-2026-001"</span>,
+    <span class="tok-str">"protocolo"</span>: <span class="tok-str">"VIA-2026-000137"</span>,
+    <span class="tok-str">"data"</span>: <span class="tok-str">"2026-05-25"</span>,
+    <span class="tok-str">"horaSaida"</span>: <span class="tok-str">"06:00"</span>,
+    <span class="tok-str">"horaPrevistaRetorno"</span>: <span class="tok-str">"18:30"</span>,
+    <span class="tok-str">"destino"</span>: <span class="tok-str">"Salvador"</span>,
+    <span class="tok-str">"unidadeDestino"</span>: <span class="tok-str">"Hospital Roberto Santos"</span>,
+    <span class="tok-str">"rotaResumo"</span>: <span class="tok-str">"BR-324, retorno via Avenida Paralela"</span>,
+    <span class="tok-str">"kmEstimados"</span>: <span class="tok-num">220</span>,
+    <span class="tok-str">"kmInicialHodometro"</span>: <span class="tok-num">45200</span>,
+    <span class="tok-str">"kmFinalHodometro"</span>: <span class="tok-key">null</span>,
+    <span class="tok-str">"vagasTotais"</span>: <span class="tok-num">14</span>,
+    <span class="tok-str">"observacoes"</span>: <span class="tok-key">null</span>,
+    <span class="tok-str">"status"</span>: <span class="tok-str">"EM_ANDAMENTO"</span>,
+    <span class="tok-str">"iniciadaEm"</span>: <span class="tok-str">"2026-05-25T09:05:00.000Z"</span>,
+    <span class="tok-str">"concluidaEm"</span>: <span class="tok-key">null</span>,
+    <span class="tok-str">"coordOrigem"</span>: { <span class="tok-str">"lat"</span>: <span class="tok-num">-12.2569</span>, <span class="tok-str">"lng"</span>: <span class="tok-num">-38.9663</span> },
+    <span class="tok-str">"coordDestino"</span>: { <span class="tok-str">"lat"</span>: <span class="tok-num">-12.9714</span>, <span class="tok-str">"lng"</span>: <span class="tok-num">-38.5014</span> },
+    <span class="tok-str">"veiculo"</span>: {
+      <span class="tok-str">"id"</span>: <span class="tok-str">"vei-001"</span>,
+      <span class="tok-str">"placa"</span>: <span class="tok-str">"OKL-3A52"</span>,
+      <span class="tok-str">"modelo"</span>: <span class="tok-str">"Mercedes-Benz Sprinter 415"</span>,
+      <span class="tok-str">"tipo"</span>: <span class="tok-str">"VAN"</span>,
+      <span class="tok-str">"capacidade"</span>: <span class="tok-num">16</span>,
+      <span class="tok-str">"status"</span>: <span class="tok-str">"ATIVO"</span>
+    },
+    <span class="tok-str">"motorista"</span>: { <span class="tok-str">"id"</span>: <span class="tok-str">"mot-001"</span>, ... },
+    <span class="tok-str">"passageiros"</span>: [ ... <span class="tok-com">/* ver §8.2 Passageiro */</span> ],
+    <span class="tok-str">"atualizadoEm"</span>: <span class="tok-str">"2026-05-25T09:12:00.000Z"</span>
+  }
+]</code></pre></div>
+    </div>
+
+    <ul>
+      <li>Filtra automaticamente por <code class="inline">viagem.motoristaId = auth.motoristaId</code>.</li>
+      <li>Inclui passageiros <em>embedded</em>.</li>
+      <li>Ordem padrão: <code class="inline">data ASC, horaSaida ASC</code>.</li>
+      <li><code class="inline">atualizadoEm</code> é o timestamp da última escrita (qualquer campo da viagem ou seus passageiros).</li>
+    </ul>
+
+    <h3>5.2 <span class="verb get">GET</span> <code class="inline">/viagens/:id</code></h3>
+    <p>Mesmo shape do item do array acima. Erro <code class="inline">404 VIAGEM_NAO_ENCONTRADA</code>
+    quando id não existe OU viagem é de outro motorista (única resposta — evita enumeração).</p>
+
+    <h3>5.3 <span class="verb post">POST</span> <code class="inline">/viagens/:id/iniciar</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/viagens/viag-2026-001/iniciar HTTP/1.1
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{ <span class="tok-str">"kmInicialHodometro"</span>: <span class="tok-num">45200</span> }</code></pre></div>
+    </div>
+
+    <p>Response 200: viagem atualizada (status → EM_ANDAMENTO,
+    <code class="inline">iniciadaEm</code> setado).</p>
+
+    <h4>Regras de negócio</h4>
+    <table>
+      <thead><tr><th>Validação</th><th>Code</th><th>HTTP</th></tr></thead>
+      <tbody>
+        <tr><td>Viagem é do motorista logado</td><td class="mono">VIAGEM_NAO_ENCONTRADA</td><td>404</td></tr>
+        <tr><td>Status atual é <code class="inline">AGENDADA</code></td><td class="mono">STATUS_INVALIDO</td><td>409</td></tr>
+        <tr><td>CNH não vencida (<code class="inline">validadeCnh &gt;= hoje</code>)</td><td class="mono">CNH_VENCIDA</td><td>422</td></tr>
+        <tr><td>Motorista <code class="inline">ATIVO</code></td><td class="mono">MOTORISTA_INDISPONIVEL</td><td>422</td></tr>
+        <tr><td>Veículo <code class="inline">ATIVO</code> (não EM_MANUTENCAO)</td><td class="mono">VEICULO_INDISPONIVEL</td><td>422</td></tr>
+        <tr><td><code class="inline">kmInicialHodometro &gt; 0</code></td><td class="mono">HODOMETRO_INVALIDO</td><td>422</td></tr>
+        <tr><td><code class="inline">kmInicialHodometro &gt;= veiculo.hodometroAtual</code></td><td class="mono">HODOMETRO_INVALIDO</td><td>422</td></tr>
+      </tbody>
+    </table>
+
+    <p>Efeitos colaterais: atualiza <code class="inline">tfd_viagem</code>;
+    insere em <code class="inline">tfd_audit_log</code> ação
+    <code class="inline">VIAGEM_INICIADA</code> com
+    <code class="inline">usuarioId = motorista.usuarioId</code>; <strong>não</strong>
+    atualiza hodômetro do veículo aqui (só no concluir).</p>
+
+    <h3>5.4 <span class="verb post">POST</span> <code class="inline">/viagens/:id/concluir</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/viagens/viag-2026-001/concluir HTTP/1.1
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{ <span class="tok-str">"kmFinalHodometro"</span>: <span class="tok-num">45580</span> }</code></pre></div>
+    </div>
+
+    <h4>Regras</h4>
+    <table>
+      <thead><tr><th>Validação</th><th>Code</th><th>HTTP</th></tr></thead>
+      <tbody>
+        <tr><td>Viagem é do motorista</td><td class="mono">VIAGEM_NAO_ENCONTRADA</td><td>404</td></tr>
+        <tr><td>Status atual é <code class="inline">EM_ANDAMENTO</code></td><td class="mono">STATUS_INVALIDO</td><td>409</td></tr>
+        <tr><td><code class="inline">kmFinalHodometro &gt; kmInicialHodometro</code></td><td class="mono">HODOMETRO_INVALIDO</td><td>422</td></tr>
+      </tbody>
+    </table>
+
+    <p>Efeitos colaterais:</p>
+    <ul>
+      <li>Atualiza <code class="inline">tfd_viagem</code>: status, concluidaEm, kmFinalHodometro.</li>
+      <li>Soma KM (<code class="inline">kmFinal - kmInicial</code>) ao <code class="inline">motorista.totalKmRodados</code>.</li>
+      <li>Incrementa <code class="inline">motorista.totalViagens</code>.</li>
+      <li>Atualiza <code class="inline">veiculo.hodometroAtual = kmFinalHodometro</code>.</li>
+      <li>Marca solicitações relacionadas como <code class="inline">REALIZADA</code>.</li>
+      <li>Auditoria: <code class="inline">VIAGEM_CONCLUIDA</code>.</li>
+    </ul>
+
+    <h3>5.5 <span class="verb post">POST</span> <code class="inline">/viagens/:id/passageiros/:pid/presenca</code></h3>
+    <p>Chamada digital — marca presença/ausência/desistência de um passageiro.</p>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request (embarque)</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/viagens/viag-2026-001/passageiros/pax-001-001/presenca HTTP/1.1
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{
+  <span class="tok-str">"presenca"</span>: <span class="tok-str">"EMBARCADO"</span>,
+  <span class="tok-str">"observacao"</span>: <span class="tok-key">null</span>
+}</code></pre></div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request (ausência — observação obrigatória)</div>
+      <div class="http-block-body"><pre><code>{
+  <span class="tok-str">"presenca"</span>: <span class="tok-str">"AUSENTE"</span>,
+  <span class="tok-str">"observacao"</span>: <span class="tok-str">"Família avisou que não comparecerá."</span>
+}</code></pre></div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 200</div>
+      <div class="http-block-body"><pre><code>{
+  <span class="tok-str">"id"</span>: <span class="tok-str">"pax-001-001"</span>,
+  <span class="tok-str">"paciente"</span>: { ... <span class="tok-com">/* PacienteResumo */</span> },
+  <span class="tok-str">"solicitacao"</span>: { ... <span class="tok-com">/* SolicitacaoResumo */</span> },
+  <span class="tok-str">"acompanhante"</span>: <span class="tok-key">false</span>,
+  <span class="tok-str">"presenca"</span>: <span class="tok-str">"EMBARCADO"</span>,
+  <span class="tok-str">"observacao"</span>: <span class="tok-key">null</span>,
+  <span class="tok-str">"marcadoEm"</span>: <span class="tok-str">"2026-05-25T06:32:00.000Z"</span>,
+  <span class="tok-str">"marcadoPor"</span>: <span class="tok-str">"mot-001"</span>
+}</code></pre></div>
+    </div>
+
+    <h4>Regras</h4>
+    <table>
+      <thead><tr><th>Validação</th><th>Code</th><th>HTTP</th></tr></thead>
+      <tbody>
+        <tr><td>Viagem é do motorista</td><td class="mono">VIAGEM_NAO_ENCONTRADA</td><td>404</td></tr>
+        <tr><td>Passageiro existe nessa viagem</td><td class="mono">PASSAGEIRO_NAO_ENCONTRADO</td><td>404</td></tr>
+        <tr><td>Status ∈ {AGENDADA, EM_ANDAMENTO}</td><td class="mono">STATUS_INVALIDO</td><td>409</td></tr>
+        <tr><td><code class="inline">presenca</code> em {CONFIRMADO, EMBARCADO, AUSENTE, DESISTIU, AGUARDANDO}</td><td class="mono">PAYLOAD_INVALIDO</td><td>400</td></tr>
+        <tr><td>Se <code class="inline">presenca</code> ∈ {AUSENTE, DESISTIU}, <code class="inline">observacao</code> é obrigatória</td><td class="mono">OBSERVACAO_OBRIGATORIA</td><td>422</td></tr>
+      </tbody>
+    </table>
+
+    <p>Efeitos colaterais: atualiza <code class="inline">tfd_viagem_passageiro</code>;
+    atualiza <code class="inline">tfd_viagem.atualizadoEm = now()</code>
+    (importante pro sync); auditoria <code class="inline">PRESENCA_MARCADA</code>.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="ajudas"><span class="num">06</span>Ajudas de custo</h2>
+
+    <h3>6.1 <span class="verb get">GET</span> <code class="inline">/ajudas-custo</code></h3>
+    <p>Lista as ajudas de custo associadas às viagens do motorista.
+    <strong>Read-only</strong> do lado do motorista — quem cria, autoriza
+    e paga é o gestor TFD.</p>
+
+    <div class="http-block">
+      <div class="http-block-head">← Response 200</div>
+      <div class="http-block-body"><pre><code>[
+  {
+    <span class="tok-str">"id"</span>: <span class="tok-str">"ajc-001"</span>,
+    <span class="tok-str">"protocolo"</span>: <span class="tok-str">"AJC-2026-000023"</span>,
+    <span class="tok-str">"viagemId"</span>: <span class="tok-str">"viag-2026-001"</span>,
+    <span class="tok-str">"pacienteId"</span>: <span class="tok-str">"pac-001"</span>,
+    <span class="tok-str">"pacienteNome"</span>: <span class="tok-str">"Maria Conceição Almeida"</span>,
+    <span class="tok-str">"itens"</span>: [
+      { <span class="tok-str">"categoria"</span>: <span class="tok-str">"ALIMENTACAO"</span>, <span class="tok-str">"descricao"</span>: <span class="tok-str">"Almoço em Salvador"</span>, <span class="tok-str">"valorBRL"</span>: <span class="tok-num">35.00</span> },
+      { <span class="tok-str">"categoria"</span>: <span class="tok-str">"DESLOCAMENTO_LOCAL"</span>, <span class="tok-str">"descricao"</span>: <span class="tok-str">"Transporte hospital ↔ rodoviária"</span>, <span class="tok-str">"valorBRL"</span>: <span class="tok-num">25.00</span> }
+    ],
+    <span class="tok-str">"valorTotalBRL"</span>: <span class="tok-num">60.00</span>,
+    <span class="tok-str">"status"</span>: <span class="tok-str">"AUTORIZADA"</span>,
+    <span class="tok-str">"metodoPagamento"</span>: <span class="tok-str">"PIX"</span>,
+    <span class="tok-str">"motivoNegacao"</span>: <span class="tok-key">null</span>,
+    <span class="tok-str">"criadaEm"</span>: <span class="tok-str">"2026-05-25T07:30:00.000Z"</span>,
+    <span class="tok-str">"autorizadaEm"</span>: <span class="tok-str">"2026-05-25T08:00:00.000Z"</span>,
+    <span class="tok-str">"pagaEm"</span>: <span class="tok-key">null</span>
+  }
+]</code></pre></div>
+    </div>
+
+    <p>Filtro automático: <code class="inline">viagem.motoristaId = auth.motoristaId</code>.
+    Suporta os mesmos query params de paginação do <code class="inline">/minhas-viagens</code>.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="push"><span class="num">07</span>Push (FCM)</h2>
+
+    <h3>7.1 <span class="verb post">POST</span> <code class="inline">/me/fcm-token</code></h3>
+
+    <div class="http-block">
+      <div class="http-block-head">→ Request</div>
+      <div class="http-block-body"><pre><code><span class="tok-key">POST</span> /v1/motorista-app/me/fcm-token HTTP/1.1
+Authorization: Bearer &lt;jwt&gt;
+Content-Type: application/json
+
+{ <span class="tok-str">"fcmToken"</span>: <span class="tok-str">"fGz...JKL"</span> }</code></pre></div>
+    </div>
+
+    <p>Response <code class="inline">204</code>. Backend salva
+    <code class="inline">motorista.fcmToken</code> e audita
+    <code class="inline">FCM_TOKEN_REGISTRADO</code>.</p>
+
+    <h3>7.2 <span class="verb delete">DELETE</span> <code class="inline">/me/fcm-token</code></h3>
+    <p>Revoga no logout. Response <code class="inline">204</code>.</p>
+
+    <h3>7.3 Eventos que disparam push para o motorista</h3>
+
+    <table>
+      <thead>
+        <tr><th>Quando</th><th>Título</th><th>Body</th><th>Payload <code class="inline">data</code></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nova viagem alocada</td>
+          <td>"Nova viagem amanhã às 06:00"</td>
+          <td>"Salvador · Hospital Roberto Santos"</td>
+          <td><code class="inline">{ "tipo": "NOVA_VIAGEM", "viagemId": "..." }</code></td>
+        </tr>
+        <tr>
+          <td>Passageiro adicionado/removido</td>
+          <td>"Mudança em viagem amanhã"</td>
+          <td>"{n} pacientes agora"</td>
+          <td><code class="inline">{ "tipo": "VIAGEM_ALTERADA", "viagemId": "..." }</code></td>
+        </tr>
+        <tr>
+          <td>Viagem cancelada</td>
+          <td>"Viagem cancelada"</td>
+          <td>"{motivo}"</td>
+          <td><code class="inline">{ "tipo": "VIAGEM_CANCELADA", "viagemId": "..." }</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>O app trata o tap navegando para <code class="inline">/viagens/{viagemId}</code>
+    quando o payload contém <code class="inline">viagemId</code>. Foreground
+    pushes disparam <code class="inline">syncEngine.syncAll()</code>.</p>
+
+    <p>Implementação backend: usar <code class="inline">firebase-admin-sdk</code>
+    (Node). Trigger no <code class="inline">save</code> de <code class="inline">ViagemFrota</code>
+    quando <code class="inline">motoristaId</code> muda ou status muda.</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="dtos"><span class="num">08</span>DTOs / schemas</h2>
+
+    <p>Shapes de saída esperados. Os tipos Dart no app espelham exatamente
+    isto em <code class="inline">lib/domain/models/</code>.</p>
+
+    <h3>8.1 Enums</h3>
+    <pre><code><span class="tok-key">type</span> <span class="tok-typ">StatusViagem</span> = <span class="tok-str">'AGENDADA'</span> | <span class="tok-str">'EM_ANDAMENTO'</span> | <span class="tok-str">'CONCLUIDA'</span> | <span class="tok-str">'CANCELADA'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">PresencaPassageiro</span> = <span class="tok-str">'AGUARDANDO'</span> | <span class="tok-str">'CONFIRMADO'</span> | <span class="tok-str">'EMBARCADO'</span> | <span class="tok-str">'AUSENTE'</span> | <span class="tok-str">'DESISTIU'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">StatusMotorista</span> = <span class="tok-str">'ATIVO'</span> | <span class="tok-str">'AFASTADO'</span> | <span class="tok-str">'INATIVO'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">StatusVeiculo</span> = <span class="tok-str">'ATIVO'</span> | <span class="tok-str">'EM_MANUTENCAO'</span> | <span class="tok-str">'INATIVO'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">TipoVeiculo</span> = <span class="tok-str">'VAN'</span> | <span class="tok-str">'ONIBUS'</span> | <span class="tok-str">'CARRO'</span> | <span class="tok-str">'AMBULANCIA'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">CategoriaCnh</span> = <span class="tok-str">'B'</span> | <span class="tok-str">'C'</span> | <span class="tok-str">'D'</span> | <span class="tok-str">'E'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">PrioridadeSolicitacao</span> = <span class="tok-str">'ELETIVA'</span> | <span class="tok-str">'PRIORITARIA'</span> | <span class="tok-str">'URGENTE'</span>;
+<span class="tok-key">type</span> <span class="tok-typ">StatusAjudaCusto</span> = <span class="tok-str">'PENDENTE'</span> | <span class="tok-str">'AUTORIZADA'</span> | <span class="tok-str">'PAGA'</span> | <span class="tok-str">'NEGADA'</span> | <span class="tok-str">'CANCELADA'</span>;</code></pre>
+
+    <h3>8.2 Tipos primários</h3>
+    <pre><code><span class="tok-key">interface</span> <span class="tok-typ">GeoCoord</span> {
+  lat: <span class="tok-typ">number</span>;            <span class="tok-com">// -90 a 90</span>
+  lng: <span class="tok-typ">number</span>;            <span class="tok-com">// -180 a 180</span>
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">MotoristaResumo</span> {
+  id: <span class="tok-typ">string</span>;
+  nome: <span class="tok-typ">string</span>;
+  matricula: <span class="tok-typ">string</span>;
+  status: <span class="tok-typ">StatusMotorista</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">Motorista</span> {
+  id: <span class="tok-typ">string</span>;
+  nome: <span class="tok-typ">string</span>;
+  cpf: <span class="tok-typ">string</span>;            <span class="tok-com">// 11 dígitos sem máscara</span>
+  matricula: <span class="tok-typ">string</span>;
+  cnh: <span class="tok-typ">string</span>;
+  categoriaCnh: <span class="tok-typ">CategoriaCnh</span>;
+  validadeCnh: <span class="tok-typ">string</span>;    <span class="tok-com">// ISO date "2027-04-10"</span>
+  telefone: <span class="tok-typ">string</span>;       <span class="tok-com">// só dígitos</span>
+  status: <span class="tok-typ">StatusMotorista</span>;
+  totalViagens: <span class="tok-typ">number</span>;
+  totalKmRodados: <span class="tok-typ">number</span>;
+  prefeituraNome: <span class="tok-typ">string</span>;
+  fotoUrl?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">VeiculoResumo</span> {
+  id: <span class="tok-typ">string</span>;
+  placa: <span class="tok-typ">string</span>;          <span class="tok-com">// "OKL-3A52" com hífen</span>
+  modelo: <span class="tok-typ">string</span>;
+  tipo: <span class="tok-typ">TipoVeiculo</span>;
+  capacidade: <span class="tok-typ">number</span>;
+  status: <span class="tok-typ">StatusVeiculo</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">UbsResumo</span> {
+  id: <span class="tok-typ">string</span>;
+  nome: <span class="tok-typ">string</span>;
+  bairro: <span class="tok-typ">string</span>;
+  coord?: <span class="tok-typ">GeoCoord</span> | <span class="tok-key">null</span>;
+  endereco?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">PacienteResumo</span> {
+  id: <span class="tok-typ">string</span>;
+  nome: <span class="tok-typ">string</span>;
+  cpf: <span class="tok-typ">string</span>;
+  dataNascimento: <span class="tok-typ">string</span>;          <span class="tok-com">// ISO date</span>
+  telefone?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  fotoUrl?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  ubs?: <span class="tok-typ">UbsResumo</span> | <span class="tok-key">null</span>;
+  observacoesMobilidade?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;  <span class="tok-com">// "Cadeirante", "Usa muletas"</span>
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">SolicitacaoResumo</span> {
+  id: <span class="tok-typ">string</span>;
+  protocolo: <span class="tok-typ">string</span>;               <span class="tok-com">// TFD-2026-NNNNNN</span>
+  prioridade: <span class="tok-typ">PrioridadeSolicitacao</span>;
+  destino: <span class="tok-typ">string</span>;
+  unidadeDestino?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">Passageiro</span> {
+  id: <span class="tok-typ">string</span>;                      <span class="tok-com">// PK de tfd_viagem_passageiro</span>
+  paciente: <span class="tok-typ">PacienteResumo</span>;
+  solicitacao: <span class="tok-typ">SolicitacaoResumo</span>;
+  acompanhante: <span class="tok-typ">boolean</span>;
+  presenca: <span class="tok-typ">PresencaPassageiro</span>;
+  observacao?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  marcadoEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  marcadoPor?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">Viagem</span> {
+  id: <span class="tok-typ">string</span>;
+  protocolo?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;       <span class="tok-com">// VIA-2026-NNNNNN</span>
+  data: <span class="tok-typ">string</span>;                    <span class="tok-com">// ISO date</span>
+  horaSaida: <span class="tok-typ">string</span>;               <span class="tok-com">// "HH:mm"</span>
+  horaPrevistaRetorno?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  destino: <span class="tok-typ">string</span>;
+  unidadeDestino?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  rotaResumo?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  kmEstimados?: <span class="tok-typ">number</span> | <span class="tok-key">null</span>;
+  kmInicialHodometro?: <span class="tok-typ">number</span> | <span class="tok-key">null</span>;
+  kmFinalHodometro?: <span class="tok-typ">number</span> | <span class="tok-key">null</span>;
+  vagasTotais: <span class="tok-typ">number</span>;
+  observacoes?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  status: <span class="tok-typ">StatusViagem</span>;
+  iniciadaEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  concluidaEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  coordOrigem?: <span class="tok-typ">GeoCoord</span> | <span class="tok-key">null</span>;
+  coordDestino?: <span class="tok-typ">GeoCoord</span> | <span class="tok-key">null</span>;
+  veiculo: <span class="tok-typ">VeiculoResumo</span>;
+  motorista: <span class="tok-typ">MotoristaResumo</span>;
+  passageiros: <span class="tok-typ">Passageiro</span>[];       <span class="tok-com">// sempre presente, pode ser []</span>
+  atualizadoEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">AjudaCustoItem</span> {
+  categoria: <span class="tok-typ">string</span>;               <span class="tok-com">// ALIMENTACAO | DESLOCAMENTO_LOCAL | HOSPEDAGEM | ...</span>
+  descricao: <span class="tok-typ">string</span>;
+  valorBRL: <span class="tok-typ">number</span>;                <span class="tok-com">// BRL maiúsculo no JSON</span>
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">AjudaCusto</span> {
+  id: <span class="tok-typ">string</span>;
+  protocolo?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;       <span class="tok-com">// AJC-2026-NNNNNN</span>
+  viagemId: <span class="tok-typ">string</span>;
+  pacienteId: <span class="tok-typ">string</span>;
+  pacienteNome: <span class="tok-typ">string</span>;
+  itens: <span class="tok-typ">AjudaCustoItem</span>[];
+  valorTotalBRL: <span class="tok-typ">number</span>;           <span class="tok-com">// BRL maiúsculo</span>
+  status: <span class="tok-typ">StatusAjudaCusto</span>;
+  metodoPagamento?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>; <span class="tok-com">// PIX | TRANSFERENCIA | DINHEIRO_RH</span>
+  motivoNegacao?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  criadaEm: <span class="tok-typ">string</span>;
+  autorizadaEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+  pagaEm?: <span class="tok-typ">string</span> | <span class="tok-key">null</span>;
+}
+
+<span class="tok-key">interface</span> <span class="tok-typ">AuthSession</span> {
+  token: <span class="tok-typ">string</span>;
+  motorista: <span class="tok-typ">MotoristaResumo</span>;
+  primeiroLogin: <span class="tok-typ">boolean</span>;
+}</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-label">Atenção a casing</div>
+      <div class="callout-body">
+        <ul>
+          <li><code class="inline">valorBRL</code> e <code class="inline">valorTotalBRL</code> — <strong>BRL em maiúsculas</strong> (consistência com o resto do TFD).</li>
+          <li><code class="inline">dataNascimento</code>, <code class="inline">validadeCnh</code> — ISO <strong>date</strong> (<code class="inline">YYYY-MM-DD</code>), sem hora.</li>
+          <li><code class="inline">iniciadaEm</code>, <code class="inline">concluidaEm</code>, <code class="inline">marcadoEm</code>, <code class="inline">criadaEm</code>, <code class="inline">autorizadaEm</code>, <code class="inline">pagaEm</code>, <code class="inline">atualizadoEm</code> — ISO <strong>datetime</strong> com timezone.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="erros"><span class="num">09</span>Códigos de erro</h2>
+
+    <p>Toda resposta de erro segue:</p>
+    <pre class="light"><code>{
+  <span class="tok-str">"error"</span>: {
+    <span class="tok-str">"code"</span>: <span class="tok-str">"STATUS_INVALIDO"</span>,
+    <span class="tok-str">"message"</span>: <span class="tok-str">"A viagem precisa estar AGENDADA para ser iniciada"</span>,
+    <span class="tok-str">"details"</span>: { <span class="tok-str">"statusAtual"</span>: <span class="tok-str">"EM_ANDAMENTO"</span> }
+  }
+}</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>HTTP</th><th>Code</th><th>Quando</th><th>Como o app trata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td class="mono">PAYLOAD_INVALIDO</td><td>validação Zod falhou (<code class="inline">details.issues</code>)</td><td>mostra campo a campo</td></tr>
+        <tr><td>401</td><td class="mono">MATRICULA_OU_SENHA_INVALIDA</td><td>login falhou</td><td>"Matrícula ou senha errada" inline</td></tr>
+        <tr><td>401</td><td class="mono">TOKEN_INVALIDO</td><td>JWT malformado</td><td>logout silencioso → <code class="inline">/login</code></td></tr>
+        <tr><td>401</td><td class="mono">TOKEN_EXPIRADO</td><td>JWT expirado</td><td>logout silencioso → <code class="inline">/login</code></td></tr>
+        <tr><td>401</td><td class="mono">SENHA_ATUAL_INVALIDA</td><td>em <code class="inline">/trocar-senha</code></td><td>"Senha atual errada" inline</td></tr>
+        <tr><td>403</td><td class="mono">ROLE_NAO_PERMITIDO</td><td>role do JWT ≠ MOTORISTA_TFD</td><td>logout (não deveria acontecer)</td></tr>
+        <tr><td>403</td><td class="mono">PRIMEIRO_LOGIN_PENDENTE</td><td>rota protegida antes de trocar senha</td><td>redireciona pra <code class="inline">/login/trocar-senha</code></td></tr>
+        <tr><td>403</td><td class="mono">MOTORISTA_INATIVO</td><td>AFASTADO/INATIVO tentando logar</td><td>"Conta inativa — contate a gestão"</td></tr>
+        <tr><td>404</td><td class="mono">VIAGEM_NAO_ENCONTRADA</td><td>id inexistente OU de outro motorista</td><td>"Viagem não encontrada"</td></tr>
+        <tr><td>404</td><td class="mono">PASSAGEIRO_NAO_ENCONTRADO</td><td>pid não está na viagem</td><td>"Passageiro não encontrado"</td></tr>
+        <tr><td>409</td><td class="mono">STATUS_INVALIDO</td><td>ação em status incompatível</td><td>esconde botão / "Não dá pra fazer isso agora"</td></tr>
+        <tr><td>409</td><td class="mono">SENHA_FRACA</td><td>nova senha &lt; 8 chars ou só números</td><td>"Use pelo menos 8 letras ou números"</td></tr>
+        <tr><td>409</td><td class="mono">SENHA_IGUAL</td><td>nova == atual</td><td>"Escolha uma senha diferente"</td></tr>
+        <tr><td>422</td><td class="mono">CNH_VENCIDA</td><td>iniciar viagem com CNH vencida</td><td>"Sua CNH venceu — renove antes"</td></tr>
+        <tr><td>422</td><td class="mono">VEICULO_INDISPONIVEL</td><td>veículo EM_MANUTENCAO</td><td>"Veículo em manutenção"</td></tr>
+        <tr><td>422</td><td class="mono">MOTORISTA_INDISPONIVEL</td><td>motorista AFASTADO/INATIVO</td><td>"Conta inativa"</td></tr>
+        <tr><td>422</td><td class="mono">HODOMETRO_INVALIDO</td><td>km decrescente ou ≤ 0</td><td>"Quilometragem precisa ser maior que X"</td></tr>
+        <tr><td>422</td><td class="mono">OBSERVACAO_OBRIGATORIA</td><td>AUSENTE/DESISTIU sem observação</td><td>"Diga o motivo"</td></tr>
+        <tr><td>423</td><td class="mono">CONTA_BLOQUEADA</td><td>5+ tentativas erradas em 10 min</td><td>"Muitas tentativas. Tente em alguns minutos."</td></tr>
+        <tr><td>500</td><td class="mono">ERRO_INTERNO</td><td>exceção não tratada</td><td>"Tivemos um problema, tente de novo" + retry</td></tr>
+        <tr><td>503</td><td class="mono">MANUTENCAO</td><td>backend em janela de manutenção</td><td>"App em manutenção, volte mais tarde"</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Erros de rede no client (não vêm do backend)</h4>
+    <table>
+      <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">OFFLINE</td><td>dispositivo sem internet</td></tr>
+        <tr><td class="mono">TIMEOUT</td><td>request demorou demais</td></tr>
+        <tr><td class="mono">NO_CONNECTION</td><td>host inacessível</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="sync"><span class="num">10</span>Sync engine</h2>
+
+    <p>O app é <strong>offline-first</strong>. Tem uma camada Drift (SQLite)
+    que espelha as viagens e passageiros, e uma fila de mutações pendentes
+    (<code class="inline">outbox</code>).</p>
+
+    <h3>10.1 Fluxo de leitura</h3>
+    <div class="diagram">UI → SQLite local (sempre disponível, mesmo offline)</div>
+
+    <h3>10.2 Fluxo de pull (servidor → local)</h3>
+    <div class="diagram">Triggers:
+- Login bem-sucedido
+- Mudança de connectivity (offline → online)
+- Timer a cada 5 minutos
+- Pull-to-refresh manual
+
+Ação:
+1. lastSyncAt ← SQLite (vazio na 1ª vez)
+2. GET /minhas-viagens?desde=&lt;lastSyncAt&gt;
+3. Recebe lista de viagens atualizadas
+4. Recebe header X-Server-Time: 2026-05-25T11:42:13Z
+5. Upsert no SQLite local (preservando linhas com flag dirty=true)
+6. Salva lastSyncAt = X-Server-Time</div>
+
+    <h3>10.3 Fluxo de push (local → servidor)</h3>
+    <div class="diagram">Quando o motorista marca presença (offline ou online):
+
+1. UI chama repository.marcarPresenca(...)
+2. Repository:
+   a. Grava no SQLite local imediatamente (presenca, marcadoEm, dirty=true)
+   b. Enfileira na outbox: { op:"POST", path:"...", body:{...} }
+3. UI atualiza ao vivo (StreamBuilder lê do SQLite)
+
+Quando online:
+4. OutboxProcessor pega rows PENDING, faz o POST de verdade
+5. On success: marca outbox row DONE, limpa flag dirty da entidade
+6. On 409 conflict: marca CONFLICT (UI manual depois)
+7. On 5xx/offline: marca RETRYING, backoff exponencial até 5 tentativas</div>
+
+    <h3>10.4 Implicações pro backend</h3>
+    <ul>
+      <li><strong>Endpoints PUSH devem ser idempotentes</strong> (ou pelo menos seguros pra re-tentativa).</li>
+      <li><strong>Sugestão de idempotency key:</strong> cliente pode mandar header <code class="inline">Idempotency-Key: &lt;uuid&gt;</code> em todo POST. Backend guarda em cache (Redis ou tabela) por 24h e devolve o mesmo response se chegar duplicado. (Padrão Stripe.)</li>
+      <li><strong>Conflitos:</strong> se o servidor já tem <code class="inline">presenca = AUSENTE</code> e o app manda <code class="inline">EMBARCADO</code>, decisão proposta: <strong>servidor é source of truth</strong>, devolve <code class="inline">409</code> com o estado atual, app reconcilia mostrando alerta.</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="auditoria"><span class="num">11</span>Auditoria TJ</h2>
+
+    <p>Toda mutação feita pelo motorista (<code class="inline">POST /iniciar</code>,
+    <code class="inline">/concluir</code>, <code class="inline">/presenca</code>)
+    <strong>continua entrando na <code class="inline">tfd_audit_log</code></strong>
+    com a cadeia hash padrão (ver <code class="inline">backend/docs/TFD_API.md §6</code>).</p>
+
+    <p>Campo <code class="inline">usuarioId</code> na audit log =
+    <code class="inline">motorista.usuarioId</code> (não <code class="inline">motorista.id</code>).</p>
+
+    <h4>Novas ações no enum <code class="inline">AcaoAuditoriaTFD</code></h4>
+    <pre><code><span class="tok-key">enum</span> <span class="tok-typ">AcaoAuditoriaTFD</span> {
+  <span class="tok-com">// … existentes …</span>
+  MOTORISTA_LOGIN
+  MOTORISTA_LOGOUT
+  MOTORISTA_TROCOU_SENHA
+  FCM_TOKEN_REGISTRADO
+  FCM_TOKEN_REVOGADO
+}</code></pre>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="checklist"><span class="num">12</span>Checklist de entrega</h2>
+
+    <h3>Schema (Prisma + migration)</h3>
+    <ul class="check">
+      <li class="todo"><code class="inline">MotoristaTFD.usuarioId</code>, <code class="inline">primeiroLogin</code>, <code class="inline">fcmToken</code></li>
+      <li class="todo"><code class="inline">Usuario.matricula</code> (se não existe)</li>
+      <li class="todo">Enum <code class="inline">Role.MOTORISTA_TFD</code></li>
+      <li class="todo">Enum <code class="inline">AcaoAuditoriaTFD</code> ganha as 5 novas entradas</li>
+      <li class="todo">Migration SQL com backfill (criar Usuario p/ cada Motorista ATIVO)</li>
+      <li class="todo">Endpoint admin de "regenerar senha provisória" (gestor TFD usa)</li>
+    </ul>
+
+    <h3>Módulo <code class="inline">src/modules/motorista-app/</code></h3>
+    <p>Espelhar a estrutura de <code class="inline">src/modules/paciente-app/</code>:</p>
+    <ul class="check">
+      <li class="todo"><code class="inline">application/use-cases/</code> — LoginMotorista, TrocarSenha, Logout, Me, ListarMinhasViagens, ObterViagem, IniciarViagem (delega), ConcluirViagem (delega), MarcarPresenca (delega), ListarMinhasAjudas, RegistrarFcmToken, RevogarFcmToken</li>
+      <li class="todo"><code class="inline">presentation/controllers/MotoristaAppController.ts</code></li>
+      <li class="todo"><code class="inline">presentation/routes/motorista-app.routes.ts</code></li>
+      <li class="todo">Middleware <code class="inline">requireMotoristaTfd</code> (valida JWT + injeta motoristaId)</li>
+    </ul>
+
+    <h3>Middleware / Infra</h3>
+    <ul class="check">
+      <li class="todo">Middleware adiciona <code class="inline">X-Server-Time</code> em toda resposta GET</li>
+      <li class="todo">(Opcional) Suporte a <code class="inline">Idempotency-Key</code> header em POSTs</li>
+      <li class="todo">Rate limit no <code class="inline">/auth/login</code> (ex.: 10 tentativas/IP/hora)</li>
+    </ul>
+
+    <h3>Push (FCM)</h3>
+    <ul class="check">
+      <li class="todo"><code class="inline">firebase-admin</code> instalado</li>
+      <li class="todo">Service account JSON em ambiente seguro</li>
+      <li class="todo">Trigger em <code class="inline">ViagemFrota.save</code> quando <code class="inline">motoristaId</code> muda</li>
+      <li class="todo">Trigger em mudança de status pra <code class="inline">CANCELADA</code></li>
+      <li class="todo">Trigger em adição/remoção de passageiro em viagem AGENDADA</li>
+    </ul>
+
+    <h3>Testes integrados</h3>
+    <ul class="check">
+      <li class="todo">Golden path: login → me → minhas-viagens → iniciar → presença → concluir</li>
+      <li class="todo">Cobertura de cada código de erro (CNH_VENCIDA, STATUS_INVALIDO, etc.)</li>
+      <li class="todo">Idempotência de POSTs com mesma Idempotency-Key</li>
+      <li class="todo">Filtro automático por <code class="inline">motoristaId</code> (mot A não vê viagem do mot B)</li>
+    </ul>
+
+    <h3>Documentação</h3>
+    <ul class="check">
+      <li class="todo">Atualizar <code class="inline">backend/docs/BACKEND_API.md</code> documentando o módulo</li>
+      <li class="todo">Adicionar <code class="inline">backend/docs/MOTORISTA_APP_API.md</code> específico</li>
+      <li class="todo">Atualizar <code class="inline">backend/docs/TFD_API.md</code> com as novas ações de auditoria</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="faq"><span class="num">13</span>FAQ / decisões</h2>
+
+    <div class="qa">
+      <div class="qa-q">Q: Por que matrícula em vez de email?</div>
+      <div class="qa-a">Servidor público brasileiro tem matrícula funcional como identidade canônica. Email às vezes não está cadastrado, ou é o pessoal (Gmail). Matrícula é única, conhecida e oficial.</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Por que JWT em vez de session cookie?</div>
+      <div class="qa-a">Mobile não tem ergonomia de cookie. JWT no SecureStorage cifrado é o padrão Flutter (e do <code class="inline">paciente-app</code>).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Token expira em 30 dias? Não é muito?</div>
+      <div class="qa-a">Sim, é generoso. Motorista opera offline por dias seguidos e a sessão precisa sobreviver. Em compensação, <strong>logout do app remove o token do storage cifrado</strong> e o backend também invalida no servidor (ou bloqueia no próximo uso). Refresh token foi descartado para simplificar (motorista refaz login se passar 30 dias).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Por que <code class="inline">?desde=</code> em vez de polling completo?</div>
+      <div class="qa-a">Pra reduzir tráfego em conexões 3G de interior. Quando o motorista sincroniza, traz só o que mudou.</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Por que header <code class="inline">X-Server-Time</code> e não usar o <code class="inline">atualizadoEm</code> da última viagem retornada?</div>
+      <div class="qa-a">Porque entre a consulta SQL e a resposta HTTP pode passar tempo. Usar o <code class="inline">X-Server-Time</code> do servidor evita race condition (motorista pula uma viagem que foi atualizada <em>depois</em> da query mas <em>antes</em> da resposta).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Quem cria o <code class="inline">MotoristaTFD.usuario</code>?</div>
+      <div class="qa-a">O <code class="inline">GESTOR_TFD</code> ao cadastrar um motorista no <code class="inline">/v1/tfd/motoristas</code>. O endpoint atual deve passar a também criar o <code class="inline">Usuario</code> com senha provisória e devolver a senha no response (uma única vez — gestor anota e entrega ao motorista pessoalmente). Ver §2.4 (backfill).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Foto do paciente — onde fica?</div>
+      <div class="qa-a"><code class="inline">paciente.fotoUrl</code> aponta pro storage S3 ou similar. O app <strong>não</strong> faz upload — apenas exibe. URL deve ser pré-assinada ou pública com TTL curto. <strong>Não-bloqueante</strong>: se <code class="inline">fotoUrl</code> for <code class="inline">null</code>, o app mostra iniciais do nome em circuito azul institucional.</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: O motorista pode editar dados do paciente?</div>
+      <div class="qa-a">Não. App é read-only pra dados do paciente — só pode marcar presença (<code class="inline">tfd_viagem_passageiro.presenca</code>).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: E se a regulação cancelar uma viagem que o motorista já está fazendo?</div>
+      <div class="qa-a">Push notification "Viagem cancelada" + o <code class="inline">GET /viagens/:id</code> retorna status <code class="inline">CANCELADA</code>. App mostra alerta vermelho na tela. Em prod, sugestão: <strong>não permitir cancelar viagem <code class="inline">EM_ANDAMENTO</code></strong> no lado da regulação.</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: O motorista vê histórico de outros motoristas?</div>
+      <div class="qa-a"><strong>Não.</strong> Filtro automático por <code class="inline">motoristaId</code> em todas as queries. Tentativa de acessar <code class="inline">/viagens/:id</code> de outro motorista retorna <code class="inline">404</code> (não 403, pra evitar enumeração de IDs).</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: E rota traçada no mapa?</div>
+      <div class="qa-a"><strong>Fora do escopo do MVP.</strong> O app só mostra markers (origem, destino, UBSs dos passageiros) no mapa OpenStreetMap offline-friendly. Rota traçada requer OSRM/GraphHopper self-hosted — fase futura.</div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q">Q: Versionamento de quebra de contrato?</div>
+      <div class="qa-a">Tudo em <code class="inline">/v1/motorista-app/*</code>. Mudança incompatível → <code class="inline">/v2/</code>. App detecta pelo header <code class="inline">X-API-Version: 1</code> (sugerido).</div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="apendice-a"><span class="num">A</span>Apêndice — URLs e como rodar o app contra o backend</h2>
+
+    <p>No <code class="inline">pubspec.yaml</code> do app já tem as deps.
+    Para rodar contra o backend:</p>
+
+    <pre><code><span class="tok-fn">flutter run</span> \
+  --dart-define=<span class="tok-key">USE_MOCK</span>=<span class="tok-str">false</span> \
+  --dart-define=<span class="tok-key">API_BASE_URL</span>=<span class="tok-str">http://10.0.2.2:3333/v1</span></code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Ambiente</th><th>URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Android emulator</td><td class="mono">http://10.0.2.2:3333/v1</td></tr>
+        <tr><td>iOS Simulator</td><td class="mono">http://localhost:3333/v1</td></tr>
+        <tr><td>Device físico (mesma Wi-Fi)</td><td class="mono">http://&lt;IP-DEV&gt;:3333/v1</td></tr>
+        <tr><td>Produção</td><td class="mono">https://api.unisism.aguasbelas.pe.gov.br/v1</td></tr>
+      </tbody>
+    </table>
+
+    <p>Sem o backend rodando, app cai em <code class="inline">TfdApiMock</code>
+    (default em dev).</p>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <h2 id="apendice-b"><span class="num">B</span>Apêndice — Quais arquivos do backend mexer</h2>
+
+    <table>
+      <thead>
+        <tr><th>Arquivo</th><th>O que precisa mudar</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">backend/prisma/schema.prisma</td><td>§2.1, §2.2, §2.3 (3 mudanças)</td></tr>
+        <tr><td class="mono">backend/prisma/migrations/</td><td>nova migration com SQL do §2.4</td></tr>
+        <tr><td class="mono">backend/src/modules/motorista-app/</td><td>criar módulo inteiro (espelhar <code class="inline">paciente-app/</code>)</td></tr>
+        <tr><td class="mono">backend/src/presentation/routes/index.ts</td><td>registrar <code class="inline">motorista-app.routes.ts</code></td></tr>
+        <tr><td class="mono">backend/src/main/container.ts</td><td>DI dos novos use cases</td></tr>
+        <tr><td class="mono">backend/docs/BACKEND_API.md</td><td>adicionar seção do módulo</td></tr>
+        <tr><td class="mono">backend/docs/TFD_API.md</td><td>novas ações de auditoria</td></tr>
+      </tbody>
+    </table>
+
+    <p>Estimativa final: <strong>3-5 dias</strong> para um dev backend que
+    já conhece o módulo <code class="inline">paciente-app</code> (pattern
+    idêntico).</p>
+
+    <footer>
+      <div>UNISISM Motorista · Spec de Backend · v0.1.0</div>
+      <div>PMFS · SMS · TFD · 2026-05</div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

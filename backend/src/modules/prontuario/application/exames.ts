@@ -1,7 +1,7 @@
 /**
  * CRUD de exames realizados — laboratoriais, imagem, etc.
  */
-import { NotFound, Unprocessable } from '../../../shared/errors';
+import { NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { PacienteCompleto } from '../../../domain/entities/Paciente';
@@ -11,7 +11,7 @@ import type { IProntuarioAuditLogger } from '../infrastructure/PrismaProntuarioA
 import {
   assertAcessoPaciente,
   carregarCompleto,
-  parseYmdObrigatorio,
+  parseIsoObrigatorio,
   resolverAutor,
 } from './_helpers';
 
@@ -44,14 +44,7 @@ export class AddExameUseCase {
   ): Promise<PacienteCompleto> {
     await assertAcessoPaciente(pacienteId, scope);
     const autor = await resolverAutor(this.atendentes, autorId);
-    const data = parseYmdObrigatorio(input.data, 'DATA_INVALIDA', 'data');
-
-    // Spec §7.1: data do exame não pode ser futura
-    const hojeUTC = new Date();
-    hojeUTC.setUTCHours(23, 59, 59, 999);
-    if (data.getTime() > hojeUTC.getTime()) {
-      throw Unprocessable('DATA_INVALIDA', 'Data do exame não pode ser futura');
-    }
+    const data = parseIsoObrigatorio(input.data, 'DATA_INVALIDA', 'data');
 
     const novo = await prisma.exameRealizado.create({
       data: {

@@ -70,23 +70,12 @@ export const consolidarPayloadSchema = z.object({
   solicitacao: solicitacaoSchema,
 });
 
-/**
- * Aceita `true|false` como string (query string) e converte para boolean.
- * Qualquer outro valor → undefined (filtro não aplicado).
- */
-const queryBoolean = z
-  .union([z.literal('true'), z.literal('false'), z.boolean()])
-  .transform((v) => (v === true || v === 'true' ? true : v === false || v === 'false' ? false : undefined))
-  .optional();
-
 export const listarQuerySchema = z.object({
   status: statusEncaminhamentoSchema.optional(),
   pacienteId: z.string().optional(),
   desde: z.string().optional(),
   ate: z.string().optional(),
   limit: z.coerce.number().int().positive().max(500).optional(),
-  /** Filtra pela presença de resposta oficial do SUS. */
-  respostaSUS: queryBoolean,
 });
 
 export { tipoAnexoSchema, statusEncaminhamentoSchema };

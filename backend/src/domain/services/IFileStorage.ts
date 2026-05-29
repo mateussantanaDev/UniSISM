@@ -12,11 +12,4 @@ export interface IFileStorage {
   }): Promise<ArquivoArmazenado>;
 
   caminhoAbsoluto(caminho: string): string;
-
-  /**
-   * Devolve um Readable Stream do arquivo. Funciona em qualquer backend
-   * (disco ou S3). É a forma correta de entregar download via HTTP — `pipe`
-   * direto na response.
-   */
-  obterStream(caminho: string): Promise<NodeJS.ReadableStream>;
 }

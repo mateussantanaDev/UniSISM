@@ -16,7 +16,6 @@ import type { DeleteUbsUseCase } from '../../application/admin/DeleteUbsUseCase'
 import { scopeFromRequest } from '../../shared/requestScope';
 import { paramString } from '../../shared/http';
 import {
-  alterarAtivaUbsSchema,
   alterarAtivoSchema,
   atualizarPrefeituraSchema,
   atualizarUbsSchema,
@@ -62,7 +61,11 @@ export class AdminController {
   // ---- UBSs ----
   postUbs = async (req: Request, res: Response): Promise<void> => {
     const body = criarUbsSchema.parse(req.body);
-    const ubs = await this.createUbs.exec(scopeFromRequest(req), body);
+    const ubs = await this.createUbs.exec(scopeFromRequest(req), body, {
+      atendenteId: req.auth!.sub,
+      ip: req.ip ?? null,
+      userAgent: req.header('user-agent') ?? null,
+    });
     res.status(201).json(ubs);
   };
 
@@ -163,6 +166,7 @@ export class AdminController {
       req.auth!.sub,
       id,
       body,
+      { ip: req.ip ?? null, userAgent: req.header('user-agent') ?? null },
     );
     res.json(out);
   };
@@ -171,18 +175,5 @@ export class AdminController {
     const id = paramString(req, 'id');
     await this.deleteUbsUC.exec(scopeFromRequest(req), req.auth!.sub, id);
     res.status(204).send();
-  };
-
-  // Spec §7.9: POST /v1/admin/ubs/:id/ativo — body { ativa: boolean }, 200 { id, ativa }
-  postAtivarUbs = async (req: Request, res: Response): Promise<void> => {
-    const body = alterarAtivaUbsSchema.parse(req.body);
-    const id = paramString(req, 'id');
-    const out = await this.updateUbsUC.exec(
-      scopeFromRequest(req),
-      req.auth!.sub,
-      id,
-      { ativa: body.ativa },
-    );
-    res.json({ id: out.id, ativa: out.ativa });
   };
 }

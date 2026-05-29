@@ -1,1 +1,0 @@
-{"version":3,"file":"ListEncaminhamentosUseCase.js","sourceRoot":"","sources":["../../../src/application/encaminhamentos/ListEncaminhamentosUseCase.ts"],"names":[],"mappings":";;;AAYA,MAAa,0BAA0B;IACR;IAA7B,YAA6B,IAA+B;QAA/B,SAAI,GAAJ,IAAI,CAA2B;IAAG,CAAC;IAEhE,IAAI,CAAC,KAA+B;QAClC,OAAO,IAAI,CAAC,IAAI,CAAC,MAAM,CAAC,KAAK,CAAC,CAAC;IACjC,CAAC;CACF;AAND,gEAMC"}

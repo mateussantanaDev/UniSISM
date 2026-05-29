@@ -255,21 +255,21 @@ await api.auth.login({ login: 'DEV-001', senha: '12345678' });
 const pref = await api.admin.createPrefeitura({
   nome: 'Prefeitura Municipal de Salvador',
   municipio: 'Salvador',
-  uf: 'BA',
+  uf: 'PE',
   cnpj: '13.927.801/0001-49',
 });
 
 const ubs = await api.admin.createUbs({
   nome: 'UBS BARRA',
   municipio: 'Salvador',
-  uf: 'BA',
+  uf: 'PE',
   prefeituraId: pref.id,
   cnes: '9999999',
 });
 
 await api.admin.createUsuario({
   nome: 'JOSE ADMIN SALVADOR',
-  email: 'jose@salvador.ba.gov.br',
+  email: 'jose@aguasbelas.pe.gov.br',
   matricula: 'ADM-002',
   cpf: '111.111.111-11',
   senha: '12345678',
@@ -279,7 +279,7 @@ await api.admin.createUsuario({
 
 await api.admin.createUsuario({
   nome: 'PAULA ATENDENTE BARRA',
-  email: 'paula@salvador.ba.gov.br',
+  email: 'paula@aguasbelas.pe.gov.br',
   matricula: 'SMS-099999',
   cpf: '222.222.222-22',
   senha: '12345678',
@@ -403,15 +403,15 @@ Senha padrão: **`12345678`**
 | Matrícula | Role | Escopo | Use para testar |
 |---|---|---|---|
 | `DEV-001` | `DESENVOLVEDOR` | GLOBAL | criar prefeituras / UBSs / qualquer usuário |
-| `ADM-001` | `ADMIN` | Prefeitura Feira de Santana | criar UBSs e usuários só dessa prefeitura |
+| `ADM-001` | `ADMIN` | Prefeitura Águas Belas | criar UBSs e usuários só dessa prefeitura |
 | `SMS-099101` | `REGULADOR_SMS` | Prefeitura Feira (Face 2) | aprovar / pendenciar / rejeitar encaminhamentos |
 | `SMS-047291` | `ATENDENTE_UBS` | UBS CENTRAL | fluxo de encaminhamento |
 
 Login alternativo por email:
 - `dev@unisism.com.br`
-- `ana.admin@feira.ba.gov.br`
-- `regulador@feira.ba.gov.br`
-- `mateus.santana@saude.ba.gov.br`
+- `ana.admin@aguasbelas.pe.gov.br`
+- `regulador@aguasbelas.pe.gov.br`
+- `mateus.santana@saude.aguasbelas.pe.gov.br`
 
 ### Conta do paciente (Face 3 · app mobile)
 

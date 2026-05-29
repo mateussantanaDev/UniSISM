@@ -7,7 +7,7 @@
  *
  * Estados terminais (REALIZADA, CANCELADA) não aceitam mais mudança. 422 se tentar.
  */
-import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
+import { Conflict, NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { PacienteCompleto } from '../../../domain/entities/Paciente';
@@ -17,7 +17,7 @@ import type { IProntuarioAuditLogger } from '../infrastructure/PrismaProntuarioA
 import {
   assertAcessoPaciente,
   carregarCompleto,
-  parseYmdObrigatorio,
+  parseIsoObrigatorio,
   resolverAutor,
 } from './_helpers';
 
@@ -30,21 +30,14 @@ export type TransporteTFD =
 export type StatusViagemTFD = 'AGENDADA' | 'EM_ANDAMENTO' | 'REALIZADA' | 'CANCELADA';
 
 export interface AddViagemTfdInput {
-  /**
-   * Protocolo TFD. Quando informado, é usado e checado contra duplicata
-   * dentro da prefeitura. Quando ausente, backend auto-gera no padrão
-   * `TFD-AAAA-NNNNNN` (legado, mantido para compat).
-   */
-  protocolo?: string;
-  dataIda: string;          // YYYY-MM-DD
-  dataVolta: string;        // YYYY-MM-DD
+  dataIda: string; // ISO
+  dataVolta: string; // ISO
   destino: string;
   unidadeDestino: string;
   motivo: string;
   especialidade: string;
   acompanhante: boolean;
   transporte: TransporteTFD;
-  status?: StatusViagemTFD; // default AGENDADA
   custoEstimadoBRL?: number;
 }
 
@@ -54,10 +47,6 @@ export interface UpdateViagemTfdInput {
   dataVolta?: string;
   destino?: string;
   unidadeDestino?: string;
-  motivo?: string;
-  especialidade?: string;
-  acompanhante?: boolean;
-  transporte?: TransporteTFD;
   custoEstimadoBRL?: number;
 }
 
@@ -86,43 +75,19 @@ export class AddViagemTfdUseCase {
     await assertAcessoPaciente(pacienteId, scope);
     const autor = await resolverAutor(this.atendentes, autorId);
 
-    const dataIda = parseYmdObrigatorio(input.dataIda, 'DATA_INVALIDA', 'dataIda');
-    const dataVolta = parseYmdObrigatorio(input.dataVolta, 'DATA_INVALIDA', 'dataVolta');
+    const dataIda = parseIsoObrigatorio(input.dataIda, 'DATA_INVALIDA', 'dataIda');
+    const dataVolta = parseIsoObrigatorio(input.dataVolta, 'DATA_INVALIDA', 'dataVolta');
     if (dataVolta.getTime() < dataIda.getTime()) {
-      throw Unprocessable(
-        'DATA_INVALIDA',
-        'Data de volta não pode ser anterior à ida',
-        { dataIda: input.dataIda, dataVolta: input.dataVolta },
-      );
+      throw Conflict('DATA_VOLTA_ANTERIOR_IDA', 'Data de volta não pode ser anterior à ida');
     }
 
-    // Resolve protocolo:
-    //   - Se vier no input → usa como-está e checa duplicata global (DB tem
-    //     `protocolo @unique`).
-    //   - Se omitido → auto-gera `TFD-AAAA-NNNNNN` via SequencialProtocolo.
-    let protocolo: string;
-    if (input.protocolo && input.protocolo.trim().length > 0) {
-      protocolo = input.protocolo.trim();
-      const dup = await prisma.viagemTFD.findUnique({
-        where: { protocolo },
-        select: { id: true, pacienteId: true },
-      });
-      if (dup) {
-        throw Conflict(
-          'ITEM_DUPLICADO',
-          `Já existe viagem TFD com protocolo ${protocolo}`,
-          { protocolo, viagemExistenteId: dup.id },
-        );
-      }
-    } else {
-      const ano = new Date().getUTCFullYear();
-      const seq = await prisma.sequencialProtocolo.upsert({
-        where: { chave: `TFD-${ano}` },
-        create: { chave: `TFD-${ano}`, valor: 1 },
-        update: { valor: { increment: 1 } },
-      });
-      protocolo = `TFD-${ano}-${String(seq.valor).padStart(6, '0')}`;
-    }
+    const ano = new Date().getUTCFullYear();
+    const seq = await prisma.sequencialProtocolo.upsert({
+      where: { chave: `TFD-${ano}` },
+      create: { chave: `TFD-${ano}`, valor: 1 },
+      update: { valor: { increment: 1 } },
+    });
+    const protocolo = `TFD-${ano}-${String(seq.valor).padStart(6, '0')}`;
 
     const novo = await prisma.viagemTFD.create({
       data: {
@@ -136,7 +101,7 @@ export class AddViagemTfdUseCase {
         especialidade: input.especialidade.trim(),
         acompanhante: input.acompanhante,
         transporte: input.transporte,
-        status: input.status ?? 'AGENDADA',
+        status: 'AGENDADA',
         custoEstimadoBRL: input.custoEstimadoBRL ?? 0,
       },
       select: { id: true, protocolo: true },
@@ -181,13 +146,11 @@ export class UpdateViagemTfdUseCase {
       throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem TFD não encontrada');
     }
 
-    // Valida transição de status (spec §9.2)
-    // AGENDADA → EM_ANDAMENTO|CANCELADA · EM_ANDAMENTO → REALIZADA|CANCELADA
-    // CANCELADA → AGENDADA (reagendar) · REALIZADA → terminal
+    // Valida transição de status
     if (input.status !== undefined && input.status !== atual.status) {
       const permitidas = TRANSICOES[atual.status as StatusViagemTFD];
       if (!permitidas.has(input.status)) {
-        throw Unprocessable(
+        throw Conflict(
           'TRANSICAO_INVALIDA',
           `Transição de ${atual.status} → ${input.status} não permitida`,
           { de: atual.status, para: input.status },
@@ -195,33 +158,16 @@ export class UpdateViagemTfdUseCase {
       }
     }
 
-    // Resolve datas para validar dataVolta ≥ dataIda mesmo em PATCHs parciais
-    const novaDataIda =
-      input.dataIda !== undefined
-        ? parseYmdObrigatorio(input.dataIda, 'DATA_INVALIDA', 'dataIda')
-        : atual.dataIda;
-    const novaDataVolta =
-      input.dataVolta !== undefined
-        ? parseYmdObrigatorio(input.dataVolta, 'DATA_INVALIDA', 'dataVolta')
-        : atual.dataVolta;
-    if (novaDataVolta.getTime() < novaDataIda.getTime()) {
-      throw Unprocessable(
-        'DATA_INVALIDA',
-        'Data de volta não pode ser anterior à ida',
-        { dataIda: novaDataIda.toISOString(), dataVolta: novaDataVolta.toISOString() },
-      );
-    }
-
     const data: Record<string, unknown> = {};
     if (input.status !== undefined) data['status'] = input.status;
-    if (input.dataIda !== undefined) data['dataIda'] = novaDataIda;
-    if (input.dataVolta !== undefined) data['dataVolta'] = novaDataVolta;
+    if (input.dataIda !== undefined) {
+      data['dataIda'] = parseIsoObrigatorio(input.dataIda, 'DATA_INVALIDA', 'dataIda');
+    }
+    if (input.dataVolta !== undefined) {
+      data['dataVolta'] = parseIsoObrigatorio(input.dataVolta, 'DATA_INVALIDA', 'dataVolta');
+    }
     if (input.destino !== undefined) data['destino'] = input.destino.trim();
     if (input.unidadeDestino !== undefined) data['unidadeDestino'] = input.unidadeDestino.trim();
-    if (input.motivo !== undefined) data['motivo'] = input.motivo.trim();
-    if (input.especialidade !== undefined) data['especialidade'] = input.especialidade.trim();
-    if (input.acompanhante !== undefined) data['acompanhante'] = input.acompanhante;
-    if (input.transporte !== undefined) data['transporte'] = input.transporte;
     if (input.custoEstimadoBRL !== undefined) data['custoEstimadoBRL'] = input.custoEstimadoBRL;
 
     await prisma.viagemTFD.update({ where: { id: viagemId }, data });

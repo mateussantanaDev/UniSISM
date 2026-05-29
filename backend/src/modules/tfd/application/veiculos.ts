@@ -52,67 +52,6 @@ function rowParaVeiculo(r: any) {
   };
 }
 
-/**
- * Resumo de uma viagem do veículo + passageiros (para o histórico que aparece
- * no detalhe do veículo `/tfd/frota/[id]`). Cada passageiro traz `presenca`
- * (AGUARDANDO | CONFIRMADO | EMBARCADO | AUSENTE | DESISTIU) — o frontend
- * filtra "viajaram" (EMBARCADO) vs "faltaram" (AUSENTE / DESISTIU).
- */
-function viagemHistoricoResumo(v: any) {
-  const kmInicial = v.kmInicialHodometro != null ? Number(v.kmInicialHodometro) : null;
-  const kmFinal = v.kmFinalHodometro != null ? Number(v.kmFinalHodometro) : null;
-  const kmRodados = kmInicial != null && kmFinal != null ? kmFinal - kmInicial : null;
-
-  return {
-    id: v.id,
-    data: v.data.toISOString().slice(0, 10),
-    horaSaida: v.horaSaida,
-    horaPrevistaRetorno: v.horaPrevistaRetorno ?? null,
-    destino: v.destino,
-    unidadeDestino: v.unidadeDestino ?? null,
-    rotaResumo: v.rotaResumo ?? null,
-    status: v.status,
-    motorista: v.motorista
-      ? { id: v.motorista.id, nome: v.motorista.nome }
-      : null,
-    vagasTotais: v.vagasTotais,
-    kmEstimados: v.kmEstimados ?? null,
-    kmInicialHodometro: kmInicial,
-    kmFinalHodometro: kmFinal,
-    kmRodados,
-    observacoes: v.observacoes ?? null,
-    motivoCancelamento: v.motivoCancelamento ?? null,
-    iniciadaEm: v.iniciadaEm ? v.iniciadaEm.toISOString() : null,
-    concluidaEm: v.concluidaEm ? v.concluidaEm.toISOString() : null,
-    criadaEm: v.criadaEm.toISOString(),
-    passageiros: (v.passageiros ?? []).map((p: any) => ({
-      id: p.id,
-      solicitacaoId: p.solicitacaoId,
-      pacienteId: p.pacienteId,
-      pacienteNome: p.paciente?.nome ?? null,
-      numeroAssento: p.numeroAssento ?? null,
-      acompanhante: p.acompanhante,
-      presenca: p.presenca,
-      observacao: p.observacao ?? null,
-      marcadoEm: p.marcadoEm ? p.marcadoEm.toISOString() : null,
-    })),
-  };
-}
-
-/**
- * Soma total de KM rodados em viagens CONCLUIDAS (descarta CANCELADA/AGENDADA
- * e viagens sem hodômetro completo).
- */
-function calcularTotalKmRodados(viagens: any[]): number {
-  let total = 0;
-  for (const v of viagens) {
-    if (v.status !== 'CONCLUIDA') continue;
-    if (v.kmInicialHodometro == null || v.kmFinalHodometro == null) continue;
-    total += Number(v.kmFinalHodometro) - Number(v.kmInicialHodometro);
-  }
-  return total;
-}
-
 export class VeiculosTfdUseCases {
   constructor(
     private readonly audit: ITfdAuditLogger,
@@ -125,51 +64,14 @@ export class VeiculosTfdUseCases {
       where: { prefeituraId, deletadoEm: null },
       orderBy: { placa: 'asc' },
     });
-    if (rows.length === 0) return [];
-
-    // Computa `totalViagens` por veículo em uma única query (evita N+1).
-    const ids = rows.map((r) => r.id);
-    const counts = await prisma.viagemFrota.groupBy({
-      by: ['veiculoId'],
-      where: { veiculoId: { in: ids } },
-      _count: { _all: true },
-    });
-    const countMap = new Map(counts.map((c) => [c.veiculoId, c._count._all]));
-
-    return rows.map((r) => ({
-      ...rowParaVeiculo(r),
-      totalViagens: countMap.get(r.id) ?? 0,
-    }));
+    return rows.map(rowParaVeiculo);
   }
 
   async porId(scope: AccessScope, id: string) {
     const r = await prisma.veiculoTFD.findUnique({ where: { id } });
     if (!r || r.deletadoEm) throw NotFound('VEICULO_NAO_ENCONTRADO', 'Veículo não encontrado');
     assertMesmaPrefeitura(scope, r.prefeituraId);
-
-    // Histórico completo de viagens do veículo (mais recentes primeiro), com
-    // motorista e passageiros (incluindo `presenca` para o frontend distinguir
-    // quem viajou — `EMBARCADO` — de quem faltou — `AUSENTE` / `DESISTIU`).
-    const viagens = await prisma.viagemFrota.findMany({
-      where: { veiculoId: id },
-      orderBy: [{ data: 'desc' }, { horaSaida: 'desc' }],
-      include: {
-        motorista: { select: { id: true, nome: true } },
-        passageiros: {
-          orderBy: { numeroAssento: 'asc' },
-          include: {
-            paciente: { select: { id: true, nome: true } },
-          },
-        },
-      },
-    });
-
-    return {
-      ...rowParaVeiculo(r),
-      totalViagens: viagens.length,
-      totalKmRodados: calcularTotalKmRodados(viagens),
-      historicoViagens: viagens.map(viagemHistoricoResumo),
-    };
+    return rowParaVeiculo(r);
   }
 
   async criar(scope: AccessScope, req: Request, autorId: string, input: CriarVeiculoInput) {

@@ -2,7 +2,7 @@
  * Atendimentos (SOAP) — registro formal de consulta/enfermagem/procedimento.
  * Não há UPDATE: SOAP é registro contemporâneo do fato. Se errou, deleta e recria.
  */
-import { NotFound, Unprocessable } from '../../../shared/errors';
+import { NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { PacienteCompleto } from '../../../domain/entities/Paciente';
@@ -33,8 +33,8 @@ export interface AddAtendimentoInput {
   especialidade: string;
   unidade: string;
   queixaPrincipal: string;
-  diagnostico?: string;
-  cid10?: string;
+  diagnostico: string;
+  cid10: string;
   conduta: string;
   prescricaoResumo?: string;
 }
@@ -57,12 +57,6 @@ export class AddAtendimentoUseCase {
     const autor = await resolverAutor(this.atendentes, autorId);
     const data = parseIsoObrigatorio(input.data, 'DATA_INVALIDA', 'data');
 
-    // Spec §6.1: aceita até now + 5 min de tolerância (relógio do cliente)
-    const limite = Date.now() + 5 * 60 * 1000;
-    if (data.getTime() > limite) {
-      throw Unprocessable('DATA_INVALIDA', 'Data do atendimento não pode ser futura');
-    }
-
     const novo = await prisma.atendimento.create({
       data: {
         pacienteId,
@@ -73,8 +67,8 @@ export class AddAtendimentoUseCase {
         especialidade: input.especialidade.trim(),
         unidade: input.unidade.trim(),
         queixaPrincipal: input.queixaPrincipal.trim(),
-        diagnostico: input.diagnostico?.trim() ?? '',
-        cid10: input.cid10?.trim().toUpperCase() ?? '',
+        diagnostico: input.diagnostico.trim(),
+        cid10: input.cid10.trim(),
         conduta: input.conduta.trim(),
         prescricaoResumo: input.prescricaoResumo?.trim() || null,
       },

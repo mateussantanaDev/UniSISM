@@ -7,7 +7,33 @@ import type { DeletePacienteUseCase } from '../../application/pacientes/DeletePa
 import type { BuscarPacientePorCpfUseCase } from '../../application/pacientes/BuscarPacientePorCpfUseCase';
 import { paramString } from '../../shared/http';
 import { scopeFromRequest } from '../../shared/requestScope';
-import { patchPacienteSchema } from '../../modules/prontuario/presentation/schemas';
+
+const patchPacienteSchema = z.object({
+  nome: z.string().min(2).optional(),
+  nomeSocial: z.string().nullable().optional(),
+  cartaoSus: z.string().nullable().optional(),
+  dataNascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  sexo: z.enum(['M', 'F', 'OUTRO']).optional(),
+  telefone: z.string().nullable().optional(),
+  telefoneSecundario: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional(),
+  nomeMae: z.string().nullable().optional(),
+  nomePai: z.string().nullable().optional(),
+  estadoCivil: z.enum(['SOLTEIRO', 'CASADO', 'DIVORCIADO', 'VIUVO', 'UNIAO_ESTAVEL', 'OUTRO']).optional(),
+  escolaridade: z.string().nullable().optional(),
+  profissao: z.string().nullable().optional(),
+  racaCor: z.enum(['BRANCA', 'PRETA', 'PARDA', 'AMARELA', 'INDIGENA', 'NAO_INFORMADA']).optional(),
+  endereco: z.string().nullable().optional(),
+  bairro: z.string().nullable().optional(),
+  municipio: z.string().nullable().optional(),
+  uf: z.string().nullable().optional(),
+  cep: z.string().nullable().optional(),
+  grupoSanguineo: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'NAO_INFORMADO']).optional(),
+  historicoFamiliar: z.array(z.string()).optional(),
+  agenteComunitario: z.string().nullable().optional(),
+  microarea: z.string().nullable().optional(),
+  equipeSaudeFamilia: z.string().nullable().optional(),
+});
 
 const listarSchema = z.object({
   q: z.string().optional(),

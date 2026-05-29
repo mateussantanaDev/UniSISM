@@ -1028,7 +1028,7 @@ CLAMAV_PORT=3310
 
 OCR_PROVIDER=tesseract
 
-CORS_ORIGIN=https://unisism.feira.ba.gov.br
+CORS_ORIGIN=https://unisism.aguasbelas.pe.gov.br
 RATE_LIMIT_PREFIX=unisism
 ```
 

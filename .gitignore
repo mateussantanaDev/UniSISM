@@ -1,0 +1,65 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Node
+node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+
+# TypeScript / build
+dist/
+**/dist/
+build/
+**/build/
+
+# Logs
+logs/
+**/logs/
+*.log
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.local
+.env.prod
+.env.production
+**/.env
+**/.env.local
+**/.env.prod
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Uploads em dev
+backend/uploads/
+
+# Prisma generated
+backend/generated/
+
+# SvelteKit
+frontend/.svelte-kit/
+frontend/.vite/
+
+# Flutter
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.metadata
+**/.pub-cache/
+**/.pub/
+**/ios/Pods/
+**/ios/.symlinks/
+**/build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude / agente
+backend/.claude/settings.local.json
+frontend/.claude/settings.local.json
+**/.claude/settings.local.json

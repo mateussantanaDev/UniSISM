@@ -23,16 +23,17 @@ export interface CreateUsuarioInput {
  * Regras de criação:
  *  - DESENVOLVEDOR pode criar qualquer role em qualquer prefeitura/UBS.
  *  - ADMIN pode criar usuários da própria prefeitura (UBS, atendentes, reguladores,
- *    GESTOR_TFD, REGULADOR_TFD e outros admins da MESMA prefeitura).
- *    NÃO pode criar DESENVOLVEDOR.
- *  - GESTOR_TFD pode criar APENAS REGULADOR_TFD na própria prefeitura
- *    (escalonamento controlado — Face 4 v0.10).
+ *    gestores TFD, atendentes TFD e outros admins da MESMA prefeitura). NÃO pode
+ *    criar DESENVOLVEDOR.
  *  - Outros roles não chegam aqui (bloqueados pelo middleware requireRole).
  *
  * Coerência por role do criado:
  *  - DESENVOLVEDOR: ignora ubsId/prefeituraId.
- *  - ADMIN/REGULADOR_SMS/GESTOR_TFD/REGULADOR_TFD: exige prefeituraId, ubsId deve ser null.
- *  - ATENDENTE_UBS/COORDENADOR_UBS: exige ubsId; prefeituraId é herdado da UBS.
+ *  - ADMIN / REGULADOR_SMS / GESTOR_TFD / ATENDENTE_TFD: exige prefeituraId,
+ *    ubsId deve ser null.
+ *  - ATENDENTE_UBS / COORDENADOR_UBS: exige ubsId; prefeituraId herdado da UBS.
+ *  - MOTORISTA_TFD: rejeitado aqui — usar POST /v1/tfd/motoristas, que cria
+ *    MotoristaTFD + Atendente vinculado + senha provisória atomicamente.
  */
 export class CreateUsuarioUseCase {
   constructor(
@@ -52,18 +53,6 @@ export class CreateUsuarioUseCase {
       );
     }
 
-    // GESTOR_TFD: escalonamento controlado — só pode criar REGULADOR_TFD
-    const criador = await prisma.atendente.findUnique({
-      where: { id: criadorId },
-      select: { role: true },
-    });
-    if (criador?.role === 'GESTOR_TFD' && input.role !== 'REGULADOR_TFD') {
-      throw Unprocessable(
-        'ROLE_INVALIDA_TFD',
-        'GESTOR_TFD só pode cadastrar usuários com role REGULADOR_TFD',
-      );
-    }
-
     let ubsId: string | null = null;
     let prefeituraId: string | null = null;
 
@@ -75,7 +64,7 @@ export class CreateUsuarioUseCase {
       case 'ADMIN':
       case 'REGULADOR_SMS':
       case 'GESTOR_TFD':
-      case 'REGULADOR_TFD': {
+      case 'ATENDENTE_TFD': {
         if (!input.prefeituraId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
@@ -97,6 +86,11 @@ export class CreateUsuarioUseCase {
         prefeituraId = ubs.prefeituraId;
         break;
       }
+      case 'MOTORISTA_TFD':
+        throw Unprocessable(
+          'ROTA_INCORRETA_MOTORISTA',
+          'Motoristas TFD devem ser criados via POST /v1/tfd/motoristas (cria também o cadastro operacional e senha provisória).',
+        );
     }
 
     const matricula = input.matricula.toUpperCase();

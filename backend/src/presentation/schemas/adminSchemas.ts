@@ -7,13 +7,47 @@ export const criarPrefeituraSchema = z.object({
   cnpj: z.string().optional(),
 });
 
+/**
+ * Schema de horários estruturados — JSON com dias da semana opcionais.
+ * Cada dia é `null` (fechado) ou `{ abre: "HH:MM", fecha: "HH:MM" }`.
+ * Validação semântica (HH:MM válido + abre < fecha) é feita no use case.
+ */
+const _diaHorarioSchema = z
+  .object({
+    abre: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM inválido'),
+    fecha: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM inválido'),
+  })
+  .nullable();
+
+export const horariosFuncionamentoSchema = z
+  .object({
+    segunda: _diaHorarioSchema.optional(),
+    terca: _diaHorarioSchema.optional(),
+    quarta: _diaHorarioSchema.optional(),
+    quinta: _diaHorarioSchema.optional(),
+    sexta: _diaHorarioSchema.optional(),
+    sabado: _diaHorarioSchema.optional(),
+    domingo: _diaHorarioSchema.optional(),
+  })
+  .strict();
+
 export const criarUbsSchema = z.object({
-  nome: z.string().min(2),
-  municipio: z.string().min(2),
+  nome: z.string().min(2).max(180),
+  municipio: z.string().min(2).max(120),
   uf: z.string().length(2),
   prefeituraId: z.string().min(1),
-  endereco: z.string().optional(),
-  cnes: z.string().optional(),
+  endereco: z.string().max(300).optional(),
+  cnes: z.string().max(20).optional(),
+  // Novos campos (v0.13)
+  bairro: z.string().max(120).optional(),
+  cep: z.string().max(9).optional(),
+  telefone: z.string().max(20).optional(),
+  whatsapp: z.string().max(20).optional(),
+  email: z.string().max(180).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  horarios: horariosFuncionamentoSchema.optional(),
+  observacoes: z.string().max(500).optional(),
 });
 
 export const roleEnum = z.enum([
@@ -22,8 +56,6 @@ export const roleEnum = z.enum([
   'COORDENADOR_UBS',
   'ATENDENTE_UBS',
   'REGULADOR_SMS',
-  'GESTOR_TFD',
-  'REGULADOR_TFD',
 ]);
 
 export const criarUsuarioSchema = z.object({
@@ -73,11 +105,6 @@ export const alterarAtivoSchema = z.object({
   ativo: z.boolean(),
 });
 
-// UBS usa o campo `ativa` (gênero) — frontend Spec §7.9.
-export const alterarAtivaUbsSchema = z.object({
-  ativa: z.boolean(),
-});
-
 export const atualizarPrefeituraSchema = z.object({
   nome: z.string().min(2).optional(),
   municipio: z.string().min(2).optional(),
@@ -87,10 +114,20 @@ export const atualizarPrefeituraSchema = z.object({
 });
 
 export const atualizarUbsSchema = z.object({
-  nome: z.string().min(2).optional(),
-  municipio: z.string().min(2).optional(),
+  nome: z.string().min(2).max(180).optional(),
+  municipio: z.string().min(2).max(120).optional(),
   uf: z.string().length(2).optional(),
-  endereco: z.string().nullable().optional(),
-  cnes: z.string().nullable().optional(),
+  endereco: z.string().max(300).nullable().optional(),
+  cnes: z.string().max(20).nullable().optional(),
   ativa: z.boolean().optional(),
+  // Novos campos (v0.13) — todos opcionais e nullable (limpar valor)
+  bairro: z.string().max(120).nullable().optional(),
+  cep: z.string().max(9).nullable().optional(),
+  telefone: z.string().max(20).nullable().optional(),
+  whatsapp: z.string().max(20).nullable().optional(),
+  email: z.string().max(180).nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  horarios: horariosFuncionamentoSchema.nullable().optional(),
+  observacoes: z.string().max(500).nullable().optional(),
 });

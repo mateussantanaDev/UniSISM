@@ -3,15 +3,6 @@
  *
  * Anti-fraude: índice único `(viagemId, pacienteId)` garante que cada paciente
  * recebe no máximo uma ajuda por viagem (Prisma DB-level).
- *
- * Saldo (TFD §7.8):
- *   - solicitar  → reserva valorTotal em SaldoAjudaCusto.saldoReservado
- *   - autorizar  → mantém reserva
- *   - negar      → libera reserva
- *   - pagar      → libera reserva + debita em saldoConsumido
- *
- * Tetos por categoria (TFD §9 + §11): cada item tem que respeitar o teto da
- * categoria (0 = sem teto). Validado no `solicitar`.
  */
 import type { Request } from 'express';
 import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
@@ -29,10 +20,8 @@ import {
   resolverPrefeituraIdEfetiva,
 } from './_helpers';
 
-export type CategoriaItemAjuda = 'ALIMENTACAO' | 'HOSPEDAGEM' | 'DESLOCAMENTO_LOCAL' | 'OUTRO';
-
 export interface ItemAjudaCusto {
-  categoria: CategoriaItemAjuda;
+  categoria: 'ALIMENTACAO' | 'HOSPEDAGEM' | 'DESLOCAMENTO_LOCAL' | 'OUTRO';
   descricao: string;
   valorBRL: number;
 }
@@ -76,40 +65,6 @@ const INCLUDE_FULL = {
   paciente: { select: { id: true, nome: true, cpf: true } },
 };
 
-function mesDaViagem(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
-}
-
-interface TetosCarregados {
-  ALIMENTACAO: number;
-  HOSPEDAGEM: number;
-  DESLOCAMENTO_LOCAL: number;
-  OUTRO: number;
-  saldoMensal: number;
-  saldoConsumido: number;
-  saldoReservado: number;
-}
-
-async function carregarSaldoAjudaCusto(
-  prefeituraId: string,
-  mes: string,
-): Promise<TetosCarregados> {
-  const s = await prisma.saldoAjudaCusto.findUnique({
-    where: { prefeituraId_mes: { prefeituraId, mes } },
-  });
-  return {
-    ALIMENTACAO: Number(s?.tetoAlimentacao ?? 0),
-    HOSPEDAGEM: Number(s?.tetoHospedagem ?? 0),
-    DESLOCAMENTO_LOCAL: Number(s?.tetoDeslocamento ?? 0),
-    OUTRO: 0,
-    saldoMensal: Number(s?.saldoMensal ?? 0),
-    saldoConsumido: Number(s?.saldoConsumido ?? 0),
-    saldoReservado: Number(s?.saldoReservado ?? 0),
-  };
-}
-
 export class AjudasCustoUseCases {
   constructor(
     private readonly audit: ITfdAuditLogger,
@@ -151,23 +106,6 @@ export class AjudasCustoUseCases {
     if (input.itens.length === 0) {
       throw Unprocessable('ITENS_OBRIGATORIOS', 'Informe pelo menos um item de ajuda');
     }
-    for (const it of input.itens) {
-      if (!Number.isFinite(it.valorBRL) || it.valorBRL <= 0) {
-        throw Unprocessable('VALOR_INVALIDO', 'Cada item deve ter valorBRL > 0');
-      }
-    }
-
-    // Paciente precisa estar alocado nesta viagem
-    const eAlocado = await prisma.viagemPassageiro.findFirst({
-      where: { viagemId: input.viagemId, pacienteId: input.pacienteId },
-      select: { id: true },
-    });
-    if (!eAlocado) {
-      throw Unprocessable(
-        'PAYLOAD_INVALIDO',
-        'Paciente não está alocado nesta viagem',
-      );
-    }
 
     // Anti-fraude: já existe ajuda ativa para este (viagem, paciente)?
     const dup = await prisma.ajudaCusto.findFirst({
@@ -184,58 +122,21 @@ export class AjudasCustoUseCases {
       );
     }
 
-    const valorTotal = +input.itens.reduce((acc, i) => acc + i.valorBRL, 0).toFixed(2);
-    const mes = mesDaViagem(viagem.data);
-    const saldo = await carregarSaldoAjudaCusto(prefeituraId, mes);
-
-    // Valida teto por categoria (0 = sem teto)
-    for (const it of input.itens) {
-      const teto = saldo[it.categoria];
-      if (teto > 0 && it.valorBRL > teto) {
-        throw Unprocessable(
-          'TETO_CATEGORIA_EXCEDIDO',
-          `Item ${it.categoria} (R$ ${it.valorBRL.toFixed(2)}) excede teto R$ ${teto.toFixed(2)}`,
-          { categoria: it.categoria, valorBRL: it.valorBRL, teto },
-        );
-      }
-    }
-
-    // Valida saldo disponível
-    const disponivel = +(saldo.saldoMensal - saldo.saldoConsumido - saldo.saldoReservado).toFixed(2);
-    if (valorTotal > disponivel) {
-      throw Unprocessable(
-        'SALDO_AJUDA_INSUFICIENTE',
-        `Saldo de ajuda de custo (R$ ${disponivel.toFixed(2)}) insuficiente para reservar R$ ${valorTotal.toFixed(2)}`,
-        { mes, saldoDisponivel: disponivel, valorSolicitado: valorTotal },
-      );
-    }
-
+    const valorTotal = input.itens.reduce((acc, i) => acc + i.valorBRL, 0);
     const op = await resolverOperador(this.atendentes, autorId, prefeituraId);
     const protocolo = await proximoProtocoloTfd('AJC');
 
-    const novo = await prisma.$transaction(async (tx) => {
-      const r = await tx.ajudaCusto.create({
-        data: {
-          protocolo,
-          prefeituraId,
-          viagemId: input.viagemId,
-          pacienteId: input.pacienteId,
-          itens: input.itens as unknown as Prisma.InputJsonValue,
-          valorTotal,
-          criadaPorId: autorId,
-        },
-        include: INCLUDE_FULL,
-      });
-      await tx.saldoAjudaCusto.upsert({
-        where: { prefeituraId_mes: { prefeituraId, mes } },
-        update: { saldoReservado: { increment: valorTotal } },
-        create: {
-          prefeituraId,
-          mes,
-          saldoReservado: valorTotal,
-        },
-      });
-      return r;
+    const novo = await prisma.ajudaCusto.create({
+      data: {
+        protocolo,
+        prefeituraId,
+        viagemId: input.viagemId,
+        pacienteId: input.pacienteId,
+        itens: input.itens as unknown as Prisma.InputJsonValue,
+        valorTotal,
+        criadaPorId: autorId,
+      },
+      include: INCLUDE_FULL,
     });
 
     await this.audit.registrar({
@@ -249,7 +150,7 @@ export class AjudasCustoUseCases {
       operadorMatricula: op.matricula,
       operadorRole: op.role,
       ...ctxAudit(req),
-      depois: { protocolo, valorTotal, itens: input.itens.length, mes },
+      depois: { protocolo, valorTotal, itens: input.itens.length },
     });
     return rowParaAjuda(novo);
   }
@@ -289,10 +190,7 @@ export class AjudasCustoUseCases {
   }
 
   async pagar(scope: AccessScope, req: Request, autorId: string, id: string, input: PagarAjudaInput) {
-    const atual = await prisma.ajudaCusto.findUnique({
-      where: { id },
-      include: { viagem: { select: { data: true } } },
-    });
+    const atual = await prisma.ajudaCusto.findUnique({ where: { id } });
     if (!atual) throw NotFound('AJUDA_NAO_ENCONTRADA', 'Ajuda de custo não encontrada');
     assertMesmaPrefeitura(scope, atual.prefeituraId);
     if (atual.status !== 'AUTORIZADA') {
@@ -305,8 +203,6 @@ export class AjudasCustoUseCases {
       throw Unprocessable('ARQUIVO_MUITO_GRANDE', 'Comprovante excede 10 MB');
     }
     const op = await resolverOperador(this.atendentes, autorId, atual.prefeituraId);
-    const valorTotal = Number(atual.valorTotal);
-    const mes = mesDaViagem(atual.viagem.data);
 
     const pasta = `tfd/${atual.prefeituraId}/ajudas-custo/${new Date().toISOString().slice(0, 7)}`;
     const arq = await this.storage.salvar({
@@ -316,33 +212,17 @@ export class AjudasCustoUseCases {
       pasta,
     });
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const r = await tx.ajudaCusto.update({
-        where: { id },
-        data: {
-          status: 'PAGA',
-          metodoPagamento: input.metodoPagamento,
-          comprovantePagamentoKey: arq.caminho,
-          pagaEm: new Date(),
-          pagaPorId: autorId,
-        },
-        include: INCLUDE_FULL,
-      });
-      await tx.saldoAjudaCusto.upsert({
-        where: { prefeituraId_mes: { prefeituraId: atual.prefeituraId, mes } },
-        update: {
-          saldoReservado: { decrement: valorTotal },
-          saldoConsumido: { increment: valorTotal },
-        },
-        create: {
-          prefeituraId: atual.prefeituraId,
-          mes,
-          saldoConsumido: valorTotal,
-        },
-      });
-      return r;
+    const updated = await prisma.ajudaCusto.update({
+      where: { id },
+      data: {
+        status: 'PAGA',
+        metodoPagamento: input.metodoPagamento,
+        comprovantePagamentoKey: arq.caminho,
+        pagaEm: new Date(),
+        pagaPorId: autorId,
+      },
+      include: INCLUDE_FULL,
     });
-
     await this.audit.registrar({
       prefeituraId: atual.prefeituraId,
       acao: 'AJUDA_CUSTO_PAGA',
@@ -354,16 +234,13 @@ export class AjudasCustoUseCases {
       operadorMatricula: op.matricula,
       operadorRole: op.role,
       ...ctxAudit(req),
-      depois: { metodo: input.metodoPagamento, valorTotal, mes },
+      depois: { metodo: input.metodoPagamento, valorTotal: Number(atual.valorTotal) },
     });
     return rowParaAjuda(updated);
   }
 
   async negar(scope: AccessScope, req: Request, autorId: string, id: string, motivo: string) {
-    const atual = await prisma.ajudaCusto.findUnique({
-      where: { id },
-      include: { viagem: { select: { data: true } } },
-    });
+    const atual = await prisma.ajudaCusto.findUnique({ where: { id } });
     if (!atual) throw NotFound('AJUDA_NAO_ENCONTRADA', 'Ajuda de custo não encontrada');
     assertMesmaPrefeitura(scope, atual.prefeituraId);
     if (atual.status !== 'PENDENTE') {
@@ -373,26 +250,11 @@ export class AjudasCustoUseCases {
       throw Unprocessable('MOTIVO_OBRIGATORIO', 'Motivo deve ter ≥ 10 caracteres');
     }
     const op = await resolverOperador(this.atendentes, autorId, atual.prefeituraId);
-    const valorTotal = Number(atual.valorTotal);
-    const mes = mesDaViagem(atual.viagem.data);
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const r = await tx.ajudaCusto.update({
-        where: { id },
-        data: { status: 'NEGADA', motivoNegacao: motivo.trim() },
-        include: INCLUDE_FULL,
-      });
-      // Libera reserva
-      await tx.saldoAjudaCusto.upsert({
-        where: { prefeituraId_mes: { prefeituraId: atual.prefeituraId, mes } },
-        update: { saldoReservado: { decrement: valorTotal } },
-        create: {
-          prefeituraId: atual.prefeituraId,
-          mes,
-          saldoReservado: 0,
-        },
-      });
-      return r;
+    const updated = await prisma.ajudaCusto.update({
+      where: { id },
+      data: { status: 'NEGADA', motivoNegacao: motivo.trim() },
+      include: INCLUDE_FULL,
     });
     await this.audit.registrar({
       prefeituraId: atual.prefeituraId,
@@ -405,7 +267,7 @@ export class AjudasCustoUseCases {
       operadorMatricula: op.matricula,
       operadorRole: op.role,
       ...ctxAudit(req),
-      depois: { motivo, mes, reservaLiberada: valorTotal },
+      depois: { motivo },
     });
     return rowParaAjuda(updated);
   }

@@ -47,7 +47,7 @@ dependencies:
 | **Android emulator** (AVD) | `http://10.0.2.2:3333/v1` |
 | **iOS Simulator** | `http://localhost:3333/v1` |
 | **Dispositivo físico (mesma Wi-Fi)** | `http://<IP-da-sua-máquina>:3333/v1` (ex.: `http://192.168.0.12:3333/v1`) |
-| **Produção** | `https://api.unisism.feiradesantana.ba.gov.br/v1` |
+| **Produção** | `https://api.unisism.aguasbelas.pe.gov.br/v1` |
 
 > 💡 Para dispositivo físico Android, pode ser necessário permitir cleartext HTTP em dev. No `android/app/src/main/AndroidManifest.xml`:
 > ```xml
@@ -78,7 +78,7 @@ final api = UnisismApi(baseUrl: _resolveBaseUrl());
 
 Rodar com URL customizada:
 ```bash
-flutter run --dart-define=API_BASE_URL=https://api.unisism.feira.ba.gov.br/v1
+flutter run --dart-define=API_BASE_URL=https://api.unisism.aguasbelas.pe.gov.br/v1
 ```
 
 ### 5. Usar nos widgets

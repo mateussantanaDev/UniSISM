@@ -6,11 +6,18 @@ import type { EncaminhamentoController } from '../controllers/EncaminhamentoCont
 import type { PacienteController } from '../controllers/PacienteController';
 import type { RelatoriosController as RelatorioController } from '../../modules/relatorios/presentation/RelatoriosController';
 import type { AdminController } from '../controllers/AdminController';
-import type { AnexosController } from '../controllers/AnexosController';
+import type { RecomendacoesController } from '../controllers/RecomendacoesController';
+import type { SmsBannersAdminController } from '../controllers/SmsBannersAdminController';
 import type { RegulacaoController } from '../../modules/gestao/presentation/controllers/RegulacaoController';
 import { buildRegulacaoRoutes } from '../../modules/gestao/presentation/routes/regulacao.routes';
 import type { PacienteAppController } from '../../modules/paciente-app/presentation/controllers/PacienteAppController';
 import { buildPacienteAppRoutes } from '../../modules/paciente-app/presentation/routes/paciente-app.routes';
+import type { PasswordRecoveryRateLimiter } from '../../modules/paciente-app/infrastructure/PasswordRecoveryRateLimiter';
+import type { DownloadAnexoRateLimiter } from '../../modules/paciente-app/infrastructure/DownloadAnexoRateLimiter';
+import type { DossieRateLimiter } from '../../modules/paciente-app/infrastructure/DossieRateLimiter';
+import type { BannersRateLimiter } from '../../modules/paciente-app/infrastructure/BannersRateLimiter';
+import type { MotoristaAppController } from '../../modules/motorista-app/presentation/controllers/MotoristaAppController';
+import { buildMotoristaAppRoutes } from '../../modules/motorista-app/presentation/routes/motorista-app.routes';
 import type { ProntuarioController } from '../../modules/prontuario/presentation/ProntuarioController';
 import { buildProntuarioRoutes } from '../../modules/prontuario/presentation/prontuario.routes';
 import type { TfdController } from '../../modules/tfd/presentation/TfdController';
@@ -37,11 +44,17 @@ interface Deps {
   pacientes: PacienteController;
   relatorios: RelatorioController;
   admin: AdminController;
+  recomendacoes: RecomendacoesController;
+  smsBannersAdmin: SmsBannersAdminController;
   regulacao: RegulacaoController;
   pacienteApp: PacienteAppController;
+  passwordRecoveryRateLimiter: PasswordRecoveryRateLimiter;
+  downloadAnexoRateLimiter: DownloadAnexoRateLimiter;
+  dossieRateLimiter: DossieRateLimiter;
+  bannersRateLimiter: BannersRateLimiter;
   prontuario: ProntuarioController;
   tfd: TfdController;
-  anexos: AnexosController;
+  motoristaApp: MotoristaAppController;
 }
 
 export function buildRoutes(deps: Deps): Router {
@@ -164,24 +177,28 @@ export function buildRoutes(deps: Deps): Router {
   router.get(
     '/admin/ubs',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
+    requireRole(
+      'DESENVOLVEDOR',
+      'ADMIN',
+      'COORDENADOR_UBS',
+      'REGULADOR_SMS',
+      'GESTOR_TFD',
+      'ATENDENTE_TFD',
+    ),
     deps.admin.getUbs,
   );
 
-  // usuários:
-  //   - POST: DESENVOLVEDOR (qualquer), ADMIN (própria prefeitura),
-  //     GESTOR_TFD (apenas REGULADOR_TFD da própria prefeitura — Face 4 v0.10)
-  //   - GET: idem + COORDENADOR_UBS (lista equipe da UBS)
+  // usuários: DESENVOLVEDOR (qualquer) ou ADMIN (própria prefeitura)
   router.post(
     '/admin/usuarios',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'GESTOR_TFD'),
+    requireRole('DESENVOLVEDOR', 'ADMIN'),
     deps.admin.postUsuario,
   );
   router.get(
     '/admin/usuarios',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'GESTOR_TFD'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS'),
     deps.admin.getUsuarios,
   );
   router.patch(
@@ -236,15 +253,85 @@ export function buildRoutes(deps: Deps): Router {
     requireRole('DESENVOLVEDOR', 'ADMIN'),
     deps.admin.deleteUbs,
   );
+
+  // ----- Recomendações por especialidade (CRUD admin) -----
+  // Consumidas pelo app paciente no detalhe do encaminhamento ("o que levar no dia").
+  router.get(
+    '/admin/recomendacoes-especialidade',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.recomendacoes.getList,
+  );
+  router.get(
+    '/admin/recomendacoes-especialidade/:id',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.recomendacoes.getById,
+  );
   router.post(
-    '/admin/ubs/:id/ativo',
+    '/admin/recomendacoes-especialidade',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.recomendacoes.post,
+  );
+  router.patch(
+    '/admin/recomendacoes-especialidade/:id',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.recomendacoes.patch,
+  );
+  router.delete(
+    '/admin/recomendacoes-especialidade/:id',
     authenticate,
     requireRole('DESENVOLVEDOR', 'ADMIN'),
-    deps.admin.postAtivarUbs,
+    deps.recomendacoes.delete,
+  );
+
+  // ----- Banners SMS (CMS admin · 5 endpoints) -----
+  // Consumido pelo carrossel "Avisos da Secretaria" no app paciente.
+  // DEV: global. ADMIN/REGULADOR_SMS: somente própria prefeitura.
+  router.get(
+    '/admin/sms-banners',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.smsBannersAdmin.getList,
+  );
+  router.get(
+    '/admin/sms-banners/:id',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.smsBannersAdmin.getById,
+  );
+  router.post(
+    '/admin/sms-banners',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.smsBannersAdmin.post,
+  );
+  router.patch(
+    '/admin/sms-banners/:id',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS'),
+    deps.smsBannersAdmin.patch,
+  );
+  router.delete(
+    '/admin/sms-banners/:id',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    deps.smsBannersAdmin.delete,
   );
 
   // ----- Face 3 · App do Paciente -----
-  router.use('/paciente-app', buildPacienteAppRoutes(deps.pacienteApp));
+  router.use(
+    '/paciente-app',
+    buildPacienteAppRoutes(
+      deps.pacienteApp,
+      deps.passwordRecoveryRateLimiter,
+      deps.downloadAnexoRateLimiter,
+      deps.dossieRateLimiter,
+      deps.bannersRateLimiter,
+    ),
+  );
 
   // ----- Prontuário (CRUD de sub-documentos de paciente) -----
   // Montado sob /pacientes pra bater com o contrato do frontend:
@@ -255,11 +342,9 @@ export function buildRoutes(deps: Deps): Router {
   // Spec: docs/TFD_API.md · 47 rotas com cadeia hash de auditoria
   router.use('/tfd', buildTfdRoutes(deps.tfd, authenticate));
 
-  // ----- Anexos · download genérico (Face 2 SMS — preview iframe) -----
-  // Filtra por prefeitura no use case via AccessScope. REGULADOR_SMS,
-  // ATENDENTE_UBS, COORDENADOR_UBS, ADMIN, DEV podem ler anexos da sua
-  // prefeitura (multi-tenancy 404 cross-tenant).
-  router.get('/anexos/:id/download', authenticate, deps.anexos.getDownload);
+  // ----- Face 4 · App do Motorista (mobile) -----
+  // Spec: docs/MOTORISTA_APP_API.md
+  router.use('/motorista-app', buildMotoristaAppRoutes(deps.tokens, deps.motoristaApp));
 
   router.get('/health', (_req, res) => res.json({ ok: true }));
 

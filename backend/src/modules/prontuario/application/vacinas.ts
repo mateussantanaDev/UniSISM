@@ -1,7 +1,7 @@
 /**
  * Caderneta de vacinação — registro oficial de doses aplicadas.
  */
-import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
+import { NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { PacienteCompleto } from '../../../domain/entities/Paciente';
@@ -11,7 +11,7 @@ import type { IProntuarioAuditLogger } from '../infrastructure/PrismaProntuarioA
 import {
   assertAcessoPaciente,
   carregarCompleto,
-  parseYmdObrigatorio,
+  parseIsoObrigatorio,
   resolverAutor,
 } from './_helpers';
 
@@ -43,44 +43,15 @@ export class AddVacinaUseCase {
   ): Promise<PacienteCompleto> {
     await assertAcessoPaciente(pacienteId, scope);
     const autor = await resolverAutor(this.atendentes, autorId);
-    const data = parseYmdObrigatorio(input.data, 'DATA_INVALIDA', 'data');
-
-    // Spec §8.1: data não pode ser futura
-    const hojeUTC = new Date();
-    hojeUTC.setUTCHours(23, 59, 59, 999);
-    if (data.getTime() > hojeUTC.getTime()) {
-      throw Unprocessable('DATA_INVALIDA', 'Data da aplicação não pode ser futura');
-    }
-
-    const vacina = input.vacina.trim();
-    const dose = input.dose.trim();
-    const lote = input.lote.trim();
-
-    // Spec §8.1: unique (pacienteId, vacina, dose, lote) — antifraude/dupla aplicação
-    const dup = await prisma.vacinaAplicada.findFirst({
-      where: {
-        pacienteId,
-        vacina: { equals: vacina, mode: 'insensitive' },
-        dose: { equals: dose, mode: 'insensitive' },
-        lote,
-      },
-      select: { id: true },
-    });
-    if (dup) {
-      throw Conflict(
-        'VACINA_DUPLICADA',
-        `Já existe registro desta vacina (${vacina} · ${dose} · lote ${lote}) para este paciente`,
-        { vacinaExistenteId: dup.id, vacina, dose, lote },
-      );
-    }
+    const data = parseIsoObrigatorio(input.data, 'DATA_INVALIDA', 'data');
 
     const novo = await prisma.vacinaAplicada.create({
       data: {
         pacienteId,
         data,
-        vacina,
-        dose,
-        lote,
+        vacina: input.vacina.trim(),
+        dose: input.dose.trim(),
+        lote: input.lote.trim(),
         aplicador: input.aplicador.trim(),
         unidade: input.unidade.trim(),
         via: input.via,

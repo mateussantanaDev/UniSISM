@@ -65,6 +65,8 @@ import type {
   PacienteCompleto,
   PacienteLoginRequest,
   PacienteLoginResponse,
+  PacienteRefreshRequest,
+  PacienteRefreshResponse,
   PacienteMeResponse,
   PacienteResumo,
   Prefeitura,
@@ -715,6 +717,7 @@ class PacienteAppApi {
   constructor(private readonly api: ApiClient) {}
 
   private readonly PAC_TOKEN_KEY = 'unisism_paciente_token';
+  private readonly PAC_REFRESH_KEY = 'unisism_paciente_refresh';
 
   private getPacToken(): string | null {
     if (typeof localStorage === 'undefined') return null;
@@ -724,6 +727,16 @@ class PacienteAppApi {
     if (typeof localStorage === 'undefined') return;
     if (t) localStorage.setItem(this.PAC_TOKEN_KEY, t);
     else localStorage.removeItem(this.PAC_TOKEN_KEY);
+  }
+
+  private getPacRefresh(): string | null {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(this.PAC_REFRESH_KEY);
+  }
+  private setPacRefresh(t: string | null): void {
+    if (typeof localStorage === 'undefined') return;
+    if (t) localStorage.setItem(this.PAC_REFRESH_KEY, t);
+    else localStorage.removeItem(this.PAC_REFRESH_KEY);
   }
 
   private pacHeaders(extra: Record<string, string> = {}): Record<string, string> {
@@ -757,7 +770,40 @@ class PacienteAppApi {
   async login(req: PacienteLoginRequest): Promise<PacienteLoginResponse> {
     const out = await this.req<PacienteLoginResponse>('POST', '/auth/login', req);
     this.setPacToken(out.token);
+    this.setPacRefresh(out.refreshToken);
     return out;
+  }
+
+  /**
+   * Rotaciona access+refresh (v0.18.0+).
+   * Salva o novo par no storage. Em caso de erro, limpa os tokens locais
+   * (sessão é inválida, app deve voltar pra /login).
+   *
+   * Use em interceptor: quando recebe 401 num endpoint protegido,
+   * chame `refresh()` antes de redirecionar pro login. Se `refresh()`
+   * estourar `REFRESH_REUSE_DETECTED`, mostre alerta de segurança.
+   */
+  async refresh(): Promise<PacienteRefreshResponse> {
+    const current = this.getPacRefresh();
+    if (!current) {
+      throw new ApiError(401, {
+        error: { code: 'REFRESH_TOKEN_INVALIDO', message: 'Sem refresh token salvo' },
+      });
+    }
+    try {
+      const out = await this.req<PacienteRefreshResponse>('POST', '/auth/refresh', {
+        refreshToken: current,
+      });
+      // CRITICAL: substituir AMBOS imediatamente
+      this.setPacToken(out.token);
+      this.setPacRefresh(out.refreshToken);
+      return out;
+    } catch (err) {
+      // Qualquer erro → limpar (forçar re-login)
+      this.setPacToken(null);
+      this.setPacRefresh(null);
+      throw err;
+    }
   }
 
   async logout(): Promise<void> {
@@ -765,6 +811,7 @@ class PacienteAppApi {
       await this.req<void>('POST', '/auth/logout');
     } finally {
       this.setPacToken(null);
+      this.setPacRefresh(null);
     }
   }
 
@@ -778,6 +825,25 @@ class PacienteAppApi {
    */
   trocarSenha(req: TrocarSenhaPacienteRequest): Promise<void> {
     return this.req<void>('POST', '/auth/trocar-senha', req);
+  }
+
+  /**
+   * Inicia fluxo de recuperação. **SEMPRE 204** (anti-enumeration).
+   * Rate-limited: 5 req/15min/IP + 3 req/1h/CPF (429 RATE_LIMIT_EXCEDIDO).
+   */
+  esqueciSenhaPaciente(cpf: string): Promise<void> {
+    return this.req<void>('POST', '/auth/esqueci-senha', { cpf });
+  }
+
+  /**
+   * Conclui recuperação com token do email (64 hex, TTL 30min, uso único).
+   * Rate-limited: 10 req/15min/IP.
+   *
+   * Códigos: 404 TOKEN_INVALIDO, 409 TOKEN_JA_USADO, 401 TOKEN_EXPIRADO,
+   *          422 SENHA_FRACA, 422 SENHA_IGUAL_ATUAL, 429 RATE_LIMIT_EXCEDIDO.
+   */
+  redefinirSenhaPaciente(token: string, novaSenha: string): Promise<void> {
+    return this.req<void>('POST', '/auth/redefinir-senha', { token, novaSenha });
   }
 
   me(): Promise<PacienteMeResponse> {

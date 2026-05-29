@@ -34,8 +34,14 @@ export class JwtTokenService implements ITokenService {
   private readonly accessExpiresSeconds = parseDuration(env.JWT_EXPIRES_IN);
   private readonly refreshExpiresSeconds = parseDuration(env.JWT_REFRESH_EXPIRES_IN);
 
-  assinarAccess(payload: AccessTokenPayload): string {
-    const options: SignOptions = { expiresIn: this.accessExpiresSeconds };
+  /**
+   * Assina um token de acesso. Para o app do motorista, passe
+   * `ttlSecondsOverride` (ex.: 30 dias) — apps mobile precisam de sessão longa.
+   */
+  assinarAccess(payload: AccessTokenPayload, ttlSecondsOverride?: number): string {
+    const options: SignOptions = {
+      expiresIn: ttlSecondsOverride ?? this.accessExpiresSeconds,
+    };
     return jwt.sign(payload, this.accessSecret, options);
   }
 
@@ -55,9 +61,13 @@ export class JwtTokenService implements ITokenService {
       const ubsId = payload['ubsId'];
       const prefeituraId = payload['prefeituraId'];
       const sid = payload['sid'];
+      const motoristaId = payload['motoristaId'];
+      const primeiroLogin = payload['primeiroLogin'];
       if (typeof ubsId === 'string') result.ubsId = ubsId;
       if (typeof prefeituraId === 'string') result.prefeituraId = prefeituraId;
       if (typeof sid === 'string') result.sid = sid;
+      if (typeof motoristaId === 'string') result.motoristaId = motoristaId;
+      if (typeof primeiroLogin === 'boolean') result.primeiroLogin = primeiroLogin;
       return result;
     } catch (err) {
       if (err instanceof Error && err.name === 'TokenExpiredError') {

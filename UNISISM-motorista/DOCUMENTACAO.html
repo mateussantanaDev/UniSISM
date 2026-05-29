@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISISM Motorista — Documentação</title>
+<style>
+  /* ============================================================
+     B2G BRUTALISTA — paleta + tipografia do design system UNISISM
+     ============================================================ */
+  :root {
+    --slate-50:  #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+    --slate-300: #CBD5E1;
+    --slate-400: #94A3B8;
+    --slate-500: #64748B;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1E293B;
+    --slate-900: #0F172A;
+    --blue-50:   #EFF6FF;
+    --blue-700:  #1D4ED8;
+    --blue-900:  #1E3A8A;
+    --emerald-50:#ECFDF5;
+    --emerald-700:#047857;
+    --emerald-800:#065F46;
+    --amber-50:  #FFFBEB;
+    --amber-600: #D97706;
+    --amber-800: #92400E;
+    --red-50:    #FEF2F2;
+    --red-700:   #B91C1C;
+    --red-800:   #991B1B;
+    --sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--slate-50);
+    color: var(--slate-900);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea, select { border-radius: 0; }
+  a { color: var(--blue-900); text-decoration-color: rgba(30,58,138,.3); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--blue-900); }
+
+  /* Layout */
+  .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  aside.toc {
+    background: white;
+    border-right: 1px solid var(--slate-200);
+    padding: 24px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  main.content {
+    padding: 32px 40px 80px;
+    max-width: 1100px;
+  }
+
+  /* Sidebar TOC */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--slate-200);
+    margin-bottom: 16px;
+  }
+  .brand-mark {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--blue-900);
+    color: white;
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+  .brand-name {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    line-height: 1.2;
+  }
+  .brand-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--slate-500);
+    letter-spacing: 2px;
+    font-weight: 700;
+  }
+  nav.toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  nav.toc-nav a {
+    display: block;
+    padding: 8px 10px 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--slate-700);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  nav.toc-nav a:hover {
+    background: var(--slate-50);
+    color: var(--slate-900);
+  }
+  nav.toc-nav a .n {
+    color: var(--slate-400);
+    margin-right: 6px;
+  }
+
+  /* Headings */
+  h1.doc-title {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin: 0 0 4px;
+    line-height: 1.1;
+  }
+  .doc-sub {
+    font-family: var(--mono);
+    color: var(--slate-500);
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 11px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--slate-200);
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .badge {
+    background: var(--blue-900);
+    color: white;
+    font-size: 10px;
+    padding: 3px 6px;
+    letter-spacing: 1.5px;
+  }
+  h3 {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 28px 0 10px;
+    color: var(--slate-700);
+  }
+  h4 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 13px;
+    margin: 18px 0 6px;
+    color: var(--slate-900);
+  }
+  p { margin: 0 0 12px; }
+  p.lead {
+    font-size: 15px;
+    color: var(--slate-700);
+    max-width: 720px;
+  }
+
+  /* Painéis & cards */
+  .panel {
+    background: white;
+    border: 1px solid var(--slate-200);
+    margin-bottom: 16px;
+  }
+  .panel-header {
+    background: linear-gradient(180deg, var(--slate-50), white);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .panel-header .idx {
+    background: var(--blue-900);
+    color: white;
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 11px;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 1px;
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .panel-sub {
+    color: var(--slate-500);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .panel-body { padding: 14px; }
+
+  /* Metric cards */
+  .grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .metric {
+    background: white;
+    border: 1px solid var(--slate-200);
+    display: flex;
+    align-items: stretch;
+  }
+  .metric-bar {
+    width: 4px;
+    background: var(--blue-900);
+  }
+  .metric.success .metric-bar { background: var(--emerald-700); }
+  .metric.warn .metric-bar { background: var(--amber-600); }
+  .metric.crit .metric-bar { background: var(--red-700); }
+  .metric.neutral .metric-bar { background: var(--slate-500); }
+  .metric-body { padding: 12px 14px; flex: 1; }
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    color: var(--slate-500);
+    text-transform: uppercase;
+  }
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-top: 4px;
+    line-height: 1;
+  }
+  .metric-sub {
+    font-size: 11px;
+    color: var(--slate-600);
+    margin-top: 4px;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border: 1px solid;
+  }
+  .badge.success { background: var(--emerald-50); color: var(--emerald-800); border-color: var(--emerald-700); }
+  .badge.warn { background: var(--amber-50); color: var(--amber-800); border-color: var(--amber-600); }
+  .badge.crit { background: var(--red-50); color: var(--red-800); border-color: var(--red-700); }
+  .badge.info { background: var(--blue-50); color: var(--blue-900); border-color: var(--blue-700); }
+  .badge.neutral { background: var(--slate-50); color: var(--slate-700); border-color: var(--slate-600); }
+
+  /* Tabelas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 18px;
+    font-size: 12px;
+  }
+  thead tr {
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+  }
+  th {
+    text-align: left;
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--slate-600);
+    text-transform: uppercase;
+    border-right: 1px solid var(--slate-200);
+  }
+  th:last-child { border-right: 0; }
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--slate-100);
+    border-right: 1px solid var(--slate-100);
+    vertical-align: top;
+  }
+  td:last-child { border-right: 0; }
+  td.mono { font-family: var(--mono); }
+
+  /* Code blocks */
+  pre {
+    background: var(--slate-900);
+    color: #E2E8F0;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 8px 0 18px;
+    border-left: 4px solid var(--blue-900);
+  }
+  pre.light {
+    background: white;
+    color: var(--slate-900);
+    border: 1px solid var(--slate-200);
+    border-left: 4px solid var(--blue-900);
+  }
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--slate-100);
+    padding: 1px 5px;
+    color: var(--slate-900);
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  .tok-com { color: #94A3B8; }
+  .tok-key { color: #93C5FD; }
+  .tok-str { color: #86EFAC; }
+  .tok-typ { color: #FDE68A; }
+
+  /* Listas */
+  ul, ol { margin: 0 0 14px 22px; padding: 0; }
+  li { margin-bottom: 4px; }
+  ul.check { list-style: none; margin-left: 0; }
+  ul.check li {
+    padding-left: 22px;
+    position: relative;
+  }
+  ul.check li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--emerald-700);
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+  ul.check li.pending::before {
+    content: "○";
+    color: var(--slate-400);
+  }
+  ul.check li.todo::before {
+    content: "▢";
+    color: var(--slate-400);
+  }
+
+  /* Highlight box */
+  .callout {
+    border-left: 4px solid var(--blue-900);
+    background: var(--blue-50);
+    padding: 12px 14px;
+    margin: 12px 0 18px;
+  }
+  .callout.warn { border-color: var(--amber-600); background: var(--amber-50); }
+  .callout.crit { border-color: var(--red-700); background: var(--red-50); }
+  .callout.success { border-color: var(--emerald-700); background: var(--emerald-50); }
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .callout.warn .callout-label { color: var(--amber-800); }
+  .callout.crit .callout-label { color: var(--red-800); }
+  .callout.success .callout-label { color: var(--emerald-800); }
+  .callout-body { font-size: 13px; }
+  .callout-body p:last-child { margin-bottom: 0; }
+
+  /* Mini diagrama */
+  .diagram {
+    background: white;
+    border: 1px solid var(--slate-200);
+    padding: 18px 20px;
+    margin: 8px 0 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--slate-700);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Status pill (fase) */
+  .phase-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid var(--slate-200);
+    margin-bottom: 6px;
+  }
+  .phase-id {
+    font-family: var(--mono);
+    background: var(--blue-900);
+    color: white;
+    width: 36px;
+    text-align: center;
+    padding: 3px 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+  }
+  .phase-row.done .phase-id { background: var(--emerald-700); }
+  .phase-row.next .phase-id { background: var(--amber-600); }
+  .phase-row.todo .phase-id { background: var(--slate-400); }
+  .phase-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .phase-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 3px 7px;
+    background: var(--slate-100);
+    color: var(--slate-700);
+  }
+  .phase-row.done .phase-status { background: var(--emerald-50); color: var(--emerald-800); }
+  .phase-row.next .phase-status { background: var(--amber-50); color: var(--amber-800); }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--slate-200);
+    margin: 32px 0;
+  }
+  footer {
+    padding: 16px 20px;
+    background: var(--slate-100);
+    border-top: 1px solid var(--slate-200);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--slate-500);
+    margin-top: 60px;
+    text-transform: uppercase;
+  }
+
+  /* Two columns */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 720px) {
+    .shell { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; }
+    main.content { padding: 24px 20px; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!--  SIDEBAR / TOC                                            -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <aside class="toc">
+    <div class="brand">
+      <div class="brand-mark">U</div>
+      <div>
+        <div class="brand-name">UNISISM<br>MOTORISTA</div>
+        <div class="brand-sub">DOCS · v0.1.0</div>
+      </div>
+    </div>
+    <nav class="toc-nav">
+      <a href="#visao-geral"><span class="n">01</span>Visão geral</a>
+      <a href="#estado"><span class="n">02</span>Estado atual</a>
+      <a href="#stack"><span class="n">03</span>Stack</a>
+      <a href="#arquitetura"><span class="n">04</span>Arquitetura</a>
+      <a href="#estrutura"><span class="n">05</span>Estrutura</a>
+      <a href="#design-system"><span class="n">06</span>Design System</a>
+      <a href="#dominio"><span class="n">07</span>Domínio</a>
+      <a href="#persistencia"><span class="n">08</span>Drift / Local</a>
+      <a href="#api"><span class="n">09</span>API + Mock</a>
+      <a href="#sync"><span class="n">10</span>Sync engine</a>
+      <a href="#auth"><span class="n">11</span>Auth</a>
+      <a href="#fases"><span class="n">12</span>Fases F0–F7</a>
+      <a href="#roadmap"><span class="n">13</span>Roadmap F8–F16</a>
+      <a href="#rodar"><span class="n">14</span>Como rodar</a>
+      <a href="#backend"><span class="n">15</span>Backend</a>
+      <a href="#decisoes"><span class="n">16</span>Decisões</a>
+    </nav>
+  </aside>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!--  CONTEÚDO PRINCIPAL                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <main class="content">
+
+    <h1 class="doc-title">UNISISM MOTORISTA</h1>
+    <div class="doc-sub">DOCUMENTAÇÃO TÉCNICA · v0.1.0 · 2026-05</div>
+
+    <p class="lead">
+      App mobile <strong>Flutter</strong> da face <strong>Motorista</strong>
+      do ecossistema UNISISM. Atende motoristas do transporte sanitário
+      TFD (Tratamento Fora do Domicílio) da Prefeitura de Águas Belas.
+      Ver escala do dia, fazer chamada digital dos pacientes, registrar
+      hodômetro, solicitar abastecimento e ajuda de custo —
+      <strong>offline-first</strong>, com sincronização automática quando
+      a rede volta.
+    </p>
+
+    <div class="callout">
+      <div class="callout-label">FACE MOTORISTA — ECOSSISTEMA UNISISM</div>
+      <div class="callout-body">
+        <p>Faces irmãs:</p>
+        <ul>
+          <li><strong>Face UBS</strong> — SvelteKit em <code>unisism-ubs/frontend</code> (existente)</li>
+          <li><strong>Face SMS / Regulação</strong> — a construir (Face 2)</li>
+          <li><strong>Face Paciente</strong> — outro app Flutter em <code>unisism-ubs/backend/docs/flutter/</code></li>
+          <li><strong>Face Motorista</strong> — este projeto</li>
+        </ul>
+        <p>A identidade visual <strong>partiu</strong> do Design System B2G
+        Brutalista da Face UBS, mas foi refatorada em 2026-05-25 para um
+        perfil mais acessível — motoristas têm leitura básica e operam o
+        app no celular com pouco tempo. Cores e cantos retos do UNISISM
+        continuam; tipografia, botões e linguagem foram humanizados.</p>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="visao-geral"><span class="badge">01</span>VISÃO GERAL</h2>
+
+    <h3>O que o app faz (MVP, pós-simplificação)</h3>
+    <ul>
+      <li>Login via <strong>matrícula funcional</strong> + senha (com troca obrigatória no 1º acesso).</li>
+      <li>Lista de viagens em três abas: <strong>Hoje · Próximas · Histórico</strong>.</li>
+      <li>Detalhe da viagem com passageiros, veículo, quilometragem e mapa offline.</li>
+      <li><strong>Chamada digital com botões grandes</strong>: "Embarcou ✓" / "Faltou ✗" / "Mais" pra cada paciente.</li>
+      <li><strong>Quilometragem</strong>: começar viagem (KM antes) e finalizar (KM agora).</li>
+      <li><strong>Mapa offline (OpenStreetMap)</strong>: pontos de origem, destino e UBSs dos passageiros.</li>
+      <li>Visualização da <strong>ajuda de custo</strong> alocada a cada paciente da viagem.</li>
+      <li>Perfil do motorista (CNH com aviso de vencimento, total de viagens, KM rodados).</li>
+      <li>Push notifications (FCM) — infraestrutura pronta, ativação manual.</li>
+    </ul>
+
+    <div class="callout warn">
+      <div class="callout-label">REMOVIDO POR FEEDBACK DO USUÁRIO</div>
+      <div class="callout-body">
+        <p><strong>Abastecimento</strong> (originalmente F12) — funcionalidade
+        considerada não-essencial pro caso de uso primário. Tudo foi desfeito
+        (telas, repository, modelo, rotas, deps órfãs <code>image_picker</code>
+        e <code>permission_handler</code>). Bottom nav voltou a ter 2 abas.</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-label">REFATORAÇÃO DE ACESSIBILIDADE — 2026-05-25</div>
+      <div class="callout-body">
+        <p>O Design System foi simplificado pra atender motoristas com leitura
+        básica. Principais mudanças:</p>
+        <ul>
+          <li><strong>Tipografia maior</strong>: body 14→16px, label 10→12px, métrica 30→36px.</li>
+          <li><strong>Sans-serif (Inter) é o padrão</strong>; mono só pra dados (CPF, hora, KM).</li>
+          <li><strong>Sem uppercase agressivo</strong>: "Iniciar viagem" no lugar de "INICIAR VIAGEM".</li>
+          <li><strong>Botões 56dp+</strong> (área de toque ideal).</li>
+          <li><strong>Linguagem coloquial</strong>: "Sair do app" no lugar de "Encerrar sessão"; "Quilometragem antes de sair" no lugar de "Hodômetro inicial".</li>
+          <li><strong>SyncIndicator humanizado</strong>: "Tudo salvo" / "Sem internet" / "Enviando…" no lugar de "SINCRONIZADO" / "OFFLINE · 4 PENDENTES".</li>
+          <li><strong>StatusBadge com ícone</strong> e palavras simples: "Embarcou" no lugar de "EMBARCADO".</li>
+          <li><strong>ViagemCard</strong> com hora grande (22px mono) em destaque.</li>
+          <li><strong>Bottom nav</strong> com ícones 28dp e labels sans-serif.</li>
+          <li><strong>Chamada digital sem swipe oculto</strong>: dois botões grandes "Embarcou ✓" / "Faltou ✗" + botão "Mais" abrindo bottom sheet.</li>
+          <li>Numeração decorativa "01/02/03" dos painéis removida.</li>
+        </ul>
+        <p>O <strong>brutalismo B2G original da Face UBS continua intacto</strong> —
+        essa simplificação é exclusiva do app do motorista, que tem perfil
+        diferente do gestor TFD.</p>
+      </div>
+    </div>
+
+    <h3>Diferencial: offline-first com auditoria preservada</h3>
+    <p>
+      O motorista frequentemente opera em áreas com sinal instável (BR-101,
+      interior, rodoviárias). O app foi desenhado para que <strong>toda
+      ação funcione offline</strong> — a chamada digital, marcar hodômetro,
+      anexar foto, tudo é gravado localmente e enfileirado em uma
+      <em>outbox</em>. Quando a rede volta, o sync engine drena a outbox
+      para o backend, preservando a ordem das operações e respeitando a
+      cadeia de auditoria criptográfica TJ.
+    </p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="estado"><span class="badge">02</span>ESTADO ATUAL</h2>
+
+    <div class="grid">
+      <div class="metric success">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Fases entregues</div>
+          <div class="metric-value">16 / 16</div>
+          <div class="metric-sub">MVP completo</div>
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Arquivos Dart</div>
+          <div class="metric-value">77</div>
+          <div class="metric-sub">lib/ + test/</div>
+        </div>
+      </div>
+      <div class="metric success">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Testes</div>
+          <div class="metric-value">39 / 39</div>
+          <div class="metric-sub">passando</div>
+        </div>
+      </div>
+      <div class="metric success">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Analyzer</div>
+          <div class="metric-value">0</div>
+          <div class="metric-sub">issues</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Fluxo já rodável</h3>
+    <div class="diagram">┌──────────┐    ┌────────┐    ┌──────────────────────────────────────┐
+│  splash  │ →  │ login  │ →  │   lista de viagens                   │
+│          │    │ (mock) │    │   ┌─────────────────────────────┐    │
+└──────────┘    └────────┘    │   │ HOJE · PRÓXIMAS · HISTÓRICO │    │
+                              │   └─────────────────────────────┘    │
+                              │   [MetricCards: hoje, em andamento,  │
+                              │    passageiros, KM previstos]        │
+                              │   [Cards de viagem: 7 do seed]       │
+                              │   [Pull-to-refresh + sync indicator] │
+                              └──────────────────────────────────────┘</div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="stack"><span class="badge">03</span>STACK TÉCNICA</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Camada</th>
+          <th>Pacote</th>
+          <th>Versão</th>
+          <th>Papel</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Runtime</td><td class="mono">flutter</td><td class="mono">3.41.7</td><td>Framework UI</td></tr>
+        <tr><td>Runtime</td><td class="mono">dart</td><td class="mono">3.11.5</td><td>Linguagem</td></tr>
+        <tr><td>State</td><td class="mono">flutter_riverpod</td><td class="mono">2.6.1</td><td>Estado + DI</td></tr>
+        <tr><td>Rotas</td><td class="mono">go_router</td><td class="mono">14.8.1</td><td>Navegação + redirect por auth</td></tr>
+        <tr><td>HTTP</td><td class="mono">dio</td><td class="mono">5.7</td><td>Cliente HTTP com interceptors</td></tr>
+        <tr><td>Storage</td><td class="mono">flutter_secure_storage</td><td class="mono">9.2</td><td>Token JWT cifrado</td></tr>
+        <tr><td>SQLite</td><td class="mono">drift</td><td class="mono">2.31</td><td>SQLite tipado + migrations</td></tr>
+        <tr><td>SQLite</td><td class="mono">drift_flutter</td><td class="mono">0.2.8</td><td>Bootstrap nativo + path_provider</td></tr>
+        <tr><td>Conectividade</td><td class="mono">connectivity_plus</td><td class="mono">6.1</td><td>Stream online/offline</td></tr>
+        <tr><td>Mapa</td><td class="mono">flutter_map</td><td class="mono">7.0</td><td>Renderer estilo Leaflet</td></tr>
+        <tr><td>Mapa</td><td class="mono">flutter_map_tile_caching</td><td class="mono">9.1</td><td>Cache offline OSM (F11)</td></tr>
+        <tr><td>Mídia</td><td class="mono">image_picker</td><td class="mono">1.1</td><td>Foto do comprovante (F12)</td></tr>
+        <tr><td>Mídia</td><td class="mono">permission_handler</td><td class="mono">11.4</td><td>Câmera, galeria, localização</td></tr>
+        <tr><td>Tipografia</td><td class="mono">Inter + JetBrains Mono</td><td class="mono">local</td><td>TTFs empacotados (LGPD/air-gap)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Princípios da stack</h3>
+    <ul>
+      <li><strong>Sem code-gen pesado</strong> — apenas Drift usa <code>build_runner</code>. Sem <code>freezed</code>, <code>json_serializable</code>, <code>retrofit</code>. Modelos têm <code>fromJson</code>/<code>toJson</code> manuais.</li>
+      <li><strong>Sem state-management mágico</strong> — Riverpod 2 com <code>Notifier</code>/<code>Provider</code>/<code>StreamProvider</code>; sem code-gen do riverpod_generator.</li>
+      <li><strong>Tipografia local</strong> — Inter e JetBrains Mono empacotadas em <code>assets/fonts/</code>; jamais via Google Fonts CDN (LGPD).</li>
+      <li><strong>Sem Google Maps</strong> — escolha deliberada de OpenStreetMap por gratuidade e suporte offline-first.</li>
+    </ul>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="arquitetura"><span class="badge">04</span>ARQUITETURA</h2>
+
+    <p>Clean Architecture em três camadas, espelhando o backend
+    <code>unisism-ubs/backend</code>:</p>
+
+    <div class="diagram">┌─────────────────────────────────────────────────────────┐
+│  PRESENTATION                                           │
+│  Widgets (DS), Screens, Providers (Riverpod)            │
+│  ──────────────────────────────────────────────         │
+│        ↓ depende de            ↑ observa                │
+│  ┌────────────────────────────────────────────────┐     │
+│  │  DOMAIN                                         │     │
+│  │  Modelos imutáveis · Enums · Regras puras      │     │
+│  │  Sem deps de Flutter / drift / dio              │     │
+│  └────────────────────────────────────────────────┘     │
+│        ↑                       ↑                        │
+│  ┌─────────────────┐   ┌──────────────────────┐         │
+│  │  DATA / API     │   │  DATA / LOCAL (Drift)│         │
+│  │  TfdApi (abst)  │   │  Tabelas + DAOs +    │         │
+│  │  Mock / Remote  │   │  Outbox + SyncMeta   │         │
+│  └─────────────────┘   └──────────────────────┘         │
+│        ↑                       ↑                        │
+│  ┌────────────────────────────────────────────────┐     │
+│  │  DATA / REPOSITORIES                            │     │
+│  │  ViagensRepository — coordena DB + API + outbox│     │
+│  └────────────────────────────────────────────────┘     │
+│        ↑                                                │
+│  ┌────────────────────────────────────────────────┐     │
+│  │  SYNC                                           │     │
+│  │  SyncEngine (pull + push) · OutboxProcessor     │     │
+│  └────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────┘</div>
+
+    <h3>Contratos de fluxo</h3>
+    <table>
+      <thead>
+        <tr><th>Direção</th><th>Caminho</th><th>Quando</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Leitura</td>
+          <td class="mono">UI → Repository → DAO → SQLite local</td>
+          <td>Sempre. Mesmo quando há rede, leitura nunca vai à API.</td>
+        </tr>
+        <tr>
+          <td>Mutação</td>
+          <td class="mono">UI → Repository → DAO (escrita otimista) + Outbox</td>
+          <td>Toda ação do motorista grava local imediatamente + enfileira POST.</td>
+        </tr>
+        <tr>
+          <td>Pull</td>
+          <td class="mono">SyncEngine → TfdApi → DAO (upsert)</td>
+          <td>Login, mudança de connectivity, timer 5min, pull-to-refresh.</td>
+        </tr>
+        <tr>
+          <td>Push</td>
+          <td class="mono">OutboxProcessor → TfdApi → markDone + clearDirty</td>
+          <td>Antes de cada pull (ordem: push, depois pull).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="estrutura"><span class="badge">05</span>ESTRUTURA DE PASTAS</h2>
+
+    <pre class="light"><code>UNISISM-motorista/
+├── pubspec.yaml
+├── README.md
+├── BACKEND_REQUIREMENTS.md        ← TODO do módulo motorista-app
+├── DOCUMENTACAO.html              ← este arquivo
+├── CLAUDE.md                      ← contexto/regras/memória
+├── android/ · ios/
+├── assets/
+│   ├── fonts/                     Inter + JetBrains Mono (TTFs)
+│   └── seed/                      (vazio — sem mock no projeto)
+└── lib/
+    ├── main.dart                  ProviderScope + bootstrap
+    ├── app.dart                   MaterialApp.router + theme
+    ├── core/
+    │   ├── theme/
+    │   │   ├── tokens.dart        paleta completa + Tone
+    │   │   ├── typography.dart    escalas + AppTypography
+    │   │   └── app_theme.dart     ThemeData global
+    │   ├── connectivity/
+    │   │   └── connectivity.dart  StreamProvider&lt;bool&gt;
+    │   ├── errors/
+    │   │   └── api_exception.dart ApiException + helpers
+    │   └── router.dart            GoRouter + redirect
+    ├── domain/
+    │   ├── enums/                 11 enums (StatusViagem, Presenca, ...)
+    │   └── models/                10 modelos imutáveis (Viagem, Passageiro, ...)
+    ├── data/
+    │   ├── api/
+    │   │   ├── tfd_api.dart       interface abstrata
+    │   │   ├── tfd_api_mock.dart  in-memory + 7 viagens seed
+    │   │   ├── tfd_api_remote.dart Dio (stub real)
+    │   │   └── auth_interceptor.dart
+    │   ├── auth/
+    │   │   └── secure_token_storage.dart
+    │   ├── local/
+    │   │   ├── database.dart      AppDatabase (DriftDatabase)
+    │   │   ├── tables/            5 tabelas
+    │   │   └── daos/              4 DAOs
+    │   └── repositories/
+    │       └── viagens_repository.dart
+    ├── sync/
+    │   ├── sync_engine.dart       orquestrador pull+push
+    │   ├── outbox_processor.dart  dispatcher por entityKind
+    │   └── outbox_kinds.dart      constantes
+    └── presentation/
+        ├── widgets/               10 widgets (DS + viagem_card + sub_nav)
+        ├── providers/             3 grupos (api, auth, sync)
+        └── screens/
+            ├── splash/
+            ├── login/             login + trocar_senha
+            ├── viagens/           lista_viagens (HOJE/PRÓXIMAS/HISTÓRICO)
+            └── dev/widgets_gallery (storybook)</code></pre>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="design-system"><span class="badge">06</span>DESIGN SYSTEM</h2>
+
+    <h3>Tokens de cor</h3>
+    <p>Apenas <code>slate-*</code>, <code>blue-900</code> e as 4 semânticas
+    (emerald/amber/red para estado, neutral pra ausência de estado). Nunca
+    cor decorativa.</p>
+
+    <table>
+      <thead>
+        <tr><th>Token</th><th>Hex</th><th>Uso canônico</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">slate-50</td><td class="mono">#F8FAFC</td><td>Fundo de página</td></tr>
+        <tr><td class="mono">slate-100</td><td class="mono">#F1F5F9</td><td>Hover de linhas · divisores</td></tr>
+        <tr><td class="mono">slate-200</td><td class="mono">#E2E8F0</td><td>Borda padrão de containers</td></tr>
+        <tr><td class="mono">slate-300</td><td class="mono">#CBD5E1</td><td>Borda de inputs/botões secundários</td></tr>
+        <tr><td class="mono">slate-500</td><td class="mono">#64748B</td><td>Labels uppercase</td></tr>
+        <tr><td class="mono">slate-700</td><td class="mono">#334155</td><td>Corpo de texto</td></tr>
+        <tr><td class="mono">slate-900</td><td class="mono">#0F172A</td><td>Texto primário</td></tr>
+        <tr><td class="mono">blue-900</td><td class="mono">#1E3A8A</td><td>Cor de ação · botão primário · indicador ativo</td></tr>
+        <tr><td class="mono">emerald-700</td><td class="mono">#047857</td><td>Estado: sucesso · concluído</td></tr>
+        <tr><td class="mono">amber-600</td><td class="mono">#D97706</td><td>Estado: atenção · em andamento</td></tr>
+        <tr><td class="mono">red-700</td><td class="mono">#B91C1C</td><td>Estado: crítico · ausência · cancelado</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Tipografia</h3>
+    <table>
+      <thead>
+        <tr><th>Família</th><th>Onde</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">Inter (sans)</td><td>Nomes, textos corridos, cabeçalhos genéricos</td></tr>
+        <tr><td class="mono">JetBrains Mono</td><td>Protocolos, CPF, hodômetro, datas, labels uppercase, tabelas</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Escala</h4>
+    <table>
+      <thead>
+        <tr><th>Token</th><th>px</th><th>Uso</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">label</td><td class="mono">10</td><td>Labels uppercase tracking 2.5</td></tr>
+        <tr><td class="mono">bodyXs</td><td class="mono">12</td><td>Tabelas, dados densos</td></tr>
+        <tr><td class="mono">bodySm</td><td class="mono">14</td><td>Texto principal, inputs</td></tr>
+        <tr><td class="mono">panelTitle</td><td class="mono">12</td><td>Mono, bold, uppercase tracking 2.5</td></tr>
+        <tr><td class="mono">pageTitle</td><td class="mono">16</td><td>Mono, bold, uppercase tracking 2.5</td></tr>
+        <tr><td class="mono">metricValue</td><td class="mono">30</td><td>Mono, bold, tracking -0.5 — números grandes</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Componentes (10)</h3>
+    <table>
+      <thead>
+        <tr><th>Widget</th><th>Espelha</th><th>Uso</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">PanelHeader</td><td>&lt;PanelHeader&gt;</td><td>Cabeçalho com índice numerado opcional</td></tr>
+        <tr><td class="mono">MetricCard</td><td>&lt;MetricCard&gt;</td><td>Card numérico com barra de acento (4 tones)</td></tr>
+        <tr><td class="mono">StatusBadge</td><td>&lt;StatusBadge&gt;</td><td>Badge de estado/prioridade</td></tr>
+        <tr><td class="mono">PrimaryButton</td><td>&lt;PrimaryButton&gt;</td><td>3 variantes (primary/secondary/danger), loading</td></tr>
+        <tr><td class="mono">AppFormField</td><td>&lt;FormField&gt;</td><td>Input com label uppercase + suporte mono</td></tr>
+        <tr><td class="mono">BrutalistModal</td><td>&lt;Modal&gt;</td><td><code>showBrutalistModal</code> com offset shadow 8/8</td></tr>
+        <tr><td class="mono">BrutalistBottomNav</td><td>Sidebar (UBS)</td><td>Substituto mobile — abas inferior</td></tr>
+        <tr><td class="mono">SubNav</td><td>&lt;SubNav&gt;</td><td>Tabs horizontais com indicador top blue-900</td></tr>
+        <tr><td class="mono">SyncIndicator</td><td>—</td><td>Novo — chip de status do sync engine (4 estados)</td></tr>
+        <tr><td class="mono">ViagemCard</td><td>—</td><td>Novo — card de viagem (lista)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Anti-patterns proibidos</h3>
+    <ul>
+      <li>❌ <code>rounded-lg</code>, <code>rounded-xl</code>, <code>rounded-full</code> — apenas <code>BorderRadius.zero</code></li>
+      <li>❌ <code>shadow-md</code>, <code>shadow-lg</code> difusos — só offset BRUTO de modal</li>
+      <li>❌ Gradientes coloridos — apenas <code>slate-50 → white</code> em headers</li>
+      <li>❌ Paleta custom (#3E8EDE etc.) — apenas tokens declarados em <code>tokens.dart</code></li>
+      <li>❌ Verde/âmbar/vermelho decorativos — só para comunicar estado</li>
+      <li>❌ Fontes via Google Fonts CDN — sempre TTFs locais (LGPD)</li>
+      <li>❌ Mocks no código de produção — usar camada <code>data/api/</code> tipada</li>
+    </ul>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="dominio"><span class="badge">07</span>DOMÍNIO</h2>
+
+    <p>Modelos espelham (parcialmente) o schema Prisma do backend
+    <code>unisism-ubs/backend</code>. Todos imutáveis (<code>@immutable</code>
+    + campos <code>final</code>) com <code>fromJson</code> /
+    <code>toJson</code> manuais.</p>
+
+    <h3>11 enums</h3>
+    <div class="grid">
+      <span class="badge info">StatusViagem</span>
+      <span class="badge info">PresencaPassageiro</span>
+      <span class="badge info">StatusMotorista</span>
+      <span class="badge info">StatusVeiculo</span>
+      <span class="badge info">TipoVeiculo</span>
+      <span class="badge info">CategoriaCnh</span>
+      <span class="badge info">Combustivel</span>
+      <span class="badge info">PrioridadeSolicitacao</span>
+      <span class="badge info">StatusAbastecimento</span>
+      <span class="badge info">StatusAjudaCusto</span>
+      <span class="badge info">WireException</span>
+    </div>
+
+    <h4>Padrão de enum (wire / fromWire)</h4>
+    <pre><code><span class="tok-key">enum</span> StatusViagem {
+  agendada(<span class="tok-str">'AGENDADA'</span>),
+  emAndamento(<span class="tok-str">'EM_ANDAMENTO'</span>),
+  concluida(<span class="tok-str">'CONCLUIDA'</span>),
+  cancelada(<span class="tok-str">'CANCELADA'</span>);
+
+  <span class="tok-key">const</span> StatusViagem(<span class="tok-key">this</span>.wire);
+  <span class="tok-key">final</span> String wire;
+
+  <span class="tok-key">static</span> StatusViagem fromWire(String value) =&gt;
+      StatusViagem.values.firstWhere((e) =&gt; e.wire == value);
+
+  String <span class="tok-key">get</span> rotulo =&gt; <span class="tok-key">switch</span> (<span class="tok-key">this</span>) { ... };
+  Tone <span class="tok-key">get</span> tone =&gt; <span class="tok-key">switch</span> (<span class="tok-key">this</span>) { ... };
+}</code></pre>
+
+    <h3>10 modelos</h3>
+    <table>
+      <thead>
+        <tr><th>Modelo</th><th>Espelha</th><th>Notas</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">Motorista</td><td>tfd_motoristas</td><td>Completo (com CNH, totais). cnhAVencer/cnhVencida derivados.</td></tr>
+        <tr><td class="mono">MotoristaResumo</td><td>—</td><td>Subset usado em viagem + auth.</td></tr>
+        <tr><td class="mono">Veiculo / VeiculoResumo</td><td>tfd_veiculos</td><td>2 variantes.</td></tr>
+        <tr><td class="mono">PacienteResumo</td><td>paciente</td><td>Subset — nome, CPF, idade, UBS, observações de mobilidade.</td></tr>
+        <tr><td class="mono">UbsResumo</td><td>ubs</td><td>Nome + bairro + GeoCoord opcional.</td></tr>
+        <tr><td class="mono">SolicitacaoResumo</td><td>tfd_solicitacoes</td><td>Protocolo + prioridade + destino.</td></tr>
+        <tr><td class="mono">Passageiro</td><td>tfd_viagem_passageiro</td><td>Paciente + solicitação + presença.</td></tr>
+        <tr><td class="mono">Viagem</td><td>tfd_viagem</td><td>Entidade principal com passageiros[].</td></tr>
+        <tr><td class="mono">Abastecimento</td><td>tfd_abastecimento</td><td>Litros, valor, comprovante.</td></tr>
+        <tr><td class="mono">AjudaCusto + Item</td><td>tfd_ajuda_custo</td><td>Lista de itens [{categoria, descricao, valorBRL}].</td></tr>
+        <tr><td class="mono">AuthSession</td><td>—</td><td>Token + motorista + primeiroLogin.</td></tr>
+        <tr><td class="mono">GeoCoord</td><td>—</td><td>{lat, lng} — desacoplado de latlong2.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="persistencia"><span class="badge">08</span>PERSISTÊNCIA LOCAL (DRIFT)</h2>
+
+    <p><strong>SQLite tipado</strong> via Drift 2.31. O DB é
+    <code>unisism_motorista_v1.sqlite</code> no diretório de aplicação
+    (path_provider). Schema versão 1 inicial — migrations futuras quando
+    o esquema mudar.</p>
+
+    <h3>Tabelas</h3>
+    <table>
+      <thead>
+        <tr><th>Tabela</th><th>Papel</th><th>Colunas críticas</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">viagens</td>
+          <td>Cache local das viagens do motorista</td>
+          <td><code>id, data, status, kmInicial, kmFinal, dirty, rawJson</code></td>
+        </tr>
+        <tr>
+          <td class="mono">passageiros</td>
+          <td>Passageiros (1:N com viagens, ON DELETE CASCADE)</td>
+          <td><code>id, viagemId, presenca, dirty, rawJson</code></td>
+        </tr>
+        <tr>
+          <td class="mono">motoristas</td>
+          <td>Cache do perfil logado</td>
+          <td><code>id, cnh, validadeCnh, totalViagens, totalKmRodados</code></td>
+        </tr>
+        <tr>
+          <td class="mono">outbox</td>
+          <td>Fila de mutações pendentes pro backend</td>
+          <td><code>op, path, bodyJson, entityKind, entityId, attempts, status</code></td>
+        </tr>
+        <tr>
+          <td class="mono">sync_meta</td>
+          <td>Chave/valor (lastSyncAt, motoristaId)</td>
+          <td><code>key, value</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>DAOs</h3>
+    <table>
+      <thead>
+        <tr><th>DAO</th><th>Métodos chave</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">ViagensDao</td>
+          <td>
+            <code>getDoDia / getProximas / getHistorico / watchById / upsert / upsertAll /
+            setPresencaLocal / setStatusViagemLocal / clearDirty*</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="mono">OutboxDao</td>
+          <td>
+            <code>enqueue / pending / pendingCount / watchPendingCount / markDone /
+            markFailed / markRetrying / gcDone</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="mono">SyncMetaDao</td>
+          <td><code>getLastSyncAt / setLastSyncAt / get / set</code></td>
+        </tr>
+        <tr>
+          <td class="mono">MotoristasDao</td>
+          <td><code>getById / watchById / upsert</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Estratégia de armazenamento — colunas tipadas + rawJson</h3>
+    <p>Cada linha tem campos críticos como colunas tipadas (para query/index)
+    e um <code>rawJson</code> com o objeto inteiro serializado. Isso permite:</p>
+    <ul>
+      <li>Queries rápidas em <code>data</code>, <code>status</code>, <code>presenca</code></li>
+      <li>Reidratação completa do modelo de domínio (com observações de mobilidade,
+      coordenadas, telefone, etc.) sem alterar o schema toda vez que o backend
+      adiciona campo</li>
+    </ul>
+
+    <h3>Flag <code>dirty</code></h3>
+    <p>Toda mutação local marca a linha (<code>viagens</code> ou
+    <code>passageiros</code>) com <code>dirty = true</code>. O upsert vindo
+    de um pull <strong>preserva</strong> linhas dirty — o sync engine reconcilia
+    via outbox. Quando o POST correspondente chega ao servidor, o
+    <code>OutboxProcessor</code> chama <code>clearDirty*</code> e o estado
+    converge.</p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="api"><span class="badge">09</span>API E MOCK</h2>
+
+    <h3>Interface <code>TfdApi</code></h3>
+    <p>Interface abstrata com 13 métodos cobrindo auth, viagens,
+    abastecimento, ajudas e push. Duas implementações:</p>
+
+    <p>Implementação única: <code class="inline">TfdApiRemote</code> (Dio
+    + <code class="inline">AuthInterceptor</code>). O app consome apenas o
+    backend real — não há mock no projeto. Erros traduzidos de
+    <code class="inline">DioException</code> para <code class="inline">ApiException</code>;
+    header <code class="inline">X-Server-Time</code> lido em toda response
+    GET para sync incremental.</p>
+
+    <h3>Endpoints cobertos</h3>
+    <table>
+      <thead>
+        <tr><th>Método</th><th>Path</th><th>Retorno</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/auth/login</td><td>AuthSession</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/auth/trocar-senha</td><td>—</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/auth/logout</td><td>—</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/motorista-app/auth/me</td><td>Motorista</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/motorista-app/minhas-viagens?desde=ISO</td><td>PullResult&lt;List&lt;Viagem&gt;&gt;</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/motorista-app/viagens/:id</td><td>Viagem</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/viagens/:id/iniciar</td><td>Viagem</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/viagens/:id/concluir</td><td>Viagem</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/viagens/:id/passageiros/:pid/presenca</td><td>Passageiro</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/abastecimentos</td><td>Abastecimento</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/abastecimentos/:id/comprovante</td><td>Abastecimento</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/motorista-app/abastecimentos</td><td>List&lt;Abastecimento&gt;</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/motorista-app/ajudas-custo</td><td>List&lt;AjudaCusto&gt;</td></tr>
+        <tr><td class="mono">POST</td><td class="mono">/motorista-app/me/fcm-token</td><td>—</td></tr>
+        <tr><td class="mono">DELETE</td><td class="mono">/motorista-app/me/fcm-token</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-label">PENDENTE NO BACKEND</div>
+      <div class="callout-body">
+        <p>O módulo <code>/motorista-app/*</code> <strong>ainda não existe</strong>
+        no backend <code>unisism-ubs/backend</code>. A spec exata de rotas,
+        schema (vincular <code>MotoristaTFD.usuarioId</code>), role nova
+        (<code>MOTORISTA_TFD</code>) e payloads está em
+        <code>BACKEND_REQUIREMENTS.md</code>. Estimativa: 3-5 dias.</p>
+      </div>
+    </div>
+
+    <h3>Tratamento de erros</h3>
+    <p>Toda falha é normalizada em <code>ApiException</code> com:</p>
+    <ul>
+      <li><code>code</code> — semântico (ex.: <code>CNH_VENCIDA</code>, <code>HODOMETRO_INVALIDO</code>, <code>OFFLINE</code>)</li>
+      <li><code>message</code> — texto user-facing</li>
+      <li><code>status</code> — HTTP code (nullable para erros locais)</li>
+      <li><code>details</code> — payload extra do backend</li>
+    </ul>
+    <p>Helpers: <code>isOffline</code>, <code>isUnauthorized</code>, <code>isConflict</code>, <code>isValidation</code>.</p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="sync"><span class="badge">10</span>SYNC ENGINE</h2>
+
+    <p>Orquestra <strong>pull</strong> (servidor → DB local) e
+    <strong>push</strong> (outbox → servidor). Reage a:</p>
+    <ul>
+      <li>Mudança de conectividade (volta a online → sync imediato)</li>
+      <li>Timer periódico (5 minutos)</li>
+      <li>Login bem-sucedido</li>
+      <li>Pull-to-refresh manual da UI</li>
+    </ul>
+
+    <h3>Snapshot reativo</h3>
+    <pre><code><span class="tok-key">class</span> <span class="tok-typ">SyncSnapshot</span> {
+  <span class="tok-typ">SyncRunState</span> state;   <span class="tok-com">// idle | syncing | error</span>
+  <span class="tok-typ">bool</span> online;
+  <span class="tok-typ">int</span> pendingCount;     <span class="tok-com">// linhas PENDING/RETRYING na outbox</span>
+  <span class="tok-typ">DateTime</span>? lastSyncAt; <span class="tok-com">// vem do header X-Server-Time</span>
+  <span class="tok-typ">String</span>? lastError;
+}</code></pre>
+
+    <p>A UI consome via <code>syncStatusProvider</code> e renderiza no
+    <code>SyncIndicator</code> do header.</p>
+
+    <h3>Outbox: ciclo de vida</h3>
+    <div class="diagram">┌────────────────────────────────────────────────────────────┐
+│ marcar passageiro AUSENTE (offline)                        │
+│  ↓                                                         │
+│ ViagensRepository.marcarPresenca()                         │
+│   ├─ ViagensDao.setPresencaLocal()  → DB local + dirty=1   │
+│   └─ OutboxDao.enqueue()            → status=PENDING       │
+│  ↓                                                         │
+│ UI atualiza imediatamente (escrita otimista)               │
+│  ↓                                                         │
+│ ... [tempo depois] connectivity online ...                 │
+│  ↓                                                         │
+│ SyncEngine.setOnline(true) → syncAll()                     │
+│   1. OutboxProcessor.drain()                               │
+│      ├─ pega rows PENDING/RETRYING                         │
+│      ├─ dispatch por entityKind → TfdApi.marcarPresenca()  │
+│      ├─ on success: markDone + clearDirtyPassageiro        │
+│      ├─ on 409: markFailed(conflict=true) → UI manual      │
+│      ├─ on 5xx/offline: markRetrying (até 5 tentativas)    │
+│      └─ on 4xx permanente: markFailed                      │
+│   2. pull() — GET /minhas-viagens?desde=lastSyncAt         │
+│      ├─ upsert viagens (preservando dirty)                 │
+│      └─ atualiza lastSyncAt com X-Server-Time              │
+└────────────────────────────────────────────────────────────┘</div>
+
+    <h3>OutboxKinds (dispatcher)</h3>
+    <ul>
+      <li><code>INICIAR_VIAGEM</code></li>
+      <li><code>CONCLUIR_VIAGEM</code></li>
+      <li><code>MARCAR_PRESENCA</code></li>
+      <li><code>SOLICITAR_ABASTECIMENTO</code></li>
+      <li><code>ANEXAR_COMPROVANTE</code></li>
+      <li><code>REGISTRAR_FCM</code></li>
+    </ul>
+
+    <h3>Retry com backoff</h3>
+    <p>Até <strong>5 tentativas</strong> com espera exponencial
+    (<code>2^n</code> segundos). Após o limite, status vira
+    <code>FAILED</code> e exige intervenção manual (UI de conflitos vem
+    em fase futura).</p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="auth"><span class="badge">11</span>AUTH FLOW</h2>
+
+    <h3>Status do <code>AuthController</code></h3>
+    <table>
+      <thead>
+        <tr><th>Estado</th><th>Quando</th><th>Rota</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">restoring</td><td>App acabou de abrir</td><td>/ (splash)</td></tr>
+        <tr><td class="mono">loggedOut</td><td>Sem token ou token inválido</td><td>/login</td></tr>
+        <tr><td class="mono">needsPasswordChange</td><td>1º login (senha provisória)</td><td>/login/trocar-senha</td></tr>
+        <tr><td class="mono">loggedIn</td><td>Sessão válida</td><td>/home (lista de viagens)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Restoração de sessão</h3>
+    <ol>
+      <li>App abre → splash mostra (status = restoring)</li>
+      <li><code>SecureTokenStorage</code> lê token do <code>flutter_secure_storage</code></li>
+      <li>Se token existe, tenta <code>api.me()</code>:</li>
+      <li class="mono">  ↳ ok → loggedIn + cache do motorista local</li>
+      <li class="mono">  ↳ 401 → limpa storage → loggedOut</li>
+      <li class="mono">  ↳ offline (sem rede) → loggedIn com dados em cache</li>
+      <li>Se sem token → loggedOut</li>
+    </ol>
+
+    <h3>Login mock</h3>
+    <div class="callout success">
+      <div class="callout-label">CREDENCIAIS DO MOCK</div>
+      <div class="callout-body">
+        <p>Matrícula: <code>12345</code><br>
+        Senha: qualquer (8+ chars) — entra direto<br>
+        Senha = <code>trocar123</code> → simula primeiro acesso e força tela de troca</p>
+      </div>
+    </div>
+
+    <h3>Logout</h3>
+    <p>POST <code>/logout</code> (best-effort, ignora falhas) →
+    <code>SecureTokenStorage.clear()</code> →
+    <code>AppDatabase.wipe()</code> (limpa TODAS as tabelas locais) →
+    <code>state = loggedOut</code>.</p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="fases"><span class="badge">12</span>FASES F0–F7</h2>
+
+    <div class="phase-row done">
+      <div class="phase-id">F0</div>
+      <div class="phase-name">Bootstrap do projeto Flutter</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>flutter create</code>, estrutura de pastas Clean Architecture, pubspec com 19 deps, AndroidManifest (cleartext dev + camera + location), iOS Info.plist (NSCameraUsageDescription, ATS), README customizado, splash institucional brutalista, BACKEND_REQUIREMENTS.md.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F1</div>
+      <div class="phase-name">Design System (tokens + 10 widgets + storybook)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      Inter + JetBrains Mono empacotados; <code>tokens.dart</code> com paleta completa + enum Tone; <code>typography.dart</code> com 13 estilos canônicos; <code>app_theme.dart</code> com cantos retos globais; 10 widgets (PanelHeader, MetricCard, StatusBadge, PrimaryButton, AppFormField, BrutalistModal, BrutalistBottomNav, SubNav, SyncIndicator, ViagemCard); storybook em <code>/dev/widgets</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F2</div>
+      <div class="phase-name">Modelos de domínio</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      11 enums com pattern <code>wire / fromWire / rotulo / tone</code>; 10 modelos imutáveis (<code>Motorista</code>, <code>Veiculo</code>, <code>Paciente</code>, <code>Ubs</code>, <code>Viagem</code>, <code>Passageiro</code>, <code>Solicitacao</code>, <code>Abastecimento</code>, <code>AjudaCusto</code>, <code>AuthSession</code>); <code>GeoCoord</code> e helpers de parsing JSON. Testes: roundtrip enums + Motorista.cnhAVencer + Viagem.copyWith.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F3</div>
+      <div class="phase-name">Persistência local (Drift)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      5 tabelas (viagens, passageiros, motoristas, outbox, sync_meta); 4 DAOs com queries por dia/próximas/histórico, watchById, upsert preservando dirty, outbox enqueue/drain, sync meta key/value; <code>wipe()</code> para logout; índices em data/status/viagem_id/outbox.status; build_runner gera <code>database.g.dart</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F4</div>
+      <div class="phase-name">Camada de API (TfdApi + Mock + Remote)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      Interface <code>TfdApi</code> com 12 métodos; <code>TfdApiRemote</code> com Dio + <code>AuthInterceptor</code> + tradução <code>DioException</code> → <code>ApiException</code> + leitura de <code>X-Server-Time</code> + headers <code>X-API-Version</code> e <code>X-Client</code>; provider Riverpod único. Backend documentado em <code>unisism-ubs/backend/docs/MOTORISTA_APP_API.md</code>. <strong>Mock removido</strong> após implementação do backend — o app consome apenas dados reais.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F5</div>
+      <div class="phase-name">Sync engine</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>OutboxProcessor</code> com dispatcher por <code>OutboxKinds</code>, retry com backoff (5 tentativas), classificação 4xx/5xx/offline/conflict; <code>SyncEngine</code> com pull por timestamp + push da outbox, snapshot reativo broadcast stream; <code>ConnectivityProvider</code> com <code>connectivity_plus</code>; <code>ViagensRepository</code> coordenando leituras locais + escritas otimistas + outbox; <code>syncStatusProvider</code> mapeado pro <code>SyncIndicator</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F6</div>
+      <div class="phase-name">Auth (login + storage + primeiro acesso)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>SecureTokenStorage</code> wrapping flutter_secure_storage; <code>AuthController</code> (Notifier) com restore + login + trocarSenha + logout; <code>LoginScreen</code> brutalista com matrícula+senha; <code>TrocarSenhaScreen</code> com validação client-side (min 8 chars, confirma bate); <code>GoRouter</code> com redirect baseado em AuthStatus; <code>_AuthListenable</code> ponte Notifier → Listenable. Logout limpa DB + storage.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F7</div>
+      <div class="phase-name">Lista de viagens (HOJE/PRÓXIMAS/HISTÓRICO)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>ListaViagensScreen</code> com AppBar (avatar iniciais + sync indicator), <code>SubNav</code> com 3 tabs, <code>BrutalistBottomNav</code> com 2 abas, MetricCards (viagens hoje / em andamento / passageiros / KM previstos), <code>ViagemCard</code> reusável (horário + destino + veículo + status badge + contadores embarcados/ausentes + protocolo), <code>RefreshIndicator</code> que dispara <code>repository.refresh()</code>, empty states + loading states brutalistas, <code>StreamBuilder</code> em watchDoDia (atualização ao vivo via Drift).
+    </p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="roadmap"><span class="badge">13</span>ROADMAP F8–F16</h2>
+
+    <div class="phase-row done">
+      <div class="phase-id">F8</div>
+      <div class="phase-name">Detalhe da viagem (header + 4 sub-tabs)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      Tela <code>/viagens/:id</code> com action bar (voltar + protocolo + status), <code>SubNav</code> Resumo · Passageiros · Mapa · Histórico, body via <code>IndexedStack</code>, <code>StreamBuilder</code> em <code>watchById(id)</code>, <code>NotFoundState</code> + <code>LoadingState</code> brutalistas, novo <code>TimelineStep</code> e <code>PassageiroCard</code> componentizados, action bar bottom contextual (Iniciar/Concluir).
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F9</div>
+      <div class="phase-name">Chamada digital (swipe + outbox)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>Dismissible</code> com backgrounds brutalistas (verde EMBARCADO à direita, vermelho AUSENTE à esquerda); <code>confirmDismiss</code> sempre retorna false (não remove item, só dispara ação); modal <code>abrirChamadaModal</code> com 4 opções de presença + campo de observação (obrigatório para AUSENTE/DESISTIU); escrita otimista no Drift + outbox via <code>ViagensRepository.marcarPresenca</code>; <code>syncEngine.syncAll()</code> chamado best-effort após cada ação.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F10</div>
+      <div class="phase-name">Iniciar/Concluir viagem (hodômetro)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      Modal <code>abrirHodometroModal(acao: HodometroAcao.iniciar/concluir)</code> com input numérico mono, mostra KM inicial como referência (concluir), validação client-side (km &gt; 0; concluir exige km &gt; inicial), tradução de erros da API (CNH_VENCIDA, STATUS_INVALIDO etc.); overlay <code>_SucessoOverlay</code> brutalista com offset shadow verde, auto-close em 1.7s, mostra protocolo grande + KM rodados; escrita otimista no Drift + outbox via <code>iniciarViagem</code>/<code>concluirViagem</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F11</div>
+      <div class="phase-name">Mapa offline (flutter_map + OSM + FMTC)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>FMTCObjectBoxBackend</code> inicializado no <code>main()</code>; <code>FlutterMap</code> com <code>FMTCTileProvider</code> apontando para store <code>unisism_motorista</code>; cache automático conforme navegação; URL configurável via <code>--dart-define=TILE_URL_TEMPLATE</code> (default OSM público em dev, self-hosted em produção); markers tipados O/U/D (origem/UBS/destino) com pin painter custom; legenda + callout informando o cache automático; fallback brutalista quando viagem não tem coordenadas; conforme política OSM, user-agent é <code>br.gov.aguasbelas.unisism.motorista</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F12</div>
+      <div class="phase-name">Abastecimento — REMOVIDA</div>
+      <div class="phase-status">REMOVED</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <strong>Removida por feedback do usuário</strong> em 2026-05-25 — funcionalidade considerada não-essencial pro caso de uso primário do motorista (que deve manter o foco em chamada digital + hodômetro), e adicionava densidade que prejudicava a acessibilidade. Tudo o que foi entregue foi desfeito: arquivos das screens, <code>AbastecimentosRepository</code>, métodos da <code>TfdApi</code>, modelo <code>Abastecimento</code> e enums <code>StatusAbastecimento</code>/<code>Combustivel</code>, rotas <code>/abastecimentos*</code>, atalho do perfil, OutboxKinds <code>SOLICITAR_ABASTECIMENTO</code>/<code>ANEXAR_COMPROVANTE</code> e seed do mock. Bottom nav voltou a ter 2 abas (Viagens · Perfil). Deps órfãs removidas do pubspec: <code>image_picker</code>, <code>permission_handler</code>.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F13</div>
+      <div class="phase-name">Ajuda de custo (somente leitura)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>ListaAjudasScreen</code> em <code>/ajudas-custo</code> com card detalhado por ajuda: protocolo + status badge no cabeçalho, lista dos itens (categoria + descrição + valor por item), valor total destacado, método de pagamento, motivo de negação (se houver); empty state com explicação; pull-to-refresh; callout informando que ação é do gestor TFD.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F14</div>
+      <div class="phase-name">Perfil do motorista</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      <code>PerfilScreen</code> em <code>/perfil</code> com header (avatar iniciais + nome + matrícula + status); painéis numerados de dados pessoais (CPF formatado, telefone, prefeitura), CNH (com StatusBadge tone-aware: Vencida/A vencer/OK reagindo a <code>cnhAVencer</code>/<code>cnhVencida</code>), produção (MetricCards de viagens e KM rodados); atalhos pra Ajudas de Custo, Abastecimentos e Design System; modal de confirmação de logout brutalista com aviso sobre apagar cache; fallback de erro com botão de logout caso <code>api.me()</code> falhe.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F15</div>
+      <div class="phase-name">Push (infraestrutura PushService)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      Interface <code>PushService</code> abstrata + <code>NullPushService</code> (no-op default) + <code>PushPayload</code>; <code>pushBootstrapProvider</code> escuta token refresh (enfileira <code>OutboxKinds.registrarFcm</code>), foreground messages (dispara <code>syncAll()</code>) e taps em notificação (navega pra <code>/viagens/:id</code>); <code>AuthController</code> chama <code>start()</code> após login e <code>dispose()</code> + <code>api.revogarFcmToken()</code> no logout. Template completo de <code>FirebasePushService</code> com firebase_messaging documentado em <code>lib/data/push/README.md</code> — basta plugar quando configurar Firebase Console.
+    </p>
+
+    <div class="phase-row done">
+      <div class="phase-id">F16</div>
+      <div class="phase-name">QA (widget tests + smoke + audit)</div>
+      <div class="phase-status">DONE</div>
+    </div>
+    <p style="margin-left: 14px; font-size: 13px; color: var(--slate-600);">
+      19 widget tests novos cobrindo PrimaryButton (5), StatusBadge (3), MetricCard (3), SyncIndicator (5) e SubNav (3); checklist de smoke test manual em <code>test/SMOKE.md</code> cobrindo end-to-end auth → lista → detalhe → chamada → hodômetro → abastecimento → ajuda → perfil → modo offline; audit shell de anti-patterns: <strong>0 rounded-*, 0 BoxShadow difuso, 0 hex literais fora dos arquivos esperados, 0 google_fonts em código, 2 BoxShadow brutalistas (blurRadius:0) nos modais — conforme padrão</strong>. Total: <strong>37 testes passando, 0 issues</strong>.
+    </p>
+
+    <h2 id="proximos"><span class="badge">17</span>PRÓXIMOS PASSOS (PÓS-MVP)</h2>
+
+    <p>O MVP de 16 fases está concluído. Os trabalhos a seguir são fora do
+    escopo do plano original — devem ser feitos como ondas separadas:</p>
+
+    <ul>
+      <li><strong>Backend <code>/motorista-app/*</code></strong> (bloqueante para produção) — ver <code>BACKEND_REQUIREMENTS.md</code>, ~3-5 dias.</li>
+      <li><strong>Firebase real</strong> — infraestrutura pronta; falta criar projeto Firebase + plugar <code>FirebasePushService</code>.</li>
+      <li><strong>Self-host do tileserver OSM</strong> — recomendado para produção (política OSM); apontar via <code>--dart-define=TILE_URL_TEMPLATE=...</code>.</li>
+      <li><strong>Pre-download de região no perfil</strong> — botão usando <code>FMTCStore.download.startForeground()</code>; bbox de Feira já em <code>MapConfig</code>.</li>
+      <li><strong>Testes adicionais</strong> — Drift in-memory (ViagensDao), OutboxProcessor com fakes, integration tests.</li>
+      <li><strong>Build de produção</strong> — ícones (flutter_launcher_icons), splash nativa, code signing, <code>network_security_config.xml</code> restrito ao host de produção.</li>
+    </ul>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="rodar"><span class="badge">14</span>COMO RODAR</h2>
+
+    <h3>Pré-requisitos</h3>
+    <ul>
+      <li>Flutter SDK ≥ 3.41 (estável)</li>
+      <li>Xcode (iOS) e/ou Android Studio + SDK Android</li>
+      <li>Dispositivo físico ou emulador rodando</li>
+    </ul>
+
+    <h3>Setup (uma vez)</h3>
+    <pre><code>cd /Users/mateus/Documents/Prefeitura/UNISISM-motorista
+flutter pub get
+dart run build_runner build       <span class="tok-com"># gera Drift</span></code></pre>
+
+    <h3>Rodar apontando pro backend local</h3>
+    <pre><code>flutter run --dart-define=API_BASE_URL=http://192.168.0.197:3333/v1</code></pre>
+
+    <h3>Flags úteis</h3>
+    <table>
+      <thead>
+        <tr><th>Flag</th><th>Efeito</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">--dart-define=API_BASE_URL=&lt;url&gt;</td>
+          <td>Sobrescreve a URL do backend. Default: <code>http://10.0.2.2:3333/v1</code> (Android) ou <code>http://localhost:3333/v1</code> (iOS).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Testar</h3>
+    <pre><code>flutter analyze     <span class="tok-com"># 0 issues esperado</span>
+flutter test        <span class="tok-com"># 31 testes esperado</span></code></pre>
+
+    <h3>URLs por ambiente</h3>
+    <table>
+      <thead>
+        <tr><th>Cenário</th><th>API_BASE_URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Emulator Android</td><td class="mono">http://10.0.2.2:3333/v1</td></tr>
+        <tr><td>iOS Simulator</td><td class="mono">http://localhost:3333/v1</td></tr>
+        <tr><td>Device físico</td><td class="mono">http://&lt;IP-DO-PC&gt;:3333/v1</td></tr>
+        <tr><td>Produção</td><td class="mono">https://api.unisism.aguasbelas.pe.gov.br/v1</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="backend"><span class="badge">15</span>BACKEND — O QUE FALTA</h2>
+
+    <div class="callout warn">
+      <div class="callout-label">SPEC EM BACKEND_REQUIREMENTS.md</div>
+      <div class="callout-body">
+        <p>O backend <code>unisism-ubs/backend</code> já tem o modelo TFD
+        completo (MotoristaTFD, VeiculoTFD, ViagemFrota, ViagemPassageiro)
+        e endpoints <code>/v1/tfd/*</code> para uso do <code>GESTOR_TFD</code>.
+        O que <strong>falta</strong> é o módulo paralelo
+        <code>/motorista-app/*</code>, análogo ao
+        <code>/paciente-app/*</code>, com auth próprio.</p>
+      </div>
+    </div>
+
+    <h3>Resumo do que precisa</h3>
+    <ol>
+      <li>Schema Prisma:
+        <ul>
+          <li>Adicionar <code>MotoristaTFD.usuarioId</code> + <code>primeiroLogin</code> + <code>fcmToken</code></li>
+          <li>Enum <code>Role</code> ganha <code>MOTORISTA_TFD</code></li>
+          <li>Migration + backfill (criar Usuario para motoristas existentes)</li>
+        </ul>
+      </li>
+      <li>Módulo <code>src/modules/motorista-app/</code> com 13 rotas:
+        <ul>
+          <li>4 de auth (login, trocar-senha, logout, me)</li>
+          <li>5 de viagens (listar minhas, detalhe, iniciar, concluir, presença)</li>
+          <li>3 de abastecimento (criar, anexar, listar minhas)</li>
+          <li>1 de ajudas de custo (listar)</li>
+          <li>2 de FCM (registrar/revogar token)</li>
+        </ul>
+      </li>
+      <li>Middleware de auth que injeta <code>motoristaId</code> + filtra por ele.</li>
+      <li>Header <code>X-Server-Time</code> em todos os GET.</li>
+      <li>Auditoria <code>tfd_audit_log</code> usando <code>motorista.usuarioId</code>.</li>
+      <li>Testes integrados cobrindo o golden path.</li>
+    </ol>
+
+    <p>Estimativa: <strong>3-5 dias</strong> para um dev backend que já conhece o módulo <code>paciente-app</code> (pattern idêntico).</p>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <h2 id="decisoes"><span class="badge">16</span>DECISÕES TÉCNICAS</h2>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Decisão</th><th>Por quê</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>D1</td>
+          <td>Frontend primeiro, backend depois</td>
+          <td>Acelerou entrega visual; <code>TfdApiMock</code> espelhava o contrato exato. Removido após o backend ser implementado (2026-05-26) — app agora consome só dados reais.</td>
+        </tr>
+        <tr>
+          <td>D2</td>
+          <td>Auth via matrícula + senha (não SSO)</td>
+          <td>Padrão do servidor público brasileiro. Provisória + troca obrigatória no 1º login.</td>
+        </tr>
+        <tr>
+          <td>D3</td>
+          <td>Drift (SQLite) sobre Hive</td>
+          <td>Tipagem forte, queries SQL puras, migrations explícitas, suporte a watch streams reativos.</td>
+        </tr>
+        <tr>
+          <td>D4</td>
+          <td>Outbox table sobre fila em memória</td>
+          <td>Sobrevive a crash + restart. Garante <em>at-least-once</em> mesmo com app forçado a fechar.</td>
+        </tr>
+        <tr>
+          <td>D5</td>
+          <td>Escrita otimista (UI atualiza antes do servidor)</td>
+          <td>UX percebida — chamada digital tem que parecer instantânea mesmo offline.</td>
+        </tr>
+        <tr>
+          <td>D6</td>
+          <td>OpenStreetMap sobre Google Maps</td>
+          <td>Gratuito, offline-friendly, sem chave de API, sem custo recorrente da PMFS.</td>
+        </tr>
+        <tr>
+          <td>D7</td>
+          <td>Inter + JetBrains Mono empacotadas</td>
+          <td>LGPD/air-gap — sem fetch de CDN do Google Fonts em runtime.</td>
+        </tr>
+        <tr>
+          <td>D8</td>
+          <td>Sem freezed/json_serializable</td>
+          <td>Reduz build time, dependências e código gerado. Manual <code>fromJson</code> é OK para o tamanho do projeto.</td>
+        </tr>
+        <tr>
+          <td>D9</td>
+          <td>Riverpod 2 (não 3)</td>
+          <td>API estável, sem code-gen obrigatório.</td>
+        </tr>
+        <tr>
+          <td>D10</td>
+          <td>Coluna <code>rawJson</code> nas tabelas</td>
+          <td>Adia decisões de schema quando o backend evolui. Campos críticos ficam indexados; resto é JSON.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <footer>
+      <div>UNISISM MOTORISTA · DOCS · v0.1.0</div>
+      <div>PMFS · SMS · TFD · BUILD 2026.05</div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

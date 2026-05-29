@@ -111,19 +111,4 @@ export class S3FileStorage implements IFileStorage {
     const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     return getSignedUrl(this.client, cmd, { expiresIn: ttlSeconds });
   }
-
-  /**
-   * Stream do objeto via GetObject. Em runtime Node, `Body` é um
-   * `Readable` (stream). Tipa-se como `unknown` na SDK v3 — fazemos
-   * o narrow aqui.
-   */
-  async obterStream(caminho: string): Promise<NodeJS.ReadableStream> {
-    const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: caminho });
-    const out = await this.client.send(cmd);
-    const body = out.Body as NodeJS.ReadableStream | undefined;
-    if (!body) {
-      throw new Error(`S3 GetObject retornou sem body para key=${caminho}`);
-    }
-    return body;
-  }
 }

@@ -1,7 +1,7 @@
 # UNISISM · UBS — Documentação da API (consumo pelo frontend)
 
 > **Base URL local:** `http://localhost:3333/v1`
-> **Base URL produção (proposta):** `https://api.unisism.feiradesantana.ba.gov.br/v1`
+> **Base URL produção (proposta):** `https://api.unisism.aguasbelas.pe.gov.br/v1`
 
 Todas as datas são **ISO 8601 UTC** (`2026-04-22T14:32:18.000Z`) ou **YYYY-MM-DD** (`2026-04-22`).
 Todos os IDs são strings (UUIDv4 ou IDs estáveis do seed como `ubs-central`).
@@ -20,7 +20,7 @@ Todos os IDs são strings (UUIDv4 ou IDs estáveis do seed como `ubs-central`).
 8. [Pacientes · `/pacientes/*`](#8-pacientes--pacientes)
 9. [Relatórios · `/relatorios/*`](#9-relatórios--relatorios)
 10. [Admin · `/admin/*`](#10-admin--admin) (criação/edição de prefeituras, UBSs e usuários)
-11. [Face 2 · Regulação SMS](#11-face-2--regulação-sms) — ver também [`SMS_SIMPLIFICADO.md`](./SMS_SIMPLIFICADO.md) (modo enxuto p/ REGULADOR_SMS)
+11. [Face 2 · Regulação SMS](#11-face-2--regulação-sms)
 12. [Face 3 · App do Paciente](#12-face-3--app-do-paciente)
 13. [Notificações automáticas ao paciente](#13-notificações-automáticas-ao-paciente)
 14. [Códigos de erro catalogados](#14-códigos-de-erro-catalogados)
@@ -117,7 +117,7 @@ Autentica um usuário (qualquer role).
 { "login": "SMS-047291", "senha": "12345678", "lembrar": false }
 ```
 
-- `login` aceita **matrícula** (`SMS-047291`, `ADM-001`, `DEV-001`) **OU email** (`mateus.santana@saude.ba.gov.br`).
+- `login` aceita **matrícula** (`SMS-047291`, `ADM-001`, `DEV-001`) **OU email** (`mateus.santana@saude.aguasbelas.pe.gov.br`).
 
 **Response 200:**
 ```json
@@ -185,7 +185,7 @@ Retorna resumo do atendente autenticado. **Útil logo após login** para popular
   "iniciais": "MN",
   "role": "ATENDENTE_UBS",
   "unidade": "UBS CENTRAL",
-  "prefeitura": "Prefeitura Municipal de Feira de Santana",
+  "prefeitura": "Prefeitura Municipal de Águas Belas",
   "cargo": "ATENDENTE DE REGULAÇÃO",
   "escopo": "UBS"
 }
@@ -207,13 +207,13 @@ Perfil completo + produção + segurança + atividade. Shape exato consumido em 
   "nome": "MATEUS DE SANTANA NEVES",
   "iniciais": "MN",
   "matricula": "SMS-047291",
-  "email": "mateus.santana@saude.ba.gov.br",
+  "email": "mateus.santana@saude.aguasbelas.pe.gov.br",
   "cpf": "123.456.789-00",
   "telefone": "(75) 99812-4421",
   "dataNascimento": "1995-08-14",
   "cargo": "ATENDENTE DE REGULAÇÃO",
   "funcao": "Operador do canal de ingestão de encaminhamentos",
-  "lotacao": "UBS CENTRAL · Feira de Santana / BA",
+  "lotacao": "UBS CENTRAL · Águas Belas / PE",
   "unidade": "UBS CENTRAL",
   "dataAdmissao": "2023-02-15",
   "producao": {
@@ -661,7 +661,7 @@ Endpoints administrativos. **Todos exigem token.**
 ```json
 {
   "nome": "JOAO ATENDENTE",
-  "email": "joao@feira.ba.gov.br",
+  "email": "joao@aguasbelas.pe.gov.br",
   "matricula": "SMS-099001",
   "cpf": "111.222.333-44",
   "senha": "trocarDepois123",
@@ -702,7 +702,7 @@ Edita dados não-sensíveis. Para trocar senha, use o endpoint de reset.
 ```json
 {
   "nome": "NOVO NOME",
-  "email": "novo@feira.ba.gov.br",
+  "email": "novo@aguasbelas.pe.gov.br",
   "telefone": "(75) 99999-0000",
   "cargo": "Coordenador",
   "funcao": "...",
@@ -770,13 +770,6 @@ Admin redefine senha. Revoga todas as sessões. Força o usuário a trocar a sen
 ## 11. Face 2 · Regulação SMS
 
 Endpoints adicionais consumidos pelo módulo `/sms/*` do frontend. Implementados em `src/modules/gestao/`.
-
-> **Modo simplificado (REGULADOR_SMS sem ADMIN/DEV):** o frontend tem uma
-> variante enxuta da Face 2 (`/sms/dashboard` com 4 cards · `/sms/solicitacoes`
-> · `/sms/respostas` · detalhe minimalista de 3 abas). O contrato completo
-> dos 4 endpoints consumidos por essa UI — incluindo o novo `GET /v1/anexos/:id/download`,
-> filtros `?respostaSUS=` e os campos `enviadosAguardandoResposta`/`respondidosTotal`
-> em `/dashboard/metrics` — está em [`SMS_SIMPLIFICADO.md`](./SMS_SIMPLIFICADO.md).
 
 **Roles permitidos:**
 - Decisão (aprovar/pendenciar/rejeitar/resposta-sus): `REGULADOR_SMS`, `DESENVOLVEDOR`
@@ -890,13 +883,6 @@ Endpoint **agregado** que alimenta o file-manager de Ingestões da SMS. Retorna 
 | `?ubsId=...&ano=2026` | `ArvoreMesNode[]` (meses do ano) |
 | `?ubsId=...&ano=2026&mes=4` | `ArvoreDiaNode[]` (dias do mês) |
 
-**Filtros adicionais (v0.9.1):**
-
-| Param            | Tipo            | Descrição                                          |
-|------------------|-----------------|----------------------------------------------------|
-| `respostaSUS`    | `true \| false` | Conta apenas encaminhamentos com/sem resposta SUS  |
-| `excluirRascunho`| `true \| false` | Quando `true`, exclui `status=RASCUNHO` da contagem |
-
 Para o **nível 5** (lista de encaminhamentos de um dia específico) → `GET /encaminhamentos?desde=YYYY-MM-DD&ate=YYYY-MM-DD`.
 
 **Shape (nível 1 · UBSs):**
@@ -924,29 +910,6 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → `GET /e
 - `400 PARAMS_INCOMPATIVEIS` (ex.: `mes` sem `ano`, ou `ano` sem `ubsId`)
 - `404 UBS_NAO_ENCONTRADA` (id inválido ou fora do escopo)
 - `403 PERMISSAO_INSUFICIENTE`
-
-### 11.6. `GET /anexos/:id/download` (v0.9.1)
-
-Download de anexo de encaminhamento — usado pelo modo simplificado da SMS
-para preview em iframe e botão "baixar".
-
-**Auth:** Bearer JWT (qualquer role autenticada da prefeitura — REGULADOR_SMS,
-ATENDENTE_UBS, COORDENADOR_UBS, ADMIN, DEV).
-
-**Headers da resposta 200:**
-
-```http
-Content-Type: <mime real do arquivo>      # ex.: application/pdf, image/png
-Content-Disposition: inline; filename="..."  # inline pra preview em iframe
-Cache-Control: private, max-age=0, must-revalidate
-X-Content-Type-Options: nosniff
-```
-
-**Erros:**
-- `404 ANEXO_NAO_ENCONTRADO` (id inválido ou outra prefeitura).
-- `409 ANEXO_NAO_LIBERADO` (`details.scanStatus` ≠ `LIMPO`).
-
-Detalhamento completo em [`SMS_SIMPLIFICADO.md`](./SMS_SIMPLIFICADO.md) §8.
 
 ---
 
@@ -1221,15 +1184,15 @@ Após `npm run db:seed`, três usuários ficam disponíveis (senha **`12345678`*
 | Matrícula      | Role            | Escopo                                    |
 |----------------|-----------------|-------------------------------------------|
 | `DEV-001`      | `DESENVOLVEDOR` | GLOBAL — vê tudo, cria tudo               |
-| `ADM-001`      | `ADMIN`         | Prefeitura Municipal de Feira de Santana  |
+| `ADM-001`      | `ADMIN`         | Prefeitura Municipal de Águas Belas  |
 | `SMS-099101`   | `REGULADOR_SMS` | Prefeitura Feira (Face 2 · decide casos)  |
-| `SMS-047291`   | `ATENDENTE_UBS` | UBS CENTRAL (Feira de Santana)            |
+| `SMS-047291`   | `ATENDENTE_UBS` | UBS CENTRAL (Águas Belas)            |
 
 **Login alternativo por email:**
 - `dev@unisism.com.br`
-- `ana.admin@feira.ba.gov.br`
-- `regulador@feira.ba.gov.br`
-- `mateus.santana@saude.ba.gov.br`
+- `ana.admin@aguasbelas.pe.gov.br`
+- `regulador@aguasbelas.pe.gov.br`
+- `mateus.santana@saude.aguasbelas.pe.gov.br`
 
 ### Conta do paciente no app (Face 3)
 

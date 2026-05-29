@@ -168,7 +168,6 @@ export class EncaminhamentoController {
       ...(q.desde ? { desde: new Date(q.desde) } : {}),
       ...(q.ate ? { ate: new Date(q.ate) } : {}),
       ...(q.limit ? { limit: q.limit } : {}),
-      ...(q.respostaSUS !== undefined ? { respostaSUS: q.respostaSUS } : {}),
     });
     res.json(lista);
   };

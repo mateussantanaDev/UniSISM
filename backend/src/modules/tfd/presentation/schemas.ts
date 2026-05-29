@@ -37,59 +37,16 @@ export const atualizarMotoristaSchema = criarMotoristaSchema.partial().extend({
 });
 
 // ----- Solicitações -----
-// Cadastro inline de paciente (Face 4 v0.10) — usado pelo REGULADOR_TFD
-// para registrar paciente presencialmente sem precisar passar pela UBS.
-export const dadosPacienteInlineSchema = z.object({
-  nome: z.string().min(2).max(200),
-  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos numéricos'),
-  dataNascimento: ymd,
-  sexo: z.enum(['M', 'F', 'OUTRO']),
-  telefone: z.string().min(8).max(20),
-  endereco: z.string().min(2).max(300),
-  cartaoSus: z.string().max(20).optional(),
-  nomeMae: z.string().max(200).optional(),
-  rg: z.string().max(20).optional(),
-  bairro: z.string().max(100).optional(),
-  municipio: z.string().max(100).optional(),
-  uf: z.string().length(2).optional(),
-  cep: z.string().max(10).optional(),
-});
-
-export const dadosAcompanhanteSchema = z.object({
-  nome: z.string().min(2).max(200),
-  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos numéricos'),
-  dataNascimento: ymd,
-  telefone: z.string().min(8).max(20),
-  parentesco: z.enum([
-    'CONJUGE',
-    'FILHO_A',
-    'PAI',
-    'MAE',
-    'IRMAO_A',
-    'AVO',
-    'NETO_A',
-    'TIO_A',
-    'SOBRINHO_A',
-    'CUIDADOR',
-    'OUTRO',
-  ]),
-  rg: z.string().max(20).optional(),
-});
-
-// XOR paciente/pacienteId + ACOMPANHANTE_OBRIGATORIO são validados no use case
-// pra emitir códigos de erro específicos (PACIENTE_OU_ID_OBRIGATORIO etc).
 export const criarSolicitacaoSchema = z.object({
-  pacienteId: z.string().min(1).optional(),
-  paciente: dadosPacienteInlineSchema.optional(),
-  ubsId: z.string().min(1).optional(),
+  pacienteId: z.string().min(1),
+  ubsId: z.string().min(1),
   encaminhamentoOrigemId: z.string().optional(),
   destino: z.string().min(2).max(200),
   unidadeDestino: z.string().max(200).optional(),
   especialidade: z.string().min(2).max(100),
-  motivo: z.string().min(10).max(2000),
+  motivo: z.string().min(5).max(2000),
   dataDesejada: ymd,
   acompanhanteNecessario: z.boolean().optional(),
-  acompanhante: dadosAcompanhanteSchema.optional(),
   prioridade: z.enum(['ELETIVA', 'PRIORITARIA', 'URGENTE']),
   observacoes: z.string().max(1000).optional(),
   prefeituraId: z.string().optional(),
@@ -217,55 +174,10 @@ export const negarAbastecimentoSchema = z.object({
 });
 
 // ----- Saldo -----
-const mesYM = z.string().regex(/^\d{4}-\d{2}$/, 'YYYY-MM');
-const fonteRecursoSchema = z.enum([
-  'EMPENHO',
-  'PORTARIA',
-  'REPASSE_FEDERAL',
-  'REPASSE_ESTADUAL',
-  'REMANEJAMENTO',
-  'OUTRO',
-]);
-
 export const ajustarSaldoSchema = z.object({
   veiculoId: z.string().min(1),
-  mes: mesYM,
+  mes: z.string().regex(/^\d{4}-\d{2}$/),
   novoSaldoMensal: z.number().nonnegative(),
-  justificativa: z.string().min(10).max(2000),
-});
-
-export const aporteSaldoFrotaSchema = z
-  .object({
-    veiculoId: z.string().min(1).optional(),
-    rateioGeral: z.boolean().optional(),
-    mes: mesYM,
-    valorBRL: z.number().positive(),
-    fonte: fonteRecursoSchema,
-    numeroDocumento: z.string().min(1).max(80).optional(),
-    descricaoFonte: z.string().min(1).max(300).optional(),
-    justificativa: z.string().min(10).max(2000),
-  })
-  .refine(
-    (v) => v.rateioGeral === true || (typeof v.veiculoId === 'string' && v.veiculoId.length > 0),
-    { message: 'Informe veiculoId ou use rateioGeral=true', path: ['veiculoId'] },
-  );
-
-// ----- Saldo de Ajuda de Custo -----
-export const ajustarSaldoAjudaSchema = z.object({
-  mes: mesYM,
-  novoSaldoMensal: z.number().nonnegative(),
-  tetoAlimentacao: z.number().nonnegative().optional(),
-  tetoHospedagem: z.number().nonnegative().optional(),
-  tetoDeslocamento: z.number().nonnegative().optional(),
-  justificativa: z.string().min(10).max(2000),
-});
-
-export const aporteSaldoAjudaSchema = z.object({
-  mes: mesYM,
-  valorBRL: z.number().positive(),
-  fonte: fonteRecursoSchema,
-  numeroDocumento: z.string().min(1).max(80).optional(),
-  descricaoFonte: z.string().min(1).max(300).optional(),
   justificativa: z.string().min(10).max(2000),
 });
 

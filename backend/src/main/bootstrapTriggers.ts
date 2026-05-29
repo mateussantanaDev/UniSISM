@@ -56,7 +56,7 @@ export async function aplicarTriggersImutabilidade(): Promise<{
  * Postgres prepared statements aceitam apenas um comando por chamada,
  * então precisamos enviar cada statement individualmente.
  */
-function splitarSqlStatements(sql: string): string[] {
+export function splitarSqlStatements(sql: string): string[] {
   const out: string[] = [];
   let buf = '';
   let i = 0;

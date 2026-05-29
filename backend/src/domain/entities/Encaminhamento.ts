@@ -100,6 +100,23 @@ export interface Encaminhamento {
   observacoesRegulacao?: string;
   agendamentoPrevisto?: string | null;
   respostaSUS?: RespostaSUS | null;
+
+  // ───── Detalhes do agendamento (preenchidos pela Regulação) ─────
+  /** Endereço/sala da consulta. App paciente mostra no bloco "Sua consulta". */
+  localAgendamento?: string | null;
+  /** Nome + CRM do profissional agendado. */
+  profissionalAgendado?: string | null;
+  /**
+   * Cidade onde a consulta ocorre — EXPLÍCITA, não derivada de string parsing.
+   * Usada por `podeSolicitarTfd` (compara com município da UBS de origem).
+   */
+  cidadeAgendamento?: string | null;
+  /** UF do agendamento (default "PE" para SMS Águas Belas). 2 chars. */
+  ufAgendamento?: string | null;
+  /** Motivo da rejeição (flat — espelha conteúdo de timeline REJEITADO). */
+  motivoRejeicao?: string | null;
+  /** Recomendações "o que levar no dia". */
+  recomendacoes?: string[];
 }
 
 export interface MetricasDashboard {
@@ -109,16 +126,6 @@ export interface MetricasDashboard {
   aprovadosHoje: number;
   tempoMedioConsolidacaoSegundos: number;
   encaminhamentosSemana: number;
-  /**
-   * Aprovados que ainda não receberam a resposta oficial do SUS.
-   * Usado pelo card "Enviados" no dashboard simplificado da Face 2.
-   */
-  enviadosAguardandoResposta: number;
-  /**
-   * Aprovados que já têm `respostaSusAnexoId` preenchido.
-   * Usado pelo card "Respondidos" + atalho `/sms/respostas`.
-   */
-  respondidosTotal: number;
 }
 
 export interface ExtracaoPdfResultado {

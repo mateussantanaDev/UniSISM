@@ -1,1 +1,0 @@
-{"version":3,"file":"ListRelatoriosUseCase.js","sourceRoot":"","sources":["../../../src/application/relatorios/ListRelatoriosUseCase.ts"],"names":[],"mappings":";;;AAGA,MAAa,qBAAqB;IACH;IAA7B,YAA6B,IAA0B;QAA1B,SAAI,GAAJ,IAAI,CAAsB;IAAG,CAAC;IAE3D,IAAI,CAAC,WAAmB;QACtB,OAAO,IAAI,CAAC,IAAI,CAAC,MAAM,CAAC,WAAW,CAAC,CAAC;IACvC,CAAC;CACF;AAND,sDAMC"}

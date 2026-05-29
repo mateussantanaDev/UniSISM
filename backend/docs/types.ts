@@ -293,6 +293,18 @@ export interface Encaminhamento {
   atendenteResponsavel: string;
   observacoesRegulacao?: string;
   agendamentoPrevisto?: string | null;
+  /** Endereço/sala da consulta (preenchido na aprovação Face 2). */
+  localAgendamento?: string | null;
+  /** Nome + CRM do profissional ("Dra. X · CRM-PE 00000"). */
+  profissionalAgendado?: string | null;
+  /** Cidade da consulta — EXPLÍCITA. Usada para podeSolicitarTfd no app paciente. */
+  cidadeAgendamento?: string | null;
+  /** UF do agendamento (2 chars maiúsculos, ex.: "PE"). */
+  ufAgendamento?: string | null;
+  /** Motivo da rejeição (flat — espelha conteúdo de timeline REJEITADO). */
+  motivoRejeicao?: string | null;
+  /** Recomendações "o que levar no dia" (vindo de EspecialidadeRecomendacao). */
+  recomendacoes?: string[];
   respostaSUS?: RespostaSUS | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -303,6 +315,14 @@ export interface Encaminhamento {
 export interface AprovarRequest {
   nota?: string;
   agendamentoPrevisto?: string; // YYYY-MM-DD
+  /** Endereço/sala da consulta. Recomendado quando há agendamento. */
+  localAgendamento?: string;
+  /** Profissional + CRM ("Dra. X · CRM-PE 00000"). */
+  profissionalAgendado?: string;
+  /** Cidade da consulta. Default: município da UBS de origem. */
+  cidadeAgendamento?: string;
+  /** UF do agendamento. 2 chars maiúsculos. Default: "PE". */
+  ufAgendamento?: string;
 }
 
 export interface RegistrarPendenciaRequest {
@@ -558,6 +578,23 @@ export interface CriarPrefeituraRequest {
   cnpj?: string;
 }
 
+/** Horário de funcionamento de um dia (HH:MM `abre` e `fecha`). `null` = fechado. */
+export interface DiaHorario {
+  abre: string;
+  fecha: string;
+}
+
+/** Mapa de horários por dia da semana. Chaves omitidas = não cadastrado. */
+export interface HorariosFuncionamento {
+  segunda?: DiaHorario | null;
+  terca?: DiaHorario | null;
+  quarta?: DiaHorario | null;
+  quinta?: DiaHorario | null;
+  sexta?: DiaHorario | null;
+  sabado?: DiaHorario | null;
+  domingo?: DiaHorario | null;
+}
+
 export interface Ubs {
   id: string;
   nome: string;
@@ -568,6 +605,16 @@ export interface Ubs {
   ativa: boolean;
   prefeituraId: string;
   prefeitura?: Prefeitura;
+  /** Campos novos v0.13. */
+  bairro?: string | null;
+  cep?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  horarios?: HorariosFuncionamento | null;
+  observacoes?: string | null;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -579,6 +626,16 @@ export interface CriarUbsRequest {
   prefeituraId: string;
   endereco?: string;
   cnes?: string;
+  /** Campos novos v0.13. */
+  bairro?: string;
+  cep?: string;
+  telefone?: string;
+  whatsapp?: string;
+  email?: string;
+  latitude?: number;
+  longitude?: number;
+  horarios?: HorariosFuncionamento;
+  observacoes?: string;
 }
 
 export interface ListUbsQuery {
@@ -716,6 +773,16 @@ export interface AtualizarUbsRequest {
   endereco?: string | null;
   cnes?: string | null;
   ativa?: boolean;
+  /** Campos novos v0.13. `null` limpa o valor existente. */
+  bairro?: string | null;
+  cep?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  horarios?: HorariosFuncionamento | null;
+  observacoes?: string | null;
 }
 
 export interface AtualizarPacienteRequest {
@@ -942,9 +1009,26 @@ export interface BuscarPacientePorCpfResponse {
 // ============================================================
 
 export interface PacienteLoginRequest { cpf: string; senha: string; }
+
+/**
+ * Resposta de login do paciente (v0.18.0+).
+ *
+ * Mudanças vs v0.17.x:
+ *   - `expiresIn` agora retorna **1800** (30 min) — era 86400 (24h).
+ *   - Novos campos `refreshToken` e `refreshExpiresIn` (30 dias rotativo).
+ *
+ * Apps que ignorarem `refreshToken` continuam funcionando, mas o usuário
+ * precisará logar a cada 30 min. Recomendado implementar refresh.
+ */
 export interface PacienteLoginResponse {
+  /** Access token opaco Base64URL · TTL 30 min */
   token: string;
+  /** Refresh token rotativo Base64URL · TTL 30 dias · uso único (v0.18.0+) */
+  refreshToken: string;
+  /** Segundos até access expirar (1800) */
   expiresIn: number;
+  /** Segundos até refresh expirar (2592000 = 30 dias) (v0.18.0+) */
+  refreshExpiresIn: number;
   paciente: {
     id: string;
     cpf: string;
@@ -960,6 +1044,22 @@ export interface PacienteLoginResponse {
     senhaProvisoria: boolean;
   };
 }
+
+/** Refresh token rotativo do paciente (v0.18.0+). */
+export interface PacienteRefreshRequest {
+  /** Refresh token opaco salvo no secure storage do app. */
+  refreshToken: string;
+}
+
+/**
+ * Resposta do refresh — MESMO SHAPE do login (token + refreshToken NOVOS).
+ * App deve substituir AMBOS no secure storage imediatamente.
+ *
+ * Após esta chamada, o `refreshToken` da request fica permanentemente marcado
+ * como usado — tentar usá-lo de novo dispara `REFRESH_REUSE_DETECTED` e revoga
+ * toda a cadeia.
+ */
+export type PacienteRefreshResponse = PacienteLoginResponse;
 
 /** [legado/roadmap] ativação manual por CPF + data de nascimento. */
 export interface AtivarContaPacienteRequest {
@@ -998,3 +1098,56 @@ export interface NotificacaoPacienteDTO {
 }
 
 export interface ContadorNotificacoes { naoLidas: number; }
+
+// ============================================================
+// BANNERS SMS — CMS admin (v0.15+)
+// Endpoints: /v1/admin/sms-banners[/{id}]
+// RBAC: DESENVOLVEDOR (global) | ADMIN/REGULADOR_SMS (própria prefeitura)
+// ============================================================
+
+export type BannerTone = 'URGENTE' | 'CAMPANHA' | 'INFO' | 'ATENCAO';
+
+export interface AdminBanner {
+  id: string;
+  titulo: string;
+  corpo: string;
+  tone: BannerTone;
+  publicadoEm: string;
+  expiraEm: string | null;
+  imagemUrl: string | null;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  prioridadeOrdem: number;
+  ativo: boolean;
+  prefeituraId: string | null;
+  totalVisualizacoes: number;
+  criadoPorId: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface CriarBannerRequest {
+  titulo: string;
+  corpo: string;
+  tone: BannerTone;
+  publicadoEm?: string;
+  expiraEm?: string | null;
+  imagemUrl?: string | null;   // HTTPS-only
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;      // HTTPS-only
+  prioridadeOrdem?: number;
+  prefeituraId?: string | null; // só DEV pode setar null
+}
+
+export interface AtualizarBannerRequest {
+  titulo?: string;
+  corpo?: string;
+  tone?: BannerTone;
+  publicadoEm?: string;
+  expiraEm?: string | null;
+  imagemUrl?: string | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  prioridadeOrdem?: number;
+  ativo?: boolean;
+}

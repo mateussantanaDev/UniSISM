@@ -14,15 +14,21 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'unisism_types.dart';
 
-/// Storage do token — substitua por qualquer impl que implemente esta interface.
+/// Storage de tokens (access + refresh) — substitua por qualquer impl
+/// que implemente esta interface. Por padrão usa flutter_secure_storage.
 abstract class TokenStorage {
   Future<String?> read();
   Future<void> write(String? token);
+
+  /// Refresh token (v0.18.0+). Default no-op para compat com impls antigas.
+  Future<String?> readRefresh() async => null;
+  Future<void> writeRefresh(String? token) async {}
 }
 
 /// Impl padrão com flutter_secure_storage (criptografado no device).
 class SecureTokenStorage implements TokenStorage {
   static const _key = 'unisism_paciente_token';
+  static const _refreshKey = 'unisism_paciente_refresh';
   final _storage = const FlutterSecureStorage();
 
   @override
@@ -32,6 +38,14 @@ class SecureTokenStorage implements TokenStorage {
   Future<void> write(String? token) => token == null
       ? _storage.delete(key: _key)
       : _storage.write(key: _key, value: token);
+
+  @override
+  Future<String?> readRefresh() => _storage.read(key: _refreshKey);
+
+  @override
+  Future<void> writeRefresh(String? token) => token == null
+      ? _storage.delete(key: _refreshKey)
+      : _storage.write(key: _refreshKey, value: token);
 }
 
 /// Cliente da API.
@@ -41,7 +55,7 @@ class SecureTokenStorage implements TokenStorage {
 /// final api = UnisismApi(
 ///   baseUrl: 'http://10.0.2.2:3333/v1',  // Android emulator
 ///   // 'http://localhost:3333/v1'        // iOS simulator
-///   // 'https://api.unisism.feira.ba.gov.br/v1'  // produção
+///   // 'https://api.unisism.aguasbelas.pe.gov.br/v1'  // produção
 /// );
 /// await api.login(cpf: '123.456.789-00', senha: '12345678');
 /// final notifs = await api.listarNotificacoes();
@@ -98,13 +112,19 @@ class UnisismApi {
 
   bool _isPublic(String path) =>
       path.startsWith('/paciente-app/auth/login') ||
-      path.startsWith('/paciente-app/auth/ativar-conta');
+      path.startsWith('/paciente-app/auth/refresh') ||
+      path.startsWith('/paciente-app/auth/ativar-conta') ||
+      path.startsWith('/paciente-app/auth/esqueci-senha') ||
+      path.startsWith('/paciente-app/auth/redefinir-senha');
 
   // ==========================================================
   // Auth
   // ==========================================================
 
-  /// Login do paciente. Persiste o token automaticamente.
+  /// Login do paciente. Persiste access + refresh tokens automaticamente.
+  ///
+  /// v0.18.0+ — agora persiste TAMBÉM o `refreshToken`. App pode usar
+  /// `refresh()` quando o access expirar (30 min) em vez de re-pedir senha.
   Future<LoginPacienteResposta> login({
     required String cpf,
     required String senha,
@@ -115,7 +135,62 @@ class UnisismApi {
     );
     final out = LoginPacienteResposta.fromJson(r.data as Map<String, dynamic>);
     await _tokens.write(out.token);
+    if (out.refreshToken != null) {
+      await _tokens.writeRefresh(out.refreshToken);
+    }
     return out;
+  }
+
+  /// Rotaciona o par access+refresh (v0.18.0+).
+  ///
+  /// Comportamento:
+  ///   - Lê o refresh atual do storage.
+  ///   - Chama `POST /auth/refresh` com ele.
+  ///   - Em sucesso: substitui AMBOS os tokens no storage e retorna.
+  ///   - Em erro (REUSE_DETECTED, EXPIRADO, REVOGADO, INVALIDO, CONTA_DESATIVADA):
+  ///     limpa storage local e rethrow (app deve ir pra /login).
+  ///
+  /// Recomendado uso em interceptor Dio quando recebe 401:
+  /// ```dart
+  /// onError: (err, handler) async {
+  ///   if (err.response?.statusCode == 401 && !_isAuthEndpoint(err.requestOptions.path)) {
+  ///     try {
+  ///       await api.refresh();
+  ///       final retried = await api._dio.fetch(err.requestOptions);
+  ///       return handler.resolve(retried);
+  ///     } catch (_) { /* refresh falhou — segue pro login */ }
+  ///   }
+  ///   return handler.next(err);
+  /// }
+  /// ```
+  Future<LoginPacienteResposta> refresh() async {
+    final current = await _tokens.readRefresh();
+    if (current == null) {
+      throw const UnisismApiError(
+        status: 401,
+        code: 'REFRESH_TOKEN_INVALIDO',
+        message: 'Sem refresh token salvo',
+      );
+    }
+    try {
+      final r = await _dio.post(
+        '/paciente-app/auth/refresh',
+        data: {'refreshToken': current},
+      );
+      final out = LoginPacienteResposta.fromJson(r.data as Map<String, dynamic>);
+      // CRITICAL: substituir AMBOS imediatamente
+      await _tokens.write(out.token);
+      if (out.refreshToken != null) {
+        await _tokens.writeRefresh(out.refreshToken);
+      }
+      return out;
+    } catch (e) {
+      // Qualquer erro → limpar storage (forçar login). Especialmente importante
+      // em REFRESH_REUSE_DETECTED — alguém pode ter clonado nosso storage.
+      await _tokens.write(null);
+      await _tokens.writeRefresh(null);
+      rethrow;
+    }
   }
 
   /// Ativa a conta no primeiro acesso.
@@ -137,14 +212,18 @@ class UnisismApi {
     );
   }
 
-  /// Logout (revoga a sessão no backend + limpa token local).
+  /// Logout (revoga sessão + TODOS os refresh tokens no backend + limpa storage).
+  ///
+  /// v0.18.0+: o backend agora revoga TODOS os refresh tokens vivos da conta
+  /// (não só a sessão atual). Logout = "sair de vez".
   Future<void> logout() async {
     try {
       await _dio.post('/paciente-app/auth/logout');
     } catch (_) {
-      // ignora — sempre limpa token local
+      // ignora — sempre limpa storage local
     } finally {
       await _tokens.write(null);
+      await _tokens.writeRefresh(null);
     }
   }
 

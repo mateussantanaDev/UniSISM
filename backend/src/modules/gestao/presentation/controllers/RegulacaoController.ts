@@ -30,6 +30,23 @@ import type { GetArvoreEncaminhamentosUseCase } from '../../application/use-case
 const aprovarSchema = z.object({
   nota: z.string().optional(),
   agendamentoPrevisto: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  /**
+   * Local físico (endereço + sala). Recomendado quando `agendamentoPrevisto`
+   * presente — sem isso o app mostra apenas a data.
+   */
+  localAgendamento: z.string().trim().max(300).optional(),
+  /**
+   * Profissional + CRM. Sugestão de formato: "Dra. Beatriz Lima · CRM-PE 22189".
+   */
+  profissionalAgendado: z.string().trim().max(200).optional(),
+  /**
+   * Cidade da consulta. EXPLÍCITA (não derivada). Usada para `podeSolicitarTfd`
+   * (compara com município da UBS de origem). UI sugere municipio da UBS como
+   * default; regulador altera quando a consulta é em outra cidade.
+   */
+  cidadeAgendamento: z.string().trim().max(100).optional(),
+  /** UF do agendamento. 2 chars maiúsculos (ex.: BA, SP). */
+  ufAgendamento: z.string().trim().length(2).optional(),
 });
 
 const pendenciaSchema = z.object({
@@ -40,21 +57,10 @@ const rejeitarSchema = z.object({
   motivo: z.string(),
 });
 
-const arvoreBoolean = z
-  .union([z.literal('true'), z.literal('false'), z.boolean()])
-  .transform((v) =>
-    v === true || v === 'true' ? true : v === false || v === 'false' ? false : undefined,
-  )
-  .optional();
-
 const arvoreQuerySchema = z.object({
   ubsId: z.string().optional(),
   ano: z.coerce.number().int().min(1900).max(9999).optional(),
   mes: z.coerce.number().int().min(1).max(12).optional(),
-  /** Filtra por presença de resposta oficial do SUS. */
-  respostaSUS: arvoreBoolean,
-  /** Default `true` para a tela /sms/respostas: exclui RASCUNHO. */
-  excluirRascunho: arvoreBoolean,
 });
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -100,6 +106,18 @@ export class RegulacaoController {
       ...(body.nota !== undefined ? { nota: body.nota } : {}),
       ...(body.agendamentoPrevisto !== undefined
         ? { agendamentoPrevisto: body.agendamentoPrevisto }
+        : {}),
+      ...(body.localAgendamento !== undefined
+        ? { localAgendamento: body.localAgendamento }
+        : {}),
+      ...(body.profissionalAgendado !== undefined
+        ? { profissionalAgendado: body.profissionalAgendado }
+        : {}),
+      ...(body.cidadeAgendamento !== undefined
+        ? { cidadeAgendamento: body.cidadeAgendamento }
+        : {}),
+      ...(body.ufAgendamento !== undefined
+        ? { ufAgendamento: body.ufAgendamento }
         : {}),
     });
     res.status(200).json(enc);
@@ -158,8 +176,6 @@ export class RegulacaoController {
       ...(q.ubsId !== undefined ? { ubsId: q.ubsId } : {}),
       ...(q.ano !== undefined ? { ano: q.ano } : {}),
       ...(q.mes !== undefined ? { mes: q.mes } : {}),
-      ...(q.respostaSUS !== undefined ? { respostaSUS: q.respostaSUS } : {}),
-      ...(q.excluirRascunho !== undefined ? { excluirRascunho: q.excluirRascunho } : {}),
     });
     res.json(lista);
   };

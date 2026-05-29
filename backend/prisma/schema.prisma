@@ -25,7 +25,8 @@ enum RoleAtendente {
   ATENDENTE_UBS     // atendente de uma UBS — vê apenas dados da UBS
   REGULADOR_SMS     // regulador da SMS de uma prefeitura
   GESTOR_TFD        // gestor de Tratamento Fora do Domicílio (Face 4) — frota, motoristas, viagens, ajuda de custo
-  REGULADOR_TFD     // regulador presencial TFD — cadastra solicitações; UI minimalista (Face 4 v0.10)
+  ATENDENTE_TFD     // atendente TFD (terminal rodoviário) — apenas cadastra solicitações de viagem
+  MOTORISTA_TFD     // motorista TFD com app mobile próprio (UNISISM-motorista) — vê só suas viagens
 }
 
 enum Sexo {
@@ -201,7 +202,7 @@ model Prefeitura {
   id         String    @id @default(uuid())
   nome       String
   municipio  String
-  uf         String    @default("BA")
+  uf         String    @default("PE")
   cnpj       String?   @unique
   ativa      Boolean   @default(true)
   deletadoEm DateTime?
@@ -211,17 +212,20 @@ model Prefeitura {
   relatorios Relatorio[] @relation("RelatorioPrefeitura")
 
   // Face 4 (TFD)
-  veiculosTfd        VeiculoTFD[]            @relation("VeiculoPrefeitura")
-  motoristasTfd      MotoristaTFD[]          @relation("MotoristaPrefeitura")
-  solicitacoesTfd    SolicitacaoTFD[]        @relation("SolicTfdPrefeitura")
-  viagensFrota       ViagemFrota[]           @relation("ViagemFrotaPrefeitura")
-  abastecimentos     Abastecimento[]         @relation("AbastPrefeitura")
-  saldosVeiculos     SaldoVeiculo[]          @relation("SaldoVeicPrefeitura")
+  veiculosTfd     VeiculoTFD[]      @relation("VeiculoPrefeitura")
+  motoristasTfd   MotoristaTFD[]    @relation("MotoristaPrefeitura")
+  solicitacoesTfd SolicitacaoTFD[]  @relation("SolicTfdPrefeitura")
+  viagensFrota    ViagemFrota[]     @relation("ViagemFrotaPrefeitura")
+  abastecimentos  Abastecimento[]   @relation("AbastPrefeitura")
+  saldosVeiculos  SaldoVeiculo[]    @relation("SaldoVeicPrefeitura")
+  ajudasCusto     AjudaCusto[]      @relation("AjudaPrefeitura")
+  tfdAuditLogs    TfdAuditLog[]     @relation("TfdAuditPrefeitura")
+  smsBanners      SmsBanner[]       @relation("BannerPrefeitura")
+
+  // v0.18.0 merge — TFD financeiro do remote
   saldosAjudaCusto   SaldoAjudaCusto[]       @relation("SaldoAjudaPrefeitura")
   aportesFrota       AporteSaldoFrota[]      @relation("AporteFrotaPrefeitura")
   aportesAjudaCusto  AporteSaldoAjudaCusto[] @relation("AporteAjudaPrefeitura")
-  ajudasCusto        AjudaCusto[]            @relation("AjudaPrefeitura")
-  tfdAuditLogs       TfdAuditLog[]           @relation("TfdAuditPrefeitura")
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -233,11 +237,37 @@ model Ubs {
   id         String    @id @default(uuid())
   nome       String
   municipio  String
-  uf         String    @default("BA")
+  uf         String    @default("PE")
   endereco   String?
   cnes       String?   @unique
   ativa      Boolean   @default(true)
   deletadoEm DateTime?
+
+  /// Endereço completo (campos auxiliares para UI bonita do app paciente).
+  bairro     String?   @db.VarChar(120)
+  cep        String?   @db.VarChar(9)         // formato "00000-000"
+
+  /// Contato (mostrados no app paciente § "Minha UBS")
+  telefone   String?   @db.VarChar(20)        // somente dígitos (10/11) ou E.164
+  whatsapp   String?   @db.VarChar(20)
+  email      String?   @db.VarChar(180)       // institucional
+
+  /// Geolocalização (mapa no app — opcional)
+  latitude   Decimal?  @db.Decimal(9, 6)      // -90 a 90
+  longitude  Decimal?  @db.Decimal(9, 6)      // -180 a 180
+
+  /// Horários de funcionamento — JSON estruturado:
+  /// {
+  ///   "segunda": { "abre": "07:00", "fecha": "17:00" },
+  ///   "terca":   { "abre": "07:00", "fecha": "17:00" },
+  ///   ...
+  ///   "sabado":  null,   // fechado
+  ///   "domingo": null
+  /// }
+  horarios   Json?
+
+  /// Observações livres (max ~500 chars na UI). Útil para "ponto de referência", "ramal", etc.
+  observacoes String?  @db.Text
 
   prefeituraId String
   prefeitura   Prefeitura @relation(fields: [prefeituraId], references: [id])
@@ -247,6 +277,8 @@ model Ubs {
   encaminhamentos Encaminhamento[]
   relatorios      Relatorio[] @relation("RelatorioUbs")
   solicitacoesTfd SolicitacaoTFD[] @relation("SolicTfdUbs")
+  /// Contas do app paciente vinculadas a esta UBS (Face 3).
+  contasPaciente  PacienteConta[] @relation("PacienteContaUbs")
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -297,6 +329,9 @@ model Atendente {
   encaminhamentos Encaminhamento[]
   relatorios      Relatorio[]
   atividades      AtividadeAtendente[]
+
+  // Face 4 (TFD · motorista) — 1:1 com perfil operacional na frota
+  motoristaTfd MotoristaTFD? @relation("AtendenteMotorista")
 
   criadoEm    DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -624,6 +659,20 @@ model Encaminhamento {
   observacoesRegulacao String?
   agendamentoPrevisto  DateTime?
 
+  // Detalhes do agendamento (preenchidos pela Regulação no fluxo de aprovação).
+  // Usados pelo app do paciente pra mostrar "Sua consulta" rica.
+  localAgendamento     String?
+  profissionalAgendado String?
+  /// Cidade onde a consulta ocorre — campo EXPLÍCITO (não derivar do localAgendamento).
+  /// Usado pra `podeSolicitarTfd` (compara com município da UBS de origem).
+  cidadeAgendamento    String?
+  /// UF do agendamento. Default "BA" mas explícito pra TFD interestadual.
+  ufAgendamento        String?   @db.Char(2)
+  /// Motivo da rejeição (espelha conteúdo da timeline RJEITADO — flat pro app).
+  motivoRejeicao       String?
+  /// Recomendações "o que levar no dia" — string[] curto por especialidade.
+  recomendacoes        Json?
+
   // Resposta SUS Federal (enrichment pós-aprovação)
   respostaSusAnexoId           String?
   respostaSusObservacao        String?
@@ -642,6 +691,8 @@ model Encaminhamento {
 
   anexos   AnexoDocumento[]
   timeline EventoTimeline[]
+  /// Pedidos TFD que anexaram este encaminhamento p/ ganhar prioridade.
+  tfdSolicitacoes TfdPacienteSolicitacao[] @relation("TfdEncaminhamento")
 
   criadoEm    DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -753,6 +804,30 @@ model Relatorio {
 }
 
 /**
+ * Recomendações ("o que levar no dia") por especialidade médica.
+ * Mostradas no app paciente no detalhe do encaminhamento.
+ *
+ * Chave: nome canônico da especialidade (case-insensitive na busca).
+ * Escopo: global. Pode evoluir pra ter `prefeituraId` se prefeituras quiserem
+ * customizar, mas no MVP é compartilhado.
+ *
+ * CRUD via Face 2 (`/v1/admin/recomendacoes-especialidade/*` — só DEV/ADMIN/REGULADOR_SMS).
+ */
+model EspecialidadeRecomendacao {
+  id            String   @id @default(uuid())
+  /// Ex.: "Cardiologia", "Endocrinologia", "Ortopedia". Case-insensitive na busca.
+  especialidade String   @unique
+  /// Array de bullets curtos (≤ 120 chars cada). Tipicamente 3-6 itens.
+  recomendacoes Json     // string[]
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+  criadoPorId   String?
+
+  @@map("especialidade_recomendacoes")
+}
+
+/**
  * Auditoria imutável de relatórios (append-only). Retenção mínima 5 anos
  * por exigência da LGPD art. 37 + boa prática setor público.
  */
@@ -805,13 +880,92 @@ model PacienteConta {
   // O app do paciente DEVE forçar troca de senha antes de prosseguir.
   senhaProvisoria Boolean @default(false)
 
+  /// UBS vinculada (definida na criação automática da conta, na consolidação do
+  /// 1º encaminhamento via Face 1). Permite o app mostrar a tela "Minha UBS".
+  ubsVinculadaId String?
+  ubsVinculada   Ubs?    @relation("PacienteContaUbs", fields: [ubsVinculadaId], references: [id])
+
   sessoesPaciente       SessaoPaciente[]
+  refreshTokensPaciente PacienteRefreshToken[]
   notificacoes          NotificacaoPaciente[]
+  recoveryTokens        PacienteRecoveryToken[]
+  dispositivos          PacienteDispositivo[]
+  bannerViews           SmsBannerView[]            @relation("BannerView")
+  tfdSolicitacoes       TfdPacienteSolicitacao[]   @relation("TfdContaSolic")
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   @@map("pacientes_contas")
+}
+
+// ============================================================
+// Recuperação de senha (P0 — esqueci-senha / redefinir-senha)
+// ============================================================
+
+/// Token opaco enviado por email para o paciente redefinir senha.
+/// Uso único, TTL 30 minutos.
+model PacienteRecoveryToken {
+  id          String   @id @default(uuid())
+  contaId     String
+  conta       PacienteConta @relation(fields: [contaId], references: [id], onDelete: Cascade)
+  tokenHash   String   @unique  // SHA-256(token)
+  expiraEm    DateTime
+  usadoEm     DateTime?
+  ipOrigem    String?
+  userAgent   String?
+  criadoEm    DateTime @default(now())
+
+  @@index([contaId])
+  @@index([expiraEm])
+  @@map("paciente_recovery_tokens")
+}
+
+// ============================================================
+// FCM push notifications (P1)
+// ============================================================
+
+enum PlataformaPush {
+  ANDROID
+  IOS
+}
+
+/// Provider de push usado pelo dispositivo do paciente.
+/// `NTFY` — ntfy.sh self-hosted (open-source, padrão UNISISM)
+/// `FCM`  — legado/compat (Firebase Cloud Messaging — não recomendado para SUS)
+/// `WEB_PUSH` — Web Push API (RFC 8030) — para PWAs futuros
+enum PushProvider {
+  NTFY
+  FCM
+  WEB_PUSH
+}
+
+/// Dispositivos registrados pelo paciente pra receber push notifications.
+/// `endpoint` UNIQUE globalmente — se cidadão trocar de conta no mesmo device,
+/// o endpoint muda de dono via UPSERT (audit registra a transferência).
+///
+/// Campo `endpoint`:
+///   - NTFY: nome do topic (`https://ntfy.host/<topic>`). Topic é UUID por device.
+///   - FCM: token FCM (legacy support — Firebase desabilitado por padrão na SMS).
+///   - WEB_PUSH: endpoint serializado JSON (`{endpoint, keys: {p256dh, auth}}`)
+model PacienteDispositivo {
+  id              String   @id @default(uuid())
+  contaId         String
+  conta           PacienteConta @relation(fields: [contaId], references: [id], onDelete: Cascade)
+  endpoint        String   @unique  // antes: `fcmToken`
+  provider        PushProvider @default(NTFY)
+  plataforma      PlataformaPush
+  appVersion      String?
+  /// Quando recebeu o último push com sucesso (usado pra cleanup).
+  ultimoSucessoEm DateTime?
+  /// Contagem de falhas consecutivas (atinge ${CLEANUP_FALHAS_LIMITE} → tokens removido).
+  falhasConsecutivas Int   @default(0)
+  ultimaAtividade DateTime @default(now())
+  criadoEm        DateTime @default(now())
+
+  @@index([contaId])
+  @@index([provider, ultimaAtividade])
+  @@map("paciente_dispositivos")
 }
 
 model SessaoPaciente {
@@ -825,8 +979,64 @@ model SessaoPaciente {
   revogadaEm  DateTime?
   criadaEm    DateTime @default(now())
 
+  // Refresh token que originou esta sessão (1:1 — facilita rotação encadeada)
+  refreshTokenId String? @unique
+  refreshToken   PacienteRefreshToken? @relation(fields: [refreshTokenId], references: [id], onDelete: SetNull)
+
   @@index([contaId])
   @@map("sessoes_paciente")
+}
+
+/// Refresh token rotativo do app paciente (Face 3 · v0.18.0+).
+///
+/// Comportamento:
+///   - Login emite par (access opaco 30 min + refresh opaco 30 dias).
+///   - `POST /auth/refresh` consome o refresh atual:
+///     - Marca `usadoEm` no antigo e link `substituidoPorId` para o novo.
+///     - Emite novo par (access + refresh).
+///   - Detecção de reuse: se receber refresh com `usadoEm != null`,
+///     REVOGA TODA A CADEIA da conta (sinal de vazamento/clone).
+///   - TTL: 30 dias. Logout marca `revogadoEm` em todos da conta.
+model PacienteRefreshToken {
+  id        String @id @default(uuid())
+  contaId   String
+  conta     PacienteConta @relation(fields: [contaId], references: [id], onDelete: Cascade)
+  tokenHash String @unique
+  expiraEm  DateTime
+  ip        String?
+  userAgent String?
+
+  // Rotação — quando usado, aponta pro filho que o substituiu
+  usadoEm          DateTime?
+  substituidoPorId String? @unique
+  substituidoPor   PacienteRefreshToken? @relation("PacRefreshChain", fields: [substituidoPorId], references: [id], onDelete: SetNull)
+  substituiu       PacienteRefreshToken? @relation("PacRefreshChain")
+
+  // Revogação explícita
+  revogadoEm      DateTime?
+  motivoRevogacao String?   // LOGOUT | REUSE_DETECTED | CONTA_INATIVA | CHAIN_COMPROMISED
+
+  criadoEm DateTime @default(now())
+
+  sessao SessaoPaciente?
+
+  @@index([contaId])
+  @@index([expiraEm])
+  @@map("paciente_refresh_tokens")
+}
+
+/// Status do dispatch push (worker `PushDispatcherWorker`).
+/// `PENDENTE` — recém-criada, aguardando worker
+/// `ENVIADO` — push entregue com sucesso pelo provider
+/// `FALHOU` — provider rejeitou (ex: token expirado, ntfy unreachable)
+/// `EXCEDIDO` — todas as tentativas esgotadas (dead-letter)
+/// `SEM_DEVICE` — paciente não tem dispositivo registrado (push pulado)
+enum StatusPushNotificacao {
+  PENDENTE
+  ENVIADO
+  FALHOU
+  EXCEDIDO
+  SEM_DEVICE
 }
 
 model NotificacaoPaciente {
@@ -842,10 +1052,136 @@ model NotificacaoPaciente {
   lidaEm            DateTime?
   criadaEm          DateTime                @default(now())
 
+  /// Status do dispatch push (v0.16+). Default PENDENTE → worker tenta enviar.
+  pushStatus        StatusPushNotificacao   @default(PENDENTE)
+  pushTentativas    Int                     @default(0)
+  pushUltimaTentativaEm DateTime?
+  pushEnviadoEm     DateTime?
+  pushErro          String?                 @db.Text
+
   @@index([contaId, criadaEm])
   @@index([pacienteCpf, criadaEm])
   @@index([encaminhamentoId])
+  @@index([pushStatus, criadaEm])
   @@map("notificacoes_paciente")
+}
+
+// ============================================================
+// Banners SMS (P2 — comunicados da Secretaria Municipal de Saúde)
+// ============================================================
+
+enum BannerTone {
+  URGENTE     // vermelho — emergência sanitária
+  CAMPANHA    // verde — campanha positiva (vacinação)
+  INFO        // azul — informativo neutro
+  ATENCAO     // âmbar — atenção sem urgência
+}
+
+/// Banner exibido no carrossel "Avisos da Secretaria" da home do app paciente.
+/// Curadoria por ADMIN/REGULADOR_SMS. Filtro automático por ativo + não expirado.
+model SmsBanner {
+  id              String     @id @default(uuid())
+  titulo          String
+  corpo           String
+  tone            BannerTone
+  publicadoEm     DateTime   @default(now())
+  expiraEm        DateTime?
+  imagemUrl       String?    // HTTPS (Android bloqueia HTTP)
+  ctaLabel        String?
+  ctaUrl          String?    // HTTPS obrigatório
+  prioridadeOrdem Int        @default(0)
+  ativo           Boolean    @default(true)
+
+  /// Escopo opcional — quando null, banner global; quando setado, só pacientes
+  /// dessa prefeitura veem (filtro por `ubsVinculada.prefeituraId`).
+  prefeituraId    String?
+  prefeitura      Prefeitura? @relation("BannerPrefeitura", fields: [prefeituraId], references: [id])
+
+  criadoPorId     String
+  criadoEm        DateTime   @default(now())
+  atualizadoEm    DateTime   @updatedAt
+
+  visualizacoes   SmsBannerView[]
+
+  @@index([ativo, expiraEm])
+  @@index([prefeituraId, ativo])
+  @@map("sms_banners")
+}
+
+/// Telemetria — 1 view por (banner, paciente). UPSERT idempotente.
+model SmsBannerView {
+  id         String        @id @default(uuid())
+  bannerId   String
+  banner     SmsBanner     @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  contaId    String
+  conta      PacienteConta @relation("BannerView", fields: [contaId], references: [id], onDelete: Cascade)
+  vistoEm    DateTime      @default(now())
+
+  @@unique([bannerId, contaId])
+  @@map("sms_banner_views")
+}
+
+// ============================================================
+// TFD do paciente (P2 — solicitações de vaga via app)
+// ============================================================
+
+enum TfdPacienteStatus {
+  AGUARDANDO
+  APROVADA
+  RECUSADA
+  CANCELADA
+  EMBARCADA
+  CONCLUIDA
+}
+
+enum TfdPacientePrioridade {
+  NORMAL
+  PRIORITARIA
+  URGENTE
+}
+
+/// Pedido de vaga TFD feito pelo paciente via app. Anti-fraude:
+/// índice (contaId, viagemId) garante 1 pedido ATIVO por (paciente, viagem).
+///
+/// Quando aprovado por gestor TFD, o atendente também aloca em `ViagemPassageiro`
+/// (Face 4) — esta tabela é a "solicitação", a alocação é separada.
+model TfdPacienteSolicitacao {
+  id           String @id @default(uuid())
+  contaId      String
+  conta        PacienteConta @relation("TfdContaSolic", fields: [contaId], references: [id])
+  viagemId     String
+  viagem       ViagemFrota @relation("TfdViagemSolic", fields: [viagemId], references: [id])
+
+  status       TfdPacienteStatus     @default(AGUARDANDO)
+  prioridade   TfdPacientePrioridade @default(NORMAL)
+  justificativaPaciente String
+  acompanhante String?
+  encaminhamentoId String?
+  encaminhamento Encaminhamento? @relation("TfdEncaminhamento", fields: [encaminhamentoId], references: [id])
+  encaminhamentoProtocolo String?
+
+  numeroAssento  String?
+  motivoRecusa   String?
+
+  /// Operador (atendente Face 4) que aprovou/recusou — preenchido em transição.
+  operadorId       String?
+  operadorNome     String?
+  operadorMatricula String?
+
+  criadaEm     DateTime @default(now())
+  aprovadaEm   DateTime?
+  recusadaEm   DateTime?
+  canceladaEm  DateTime?
+
+  /// Contagem de re-tentativas após recusa/cancelamento.
+  /// Anti-spam: limite no use case (default 3).
+  tentativasReabertura Int @default(0)
+
+  @@unique([contaId, viagemId])
+  @@index([contaId, criadaEm])
+  @@index([viagemId])
+  @@index([status, prioridade, criadaEm])
+  @@map("tfd_paciente_solicitacoes")
 }
 
 // ============================================================
@@ -891,6 +1227,12 @@ enum AcaoProntuario {
   ADD_VIAGEM_TFD
   UPDATE_VIAGEM_TFD
   REMOVE_VIAGEM_TFD
+  /// Paciente baixou anexo do próprio prontuário (Face 3).
+  /// Retenção CFM 20 anos — `dados` traz `anexoId`, `mimeType`, `size`, `ip`, `userAgent`.
+  DOWNLOAD_ANEXO
+  /// Paciente visualizou seu dossiê médico (Face 3 — endpoints `/dossie/*`).
+  /// Retenção CFM 20 anos — rastreabilidade de acesso ao prontuário.
+  LEITURA_DOSSIE
 }
 
 /**
@@ -1051,27 +1393,25 @@ enum AcaoAuditoriaTFD {
   ABASTECIMENTO_REALIZADO
   // Saldo
   SALDO_AJUSTADO
-  SALDO_APORTADO
-  SALDO_AJUDA_AJUSTADO
-  SALDO_AJUDA_APORTADO
   // Ajuda de custo
   AJUDA_CUSTO_CRIADA
   AJUDA_CUSTO_AUTORIZADA
   AJUDA_CUSTO_PAGA
   AJUDA_CUSTO_NEGADA
-}
-
-/**
- * Origem orçamentária de um aporte de saldo (frota ou ajuda de custo).
- * EMPENHO/PORTARIA exigem `numeroDocumento`; OUTRO exige `descricaoFonte`.
- */
-enum FonteRecursoTFD {
-  EMPENHO
-  PORTARIA
-  REPASSE_FEDERAL
-  REPASSE_ESTADUAL
-  REMANEJAMENTO
-  OUTRO
+  // App do motorista (Face 4 · mobile)
+  MOTORISTA_LOGIN
+  MOTORISTA_LOGOUT
+  MOTORISTA_TROCOU_SENHA
+  FCM_TOKEN_REGISTRADO
+  FCM_TOKEN_REVOGADO
+  // Solicitações de TFD vindas pelo APP PACIENTE (Face 3 — v0.17+)
+  TFD_PAC_SOLIC_CRIADA
+  TFD_PAC_SOLIC_APROVADA
+  TFD_PAC_SOLIC_RECUSADA
+  TFD_PAC_SOLIC_CANCELADA_PELO_PACIENTE
+  TFD_PAC_SOLIC_REABERTA
+  TFD_PAC_EMBARCADA
+  TFD_PAC_CONCLUIDA
 }
 
 // ----- Frota -----
@@ -1119,6 +1459,13 @@ model MotoristaTFD {
   totalViagens    Int     @default(0)
   totalKmRodados  BigInt  @default(0)
 
+  // Face 4 (app motorista) — vínculo 1:1 com Atendente (role=MOTORISTA_TFD).
+  // Permite login no app mobile, troca de senha, push notification.
+  atendenteId   String?    @unique
+  atendente     Atendente? @relation("AtendenteMotorista", fields: [atendenteId], references: [id])
+  primeiroLogin Boolean    @default(true)
+  fcmToken      String?    // Firebase Cloud Messaging — preenchido pelo app após login
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
   deletadoEm   DateTime?
@@ -1140,8 +1487,8 @@ model SolicitacaoTFD {
   prefeitura               Prefeitura @relation("SolicTfdPrefeitura", fields: [prefeituraId], references: [id])
   pacienteId               String
   paciente                 Paciente   @relation(fields: [pacienteId], references: [id])
-  ubsId                    String?
-  ubs                      Ubs?       @relation("SolicTfdUbs", fields: [ubsId], references: [id])
+  ubsId                    String
+  ubs                      Ubs        @relation("SolicTfdUbs", fields: [ubsId], references: [id])
   encaminhamentoOrigemId   String?
   destino                  String
   unidadeDestino           String?
@@ -1149,7 +1496,6 @@ model SolicitacaoTFD {
   motivo                   String
   dataDesejada             DateTime
   acompanhanteNecessario   Boolean  @default(false)
-  acompanhante             Json?    // DadosAcompanhante (Face 4 v0.10)
   prioridade               PrioridadeSolicTFD
   status                   StatusSolicitacaoTFD @default(PENDENTE)
   observacoes              String?
@@ -1158,12 +1504,10 @@ model SolicitacaoTFD {
   viagemId                 String?
   viagem                   ViagemFrota? @relation(fields: [viagemId], references: [id])
 
-  criadaEm      DateTime @default(now())
-  criadaPorId   String?
-  criadaPorNome String?
-  decididaEm    DateTime?
+  criadaEm    DateTime @default(now())
+  decididaEm  DateTime?
   decididaPorId String?
-  deletadaEm    DateTime?
+  deletadaEm  DateTime?
 
   anexos      AnexoSolicitacaoTFD[]
   passageiros ViagemPassageiro[]
@@ -1218,14 +1562,22 @@ model ViagemFrota {
   concluidaEm     DateTime?
   motivoCancelamento String?
 
+  /// Auto-touch em qualquer escrita no model. Usado pelo app do motorista
+  /// como cursor de sync incremental (`GET /motorista-app/minhas-viagens?desde=ISO`).
+  /// Mudança em passageiro também faz "touch" via update explícito no use case.
+  atualizadoEm    DateTime @default(now()) @updatedAt
+
   passageiros     ViagemPassageiro[]
   abastecimentos  Abastecimento[]
   ajudasCusto     AjudaCusto[]
   solicitacoes    SolicitacaoTFD[]
+  /// Pedidos de vaga feitos por pacientes via app (Face 3).
+  solicitacoesPaciente TfdPacienteSolicitacao[]  @relation("TfdViagemSolic")
 
   @@index([prefeituraId, status, data])
   @@index([veiculoId, data])
   @@index([motoristaId, data])
+  @@index([motoristaId, atualizadoEm])
   @@map("tfd_viagens")
 }
 
@@ -1322,117 +1674,6 @@ model SaldoAjuste {
   @@map("tfd_saldo_ajustes")
 }
 
-/**
- * Aporte de saldo de combustível por veículo. SOMA `valorBRL` em SaldoVeiculo.
- * `rateioGeral=true` cria N registros (um por veículo ATIVO) no mesmo grupo.
- */
-model AporteSaldoFrota {
-  id              String  @id @default(uuid())
-  prefeituraId    String
-  prefeitura      Prefeitura @relation("AporteFrotaPrefeitura", fields: [prefeituraId], references: [id])
-  veiculoId       String?
-  rateioGeral     Boolean @default(false)
-  /// Identifica os N registros gerados num único `aportar` com rateio.
-  grupoRateioId   String?
-  mes             String   // YYYY-MM
-  valorBRL        Decimal  @db.Decimal(14, 2)
-  fonte           FonteRecursoTFD
-  numeroDocumento String?
-  descricaoFonte  String?
-  justificativa   String
-  operadorId      String
-  criadoEm        DateTime @default(now())
-
-  @@index([prefeituraId, mes, criadoEm])
-  @@index([veiculoId, mes])
-  @@index([grupoRateioId])
-  @@map("tfd_saldo_frota_aportes")
-}
-
-/**
- * Saldo orçamentário mensal de Ajuda de Custo (único por prefeitura × mês).
- * Tetos por categoria — 0 = sem teto.
- */
-model SaldoAjudaCusto {
-  prefeituraId      String
-  prefeitura        Prefeitura @relation("SaldoAjudaPrefeitura", fields: [prefeituraId], references: [id])
-  mes               String     // YYYY-MM
-  saldoMensal       Decimal    @db.Decimal(14, 2) @default(0)
-  saldoConsumido    Decimal    @db.Decimal(14, 2) @default(0)
-  saldoReservado    Decimal    @db.Decimal(14, 2) @default(0)
-  tetoAlimentacao   Decimal    @db.Decimal(12, 2) @default(0)
-  tetoHospedagem    Decimal    @db.Decimal(12, 2) @default(0)
-  tetoDeslocamento  Decimal    @db.Decimal(12, 2) @default(0)
-
-  atualizadoEm DateTime @updatedAt
-
-  @@id([prefeituraId, mes])
-  @@map("tfd_saldo_ajuda_custo")
-}
-
-/**
- * Aporte de saldo de ajuda de custo (SOMA em SaldoAjudaCusto).
- */
-model AporteSaldoAjudaCusto {
-  id              String  @id @default(uuid())
-  prefeituraId    String
-  prefeitura      Prefeitura @relation("AporteAjudaPrefeitura", fields: [prefeituraId], references: [id])
-  mes             String
-  valorBRL        Decimal  @db.Decimal(14, 2)
-  fonte           FonteRecursoTFD
-  numeroDocumento String?
-  descricaoFonte  String?
-  justificativa   String
-  operadorId      String
-  criadoEm        DateTime @default(now())
-
-  @@index([prefeituraId, mes, criadoEm])
-  @@map("tfd_saldo_ajuda_aportes")
-}
-
-/**
- * Ajustes manuais ao saldo de ajuda de custo (sobrescreve mensal/tetos).
- */
-model SaldoAjudaCustoAjuste {
-  id                       String  @id @default(uuid())
-  prefeituraId             String
-  mes                      String
-  saldoAnterior            Decimal @db.Decimal(14, 2)
-  saldoNovo                Decimal @db.Decimal(14, 2)
-  tetoAlimentacaoAnterior  Decimal @db.Decimal(12, 2)
-  tetoAlimentacaoNovo      Decimal @db.Decimal(12, 2)
-  tetoHospedagemAnterior   Decimal @db.Decimal(12, 2)
-  tetoHospedagemNovo       Decimal @db.Decimal(12, 2)
-  tetoDeslocamentoAnterior Decimal @db.Decimal(12, 2)
-  tetoDeslocamentoNovo     Decimal @db.Decimal(12, 2)
-  justificativa            String
-  ajustadoPorId            String
-  ajustadoEm               DateTime @default(now())
-
-  @@index([prefeituraId, mes])
-  @@map("tfd_saldo_ajuda_ajustes")
-}
-
-/**
- * Idempotência: caching das respostas de mutações com `X-Idempotency-Key`.
- * TTL = 24h (limpeza por job ou por ON DELETE com timestamp). A chave é
- * SHA-256 de (operadorId + key + method + path) — evita colisões entre rotas.
- */
-model TfdIdempotencyKey {
-  hash         String   @id          // sha256(operadorId|key|method|path)
-  operadorId   String
-  method       String
-  path         String
-  statusCode   Int
-  responseJson Json
-  criadoEm     DateTime @default(now())
-  expiraEm     DateTime
-
-  @@index([operadorId, criadoEm])
-  @@index([expiraEm])
-  @@map("tfd_idempotency_keys")
-}
-
 // ----- Ajuda de Custo -----
 model AjudaCusto {
   id                          String   @id @default(uuid())
@@ -1487,4 +1728,112 @@ model TfdAuditLog {
   @@index([recursoTipo, recursoId, em(sort: Desc)])
   @@index([acao, em])
   @@map("tfd_audit_log")
+}
+// ============================================================
+// Models e enums MERGEADOS do remote 'versão simplificada'
+// (TFD avançado: aportes financeiros + saldo ajuda custo + idempotency)
+// ============================================================
+
+// === Enum ===
+enum FonteRecursoTFD {
+  EMPENHO
+  PORTARIA
+  REPASSE_FEDERAL
+  REPASSE_ESTADUAL
+  REMANEJAMENTO
+  OUTRO
+}
+
+// === Models ===
+
+model TfdIdempotencyKey {
+  hash         String   @id          // sha256(operadorId|key|method|path)
+  operadorId   String
+  method       String
+  path         String
+  statusCode   Int
+  responseJson Json
+  criadoEm     DateTime @default(now())
+  expiraEm     DateTime
+
+  @@index([operadorId, criadoEm])
+  @@index([expiraEm])
+  @@map("tfd_idempotency_keys")
+}
+
+model AporteSaldoFrota {
+  id              String  @id @default(uuid())
+  prefeituraId    String
+  prefeitura      Prefeitura @relation("AporteFrotaPrefeitura", fields: [prefeituraId], references: [id])
+  veiculoId       String?
+  rateioGeral     Boolean @default(false)
+  /// Identifica os N registros gerados num único `aportar` com rateio.
+  grupoRateioId   String?
+  mes             String   // YYYY-MM
+  valorBRL        Decimal  @db.Decimal(14, 2)
+  fonte           FonteRecursoTFD
+  numeroDocumento String?
+  descricaoFonte  String?
+  justificativa   String
+  operadorId      String
+  criadoEm        DateTime @default(now())
+
+  @@index([prefeituraId, mes, criadoEm])
+  @@index([veiculoId, mes])
+  @@index([grupoRateioId])
+  @@map("tfd_saldo_frota_aportes")
+}
+
+model AporteSaldoAjudaCusto {
+  id              String  @id @default(uuid())
+  prefeituraId    String
+  prefeitura      Prefeitura @relation("AporteAjudaPrefeitura", fields: [prefeituraId], references: [id])
+  mes             String
+  valorBRL        Decimal  @db.Decimal(14, 2)
+  fonte           FonteRecursoTFD
+  numeroDocumento String?
+  descricaoFonte  String?
+  justificativa   String
+  operadorId      String
+  criadoEm        DateTime @default(now())
+
+  @@index([prefeituraId, mes, criadoEm])
+  @@map("tfd_saldo_ajuda_aportes")
+}
+
+model SaldoAjudaCusto {
+  prefeituraId      String
+  prefeitura        Prefeitura @relation("SaldoAjudaPrefeitura", fields: [prefeituraId], references: [id])
+  mes               String     // YYYY-MM
+  saldoMensal       Decimal    @db.Decimal(14, 2) @default(0)
+  saldoConsumido    Decimal    @db.Decimal(14, 2) @default(0)
+  saldoReservado    Decimal    @db.Decimal(14, 2) @default(0)
+  tetoAlimentacao   Decimal    @db.Decimal(12, 2) @default(0)
+  tetoHospedagem    Decimal    @db.Decimal(12, 2) @default(0)
+  tetoDeslocamento  Decimal    @db.Decimal(12, 2) @default(0)
+
+  atualizadoEm DateTime @updatedAt
+
+  @@id([prefeituraId, mes])
+  @@map("tfd_saldo_ajuda_custo")
+}
+
+model SaldoAjudaCustoAjuste {
+  id                       String  @id @default(uuid())
+  prefeituraId             String
+  mes                      String
+  saldoAnterior            Decimal @db.Decimal(14, 2)
+  saldoNovo                Decimal @db.Decimal(14, 2)
+  tetoAlimentacaoAnterior  Decimal @db.Decimal(12, 2)
+  tetoAlimentacaoNovo      Decimal @db.Decimal(12, 2)
+  tetoHospedagemAnterior   Decimal @db.Decimal(12, 2)
+  tetoHospedagemNovo       Decimal @db.Decimal(12, 2)
+  tetoDeslocamentoAnterior Decimal @db.Decimal(12, 2)
+  tetoDeslocamentoNovo     Decimal @db.Decimal(12, 2)
+  justificativa            String
+  ajustadoPorId            String
+  ajustadoEm               DateTime @default(now())
+
+  @@index([prefeituraId, mes])
+  @@map("tfd_saldo_ajuda_ajustes")
 }

@@ -267,11 +267,6 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       if (filtro.ate) range.lte = filtro.ate;
       where.criadoEm = range;
     }
-    if (filtro.respostaSUS === true) {
-      where.respostaSusAnexoId = { not: null };
-    } else if (filtro.respostaSUS === false) {
-      where.respostaSusAnexoId = null;
-    }
     const rows = await prisma.encaminhamento.findMany({
       where,
       include: INCLUDE_FULL,
@@ -364,16 +359,7 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
 
     const baseWhere = whereByScopeViaUbs(scope);
 
-    const [
-      hoje,
-      aguardando,
-      pendencias,
-      aprovadosHoje,
-      semana,
-      todos,
-      enviadosAguardando,
-      respondidos,
-    ] = await Promise.all([
+    const [hoje, aguardando, pendencias, aprovadosHoje, semana, todos] = await Promise.all([
       prisma.encaminhamento.count({ where: { ...baseWhere, criadoEm: { gte: inicioHoje } } }),
       prisma.encaminhamento.count({
         where: { ...baseWhere, status: StatusPrisma.AGUARDANDO_REGULACAO },
@@ -395,22 +381,6 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
         take: 200,
         orderBy: { criadoEm: 'desc' },
       }),
-      // Aprovados sem resposta SUS = "Enviados" (card do dashboard simples)
-      prisma.encaminhamento.count({
-        where: {
-          ...baseWhere,
-          status: StatusPrisma.APROVADO,
-          respostaSusAnexoId: null,
-        },
-      }),
-      // Aprovados COM resposta SUS = "Respondidos"
-      prisma.encaminhamento.count({
-        where: {
-          ...baseWhere,
-          status: StatusPrisma.APROVADO,
-          respostaSusAnexoId: { not: null },
-        },
-      }),
     ]);
 
     const tempos = todos
@@ -427,8 +397,6 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       aprovadosHoje,
       tempoMedioConsolidacaoSegundos: Math.round(tempoMedioMs / 1000),
       encaminhamentosSemana: semana,
-      enviadosAguardandoResposta: enviadosAguardando,
-      respondidosTotal: respondidos,
     };
   }
 }

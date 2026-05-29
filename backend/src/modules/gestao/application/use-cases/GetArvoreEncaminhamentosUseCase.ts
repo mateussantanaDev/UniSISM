@@ -12,33 +12,10 @@
  * Indices necessários (definir em migration de produção):
  *   - (prefeitura_id, ubsId, EXTRACT(YEAR FROM criado_em), EXTRACT(MONTH FROM criado_em))
  */
-import { Prisma } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { BadRequest, Forbidden, NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 import { CACHE_TTL, getCache } from '../../../../infrastructure/cache/Cache';
-
-interface ArvoreFilters {
-  respostaSUS: boolean | undefined;
-  excluirRascunho: boolean;
-}
-
-/**
- * Compõe o trecho SQL adicional aplicado em todas as queries da árvore.
- * Vazio se nada for solicitado.
- */
-function filtroSql(f: ArvoreFilters): Prisma.Sql {
-  const parts: Prisma.Sql[] = [];
-  if (f.respostaSUS === true) {
-    parts.push(Prisma.sql`AND "respostaSusAnexoId" IS NOT NULL`);
-  } else if (f.respostaSUS === false) {
-    parts.push(Prisma.sql`AND "respostaSusAnexoId" IS NULL`);
-  }
-  if (f.excluirRascunho) {
-    parts.push(Prisma.sql`AND status <> 'RASCUNHO'`);
-  }
-  return parts.length > 0 ? Prisma.join(parts, ' ') : Prisma.empty;
-}
 
 // ---- Tipos de retorno ----
 
@@ -83,18 +60,6 @@ export interface GetArvoreInput {
   ubsId?: string;
   ano?: number;
   mes?: number;
-  /**
-   * `true` → conta apenas encaminhamentos com resposta SUS.
-   * `false` → apenas SEM resposta SUS.
-   * `undefined` → não filtra (default).
-   * Usado pela tela `/sms/respostas` (file-manager de respostas oficiais).
-   */
-  respostaSUS?: boolean;
-  /**
-   * `true` (default da tela) → exclui RASCUNHO da contagem. O atendente
-   * SMS só vê o que efetivamente chegou.
-   */
-  excluirRascunho?: boolean;
 }
 
 // ---- Helpers ----
@@ -157,22 +122,16 @@ export class GetArvoreEncaminhamentosUseCase {
     }
 
     // chave de cache inclui todos os parâmetros do escopo + filtros
-    const respKey = input.respostaSUS === undefined ? '*' : String(input.respostaSUS);
-    const rascKey = input.excluirRascunho === undefined ? '*' : String(input.excluirRascunho);
-    const cacheKey = `arvore:${prefeituraFilter ?? 'GLOBAL'}:${input.ubsId ?? '*'}:${input.ano ?? '*'}:${input.mes ?? '*'}:r=${respKey}:nr=${rascKey}`;
+    const cacheKey = `arvore:${prefeituraFilter ?? 'GLOBAL'}:${input.ubsId ?? '*'}:${input.ano ?? '*'}:${input.mes ?? '*'}`;
 
     return this.cache.remember(cacheKey, CACHE_TTL.ARVORE, () => this.compute(prefeituraFilter, input));
   }
 
   private compute(prefeituraFilter: string | null, input: GetArvoreInput): Promise<ArvoreNode[]> {
-    const filtros: ArvoreFilters = {
-      respostaSUS: input.respostaSUS,
-      excluirRascunho: input.excluirRascunho ?? false,
-    };
-    if (!input.ubsId) return this.nivelUbs(prefeituraFilter, filtros);
-    if (input.ano === undefined) return this.nivelAno(input.ubsId, filtros);
-    if (input.mes === undefined) return this.nivelMes(input.ubsId, input.ano, filtros);
-    return this.nivelDia(input.ubsId, input.ano, input.mes, filtros);
+    if (!input.ubsId) return this.nivelUbs(prefeituraFilter);
+    if (input.ano === undefined) return this.nivelAno(input.ubsId);
+    if (input.mes === undefined) return this.nivelMes(input.ubsId, input.ano);
+    return this.nivelDia(input.ubsId, input.ano, input.mes);
   }
 
   /**
@@ -186,10 +145,7 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 1: UBSs ----
-  private async nivelUbs(
-    prefeituraFilter: string | null,
-    filtros: ArvoreFilters,
-  ): Promise<ArvoreUbsNode[]> {
+  private async nivelUbs(prefeituraFilter: string | null): Promise<ArvoreUbsNode[]> {
     const ubsList = await prisma.ubs.findMany({
       where: prefeituraFilter ? { prefeituraId: prefeituraFilter } : {},
       select: { id: true, nome: true },
@@ -201,14 +157,12 @@ export class GetArvoreEncaminhamentosUseCase {
     const ids = ubsList.map((u) => u.id);
 
     type Row = { ubsId: string; status: string; qtd: bigint; max_ano: number | null };
-    const f = filtroSql(filtros);
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT "ubsId", status,
              COUNT(*)::bigint AS qtd,
              MAX(EXTRACT(YEAR FROM "criadoEm"))::int AS max_ano
       FROM encaminhamentos
       WHERE "ubsId" = ANY(${ids})
-        ${f}
       GROUP BY "ubsId", status
     `;
 
@@ -240,14 +194,12 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 2: anos ----
-  private async nivelAno(ubsId: string, filtros: ArvoreFilters): Promise<ArvoreAnoNode[]> {
+  private async nivelAno(ubsId: string): Promise<ArvoreAnoNode[]> {
     type Row = { ano: number; status: string; qtd: bigint };
-    const f = filtroSql(filtros);
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT EXTRACT(YEAR FROM "criadoEm")::int AS ano, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
       WHERE "ubsId" = ${ubsId}
-        ${f}
       GROUP BY ano, status
       ORDER BY ano DESC
     `;
@@ -259,19 +211,13 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 3: meses ----
-  private async nivelMes(
-    ubsId: string,
-    ano: number,
-    filtros: ArvoreFilters,
-  ): Promise<ArvoreMesNode[]> {
+  private async nivelMes(ubsId: string, ano: number): Promise<ArvoreMesNode[]> {
     type Row = { mes: number; status: string; qtd: bigint };
-    const f = filtroSql(filtros);
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT EXTRACT(MONTH FROM "criadoEm")::int AS mes, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
       WHERE "ubsId" = ${ubsId}
         AND EXTRACT(YEAR FROM "criadoEm") = ${ano}::int
-        ${f}
       GROUP BY mes, status
       ORDER BY mes DESC
     `;
@@ -283,21 +229,14 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 4: dias ----
-  private async nivelDia(
-    ubsId: string,
-    ano: number,
-    mes: number,
-    filtros: ArvoreFilters,
-  ): Promise<ArvoreDiaNode[]> {
+  private async nivelDia(ubsId: string, ano: number, mes: number): Promise<ArvoreDiaNode[]> {
     type Row = { dia: number; status: string; qtd: bigint };
-    const f = filtroSql(filtros);
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT EXTRACT(DAY FROM "criadoEm")::int AS dia, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
       WHERE "ubsId" = ${ubsId}
         AND EXTRACT(YEAR FROM "criadoEm") = ${ano}::int
         AND EXTRACT(MONTH FROM "criadoEm") = ${mes}::int
-        ${f}
       GROUP BY dia, status
       ORDER BY dia DESC
     `;

@@ -1,7 +1,7 @@
 # UNISISM · UBS — Backend
 
 Backend Node.js + TypeScript + Express + Prisma + PostgreSQL para a Face 1 (UBS) do
-sistema **UNISISM** da SMS de Feira de Santana / BA.
+sistema **UNISISM** da SMS de Águas Belas / PE.
 
 Implementa todos os contratos descritos em `BACKEND-SPEC.md` (auth, perfil, dashboard,
 encaminhamentos com OCR/PDF, pacientes/PEC, relatórios).
@@ -77,7 +77,7 @@ docker compose exec backend npx ts-node-dev --transpile-only prisma/seed.ts
 
 | Campo | Valor |
 |---|---|
-| Login | `SMS-047291` (ou `mateus.santana@saude.ba.gov.br`) |
+| Login | `SMS-047291` (ou `mateus.santana@saude.aguasbelas.pe.gov.br`) |
 | Senha | `12345678` |
 | UBS | UBS CENTRAL |
 | Encaminhamento de teste em PENDÊNCIA | `UBS-{ano}-100137` |

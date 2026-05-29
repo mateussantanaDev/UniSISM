@@ -17,9 +17,31 @@ import {
   normalizarCpf,
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
+/**
+ * Política de TTL (v0.18.0 — refresh rotativo):
+ *   - Access token: 30 min (era 24h)
+ *   - Refresh token: 30 dias rotativo (uso único, detecção de reuse)
+ *
+ * O app continua compatível com a v0.17.x:
+ *   - Campos `token` + `expiresIn` continuam presentes.
+ *   - `refreshToken` + `refreshExpiresIn` são NOVOS — clientes antigos os ignoram.
+ *
+ * Apps que querem aproveitar refresh devem:
+ *   1. Persistir `refreshToken` no secure storage.
+ *   2. Quando access retornar 401, chamar `POST /auth/refresh` com o refresh
+ *      atual antes de redirecionar pra /login.
+ */
+const ACCESS_TTL_MS = 30 * 60 * 1000;            // 30 min
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+const ACCESS_EXPIRES_IN_S = 30 * 60;
+
 export interface LoginPacienteOutput {
   token: string;
+  /** Refresh rotativo (v0.18.0+). Apps antigos ignoram. */
+  refreshToken: string;
   expiresIn: number;
+  /** Segundos até refresh expirar (v0.18.0+). */
+  refreshExpiresIn: number;
   paciente: {
     id: string;
     cpf: string;
@@ -58,24 +80,43 @@ export class LoginPacienteUseCase {
     const ok = await this.hasher.compare(senha, conta.senhaHash);
     if (!ok) throw Unauthorized('CREDENCIAIS_INVALIDAS', 'CPF ou senha inválidos');
 
-    // Gera token opaco (não JWT — mais simples de revogar)
-    const token = crypto.randomBytes(48).toString('base64url');
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const expiraEm = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    // Gera par (access opaco + refresh opaco) atomicamente
+    const accessToken = crypto.randomBytes(48).toString('base64url');
+    const refreshToken = crypto.randomBytes(48).toString('base64url');
+    const accessHash = crypto.createHash('sha256').update(accessToken).digest('hex');
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const now = new Date();
+    const accessExpira = new Date(now.getTime() + ACCESS_TTL_MS);
+    const refreshExpira = new Date(now.getTime() + REFRESH_TTL_MS);
 
-    await prisma.sessaoPaciente.create({
-      data: {
-        contaId: conta.id,
-        tokenHash,
-        ip: ip ?? null,
-        userAgent: userAgent ?? null,
-        expiraEm,
-      },
+    await prisma.$transaction(async (tx) => {
+      const refreshRow = await tx.pacienteRefreshToken.create({
+        data: {
+          contaId: conta.id,
+          tokenHash: refreshHash,
+          expiraEm: refreshExpira,
+          ip: ip ?? null,
+          userAgent: userAgent ?? null,
+        },
+      });
+
+      await tx.sessaoPaciente.create({
+        data: {
+          contaId: conta.id,
+          tokenHash: accessHash,
+          ip: ip ?? null,
+          userAgent: userAgent ?? null,
+          expiraEm: accessExpira,
+          refreshTokenId: refreshRow.id,
+        },
+      });
     });
 
     return {
-      token,
-      expiresIn: 24 * 60 * 60,
+      token: accessToken,
+      refreshToken,
+      expiresIn: ACCESS_EXPIRES_IN_S,
+      refreshExpiresIn: Math.floor(REFRESH_TTL_MS / 1000),
       paciente: {
         id: conta.id,
         cpf: cpfDigits,

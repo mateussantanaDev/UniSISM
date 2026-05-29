@@ -85,7 +85,7 @@ o frontend já espera `PacienteCompleto` em DELETE, mantenha 200 + body.
 
 - Calendário (sem hora): `YYYY-MM-DD`
 - Timestamps completos: ISO 8601 UTC (`2026-04-30T14:32:18.000Z`)
-- Frontend converte para `America/Bahia` na apresentação.
+- Frontend converte para `America/Pernambuco` na apresentação.
 
 ### 2.3 Identificadores
 

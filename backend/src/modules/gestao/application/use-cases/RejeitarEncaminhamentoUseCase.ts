@@ -81,6 +81,9 @@ export class RejeitarEncaminhamentoUseCase {
         data: {
           status: StatusEncaminhamento.REJEITADO,
           observacoesRegulacao: '',
+          // Persistir motivo flat — o app paciente usa pra mostrar bloco
+          // vermelho "Motivo da recusa" sem precisar varrer a timeline.
+          motivoRejeicao: motivo,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

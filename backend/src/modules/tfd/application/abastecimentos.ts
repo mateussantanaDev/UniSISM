@@ -138,22 +138,6 @@ export class AbastecimentosUseCases {
     if (!veiculo || veiculo.deletadoEm || veiculo.prefeituraId !== prefeituraId) {
       throw NotFound('VEICULO_NAO_ENCONTRADO', 'Veículo não encontrado');
     }
-    // Compatibilidade combustível: FLEX aceita GASOLINA/ETANOL; demais batem exato.
-    if (veiculo.combustivel === 'FLEX') {
-      if (input.combustivel !== 'GASOLINA' && input.combustivel !== 'ETANOL') {
-        throw Unprocessable(
-          'PAYLOAD_INVALIDO',
-          `Veículo FLEX só aceita GASOLINA ou ETANOL (recebido: ${input.combustivel})`,
-          { veiculoCombustivel: 'FLEX', recebido: input.combustivel },
-        );
-      }
-    } else if (veiculo.combustivel !== input.combustivel) {
-      throw Unprocessable(
-        'PAYLOAD_INVALIDO',
-        `Combustível ${input.combustivel} incompatível com veículo ${veiculo.combustivel}`,
-        { veiculoCombustivel: veiculo.combustivel, recebido: input.combustivel },
-      );
-    }
     const op = await resolverOperador(this.atendentes, autorId, prefeituraId);
 
     // Resolve valorEstimado — aceita modo "valor direto" OU "litros × preço"

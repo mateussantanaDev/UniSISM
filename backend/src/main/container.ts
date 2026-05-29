@@ -19,6 +19,7 @@ import {
 import { LoginUseCase } from '../application/auth/LoginUseCase';
 import { LogoutUseCase } from '../application/auth/LogoutUseCase';
 import { ForgotPasswordUseCase } from '../application/auth/ForgotPasswordUseCase';
+import { buildEmailService } from '../infrastructure/email/EmailService';
 import { VerifyCodeUseCase } from '../application/auth/VerifyCodeUseCase';
 import { ResetPasswordUseCase } from '../application/auth/ResetPasswordUseCase';
 import { MeUseCase } from '../application/auth/MeUseCase';
@@ -33,8 +34,6 @@ import { GetEncaminhamentoUseCase } from '../application/encaminhamentos/GetEnca
 import { ResolverPendenciaUseCase } from '../application/encaminhamentos/ResolverPendenciaUseCase';
 import { ListPacientesUseCase } from '../application/pacientes/ListPacientesUseCase';
 import { GetPacienteUseCase } from '../application/pacientes/GetPacienteUseCase';
-import { GetDownloadAnexoUseCase } from '../application/anexos/GetDownloadAnexoUseCase';
-import { AnexosController } from '../presentation/controllers/AnexosController';
 import { CriarRelatorioUseCase } from '../modules/relatorios/application/CriarRelatorioUseCase';
 import { ListarRelatoriosUseCase } from '../modules/relatorios/application/ListarRelatoriosUseCase';
 import { BaixarRelatorioUseCase } from '../modules/relatorios/application/BaixarRelatorioUseCase';
@@ -54,6 +53,23 @@ import { DashboardController } from '../presentation/controllers/DashboardContro
 import { EncaminhamentoController } from '../presentation/controllers/EncaminhamentoController';
 import { PacienteController } from '../presentation/controllers/PacienteController';
 import { AdminController } from '../presentation/controllers/AdminController';
+import { RecomendacoesController } from '../presentation/controllers/RecomendacoesController';
+import { SmsBannersAdminController } from '../presentation/controllers/SmsBannersAdminController';
+import {
+  ListarBannersAdminUseCase,
+  ObterBannerAdminUseCase,
+  CriarBannerAdminUseCase,
+  AtualizarBannerAdminUseCase,
+  DeletarBannerAdminUseCase,
+} from '../application/admin/SmsBannerAdminUseCases';
+import { BannersRateLimiter } from '../modules/paciente-app/infrastructure/BannersRateLimiter';
+import {
+  ListarRecomendacoesUseCase,
+  ObterRecomendacaoUseCase,
+  CriarRecomendacaoUseCase,
+  AtualizarRecomendacaoUseCase,
+  DeletarRecomendacaoUseCase,
+} from '../application/admin/RecomendacoesEspecialidadeUseCases';
 
 import { AprovarEncaminhamentoUseCase } from '../modules/gestao/application/use-cases/AprovarEncaminhamentoUseCase';
 import { RegistrarPendenciaUseCase } from '../modules/gestao/application/use-cases/RegistrarPendenciaUseCase';
@@ -103,24 +119,86 @@ import {
 import { ProntuarioController } from '../modules/prontuario/presentation/ProntuarioController';
 
 import { TfdAuditLogger } from '../modules/tfd/infrastructure/TfdAuditLogger';
+import { NotificacaoPacienteService } from '../infrastructure/services/NotificacaoPacienteService';
 import { VeiculosTfdUseCases } from '../modules/tfd/application/veiculos';
 import { MotoristasTfdUseCases } from '../modules/tfd/application/motoristas';
 import { SolicitacoesTfdUseCases } from '../modules/tfd/application/solicitacoes';
 import { ViagensTfdUseCases } from '../modules/tfd/application/viagens';
 import { AbastecimentosUseCases } from '../modules/tfd/application/abastecimentos';
 import { SaldoUseCases } from '../modules/tfd/application/saldo';
-import { SaldoAjudaCustoUseCases } from '../modules/tfd/application/saldo-ajuda-custo';
 import { AjudasCustoUseCases } from '../modules/tfd/application/ajudas-custo';
 import { AuditoriaTfdUseCases } from '../modules/tfd/application/auditoria';
-import { RelatoriosTfdUseCases } from '../modules/tfd/application/relatorios';
+import {
+  ListarTfdPacienteSolicAdminUseCase,
+  ObterTfdPacienteSolicAdminUseCase,
+  AprovarTfdPacienteSolicUseCase,
+  RecusarTfdPacienteSolicUseCase,
+  MarcarEmbarqueTfdPacUseCase,
+  MarcarConclusaoTfdPacUseCase,
+} from '../modules/tfd/application/tfd-paciente-solicitacoes';
 import { TfdController } from '../modules/tfd/presentation/TfdController';
 
 import { LoginPacienteUseCase } from '../modules/paciente-app/application/use-cases/LoginPacienteUseCase';
+import { RefreshTokenPacienteUseCase } from '../modules/paciente-app/application/use-cases/RefreshTokenPacienteUseCase';
 import { AtivarContaPacienteUseCase } from '../modules/paciente-app/application/use-cases/AtivarContaPacienteUseCase';
 import { ListarMeusEncaminhamentosUseCase } from '../modules/paciente-app/application/use-cases/ListarMeusEncaminhamentosUseCase';
 import { ListarNotificacoesUseCase } from '../modules/paciente-app/application/use-cases/ListarNotificacoesUseCase';
 import { TrocarSenhaPacienteUseCase } from '../modules/paciente-app/application/use-cases/TrocarSenhaPacienteUseCase';
+import { EsqueciSenhaPacienteUseCase } from '../modules/paciente-app/application/use-cases/EsqueciSenhaPacienteUseCase';
+import { RedefinirSenhaPacienteUseCase } from '../modules/paciente-app/application/use-cases/RedefinirSenhaPacienteUseCase';
+import { PasswordRecoveryRateLimiter } from '../modules/paciente-app/infrastructure/PasswordRecoveryRateLimiter';
+import { RecoveryTokenPurgeCron } from '../modules/paciente-app/infrastructure/RecoveryTokenPurgeCron';
+import { DownloadAnexoPacienteUseCase } from '../modules/paciente-app/application/use-cases/DownloadAnexoPacienteUseCase';
+import { DownloadAnexoRateLimiter } from '../modules/paciente-app/infrastructure/DownloadAnexoRateLimiter';
+import { DossieRateLimiter } from '../modules/paciente-app/infrastructure/DossieRateLimiter';
+import {
+  RegistrarPushDispositivoUseCase,
+  RevogarPushDispositivoUseCase,
+} from '../modules/paciente-app/application/use-cases/PushDispositivoUseCases';
+import { buildPushProvider } from '../infrastructure/push/buildPushProvider';
+import { PushDispatcherWorker } from '../modules/paciente-app/infrastructure/PushDispatcherWorker';
+import { PushTokenCleanupCron } from '../modules/paciente-app/infrastructure/PushTokenCleanupCron';
+import { ObterMinhaUbsUseCase } from '../modules/paciente-app/application/use-cases/ObterMinhaUbsUseCase';
+import {
+  RegistrarFcmPacienteUseCase,
+  RevogarFcmPacienteUseCase,
+} from '../modules/paciente-app/application/use-cases/FcmDispositivoUseCases';
+import {
+  DossieResumoUseCase,
+  DossieAtendimentosUseCase,
+  DossieVacinacoesUseCase,
+  DossieExamesUseCase,
+} from '../modules/paciente-app/application/use-cases/DossieUseCases';
+import {
+  ListarBannersAtivosUseCase,
+  ObterBannerUseCase,
+  MarcarBannerVistoUseCase,
+} from '../modules/paciente-app/application/use-cases/BannersUseCases';
+import {
+  ListarTfdViagensPacienteUseCase,
+  ObterTfdViagemPacienteUseCase,
+  ListarMinhasSolicitacoesTfdUseCase,
+  ObterMinhaSolicitacaoTfdUseCase,
+  CriarSolicitacaoTfdPacienteUseCase,
+  CancelarSolicitacaoTfdPacienteUseCase,
+} from '../modules/paciente-app/application/use-cases/TfdPacienteUseCases';
 import { PacienteAppController } from '../modules/paciente-app/presentation/controllers/PacienteAppController';
+
+import { LoginMotoristaUseCase } from '../modules/motorista-app/application/use-cases/LoginMotoristaUseCase';
+import { TrocarSenhaMotoristaUseCase } from '../modules/motorista-app/application/use-cases/TrocarSenhaMotoristaUseCase';
+import { LogoutMotoristaUseCase } from '../modules/motorista-app/application/use-cases/LogoutMotoristaUseCase';
+import { MeMotoristaUseCase } from '../modules/motorista-app/application/use-cases/MeMotoristaUseCase';
+import { ListarMinhasViagensUseCase } from '../modules/motorista-app/application/use-cases/ListarMinhasViagensUseCase';
+import { ObterViagemMotoristaUseCase } from '../modules/motorista-app/application/use-cases/ObterViagemMotoristaUseCase';
+import { IniciarViagemMotoristaUseCase } from '../modules/motorista-app/application/use-cases/IniciarViagemMotoristaUseCase';
+import { ConcluirViagemMotoristaUseCase } from '../modules/motorista-app/application/use-cases/ConcluirViagemMotoristaUseCase';
+import { MarcarPresencaMotoristaUseCase } from '../modules/motorista-app/application/use-cases/MarcarPresencaMotoristaUseCase';
+import { ListarMinhasAjudasUseCase } from '../modules/motorista-app/application/use-cases/ListarMinhasAjudasUseCase';
+import {
+  RegistrarFcmTokenUseCase,
+  RevogarFcmTokenUseCase,
+} from '../modules/motorista-app/application/use-cases/FcmTokenUseCases';
+import { MotoristaAppController } from '../modules/motorista-app/presentation/controllers/MotoristaAppController';
 
 export function buildContainer() {
   const atendentes = new PrismaAtendenteRepository();
@@ -141,9 +219,11 @@ export function buildContainer() {
     intervalMs: Number(process.env['OUTBOX_INTERVAL_MS'] ?? 500),
   });
 
+  const emailService = buildEmailService();
+
   const loginUC = new LoginUseCase(atendentes, sessoes, hasher, tokens, audit);
   const logoutUC = new LogoutUseCase(sessoes, tokens);
-  const forgotUC = new ForgotPasswordUseCase(atendentes, resets, hasher);
+  const forgotUC = new ForgotPasswordUseCase(atendentes, resets, hasher, emailService);
   const verifyUC = new VerifyCodeUseCase(atendentes, resets, hasher);
   const resetUC = new ResetPasswordUseCase(atendentes, resets, sessoes, hasher);
   const meUC = new MeUseCase(atendentes);
@@ -172,7 +252,7 @@ export function buildContainer() {
 
   const createPrefeituraUC = new CreatePrefeituraUseCase();
   const listPrefeiturasUC = new ListPrefeiturasUseCase();
-  const createUbsUC = new CreateUbsUseCase();
+  const createUbsUC = new CreateUbsUseCase(audit);
   const listUbsUC = new ListUbsUseCase();
   const createUsuarioUC = new CreateUsuarioUseCase(hasher, audit);
   const listUsuariosUC = new ListUsuariosUseCase();
@@ -186,7 +266,7 @@ export function buildContainer() {
   const deleteUbsUC = new DeleteUbsUseCase(audit);
   const updateEncUC = new UpdateEncaminhamentoUseCase(audit);
   const deleteEncUC = new DeleteEncaminhamentoUseCase(audit);
-  const updatePacienteUC = new UpdatePacienteUseCase(pacientesRepo, audit);
+  const updatePacienteUC = new UpdatePacienteUseCase(audit);
   const deletePacienteUC = new DeletePacienteUseCase(audit);
   const buscarPacientePorCpfUC = new BuscarPacientePorCpfUseCase();
 
@@ -226,6 +306,26 @@ export function buildContainer() {
     deletePrefeituraUC,
     updateUbsUC,
     deleteUbsUC,
+  );
+
+  // ----- Recomendações por especialidade (CRUD admin) -----
+  // CREATE/UPDATE/DELETE recebem `audit` pra registrar em `auditoria_logs`
+  // (mutação afeta UX de paciente, precisa rastreabilidade administrativa).
+  const recomendacoesController = new RecomendacoesController(
+    new ListarRecomendacoesUseCase(),
+    new ObterRecomendacaoUseCase(),
+    new CriarRecomendacaoUseCase(audit),
+    new AtualizarRecomendacaoUseCase(audit),
+    new DeletarRecomendacaoUseCase(audit),
+  );
+
+  // ----- Banners SMS (CMS admin · CRUD por DEV/ADMIN/REG) -----
+  const smsBannersAdminController = new SmsBannersAdminController(
+    new ListarBannersAdminUseCase(),
+    new ObterBannerAdminUseCase(),
+    new CriarBannerAdminUseCase(audit),
+    new AtualizarBannerAdminUseCase(audit),
+    new DeletarBannerAdminUseCase(audit),
   );
 
   // ----- Módulo Gestão (Face 2 · SMS) -----
@@ -268,36 +368,92 @@ export function buildContainer() {
 
   // ----- Módulo TFD (Face 4) -----
   const tfdAudit = new TfdAuditLogger();
+  const notificacaoPacienteSvc = new NotificacaoPacienteService();
+  const viagensTfdUC = new ViagensTfdUseCases(tfdAudit, atendentes);
   const tfdController = new TfdController({
     veiculos: new VeiculosTfdUseCases(tfdAudit, atendentes),
-    motoristas: new MotoristasTfdUseCases(tfdAudit, atendentes),
+    motoristas: new MotoristasTfdUseCases(tfdAudit, atendentes, hasher),
     solicitacoes: new SolicitacoesTfdUseCases(tfdAudit, atendentes, storage, scanner),
-    viagens: new ViagensTfdUseCases(tfdAudit, atendentes),
+    viagens: viagensTfdUC,
     abastecimentos: new AbastecimentosUseCases(tfdAudit, atendentes, storage, scanner),
     saldo: new SaldoUseCases(tfdAudit, atendentes),
-    saldoAjudaCusto: new SaldoAjudaCustoUseCases(tfdAudit, atendentes),
     ajudasCusto: new AjudasCustoUseCases(tfdAudit, atendentes, storage),
     auditoria: new AuditoriaTfdUseCases(),
-    relatorios: new RelatoriosTfdUseCases(),
+    solicPaciente: {
+      listar: new ListarTfdPacienteSolicAdminUseCase(),
+      obter: new ObterTfdPacienteSolicAdminUseCase(),
+      aprovar: new AprovarTfdPacienteSolicUseCase(tfdAudit, notificacaoPacienteSvc),
+      recusar: new RecusarTfdPacienteSolicUseCase(tfdAudit, notificacaoPacienteSvc),
+      marcarEmbarque: new MarcarEmbarqueTfdPacUseCase(tfdAudit),
+      marcarConclusao: new MarcarConclusaoTfdPacUseCase(tfdAudit),
+    },
   });
 
-  // ----- Módulo App do Paciente (Face 3) -----
-  const loginPacienteUC = new LoginPacienteUseCase(hasher);
-  const ativarContaUC = new AtivarContaPacienteUseCase(hasher);
-  const listMeusEncsUC = new ListarMeusEncaminhamentosUseCase();
-  const notifsUC = new ListarNotificacoesUseCase();
-  const trocarSenhaPacienteUC = new TrocarSenhaPacienteUseCase(hasher);
-  const pacienteAppController = new PacienteAppController(
-    loginPacienteUC,
-    ativarContaUC,
-    listMeusEncsUC,
-    notifsUC,
-    trocarSenhaPacienteUC,
+  // ----- Módulo App do Motorista (Face 4 · mobile) -----
+  const motoristaAppController = new MotoristaAppController(
+    new LoginMotoristaUseCase(hasher, tokens, tfdAudit),
+    new TrocarSenhaMotoristaUseCase(hasher, tfdAudit),
+    new LogoutMotoristaUseCase(tfdAudit),
+    new MeMotoristaUseCase(),
+    new ListarMinhasViagensUseCase(),
+    new ObterViagemMotoristaUseCase(),
+    new IniciarViagemMotoristaUseCase(viagensTfdUC),
+    new ConcluirViagemMotoristaUseCase(viagensTfdUC),
+    new MarcarPresencaMotoristaUseCase(viagensTfdUC),
+    new ListarMinhasAjudasUseCase(),
+    new RegistrarFcmTokenUseCase(tfdAudit),
+    new RevogarFcmTokenUseCase(tfdAudit),
   );
 
-  // ----- Anexos (download genérico — Face 2 SMS) -----
-  const downloadAnexoUC = new GetDownloadAnexoUseCase(storage);
-  const anexosController = new AnexosController(downloadAnexoUC);
+  // ----- Módulo App do Paciente (Face 3) -----
+  // Rate limiter compartilhado entre middleware HTTP e use cases (defesa em profundidade).
+  const passwordRecoveryRateLimiter = new PasswordRecoveryRateLimiter();
+  // Rate limiter de downloads (60/15min/conta + 200/1h/conta + 300/15min/IP)
+  const downloadAnexoRateLimiter = new DownloadAnexoRateLimiter();
+  // Rate limiter de dossiê (120/15min/conta + 600/1h/conta + 1000/15min/IP)
+  const dossieRateLimiter = new DossieRateLimiter();
+  // Rate limiter de banners (240/15min/conta + 1200/1h/conta + 2000/15min/IP)
+  const bannersRateLimiter = new BannersRateLimiter();
+
+  // ----- Push notifications (v0.16+: provider-agnostic, ntfy.sh default) -----
+  const pushProvider = buildPushProvider();
+  // Dispatcher recebe emailService pra fallback urgente quando push falha
+  const pushDispatcher = new PushDispatcherWorker(pushProvider, audit, emailService);
+  const pushCleanupCron = new PushTokenCleanupCron(audit);
+  const registrarPushUC = new RegistrarPushDispositivoUseCase(audit);
+  const revogarPushUC = new RevogarPushDispositivoUseCase(audit);
+  // Cron de purga de recovery tokens expirados/usados.
+  const recoveryTokenPurgeCron = new RecoveryTokenPurgeCron(audit);
+
+  const pacienteAppController = new PacienteAppController({
+    login: new LoginPacienteUseCase(hasher),
+    refresh: new RefreshTokenPacienteUseCase(audit),
+    ativar: new AtivarContaPacienteUseCase(hasher),
+    listEncs: new ListarMeusEncaminhamentosUseCase(),
+    notifs: new ListarNotificacoesUseCase(),
+    trocarSenha: new TrocarSenhaPacienteUseCase(hasher),
+    esqueciSenha: new EsqueciSenhaPacienteUseCase(emailService, audit, passwordRecoveryRateLimiter),
+    redefinirSenha: new RedefinirSenhaPacienteUseCase(hasher, audit, passwordRecoveryRateLimiter),
+    obterMinhaUbs: new ObterMinhaUbsUseCase(),
+    fcmRegistrar: new RegistrarFcmPacienteUseCase(registrarPushUC),
+    fcmRevogar: new RevogarFcmPacienteUseCase(revogarPushUC),
+    pushRegistrar: registrarPushUC,
+    pushRevogar: revogarPushUC,
+    dossieResumo: new DossieResumoUseCase(audit),
+    dossieAtendimentos: new DossieAtendimentosUseCase(audit),
+    dossieVacinacoes: new DossieVacinacoesUseCase(audit),
+    dossieExames: new DossieExamesUseCase(audit),
+    listarBanners: new ListarBannersAtivosUseCase(),
+    obterBanner: new ObterBannerUseCase(),
+    marcarBannerVisto: new MarcarBannerVistoUseCase(),
+    listarTfdViagens: new ListarTfdViagensPacienteUseCase(),
+    obterTfdViagem: new ObterTfdViagemPacienteUseCase(),
+    listarMinhasSolicTfd: new ListarMinhasSolicitacoesTfdUseCase(),
+    obterMinhaSolicTfd: new ObterMinhaSolicitacaoTfdUseCase(),
+    criarSolicTfd: new CriarSolicitacaoTfdPacienteUseCase(),
+    cancelarSolicTfd: new CancelarSolicitacaoTfdPacienteUseCase(tfdAudit),
+    downloadAnexo: new DownloadAnexoPacienteUseCase(audit),
+  });
 
   return {
     tokens,
@@ -313,11 +469,21 @@ export function buildContainer() {
     pacientes: pacController,
     relatorios: relController,
     admin: adminController,
+    recomendacoes: recomendacoesController,
+    smsBannersAdmin: smsBannersAdminController,
     regulacao: regulacaoController,
     pacienteApp: pacienteAppController,
+    passwordRecoveryRateLimiter,
+    downloadAnexoRateLimiter,
+    dossieRateLimiter,
+    bannersRateLimiter,
+    recoveryTokenPurgeCron,
+    pushDispatcher,
+    pushCleanupCron,
+    pushProvider,
     prontuario: prontuarioController,
     tfd: tfdController,
-    anexos: anexosController,
+    motoristaApp: motoristaAppController,
   };
 }
 

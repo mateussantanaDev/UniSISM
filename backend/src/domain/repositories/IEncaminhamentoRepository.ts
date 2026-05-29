@@ -56,12 +56,6 @@ export interface ListarEncaminhamentosFiltro {
   desde?: Date;
   ate?: Date;
   limit?: number;
-  /**
-   * `true` → apenas com resposta SUS preenchida.
-   * `false` → apenas SEM resposta SUS.
-   * `undefined` → não filtra (default).
-   */
-  respostaSUS?: boolean;
 }
 
 export interface AdicionarEventoInput {

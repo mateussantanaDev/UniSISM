@@ -24,7 +24,7 @@ O backend deve preservar **as mesmas formas (shapes)** dos tipos do `domain/mode
 Proposta:
 
 ```
-https://api.unisism.feiradesantana.ba.gov.br/v1
+https://api.unisism.aguasbelas.pe.gov.br/v1
 ```
 
 Configurável via `VITE_API_BASE_URL` no frontend.
@@ -133,7 +133,7 @@ Autentica o atendente. Consumido em [src/routes/login/+page.svelte](src/routes/l
 }
 ```
 
-- `login` (string, obrigatório): matrícula (`SMS-NNNNNN`) **OU** email corporativo (`@saude.ba.gov.br`).
+- `login` (string, obrigatório): matrícula (`SMS-NNNNNN`) **OU** email corporativo (`@saude.aguasbelas.pe.gov.br`).
 - `senha` (string, obrigatório).
 - `lembrar` (bool, opcional): estende validade do refresh token.
 
@@ -177,7 +177,7 @@ Inicia fluxo de recuperação. Consumido em [src/routes/login/esqueci-senha/+pag
 **Request**:
 
 ```json
-{ "login": "SMS-047291 ou email@saude.ba.gov.br" }
+{ "login": "SMS-047291 ou email@saude.aguasbelas.pe.gov.br" }
 ```
 
 **Response 200**:
@@ -272,13 +272,13 @@ Retorna o perfil completo do atendente autenticado.
   "nome": "MATEUS DE SANTANA NEVES",
   "iniciais": "MS",
   "matricula": "SMS-047291",
-  "email": "mateus.santana@saude.ba.gov.br",
+  "email": "mateus.santana@saude.aguasbelas.pe.gov.br",
   "cpf": "123.456.789-00",
   "telefone": "(75) 99812-4421",
   "dataNascimento": "1995-08-14",
   "cargo": "ATENDENTE DE REGULAÇÃO",
   "funcao": "Operador do canal de ingestão de encaminhamentos",
-  "lotacao": "UBS CENTRAL · FEIRA DE SANTANA / BA",
+  "lotacao": "UBS CENTRAL · ÁGUAS BELAS / PE",
   "unidade": "UBS CENTRAL",
   "dataAdmissao": "2023-02-15",
 
@@ -314,7 +314,7 @@ Retorna o perfil completo do atendente autenticado.
     "ultimoAcesso": "22/04/2026 14:32:18",
     "ipUltimoAcesso": "177.18.44.12",
     "dispositivo": "Chrome 130 · macOS 15",
-    "localUltimoAcesso": "Feira de Santana / BA",
+    "localUltimoAcesso": "Águas Belas / PE",
     "tentativasFalhasSemana": 0,
     "sessoesAtivas": 1,
     "sessaoInatividade": "2m 14s",
@@ -415,7 +415,7 @@ file: <binary>  (application/pdf, máx 10 MB)
     "dataNascimento": "1968-03-14",
     "sexo": "F",
     "telefone": "(75) 99812-4421",
-    "endereco": "RUA JOÃO BATISTA DE SOUZA, 245 - CENTRO - FEIRA DE SANTANA/BA"
+    "endereco": "RUA JOÃO BATISTA DE SOUZA, 245 - CENTRO - ÁGUAS BELAS/PE"
   },
   "solicitacao": {
     "medicoSolicitante": "DR. CARLOS EDUARDO MENDES",
@@ -1002,7 +1002,7 @@ interface Encaminhamento {
   status: StatusEncaminhamento;
   criadoEm: string;                     // ISO 8601
   atualizadoEm: string;                 // ISO 8601
-  unidadeOrigem: string;                // ex.: "UBS CENTRAL - FEIRA DE SANTANA"
+  unidadeOrigem: string;                // ex.: "UBS CENTRAL - ÁGUAS BELAS"
   atendenteResponsavel: string;
   timeline?: EventoTimeline[];
   observacoesRegulacao?: string;

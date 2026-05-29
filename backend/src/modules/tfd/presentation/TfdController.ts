@@ -13,16 +13,21 @@ import type { SolicitacoesTfdUseCases } from '../application/solicitacoes';
 import type { ViagensTfdUseCases } from '../application/viagens';
 import type { AbastecimentosUseCases } from '../application/abastecimentos';
 import type { SaldoUseCases } from '../application/saldo';
-import type { SaldoAjudaCustoUseCases } from '../application/saldo-ajuda-custo';
 import type { AjudasCustoUseCases } from '../application/ajudas-custo';
 import type { AuditoriaTfdUseCases } from '../application/auditoria';
-import type { RelatoriosTfdUseCases } from '../application/relatorios';
+import type {
+  ListarTfdPacienteSolicAdminUseCase,
+  ObterTfdPacienteSolicAdminUseCase,
+  AprovarTfdPacienteSolicUseCase,
+  RecusarTfdPacienteSolicUseCase,
+  MarcarEmbarqueTfdPacUseCase,
+  MarcarConclusaoTfdPacUseCase,
+  ListarFiltrosAdmin,
+} from '../application/tfd-paciente-solicitacoes';
+import { z } from 'zod';
 import {
   ajustarSaldoSchema,
-  ajustarSaldoAjudaSchema,
   alocarPassageiroSchema,
-  aporteSaldoAjudaSchema,
-  aporteSaldoFrotaSchema,
   aprovarSolicitacaoSchema,
   atualizarMotoristaSchema,
   atualizarVeiculoSchema,
@@ -50,11 +55,34 @@ export interface TfdUseCases {
   viagens: ViagensTfdUseCases;
   abastecimentos: AbastecimentosUseCases;
   saldo: SaldoUseCases;
-  saldoAjudaCusto: SaldoAjudaCustoUseCases;
   ajudasCusto: AjudasCustoUseCases;
   auditoria: AuditoriaTfdUseCases;
-  relatorios: RelatoriosTfdUseCases;
+  // v0.17+: solicitações vindas do APP PACIENTE (Face 3)
+  solicPaciente: {
+    listar: ListarTfdPacienteSolicAdminUseCase;
+    obter: ObterTfdPacienteSolicAdminUseCase;
+    aprovar: AprovarTfdPacienteSolicUseCase;
+    recusar: RecusarTfdPacienteSolicUseCase;
+    marcarEmbarque: MarcarEmbarqueTfdPacUseCase;
+    marcarConclusao: MarcarConclusaoTfdPacUseCase;
+  };
 }
+
+const aprovarSolicPacienteSchema = z.object({
+  numeroAssento: z.string().trim().max(10).optional(),
+});
+
+const recusarSolicPacienteSchema = z.object({
+  motivo: z.string().trim().min(5).max(500),
+});
+
+const listarSolicPacienteQuery = z.object({
+  status: z
+    .enum(['AGUARDANDO', 'APROVADA', 'RECUSADA', 'CANCELADA', 'EMBARCADA', 'CONCLUIDA'])
+    .optional(),
+  viagemId: z.string().optional(),
+  prioridade: z.enum(['NORMAL', 'PRIORITARIA', 'URGENTE']).optional(),
+});
 
 export class TfdController {
   constructor(private readonly uc: TfdUseCases) {}
@@ -145,14 +173,11 @@ export class TfdController {
 
   // ==================== SOLICITAÇÕES ====================
   getSolicitacoes = async (req: Request, res: Response): Promise<void> => {
-    const criadaPorMim = req.query['criadaPorMim'] === 'true' || req.query['criadaPorMim'] === '1';
     res.json(
       await this.uc.solicitacoes.listar(scopeFromRequest(req), req, {
         status: typeof req.query['status'] === 'string' ? req.query['status'] : undefined,
         prioridade: typeof req.query['prioridade'] === 'string' ? req.query['prioridade'] : undefined,
         q: typeof req.query['q'] === 'string' ? req.query['q'] : undefined,
-        criadaPorMim,
-        autorId: req.auth?.sub,
       }),
     );
   };
@@ -354,7 +379,7 @@ export class TfdController {
     fs.createReadStream(out.caminho).pipe(res);
   };
 
-  // ==================== SALDO (FROTA) ====================
+  // ==================== SALDO ====================
   getSaldo = async (req: Request, res: Response): Promise<void> => {
     const mes = typeof req.query['mes'] === 'string' ? req.query['mes'] : undefined;
     res.json(await this.uc.saldo.listar(scopeFromRequest(req), req, mes));
@@ -362,45 +387,6 @@ export class TfdController {
   postAjustarSaldo = async (req: Request, res: Response): Promise<void> => {
     const body = ajustarSaldoSchema.parse(req.body ?? {});
     res.json(await this.uc.saldo.ajustar(scopeFromRequest(req), req, req.auth!.sub, body));
-  };
-  postAportarSaldo = async (req: Request, res: Response): Promise<void> => {
-    const body = aporteSaldoFrotaSchema.parse(req.body ?? {});
-    res.status(201).json(
-      await this.uc.saldo.aportar(scopeFromRequest(req), req, req.auth!.sub, body),
-    );
-  };
-  getSaldoAportes = async (req: Request, res: Response): Promise<void> => {
-    res.json(
-      await this.uc.saldo.listarAportes(scopeFromRequest(req), req, {
-        mes: typeof req.query['mes'] === 'string' ? req.query['mes'] : undefined,
-        veiculoId: typeof req.query['veiculoId'] === 'string' ? req.query['veiculoId'] : undefined,
-      }),
-    );
-  };
-
-  // ==================== SALDO (AJUDA DE CUSTO) ====================
-  getSaldoAjuda = async (req: Request, res: Response): Promise<void> => {
-    const mes = typeof req.query['mes'] === 'string' ? req.query['mes'] : undefined;
-    res.json(await this.uc.saldoAjudaCusto.obter(scopeFromRequest(req), req, mes));
-  };
-  postAjustarSaldoAjuda = async (req: Request, res: Response): Promise<void> => {
-    const body = ajustarSaldoAjudaSchema.parse(req.body ?? {});
-    res.json(
-      await this.uc.saldoAjudaCusto.ajustar(scopeFromRequest(req), req, req.auth!.sub, body),
-    );
-  };
-  postAportarSaldoAjuda = async (req: Request, res: Response): Promise<void> => {
-    const body = aporteSaldoAjudaSchema.parse(req.body ?? {});
-    res.status(201).json(
-      await this.uc.saldoAjudaCusto.aportar(scopeFromRequest(req), req, req.auth!.sub, body),
-    );
-  };
-  getSaldoAjudaAportes = async (req: Request, res: Response): Promise<void> => {
-    res.json(
-      await this.uc.saldoAjudaCusto.listarAportes(scopeFromRequest(req), req, {
-        mes: typeof req.query['mes'] === 'string' ? req.query['mes'] : undefined,
-      }),
-    );
   };
 
   // ==================== AJUDA DE CUSTO ====================
@@ -454,17 +440,6 @@ export class TfdController {
     );
   };
 
-  // ==================== RELATÓRIOS ====================
-  getRelatorioEspecialidades = async (req: Request, res: Response): Promise<void> => {
-    const desde = typeof req.query['desde'] === 'string' ? req.query['desde'] : undefined;
-    const ate = typeof req.query['ate'] === 'string' ? req.query['ate'] : undefined;
-    const out = await this.uc.relatorios.porEspecialidade(scopeFromRequest(req), req, {
-      ...(desde ? { desde } : {}),
-      ...(ate ? { ate } : {}),
-    });
-    res.json(out);
-  };
-
   // ==================== AUDITORIA ====================
   getAuditoria = async (req: Request, res: Response): Promise<void> => {
     res.json(
@@ -494,4 +469,96 @@ export class TfdController {
     if (m['certSubject']) res.set('X-Cert-Subject', encodeURIComponent(String(m['certSubject'])));
     res.send(out.zip);
   };
+
+  // ==================== SOLICITAÇÕES TFD DO APP PACIENTE (v0.17+) ====================
+  /** Lista solicitações vindas do app paciente — ordenado por prioridade. */
+  getSolicPacienteList = async (req: Request, res: Response): Promise<void> => {
+    const q = listarSolicPacienteQuery.parse(req.query);
+    const filtros: ListarFiltrosAdmin = {};
+    if (q.status !== undefined) filtros.status = q.status;
+    if (q.viagemId !== undefined) filtros.viagemId = q.viagemId;
+    if (q.prioridade !== undefined) filtros.prioridade = q.prioridade;
+    res.json(await this.uc.solicPaciente.listar.exec(scopeFromRequest(req), filtros));
+  };
+
+  getSolicPacienteById = async (req: Request, res: Response): Promise<void> => {
+    res.json(
+      await this.uc.solicPaciente.obter.exec(scopeFromRequest(req), paramString(req, 'id')),
+    );
+  };
+
+  postAprovarSolicPaciente = async (req: Request, res: Response): Promise<void> => {
+    const body = aprovarSolicPacienteSchema.parse(req.body ?? {});
+    const operador = await this._operadorCtx(req);
+    res.json(
+      await this.uc.solicPaciente.aprovar.exec(
+        scopeFromRequest(req),
+        paramString(req, 'id'),
+        operador,
+        body,
+      ),
+    );
+  };
+
+  postRecusarSolicPaciente = async (req: Request, res: Response): Promise<void> => {
+    const body = recusarSolicPacienteSchema.parse(req.body ?? {});
+    const operador = await this._operadorCtx(req);
+    res.json(
+      await this.uc.solicPaciente.recusar.exec(
+        scopeFromRequest(req),
+        paramString(req, 'id'),
+        operador,
+        body,
+      ),
+    );
+  };
+
+  postEmbarqueSolicPaciente = async (req: Request, res: Response): Promise<void> => {
+    const operador = await this._operadorCtx(req);
+    res.json(
+      await this.uc.solicPaciente.marcarEmbarque.exec(
+        scopeFromRequest(req),
+        paramString(req, 'id'),
+        operador,
+      ),
+    );
+  };
+
+  postConclusaoSolicPaciente = async (req: Request, res: Response): Promise<void> => {
+    const operador = await this._operadorCtx(req);
+    res.json(
+      await this.uc.solicPaciente.marcarConclusao.exec(
+        scopeFromRequest(req),
+        paramString(req, 'id'),
+        operador,
+      ),
+    );
+  };
+
+  /** Resolve OperadorTfdCtx do req (snapshot do atendente autenticado). */
+  private async _operadorCtx(req: Request): Promise<{
+    operadorId: string;
+    operadorNome: string;
+    operadorMatricula: string;
+    operadorRole: string;
+    ip: string;
+    userAgent: string;
+  }> {
+    // Snapshot do atendente vai pro hash chain (nome/matrícula).
+    // Lê do DB pra ter nome/matrícula reais — JWT só tem `sub`+`role`.
+    const at = await this.uc.solicitacoes['atendentes']?.buscarPorId?.(req.auth!.sub) ??
+      (await import('../../../infrastructure/database/prisma')).prisma.atendente.findUnique({
+        where: { id: req.auth!.sub },
+        select: { nome: true, matricula: true },
+      });
+    const atendente = (await at) ?? null;
+    return {
+      operadorId: req.auth!.sub,
+      operadorNome: atendente?.nome ?? 'OPERADOR',
+      operadorMatricula: atendente?.matricula ?? '',
+      operadorRole: req.auth!.role ?? '',
+      ip: req.ip ?? '',
+      userAgent: req.header('user-agent') ?? '',
+    };
+  }
 }

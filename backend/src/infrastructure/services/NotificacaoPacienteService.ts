@@ -64,6 +64,9 @@ export class NotificacaoPacienteService {
     const telefone = input.pacienteTelefone?.trim() ? input.pacienteTelefone.trim() : null;
     const email = input.pacienteEmail?.trim() ? input.pacienteEmail.trim().toLowerCase() : null;
 
+    // Resolve UBS de vínculo a partir do encaminhamento (se contexto disponível).
+    const ubsVinculadaId = await this._resolverUbsVinculada(input.encaminhamentoId);
+
     const conta = await prisma.pacienteConta.upsert({
       where: { cpf: cpfDigits },
       update: {
@@ -81,8 +84,19 @@ export class NotificacaoPacienteService {
         senhaHash: await hashSenhaPadrao(cpfDigits),
         ativo: true,
         senhaProvisoria: true,
+        ...(ubsVinculadaId ? { ubsVinculadaId } : {}),
       },
     });
+
+    // Pós-create/update: se conta ainda não tem vínculo e descobrimos agora, persiste.
+    // Idempotente — não sobrescreve vínculo existente (paciente pode ter sido
+    // transferido informalmente; preserva o vínculo "oficial").
+    if (ubsVinculadaId && !conta.ubsVinculadaId) {
+      await prisma.pacienteConta.update({
+        where: { id: conta.id },
+        data: { ubsVinculadaId },
+      });
+    }
 
     await prisma.notificacaoPaciente.create({
       data: {
@@ -122,6 +136,17 @@ export class NotificacaoPacienteService {
     const telefone = input.pacienteTelefone?.trim() ? input.pacienteTelefone.trim() : null;
     const email = input.pacienteEmail?.trim() ? input.pacienteEmail.trim().toLowerCase() : null;
 
+    // Resolve UBS de vínculo a partir do encaminhamento na MESMA transação
+    // (consistência: se este enc estiver sendo criado agora, ele já está visível).
+    const ubsVinculadaId = input.encaminhamentoId
+      ? (
+          await tx.encaminhamento.findUnique({
+            where: { id: input.encaminhamentoId },
+            select: { ubsId: true },
+          })
+        )?.ubsId ?? null
+      : null;
+
     const conta = await tx.pacienteConta.upsert({
       where: { cpf: cpfDigits },
       update: {
@@ -137,8 +162,17 @@ export class NotificacaoPacienteService {
         senhaHash: await hashSenhaPadrao(cpfDigits),
         ativo: true,
         senhaProvisoria: true,
+        ...(ubsVinculadaId ? { ubsVinculadaId } : {}),
       },
     });
+
+    // Idempotência: se conta já existia sem vínculo e descobrimos agora, persiste.
+    if (ubsVinculadaId && !conta.ubsVinculadaId) {
+      await tx.pacienteConta.update({
+        where: { id: conta.id },
+        data: { ubsVinculadaId },
+      });
+    }
 
     await tx.notificacaoPaciente.create({
       data: {
@@ -166,6 +200,21 @@ export class NotificacaoPacienteService {
         corpo: input.corpo,
       },
     });
+  }
+
+  /**
+   * Resolve a UBS de vínculo a partir do encaminhamento. Retorna null se
+   * `encaminhamentoId` ausente ou enc não encontrado.
+   */
+  private async _resolverUbsVinculada(
+    encaminhamentoId: string | undefined | null,
+  ): Promise<string | null> {
+    if (!encaminhamentoId) return null;
+    const enc = await prisma.encaminhamento.findUnique({
+      where: { id: encaminhamentoId },
+      select: { ubsId: true },
+    });
+    return enc?.ubsId ?? null;
   }
 }
 

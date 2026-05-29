@@ -23,7 +23,7 @@ export interface OperadorTfd {
 /**
  * Resolve a `prefeituraId` efetiva do usuário pra escopo TFD:
  *   - DEV (GLOBAL): exige `?prefeituraId=` na request OU body.prefeituraId
- *   - ADMIN/REGULADOR_SMS/GESTOR_TFD/REGULADOR_TFD (PREFEITURA): usa scope.prefeituraId
+ *   - ADMIN/REGULADOR_SMS/GESTOR_TFD (PREFEITURA): usa scope.prefeituraId
  *   - UBS (COORDENADOR/ATENDENTE): usa a prefeitura da UBS via JWT
  *
  * Retorna 403 USUARIO_SEM_PREFEITURA se não conseguir resolver.

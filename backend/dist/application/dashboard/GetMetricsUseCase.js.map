@@ -1,1 +1,0 @@
-{"version":3,"file":"GetMetricsUseCase.js","sourceRoot":"","sources":["../../../src/application/dashboard/GetMetricsUseCase.ts"],"names":[],"mappings":";;;AAGA,MAAa,iBAAiB;IACC;IAA7B,YAA6B,eAA0C;QAA1C,oBAAe,GAAf,eAAe,CAA2B;IAAG,CAAC;IAE3E,IAAI,CAAC,KAAa;QAChB,OAAO,IAAI,CAAC,eAAe,CAAC,QAAQ,CAAC,KAAK,CAAC,CAAC;IAC9C,CAAC;CACF;AAND,8CAMC"}

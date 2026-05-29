@@ -1,3 +1,6 @@
+// IMPORT FIRST: OpenTelemetry deve carregar antes de tudo pra instrumentar.
+import './tracing';
+
 import { buildApp } from './app';
 import { env } from '../shared/env';
 import { logger } from '../infrastructure/logger';
@@ -49,11 +52,24 @@ async function main() {
   const saldoCron = new SaldoMensalCron();
   saldoCron.start();
 
+  // Cron de purga de PacienteRecoveryToken expirados/usados (a cada 6h + catch-up)
+  container.recoveryTokenPurgeCron.start();
+
+  // Push dispatcher worker (polling 15s) — envia notificações pendentes via ntfy.sh
+  if ((process.env['PUSH_DISPATCHER_ENABLED'] ?? 'true') === 'true') {
+    container.pushDispatcher.start();
+  }
+  // Cron mensal de cleanup de dispositivos push inativos
+  container.pushCleanupCron.start();
+
   const shutdown = async (signal: string) => {
     logger.warn({ signal }, 'graceful shutdown iniciado');
     container.outbox.stop();
     container.relExpiracaoCron.stop();
     saldoCron.stop();
+    container.recoveryTokenPurgeCron.stop();
+    container.pushCleanupCron.stop();
+    void container.pushDispatcher.stop();
     server.close(async (err) => {
       if (err) logger.error({ err }, 'erro ao fechar HTTP server');
       try {

@@ -1,11 +1,18 @@
 /**
  * CRUD de motoristas TFD.
+ *
+ * Ao criar um motorista, o sistema também cria automaticamente um Atendente
+ * vinculado (role=MOTORISTA_TFD) com senha provisória = últimos 8 dígitos
+ * do CPF — usada pelo motorista para o 1º login no app mobile. A senha
+ * provisória é devolvida UMA vez no response do `criar` (gestor anota e
+ * entrega pessoalmente). O backend depois só guarda o bcrypt.
  */
 import type { Request } from 'express';
 import { Conflict, NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
+import type { IPasswordHasher } from '../../../domain/services/IPasswordHasher';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
 import {
   assertMesmaPrefeitura,
@@ -54,6 +61,7 @@ export class MotoristasTfdUseCases {
   constructor(
     private readonly audit: ITfdAuditLogger,
     private readonly atendentes: IAtendenteRepository,
+    private readonly hasher: IPasswordHasher,
   ) {}
 
   async listar(scope: AccessScope, req: Request) {
@@ -92,17 +100,49 @@ export class MotoristasTfdUseCases {
       throw Conflict('VALIDADE_CNH_INVALIDA', 'Validade CNH inválida (use YYYY-MM-DD)');
     }
 
-    const novo = await prisma.motoristaTFD.create({
-      data: {
-        prefeituraId,
-        nome: input.nome.trim(),
-        cpf,
-        cnh: input.cnh.trim(),
-        categoriaCnh: input.categoriaCnh,
-        validadeCnh,
-        telefone: input.telefone.trim(),
-        criadoPorId: autorId,
-      },
+    // Gera matrícula determinística + ajusta colisão (raro).
+    let matricula = `MOT-${cpf.slice(-6)}`;
+    const collision = await prisma.atendente.findUnique({ where: { matricula }, select: { id: true } });
+    if (collision) {
+      matricula = `${matricula}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+    }
+
+    // Senha provisória = últimos 8 dígitos do CPF — devolvida UMA vez no response.
+    const senhaProvisoria = cpf.slice(-8);
+    const senhaHash = await this.hasher.hash(senhaProvisoria);
+    const emailSintetico = `motorista-${matricula.toLowerCase()}@motorista.local`;
+
+    const novo = await prisma.$transaction(async (tx) => {
+      const atendente = await tx.atendente.create({
+        data: {
+          matricula,
+          nome: input.nome.trim(),
+          email: emailSintetico,
+          senhaHash,
+          cpf,
+          telefone: input.telefone.trim(),
+          cargo: 'MOTORISTA TFD',
+          funcao: 'Motorista da frota TFD',
+          role: 'MOTORISTA_TFD',
+          ativo: true,
+          prefeituraId,
+        },
+      });
+      const motorista = await tx.motoristaTFD.create({
+        data: {
+          prefeituraId,
+          nome: input.nome.trim(),
+          cpf,
+          cnh: input.cnh.trim(),
+          categoriaCnh: input.categoriaCnh,
+          validadeCnh,
+          telefone: input.telefone.trim(),
+          criadoPorId: autorId,
+          atendenteId: atendente.id,
+          primeiroLogin: true,
+        },
+      });
+      return motorista;
     });
 
     await this.audit.registrar({
@@ -115,10 +155,20 @@ export class MotoristasTfdUseCases {
       operadorMatricula: op.matricula,
       operadorRole: op.role,
       ...ctxAudit(req),
-      depois: { nome: novo.nome, cnh: novo.cnh, categoriaCnh: novo.categoriaCnh },
+      depois: {
+        nome: novo.nome,
+        cnh: novo.cnh,
+        categoriaCnh: novo.categoriaCnh,
+        matricula,
+      },
     });
 
-    return rowParaMotorista(novo);
+    // Devolve a senha em texto plano UMA vez — entregar fisicamente ao motorista.
+    return {
+      ...rowParaMotorista(novo),
+      matricula,
+      senhaProvisoria,
+    };
   }
 
   async atualizar(

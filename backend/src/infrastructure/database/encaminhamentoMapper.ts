@@ -85,6 +85,12 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     atendenteResponsavel: r.atendenteResponsavel,
     timeline,
     agendamentoPrevisto: r.agendamentoPrevisto ? r.agendamentoPrevisto.toISOString() : null,
+    localAgendamento: r.localAgendamento ?? null,
+    profissionalAgendado: r.profissionalAgendado ?? null,
+    cidadeAgendamento: r.cidadeAgendamento ?? null,
+    ufAgendamento: r.ufAgendamento ?? null,
+    motivoRejeicao: r.motivoRejeicao ?? null,
+    recomendacoes: Array.isArray(r.recomendacoes) ? (r.recomendacoes as string[]) : [],
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 
