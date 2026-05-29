@@ -1412,6 +1412,9 @@ enum AcaoAuditoriaTFD {
   TFD_PAC_SOLIC_REABERTA
   TFD_PAC_EMBARCADA
   TFD_PAC_CONCLUIDA
+  // Saldo ajuda de custo (v0.18+ — do remote)
+  SALDO_AJUDA_AJUSTADO
+  SALDO_AJUDA_APORTADO
 }
 
 // ----- Frota -----

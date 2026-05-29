@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { env } from '../../shared/env';
 import type { ArquivoArmazenado, IFileStorage } from '../../domain/services/IFileStorage';
 
@@ -32,5 +34,11 @@ export class DiskFileStorage implements IFileStorage {
 
   caminhoAbsoluto(caminho: string): string {
     return path.join(this.root, caminho);
+  }
+
+  async obterStream(caminho: string): Promise<Readable> {
+    const abs = this.caminhoAbsoluto(caminho);
+    await fs.access(abs); // throws se não existir
+    return createReadStream(abs);
   }
 }

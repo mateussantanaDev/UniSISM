@@ -12,4 +12,7 @@ export interface IFileStorage {
   }): Promise<ArquivoArmazenado>;
 
   caminhoAbsoluto(caminho: string): string;
+
+  /** Obtém o conteúdo binário como Readable stream (usado em download). */
+  obterStream(caminho: string): Promise<import('node:stream').Readable>;
 }

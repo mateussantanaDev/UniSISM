@@ -111,4 +111,13 @@ export class S3FileStorage implements IFileStorage {
     const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     return getSignedUrl(this.client, cmd, { expiresIn: ttlSeconds });
   }
+
+  async obterStream(caminho: string): Promise<import('node:stream').Readable> {
+    const r = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: caminho }),
+    );
+    if (!r.Body) throw new Error(`S3 object ${caminho} sem body`);
+    // r.Body é um Readable em Node
+    return r.Body as import('node:stream').Readable;
+  }
 }
