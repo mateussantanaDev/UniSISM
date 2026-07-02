@@ -126,6 +126,9 @@ export interface MetricasDashboard {
   aprovadosHoje: number;
   tempoMedioConsolidacaoSegundos: number;
   encaminhamentosSemana: number;
+  slaRegulacaoPorcento: number;
+  enviadosAguardandoResposta: number;
+  respondidosTotal: number;
 }
 
 export interface ExtracaoPdfResultado {

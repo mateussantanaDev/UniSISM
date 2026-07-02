@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISISM · App do Paciente — Documentação Completa v0.18.1</title>
+<style>
+  :root {
+    --c-bg: #fafafa;
+    --c-paper: #ffffff;
+    --c-text: #1e293b;
+    --c-muted: #64748b;
+    --c-line: #e2e8f0;
+    --c-line-strong: #cbd5e1;
+    --c-teal: #0d9488;
+    --c-teal-bg: #f0fdfa;
+    --c-blue: #1e3a8a;
+    --c-blue-bg: #eff6ff;
+    --c-green: #15803d;
+    --c-green-bg: #f0fdf4;
+    --c-red: #b91c1c;
+    --c-red-bg: #fef2f2;
+    --c-amber: #b45309;
+    --c-amber-bg: #fffbeb;
+    --c-purple: #6d28d9;
+    --c-purple-bg: #f5f3ff;
+    --c-slate: #475569;
+    --c-slate-bg: #f1f5f9;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; font-family:var(--font-sans); background:var(--c-bg); color:var(--c-text); line-height:1.55; font-size:15px; }
+  .wrapper { display:grid; grid-template-columns:300px 1fr; max-width:1440px; margin:0 auto; min-height:100vh; }
+
+  aside.toc { position:sticky; top:0; height:100vh; overflow-y:auto; padding:24px 18px; background:var(--c-paper); border-right:1px solid var(--c-line); font-size:13px; }
+  aside.toc h1 { font-family:var(--font-mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--c-muted); margin:0 0 4px; font-weight:600; }
+  aside.toc .version { font-family:var(--font-mono); font-size:11px; color:var(--c-teal); margin-bottom:20px; letter-spacing:0.05em; }
+  aside.toc nav h2 { font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--c-muted); margin:18px 0 6px; font-weight:700; border-top:1px solid var(--c-line); padding-top:12px; }
+  aside.toc nav h2:first-child { border-top:none; padding-top:0; }
+  aside.toc nav a { display:block; padding:4px 8px; color:var(--c-slate); text-decoration:none; border-radius:3px; font-size:13px; }
+  aside.toc nav a:hover { background:var(--c-teal-bg); color:var(--c-teal); }
+
+  main { padding:40px 56px 80px; max-width:1140px; }
+
+  .hero { background:linear-gradient(135deg, #0d9488 0%, #134e4a 100%); color:white; margin:-40px -56px 40px; padding:56px 56px 48px; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; top:-100px; right:-100px; width:400px; height:400px; background:radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); }
+  .hero .badge-strip { display:flex; gap:10px; margin-bottom:18px; font-family:var(--font-mono); font-size:11px; flex-wrap:wrap; }
+  .hero .badge-strip span { background:rgba(255,255,255,0.12); padding:4px 10px; border-radius:3px; border:1px solid rgba(255,255,255,0.18); letter-spacing:0.06em; }
+  .hero .badge-strip .success { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.4); color:#bbf7d0; }
+  .hero h1 { font-size:36px; margin:0 0 8px; font-weight:800; letter-spacing:-0.02em; }
+  .hero .subtitle { font-size:17px; color:#a7f3d0; max-width:740px; margin-bottom:24px; }
+  .hero .meta { display:flex; gap:28px; font-family:var(--font-mono); font-size:12px; color:#a7f3d0; letter-spacing:0.04em; flex-wrap:wrap; }
+  .hero .meta strong { color:white; font-weight:600; margin-left:6px; }
+
+  section.chapter { margin:56px 0 0; padding-top:24px; border-top:1px solid var(--c-line); }
+  section.chapter:first-of-type { border-top:none; padding-top:0; margin-top:0; }
+  h2 { font-size:26px; margin:0 0 6px; font-weight:700; letter-spacing:-0.01em; color:#0f172a; }
+  h2 .num { font-family:var(--font-mono); font-size:13px; color:var(--c-muted); margin-right:8px; font-weight:500; }
+  h3 { font-size:18px; margin:32px 0 10px; font-weight:700; color:var(--c-teal); }
+  h4 { font-size:14px; margin:20px 0 8px; font-weight:700; font-family:var(--font-mono); color:var(--c-slate); text-transform:uppercase; letter-spacing:0.08em; }
+  p { margin:0 0 12px; }
+  ul, ol { margin:0 0 14px; padding-left:22px; }
+  li { margin:4px 0; }
+
+  .card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin:20px 0 24px; }
+  .card { background:var(--c-paper); border:1px solid var(--c-line); border-left:3px solid var(--c-teal); padding:16px 18px; border-radius:4px; }
+  .card .label { font-family:var(--font-mono); font-size:10px; color:var(--c-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px; }
+  .card .value { font-size:22px; font-weight:700; color:var(--c-text); line-height:1.1; }
+  .card .desc { font-size:12px; color:var(--c-muted); margin-top:6px; }
+  .card.green { border-left-color:var(--c-green); } .card.green .value { color:var(--c-green); }
+  .card.blue { border-left-color:var(--c-blue); } .card.blue .value { color:var(--c-blue); }
+  .card.amber { border-left-color:var(--c-amber); } .card.amber .value { color:var(--c-amber); }
+  .card.red { border-left-color:var(--c-red); } .card.red .value { color:var(--c-red); }
+  .card.purple { border-left-color:var(--c-purple); } .card.purple .value { color:var(--c-purple); }
+
+  table { width:100%; border-collapse:collapse; margin:14px 0 24px; font-size:13px; }
+  th { text-align:left; background:var(--c-slate-bg); color:var(--c-slate); font-weight:700; padding:8px 12px; border-bottom:2px solid var(--c-line-strong); font-family:var(--font-mono); text-transform:uppercase; font-size:10px; letter-spacing:0.1em; }
+  td { padding:8px 12px; border-bottom:1px solid var(--c-line); vertical-align:top; }
+  tr:hover td { background:#fafbfc; }
+  td code, td .mono { font-family:var(--font-mono); font-size:12px; }
+
+  pre { background:#0f172a; color:#e2e8f0; padding:16px 20px; border-radius:6px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.55; margin:12px 0 18px; }
+  pre .kw { color:#c084fc; }
+  pre .str { color:#86efac; }
+  pre .num { color:#fcd34d; }
+  pre .cmt { color:#64748b; font-style:italic; }
+  pre .fn { color:#93c5fd; }
+  code:not(pre code) { background:var(--c-slate-bg); color:var(--c-teal); padding:1px 6px; border-radius:3px; font-family:var(--font-mono); font-size:12.5px; font-weight:500; }
+
+  .method { display:inline-block; padding:2px 7px; font-family:var(--font-mono); font-size:10px; font-weight:700; border-radius:3px; letter-spacing:0.05em; min-width:50px; text-align:center; }
+  .method.get { background:#dbeafe; color:#1e40af; }
+  .method.post { background:#dcfce7; color:#166534; }
+  .method.patch { background:#fef3c7; color:#92400e; }
+  .method.put { background:#ddd6fe; color:#5b21b6; }
+  .method.delete { background:#fee2e2; color:#991b1b; }
+
+  .callout { border-left:3px solid var(--c-teal); background:var(--c-teal-bg); padding:12px 18px; margin:16px 0; border-radius:0 4px 4px 0; font-size:14px; }
+  .callout.green { border-left-color:var(--c-green); background:var(--c-green-bg); }
+  .callout.amber { border-left-color:var(--c-amber); background:var(--c-amber-bg); }
+  .callout.red { border-left-color:var(--c-red); background:var(--c-red-bg); }
+  .callout.blue { border-left-color:var(--c-blue); background:var(--c-blue-bg); }
+  .callout .title { font-weight:700; margin-bottom:4px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
+
+  .endpoint { background:var(--c-paper); border:1px solid var(--c-line); border-radius:6px; margin:18px 0; overflow:hidden; }
+  .endpoint .head { background:var(--c-slate-bg); padding:10px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--c-line); }
+  .endpoint .head .path { font-family:var(--font-mono); font-size:13px; font-weight:600; }
+  .endpoint .head .auth-badge { font-family:var(--font-mono); font-size:10px; padding:2px 7px; border-radius:3px; margin-left:auto; }
+  .endpoint .head .auth-badge.public { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+  .endpoint .head .auth-badge.auth { background:var(--c-green-bg); color:var(--c-green); border:1px solid #86efac; }
+  .endpoint .body { padding:14px 18px; }
+  .endpoint h4 { margin-top:0; }
+  .endpoint h4:not(:first-child) { margin-top:18px; }
+
+  .pill { display:inline-block; padding:2px 8px; font-family:var(--font-mono); font-size:10.5px; border-radius:10px; letter-spacing:0.03em; background:var(--c-slate-bg); color:var(--c-slate); margin-right:4px; }
+  .pill.blue { background:var(--c-blue-bg); color:var(--c-blue); }
+  .pill.green { background:var(--c-green-bg); color:var(--c-green); }
+  .pill.red { background:var(--c-red-bg); color:var(--c-red); }
+  .pill.amber { background:var(--c-amber-bg); color:var(--c-amber); }
+  .pill.teal { background:var(--c-teal-bg); color:var(--c-teal); }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media (max-width: 900px) {
+    .wrapper { grid-template-columns:1fr; }
+    aside.toc { position:static; height:auto; max-height:none; }
+    main { padding:30px 24px 60px; }
+    .hero { margin:-30px -24px 30px; padding:40px 24px 36px; }
+    .two-col { grid-template-columns:1fr; }
+  }
+
+  footer { margin-top:80px; padding:24px 0; border-top:1px solid var(--c-line); font-size:12px; color:var(--c-muted); text-align:center; font-family:var(--font-mono); letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="toc">
+  <h1>UNISISM · App Paciente</h1>
+  <div class="version">v0.18.1 · contrato 100%</div>
+  <nav>
+    <h2>Início</h2>
+    <a href="#overview">1 · Visão geral</a>
+    <a href="#prefixos">2 · URLs &amp; prefixos</a>
+    <a href="#convencoes">3 · Convenções</a>
+    <a href="#tabela">4 · Catálogo (31 endpoints)</a>
+
+    <h2>Auth (8)</h2>
+    <a href="#login">4.1 · login</a>
+    <a href="#refresh">4.2 · refresh</a>
+    <a href="#logout">4.3 · logout</a>
+    <a href="#me">4.4 · me</a>
+    <a href="#trocar-senha">4.5 · trocar-senha</a>
+    <a href="#esqueci-senha">4.6 · esqueci-senha</a>
+    <a href="#redefinir-senha">4.7 · redefinir-senha</a>
+    <a href="#registrar-dispositivo">4.8 · registrar-dispositivo</a>
+
+    <h2>Recursos</h2>
+    <a href="#encaminhamentos">5 · Encaminhamentos (5)</a>
+    <a href="#anexos">6 · Anexos download</a>
+    <a href="#notificacoes">7 · Notificações (4)</a>
+    <a href="#dossie">8 · Dossiê médico (4)</a>
+    <a href="#ubs">9 · UBS vinculada</a>
+    <a href="#banners">10 · Banners SMS (3)</a>
+    <a href="#tfd">11 · TFD do paciente (6)</a>
+    <a href="#push">12 · Push (ntfy.sh)</a>
+
+    <h2>Apêndices</h2>
+    <a href="#enums">13 · Enums canônicos</a>
+    <a href="#fluxos">14 · Fluxos críticos</a>
+    <a href="#erros">15 · Códigos de erro</a>
+    <a href="#checklist">16 · Checklist</a>
+    <a href="#curl">17 · Verificação curl</a>
+  </nav>
+</aside>
+
+<main>
+
+<div class="hero">
+  <div class="badge-strip">
+    <span>v0.18.1</span>
+    <span>Face 3 · App Paciente</span>
+    <span>Flutter + Dart</span>
+    <span class="success">✓ contrato 100% conformado</span>
+    <span class="success">✓ refresh token rotativo</span>
+    <span class="success">✓ 9/9 smoke OK</span>
+  </div>
+  <h1>UNISISM · App do Paciente</h1>
+  <p class="subtitle">
+    Backend Face 3 da SMS Águas Belas/PE — contratos HTTP completos para o app Flutter
+    do cidadão. Auth com refresh rotativo, encaminhamentos, dossiê médico (CFM 20a),
+    notificações, TFD, banners e push via ntfy.sh self-hosted.
+  </p>
+  <div class="meta">
+    <span>VERSÃO <strong>0.18.1</strong></span>
+    <span>ENDPOINTS <strong>31</strong></span>
+    <span>AUTH <strong>opaco + refresh 30d</strong></span>
+    <span>ACCESS TTL <strong>30 min</strong></span>
+    <span>PUSH <strong>ntfy.sh</strong></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="overview">
+  <h2><span class="num">01</span>Visão geral</h2>
+  <p>
+    O <strong>app do paciente (UNISISM-Paciente, Flutter)</strong> é a Face 3 do sistema.
+    Atende o cidadão: ver encaminhamentos, baixar anexos, receber notificações,
+    consultar dossiê médico (atendimentos + vacinas + exames), pedir TFD e ver banners da SMS.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="label">Endpoints HTTP</div>
+      <div class="value">31</div>
+      <div class="desc">8 auth + 23 recursos</div>
+    </div>
+    <div class="card green">
+      <div class="label">Acesso</div>
+      <div class="value">CPF + senha</div>
+      <div class="desc">Auto-cadastro no 1º encaminhamento</div>
+    </div>
+    <div class="card blue">
+      <div class="label">Access token</div>
+      <div class="value">30 min</div>
+      <div class="desc">Opaco Base64URL · refresh rotativo</div>
+    </div>
+    <div class="card amber">
+      <div class="label">Refresh token</div>
+      <div class="value">30 dias</div>
+      <div class="desc">Uso único · detecção de reuse</div>
+    </div>
+    <div class="card purple">
+      <div class="label">Push</div>
+      <div class="value">ntfy.sh</div>
+      <div class="desc">Self-hosted · sem Firebase</div>
+    </div>
+    <div class="card red">
+      <div class="label">Audit</div>
+      <div class="value">CFM 20a</div>
+      <div class="desc">Toda leitura do dossiê</div>
+    </div>
+  </div>
+
+  <h3>Fonte da verdade</h3>
+  <ul>
+    <li><code>UNISISM-Paciente/CONTRATO_BACKEND.md</code> — gabarito do app (8 + 23 endpoints)</li>
+    <li><code>backend/docs/PACIENTE_APP_API.md</code> — spec viva do backend</li>
+    <li><code>backend/docs/flutter/unisism_api.dart</code> — cliente Dart pronto</li>
+    <li><code>backend/docs/flutter/unisism_types.dart</code> — DTOs Dart com <code>fromJson</code></li>
+  </ul>
+
+  <div class="callout green">
+    <div class="title">Estado da integração</div>
+    <p style="margin:0">
+      <strong>Backend v0.18.1</strong> entrega 100% do contrato. Todos os 31 endpoints respondem
+      nos paths esperados. Login devolve <code>accessToken</code> + <code>expiresAt</code> +
+      <code>paciente</code> com 12 campos (incluindo <code>dataNascimento</code>,
+      <code>cartaoSus</code>, <code>ubsVinculadaId</code>, <code>ubsVinculadaNome</code>).
+      Smoke test 9/9 OK.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="prefixos">
+  <h2><span class="num">02</span>URLs &amp; prefixos</h2>
+
+  <h3>2.1 Base URL por ambiente</h3>
+  <table>
+    <thead><tr><th>Ambiente</th><th>Base URL</th></tr></thead>
+    <tbody>
+      <tr><td>iOS Simulator / Mac dev</td><td><code>http://localhost:3333/v1</code></td></tr>
+      <tr><td>Android Emulator (AVD)</td><td><code>http://10.0.2.2:3333/v1</code></td></tr>
+      <tr><td>Device físico (mesma Wi-Fi)</td><td><code>http://&lt;IP-do-Mac&gt;:3333/v1</code></td></tr>
+      <tr><td>Produção</td><td><code>https://api.unisism.aguasbelas.pe.gov.br/v1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 Três prefixos coexistentes</h3>
+  <p>
+    O backend monta os <strong>mesmos handlers</strong> em três prefixos diferentes
+    para satisfazer o contrato do app novo + manter retrocompatibilidade.
+  </p>
+  <table>
+    <thead><tr><th>Prefixo</th><th>Status</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/auth/paciente/*</code></td>
+        <td><span class="pill green">RECOMENDADO</span></td>
+        <td>Auth + perfil — contrato do app Flutter</td>
+      </tr>
+      <tr>
+        <td><code>/paciente/*</code></td>
+        <td><span class="pill green">RECOMENDADO</span></td>
+        <td>Recursos (encaminhamentos, notificações, dossiê, etc.)</td>
+      </tr>
+      <tr>
+        <td><code>/paciente-app/*</code></td>
+        <td><span class="pill amber">LEGADO</span></td>
+        <td>Compat retro v0.17.x — todos os endpoints sob um único prefixo</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <div class="title">Recomendação</div>
+    <p style="margin:0">
+      Novos clientes devem usar <code>/auth/paciente/*</code> e <code>/paciente/*</code>.
+      O <code>/paciente-app/*</code> continua funcionando indefinidamente, mas
+      ficará marcado como <em>deprecated</em> em changelogs futuros.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="convencoes">
+  <h2><span class="num">03</span>Convenções</h2>
+
+  <h3>3.1 Headers HTTP</h3>
+  <pre><span class="kw">Authorization</span>: Bearer &lt;accessToken&gt;     <span class="cmt"># omitido em rotas públicas</span>
+<span class="kw">Content-Type</span>: application/json
+<span class="kw">Accept</span>: application/json
+<span class="kw">X-Client-Platform</span>: flutter-mobile      <span class="cmt"># recomendado</span>
+<span class="kw">X-Client-Version</span>: 0.1.0                <span class="cmt"># recomendado (telemetria)</span></pre>
+
+  <h3>3.2 Auth</h3>
+  <table>
+    <thead><tr><th>Mecanismo</th><th>Detalhe</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Access token</strong></td><td>Opaco Base64URL (48 bytes), header <code>Authorization: Bearer &lt;token&gt;</code></td></tr>
+      <tr><td><strong>TTL access</strong></td><td>30 min (1800 s) · rotação obrigatória via refresh</td></tr>
+      <tr><td><strong>Refresh token</strong></td><td>Opaco Base64URL, rotativo, TTL 30 dias (2592000 s)</td></tr>
+      <tr><td><strong>Storage cliente</strong></td><td><code>flutter_secure_storage</code> · slots <code>unisism.paciente.accessToken</code> + <code>unisism.paciente.refreshToken</code></td></tr>
+      <tr><td><strong>401 com refresh</strong></td><td>App tenta <code>POST /auth/paciente/refresh</code> automaticamente (interceptor Dio, single-flight)</td></tr>
+      <tr><td><strong>Refresh falha ou ausente</strong></td><td>App limpa tokens locais e vai pra <code>/login</code></td></tr>
+      <tr><td><strong>Reuse detectado</strong></td><td>Backend revoga <strong>toda a cadeia</strong> da conta + retorna <code>401 REFRESH_REUSE_DETECTED</code>. App alerta segurança.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 Shape de erro (sempre envelopado)</h3>
+  <pre>{
+  <span class="str">"error"</span>: {
+    <span class="str">"code"</span>: <span class="str">"SCREAMING_SNAKE_CASE"</span>,
+    <span class="str">"message"</span>: <span class="str">"Mensagem amigável em pt-BR"</span>,
+    <span class="str">"details"</span>: { <span class="cmt">/* opcional */</span> }
+  }
+}</pre>
+
+  <h3>3.4 Códigos HTTP → comportamento do app</h3>
+  <table>
+    <thead><tr><th>HTTP</th><th>Categoria</th><th>Ação do app</th></tr></thead>
+    <tbody>
+      <tr><td>200/201/204</td><td>Sucesso</td><td>Parseia ou segue</td></tr>
+      <tr><td>400/422</td><td>Validation</td><td>Mostra inline no form</td></tr>
+      <tr><td>401</td><td>Auth</td><td>Tenta refresh; se falhar → <code>/login</code></td></tr>
+      <tr><td>403</td><td>Forbidden</td><td>Mostra erro genérico</td></tr>
+      <tr><td>404</td><td>Not found</td><td>Empty state / "não encontrado"</td></tr>
+      <tr><td>409</td><td>Conflict</td><td>Mensagem inline</td></tr>
+      <tr><td>429</td><td>Rate limit</td><td>"Tente em alguns minutos"</td></tr>
+      <tr><td>5xx</td><td>Internal</td><td>ErrorView com retry</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.5 Datas</h3>
+  <table>
+    <thead><tr><th>Tipo</th><th>Formato</th></tr></thead>
+    <tbody>
+      <tr><td>DateTime</td><td><code>"2026-05-29T15:32:18.000Z"</code> (ISO 8601 UTC)</td></tr>
+      <tr><td>Date pura</td><td><code>"YYYY-MM-DD"</code></td></tr>
+      <tr><td>Hora pura</td><td><code>"HH:mm"</code> 24h</td></tr>
+    </tbody>
+  </table>
+  <p>⚠️ Nunca <code>DD/MM/YYYY</code> — quebra o parsing Dart. App formata pt-BR só na UI.</p>
+
+  <h3>3.6 CPF</h3>
+  <ul>
+    <li>App envia <strong>sempre só dígitos</strong> (<code>53474131826</code>)</li>
+    <li>Backend aceita formatado também e normaliza pra dígitos no banco</li>
+    <li>Backend devolve <strong>ambos</strong>: <code>cpf</code> (dígitos) + <code>cpfFormatado</code> (com pontuação)</li>
+  </ul>
+
+  <h3>3.7 Anti-enumeration global</h3>
+  <p>
+    Toda rota <code>/paciente/:recurso/:id</code> filtra por <code>cpf = req.paciente.cpf</code>
+    (extraído do token). Recurso de outro paciente →
+    <strong>404 <code>NOT_FOUND</code></strong> (não 403 — não vaza existência).
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="tabela">
+  <h2><span class="num">04</span>Catálogo de endpoints</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Método</th><th>Path</th><th>Auth</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/login</code></td><td>—</td></tr>
+      <tr><td>2</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/refresh</code></td><td>—</td></tr>
+      <tr><td>3</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/logout</code></td><td>Bearer</td></tr>
+      <tr><td>4</td><td><span class="method get">GET</span></td><td><code>/auth/paciente/me</code></td><td>Bearer</td></tr>
+      <tr><td>5</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/trocar-senha</code></td><td>Bearer</td></tr>
+      <tr><td>6</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/esqueci-senha</code></td><td>—</td></tr>
+      <tr><td>7</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/redefinir-senha</code></td><td>—</td></tr>
+      <tr><td>8</td><td><span class="method post">POST</span></td><td><code>/auth/paciente/registrar-dispositivo</code></td><td>Bearer</td></tr>
+      <tr><td>9</td><td><span class="method get">GET</span></td><td><code>/paciente/encaminhamentos</code></td><td>Bearer</td></tr>
+      <tr><td>10</td><td><span class="method get">GET</span></td><td><code>/paciente/encaminhamentos/ativo</code></td><td>Bearer</td></tr>
+      <tr><td>11</td><td><span class="method get">GET</span></td><td><code>/paciente/encaminhamentos/:id</code></td><td>Bearer</td></tr>
+      <tr><td>12</td><td><span class="method get">GET</span></td><td><code>/paciente/encaminhamentos/:id/anexos</code></td><td>Bearer</td></tr>
+      <tr><td>13</td><td><span class="method get">GET</span></td><td><code>/paciente/encaminhamentos/:id/timeline</code></td><td>Bearer</td></tr>
+      <tr><td>14</td><td><span class="method get">GET</span></td><td><code>/paciente/anexos/:id/download</code></td><td>Bearer + binary</td></tr>
+      <tr><td>15</td><td><span class="method get">GET</span></td><td><code>/paciente/notificacoes</code></td><td>Bearer</td></tr>
+      <tr><td>16</td><td><span class="method get">GET</span></td><td><code>/paciente/notificacoes/contagem-nao-lidas</code></td><td>Bearer</td></tr>
+      <tr><td>17</td><td><span class="method post">POST</span></td><td><code>/paciente/notificacoes/:id/marcar-lida</code></td><td>Bearer</td></tr>
+      <tr><td>18</td><td><span class="method post">POST</span></td><td><code>/paciente/notificacoes/marcar-todas-lidas</code></td><td>Bearer</td></tr>
+      <tr><td>19</td><td><span class="method get">GET</span></td><td><code>/paciente/dossie/resumo</code></td><td>Bearer · audit CFM</td></tr>
+      <tr><td>20</td><td><span class="method get">GET</span></td><td><code>/paciente/dossie/atendimentos</code></td><td>Bearer · audit CFM</td></tr>
+      <tr><td>21</td><td><span class="method get">GET</span></td><td><code>/paciente/dossie/vacinacoes</code></td><td>Bearer · audit CFM</td></tr>
+      <tr><td>22</td><td><span class="method get">GET</span></td><td><code>/paciente/dossie/exames</code></td><td>Bearer · audit CFM</td></tr>
+      <tr><td>23</td><td><span class="method get">GET</span></td><td><code>/paciente/ubs/minha</code></td><td>Bearer</td></tr>
+      <tr><td>24</td><td><span class="method get">GET</span></td><td><code>/paciente/banners</code></td><td>Bearer</td></tr>
+      <tr><td>25</td><td><span class="method get">GET</span></td><td><code>/paciente/banners/:id</code></td><td>Bearer</td></tr>
+      <tr><td>26</td><td><span class="method post">POST</span></td><td><code>/paciente/banners/:id/visto</code></td><td>Bearer</td></tr>
+      <tr><td>27</td><td><span class="method get">GET</span></td><td><code>/paciente/tfd/viagens</code></td><td>Bearer</td></tr>
+      <tr><td>28</td><td><span class="method get">GET</span></td><td><code>/paciente/tfd/viagens/:viagemId</code></td><td>Bearer</td></tr>
+      <tr><td>29</td><td><span class="method get">GET</span></td><td><code>/paciente/tfd/solicitacoes</code></td><td>Bearer</td></tr>
+      <tr><td>30</td><td><span class="method post">POST</span></td><td><code>/paciente/tfd/solicitacoes</code></td><td>Bearer</td></tr>
+      <tr><td>31</td><td><span class="method delete">DELETE</span></td><td><code>/paciente/tfd/solicitacoes/:id</code></td><td>Bearer</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- AUTH -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="login">
+  <h2><span class="num">4.1</span>POST /auth/paciente/login</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/login</span>
+      <span class="auth-badge public">PÚBLICO</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{
+  <span class="str">"cpf"</span>: <span class="str">"53474131826"</span>,        <span class="cmt">// dígitos ou formatado — backend normaliza</span>
+  <span class="str">"senha"</span>: <span class="str">"MinhaSenha123"</span>       <span class="cmt">// plain text via TLS, bcrypt no banco</span>
+}</pre>
+
+      <h4>Response 200</h4>
+<pre>{
+  <span class="str">"accessToken"</span>: <span class="str">"1Trzhivvw..."</span>,                            <span class="cmt">// v0.18.1+ · nome canônico</span>
+  <span class="str">"token"</span>:       <span class="str">"1Trzhivvw..."</span>,                            <span class="cmt">// alias legado v0.17.x</span>
+  <span class="str">"refreshToken"</span>: <span class="str">"qCni7NtH_..."</span>,
+  <span class="str">"expiresIn"</span>: <span class="num">1800</span>,                                       <span class="cmt">// segundos (30 min)</span>
+  <span class="str">"expiresAt"</span>: <span class="str">"2026-05-29T15:37:47.543Z"</span>,                  <span class="cmt">// ISO 8601 (contrato)</span>
+  <span class="str">"refreshExpiresIn"</span>: <span class="num">2592000</span>,                              <span class="cmt">// segundos (30 dias)</span>
+  <span class="str">"paciente"</span>: {
+    <span class="str">"id"</span>:               <span class="str">"24bafaf5-566b-4a59-af0d-f99eb6387ca1"</span>,
+    <span class="str">"nome"</span>:             <span class="str">"Mateus Santana"</span>,
+    <span class="str">"cpf"</span>:              <span class="str">"53474131826"</span>,
+    <span class="str">"cpfFormatado"</span>:     <span class="str">"534.741.318-26"</span>,
+    <span class="str">"dataNascimento"</span>:   <span class="str">"1995-08-12"</span>,                       <span class="cmt">// YYYY-MM-DD ou null</span>
+    <span class="str">"cartaoSus"</span>:        <span class="str">"700000000000000"</span>,                   <span class="cmt">// ou null</span>
+    <span class="str">"email"</span>:            <span class="kw">null</span>,
+    <span class="str">"telefone"</span>:         <span class="kw">null</span>,
+    <span class="str">"fotoUrl"</span>:          <span class="kw">null</span>,                                <span class="cmt">// reservado v0.19+</span>
+    <span class="str">"ubsVinculadaId"</span>:   <span class="str">"35deeadb-5b67-4dde-ade3-11cc2bf7f45d"</span>,
+    <span class="str">"ubsVinculadaNome"</span>: <span class="str">"UBS Centro Águas Belas"</span>,
+    <span class="str">"senhaProvisoria"</span>:  <span class="kw">true</span>                                <span class="cmt">// app força troca</span>
+  }
+}</pre>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th><th>Quando</th></tr></thead>
+        <tbody>
+          <tr><td>401</td><td><code>CREDENCIAIS_INVALIDAS</code></td><td>CPF ou senha errados (resposta única — anti-enum)</td></tr>
+          <tr><td>403</td><td><code>CONTA_DESATIVADA</code></td><td>Admin desativou a conta (<code>ativo=false</code>)</td></tr>
+          <tr><td>422</td><td><code>CPF_INVALIDO</code></td><td>Menos de 11 dígitos ou dígito verificador inválido</td></tr>
+          <tr><td>429</td><td><code>RATE_LIMIT</code></td><td>5 tentativas / 15 min por CPF+IP</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout amber">
+        <div class="title">Crítico · senhaProvisoria</div>
+        <p style="margin:0">
+          Quando <code>paciente.senhaProvisoria === true</code>, o app DEVE forçar
+          fluxo bloqueante em <code>/perfil/trocar-senha</code> antes de liberar
+          qualquer navegação. Após sucesso de <code>/auth/paciente/trocar-senha</code>,
+          a flag zera e o router libera home.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4.2 REFRESH -->
+<section class="chapter" id="refresh">
+  <h2><span class="num">4.2</span>POST /auth/paciente/refresh</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/refresh</span>
+      <span class="auth-badge public">PÚBLICO</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{ <span class="str">"refreshToken"</span>: <span class="str">"qCni7NtH_..."</span> }</pre>
+
+      <h4>Response 200</h4>
+      <p>Shape <strong>idêntico</strong> ao do login (com <code>accessToken</code>, <code>refreshToken</code>
+      e <code>expiresAt</code> <strong>NOVOS</strong>).</p>
+
+      <h4>Comportamento (rotação)</h4>
+      <ol>
+        <li>Backend marca o refresh atual como <code>usadoEm = now</code> + link <code>substituidoPorId</code></li>
+        <li>Cria novo par (access + refresh)</li>
+        <li>Retorna par novo</li>
+        <li>Frontend DEVE substituir AMBOS os tokens no secure storage</li>
+      </ol>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th><th>Quando</th><th>Ação app</th></tr></thead>
+        <tbody>
+          <tr><td>401</td><td><code>REFRESH_TOKEN_INVALIDO</code></td><td>Refresh malformado ou inexistente</td><td>Limpa tokens → <code>/login</code></td></tr>
+          <tr><td>401</td><td><code>REFRESH_TOKEN_EXPIRADO</code></td><td>Passou 30 dias sem uso</td><td>Limpa → <code>/login</code></td></tr>
+          <tr><td>401</td><td><code>REFRESH_TOKEN_REVOGADO</code></td><td>Logout anterior ou admin revogou</td><td>Limpa → <code>/login</code></td></tr>
+          <tr><td>401</td><td><code>REFRESH_REUSE_DETECTED</code></td><td><strong>Token vazado — cadeia revogada</strong></td><td><strong>Alerta segurança + /login</strong></td></tr>
+          <tr><td>403</td><td><code>CONTA_DESATIVADA</code></td><td>Admin desativou</td><td>Limpa → <code>/login</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout red">
+        <div class="title">REFRESH_REUSE_DETECTED</div>
+        <p style="margin:0">
+          Sinal de vazamento/clone do refresh. Backend revoga TODA a cadeia da conta
+          (todos os refresh tokens vivos + sessões ativas). App deve mostrar alerta
+          de segurança ao usuário antes de redirecionar pro login.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4.3 LOGOUT -->
+<section class="chapter" id="logout">
+  <h2><span class="num">4.3</span>POST /auth/paciente/logout</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/logout</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p>Body vazio. <strong>Response 204</strong>.</p>
+      <h4>Side effects</h4>
+      <ul>
+        <li>Revoga a <code>SessaoPaciente</code> do access token atual</li>
+        <li>Revoga <strong>TODOS</strong> os <code>PacienteRefreshToken</code> vivos da conta (v0.18+)</li>
+      </ul>
+      <p><strong>Comportamento defensivo</strong>: app limpa tokens locais MESMO se backend falhar (try/finally).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4.4 ME -->
+<section class="chapter" id="me">
+  <h2><span class="num">4.4</span>GET /auth/paciente/me</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/auth/paciente/me</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+      <p>Shape <strong>idêntico</strong> ao <code>paciente</code> do login.</p>
+<pre>{
+  <span class="str">"id"</span>: <span class="str">"24bafaf5-..."</span>,
+  <span class="str">"nome"</span>: <span class="str">"Mateus Santana"</span>,
+  <span class="str">"cpf"</span>: <span class="str">"53474131826"</span>,
+  <span class="str">"cpfFormatado"</span>: <span class="str">"534.741.318-26"</span>,
+  <span class="str">"dataNascimento"</span>: <span class="str">"1995-08-12"</span>,
+  <span class="str">"cartaoSus"</span>: <span class="str">"700000000000000"</span>,
+  <span class="str">"email"</span>: <span class="kw">null</span>,
+  <span class="str">"telefone"</span>: <span class="kw">null</span>,
+  <span class="str">"fotoUrl"</span>: <span class="kw">null</span>,
+  <span class="str">"ubsVinculadaId"</span>: <span class="str">"35deeadb-..."</span>,
+  <span class="str">"ubsVinculadaNome"</span>: <span class="str">"UBS Centro Águas Belas"</span>,
+  <span class="str">"senhaProvisoria"</span>: <span class="kw">false</span>
+}</pre>
+
+      <h4>Quando o app chama</h4>
+      <ul>
+        <li><strong>Boot (Splash)</strong> — valida sessão + detecta <code>senhaProvisoria</code></li>
+        <li><strong>Após trocar-senha</strong> — confirma flag zerada</li>
+      </ul>
+
+      <p><strong>Erros</strong>: 401 se token inválido/expirado → app tenta refresh.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4.5 TROCAR-SENHA -->
+<section class="chapter" id="trocar-senha">
+  <h2><span class="num">4.5</span>POST /auth/paciente/trocar-senha</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/trocar-senha</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{
+  <span class="str">"senhaAtual"</span>: <span class="str">"53474131826"</span>,
+  <span class="str">"novaSenha"</span>: <span class="str">"MinhaNova2026"</span>
+}</pre>
+      <p><strong>Response 204</strong>.</p>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th><th>Quando</th></tr></thead>
+        <tbody>
+          <tr><td>401</td><td><code>SENHA_ATUAL_INCORRETA</code></td><td><code>senhaAtual</code> não bate</td></tr>
+          <tr><td>422</td><td><code>SENHA_FRACA</code></td><td>Nova senha &lt; 8 chars</td></tr>
+          <tr><td>422</td><td><code>SENHA_IGUAL_ATUAL</code></td><td>Nova senha idêntica à atual</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Side effects (transação)</h4>
+      <ol>
+        <li><code>paciente.senhaHash = bcrypt(novaSenha, 10)</code></li>
+        <li><strong><code>paciente.senhaProvisoria = false</code></strong> (crítico)</li>
+        <li>Opcional: invalidar outras <code>SessaoPaciente</code> ativas</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 4.6 ESQUECI-SENHA -->
+<section class="chapter" id="esqueci-senha">
+  <h2><span class="num">4.6</span>POST /auth/paciente/esqueci-senha</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/esqueci-senha</span>
+      <span class="auth-badge public">PÚBLICO</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{ <span class="str">"cpf"</span>: <span class="str">"53474131826"</span> }</pre>
+
+      <p><strong>Response 204 sempre</strong> (anti-enumeration — não vaza se CPF existe).</p>
+
+      <h4>Side effects (se CPF existir + tiver email)</h4>
+      <ol>
+        <li>Token opaco: <code>crypto.randomBytes(32).toString('hex')</code></li>
+        <li><code>tokenHash = SHA-256(token)</code> armazenado em <code>PacienteRecoveryToken</code></li>
+        <li>TTL <strong>30 min</strong>, uso único</li>
+        <li>Email com link <code>https://app.unisism.aguasbelas.pe.gov.br/redefinir?t=&lt;token&gt;</code></li>
+        <li><strong>Rate limit</strong>: 3 tentativas/h por CPF+IP, 5 req/15min/IP, 100 req/h/IP</li>
+        <li>Audit log em todos os caminhos (existe/não-existe/expirado)</li>
+      </ol>
+
+      <h4>Defesas em profundidade</h4>
+      <ul>
+        <li><strong>Timing-constant</strong>: MIN_MS aplicado quando CPF não existe</li>
+        <li><strong>CPF checksum</strong>: bloqueia <code>"11111111111"</code> e similares</li>
+        <li><strong>Cron de purge</strong>: tokens expirados/usados são deletados (TTL grace 24h)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4.7 REDEFINIR-SENHA -->
+<section class="chapter" id="redefinir-senha">
+  <h2><span class="num">4.7</span>POST /auth/paciente/redefinir-senha</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/redefinir-senha</span>
+      <span class="auth-badge public">PÚBLICO</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{
+  <span class="str">"token"</span>: <span class="str">"&lt;hex 64 chars do email&gt;"</span>,
+  <span class="str">"novaSenha"</span>: <span class="str">"NovaSegura2026"</span>
+}</pre>
+      <p><strong>Response 204</strong>.</p>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th></tr></thead>
+        <tbody>
+          <tr><td>404</td><td><code>TOKEN_INVALIDO</code> · não existe</td></tr>
+          <tr><td>401</td><td><code>TOKEN_EXPIRADO</code> · &gt; 30min</td></tr>
+          <tr><td>409</td><td><code>TOKEN_JA_USADO</code> · <code>usadoEm != null</code></td></tr>
+          <tr><td>422</td><td><code>SENHA_FRACA</code> · &lt; 8 chars</td></tr>
+        </tbody>
+      </table>
+
+      <p>Rate limit: 10 req/15min/IP + 30 req/h/IP. Token brute force barrado.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4.8 REGISTRAR-DISPOSITIVO -->
+<section class="chapter" id="registrar-dispositivo">
+  <h2><span class="num">4.8</span>POST /auth/paciente/registrar-dispositivo</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/auth/paciente/registrar-dispositivo</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Request (shape do contrato)</h4>
+<pre>{
+  <span class="str">"fcmToken"</span>: <span class="str">"&lt;endpoint-ntfy-uuid&gt;"</span>,    <span class="cmt">// nome legado — é o endpoint ntfy</span>
+  <span class="str">"plataforma"</span>: <span class="str">"android"</span>                <span class="cmt">// "android" | "ios"</span>
+}</pre>
+
+      <h4>Request (shape v0.16+, alternativa)</h4>
+<pre>{
+  <span class="str">"endpoint"</span>: <span class="str">"&lt;topic-ntfy&gt;"</span>,
+  <span class="str">"provider"</span>: <span class="str">"NTFY"</span>,                  <span class="cmt">// "NTFY" | "FCM" | "WEB_PUSH"</span>
+  <span class="str">"plataforma"</span>: <span class="str">"android"</span>,
+  <span class="str">"appVersion"</span>: <span class="str">"0.1.0"</span>
+}</pre>
+
+      <p><strong>Response 201</strong> com o registro persistido.</p>
+
+      <h4>Side effects</h4>
+      <ul>
+        <li>UPSERT em <code>paciente_dispositivos</code> por <code>endpoint</code> único</li>
+        <li>Se outra conta tinha esse endpoint → move (audit log)</li>
+      </ul>
+
+      <p>App falha silenciosamente se este endpoint não existir — não derruba fluxo, mas push remoto não funciona.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ENCAMINHAMENTOS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="encaminhamentos">
+  <h2><span class="num">05</span>Encaminhamentos</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/encaminhamentos</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+      <p>Array (pode ser vazio).</p>
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"protocolo"</span>: <span class="str">"UBS-2026-100137"</span>,
+    <span class="str">"status"</span>: <span class="str">"APROVADO"</span>,
+    <span class="str">"paciente"</span>: { <span class="cmt">/* snapshot */</span> },
+    <span class="str">"solicitacao"</span>: {
+      <span class="str">"medicoSolicitante"</span>: <span class="str">"Dr. Ricardo Santos"</span>,
+      <span class="str">"crm"</span>: <span class="str">"CRM-PE 28471"</span>,
+      <span class="str">"especialidadeSolicitada"</span>: <span class="str">"Cardiologia"</span>,
+      <span class="str">"cid10"</span>: <span class="str">"I10"</span>,
+      <span class="str">"cidDescricao"</span>: <span class="str">"Hipertensão essencial"</span>,
+      <span class="str">"justificativaClinica"</span>: <span class="str">"..."</span>,
+      <span class="str">"prioridade"</span>: <span class="str">"PRIORITARIA"</span>,
+      <span class="str">"dataSolicitacao"</span>: <span class="str">"2026-04-22"</span>
+    },
+    <span class="str">"anexos"</span>: [
+      { <span class="str">"id"</span>, <span class="str">"nome"</span>, <span class="str">"tipo"</span>, <span class="str">"tamanhoKb"</span>, <span class="str">"uploadEm"</span>, <span class="str">"scanStatus"</span> }
+    ],
+    <span class="str">"timeline"</span>: [
+      { <span class="str">"id"</span>, <span class="str">"tipo"</span>, <span class="str">"titulo"</span>, <span class="str">"descricao"</span>, <span class="str">"autor"</span>, <span class="str">"em"</span> }
+    ],
+    <span class="str">"unidadeOrigem"</span>: <span class="str">"UBS Centro"</span>,
+    <span class="str">"atendenteResponsavel"</span>: <span class="str">"..."</span>,
+    <span class="str">"observacoesRegulacao"</span>: <span class="str">"Trazer ECG recente"</span>,
+    <span class="str">"agendamentoPrevisto"</span>: <span class="str">"2026-06-08T09:00:00.000Z"</span>,
+    <span class="str">"localAgendamento"</span>: <span class="str">"CEM Sala 3 · Av. Getúlio Vargas, 1100"</span>,
+    <span class="str">"profissionalAgendado"</span>: <span class="str">"Dra. Beatriz Lima · CRM-PE 22189"</span>,
+    <span class="str">"motivoRejeicao"</span>: <span class="kw">null</span>,
+    <span class="str">"pendenciasAbertas"</span>: <span class="num">0</span>,
+    <span class="str">"podeSolicitarTfd"</span>: <span class="kw">true</span>,
+    <span class="str">"recomendacoes"</span>: [<span class="str">"Trazer documento"</span>, <span class="str">"Jejum 12h"</span>],
+    <span class="str">"respostaSUS"</span>: <span class="kw">null</span>,
+    <span class="str">"criadoEm"</span>: <span class="str">"2026-05-06T14:32:18.000Z"</span>,
+    <span class="str">"atualizadoEm"</span>: <span class="str">"2026-05-24T10:15:00.000Z"</span>
+  }
+]</pre>
+
+      <p>Ordenação: <code>atualizadoEm DESC</code>. App pode reordenar localmente.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/encaminhamentos/ativo</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+      <p>1 <code>Encaminhamento</code> <strong>OU <code>null</code> literal</strong>.</p>
+      <p>Encaminhamento ativo = mais recente com <code>status NOT IN (CONCLUIDO, REJEITADO, CANCELADO)</code>.</p>
+      <div class="callout amber">
+        <div class="title">⚠️ Crítico</div>
+        <p style="margin:0">
+          Backend deve retornar <strong><code>null</code> literal</strong> quando não há ativo,
+          <strong>NÃO 404</strong>. O parser Dart espera <code>null</code> direto.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/encaminhamentos/:id</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p>1 <code>Encaminhamento</code> (mesmo shape). <strong>404</strong> se não existe ou de outro paciente.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/encaminhamentos/:id/anexos</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"nome"</span>: <span class="str">"solicitacao-medica.pdf"</span>,
+    <span class="str">"tipo"</span>: <span class="str">"SOLICITACAO"</span>,        <span class="cmt">// SOLICITACAO|RG|CPF|CARTAO_SUS|EXAME|LAUDO|RESPOSTA_SUS|OUTRO</span>
+    <span class="str">"tamanhoKb"</span>: <span class="num">139</span>,
+    <span class="str">"uploadEm"</span>: <span class="str">"2026-05-06T14:35:00.000Z"</span>,
+    <span class="str">"scanStatus"</span>: <span class="str">"LIMPO"</span>          <span class="cmt">// PENDENTE|LIMPO|INFECTADO|FALHOU</span>
+  }
+]</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/encaminhamentos/:id/timeline</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"tipo"</span>: <span class="str">"CRIADO"</span>,                       <span class="cmt">// ver enum §13.3</span>
+    <span class="str">"titulo"</span>: <span class="str">"Encaminhamento criado"</span>,
+    <span class="str">"descricao"</span>: <span class="str">"Enviado à regulação"</span>,
+    <span class="str">"autor"</span>: <span class="str">"Dr. Ricardo Santos"</span>,
+    <span class="str">"autorPapel"</span>: <span class="str">"Médico solicitante"</span>,
+    <span class="str">"em"</span>: <span class="str">"2026-05-06T14:32:18.000Z"</span>
+  }
+]</pre>
+      <p>Ordenação: <code>em ASC</code> (mais antigo primeiro).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ANEXOS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="anexos">
+  <h2><span class="num">06</span>Anexos · download</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/anexos/:id/download</span>
+      <span class="auth-badge auth">AUTH · BINARY</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+      <p>Stream binário com headers obrigatórios:</p>
+<pre><span class="kw">Content-Type</span>: application/pdf  <span class="cmt">// ou MIME real</span>
+<span class="kw">Content-Disposition</span>: attachment; filename="solicitacao.pdf"
+<span class="kw">Content-Length</span>: 142336
+<span class="kw">Cache-Control</span>: private, no-store, max-age=0, must-revalidate
+<span class="kw">Pragma</span>: no-cache
+<span class="kw">X-Content-Type-Options</span>: nosniff
+<span class="kw">X-Robots-Tag</span>: none</pre>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th><th>Quando</th></tr></thead>
+        <tbody>
+          <tr><td>404</td><td><code>ANEXO_NAO_ENCONTRADO</code></td><td>Não existe ou de outro paciente (anti-enum)</td></tr>
+          <tr><td>409</td><td><code>ANEXO_NAO_LIBERADO</code></td><td><code>scanStatus != LIMPO</code> (ClamAV ainda processando ou bloqueado)</td></tr>
+          <tr><td>429</td><td><code>RATE_LIMIT</code></td><td>60 req/15min/conta + 200 req/h/conta + 300 req/15min/IP</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Defesas implementadas</h4>
+      <ul>
+        <li><strong>Path traversal guard</strong> — ataque <code>../../etc/passwd</code> bloqueado</li>
+        <li><strong>Filename sanitização</strong> — RFC 5987 + ASCII fallback</li>
+        <li><strong>Audit LGPD em TODOS os caminhos</strong> — OK, NAO_EXISTE, FORA_ESCOPO, NAO_LIBERADO, PATH_TRAVERSAL, ARQUIVO_SUMIU</li>
+        <li><strong>Stream errors</strong> — handler dedicado pra cliente abortar mid-download</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- NOTIFICAÇÕES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="notificacoes">
+  <h2><span class="num">07</span>Notificações</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/notificacoes</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Query opcionais</h4>
+      <p><code>?apenasNaoLidas=true</code> — filtra só não lidas.</p>
+
+      <h4>Response 200</h4>
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"tipo"</span>: <span class="str">"APROVADO"</span>,                  <span class="cmt">// ver enum §13.6</span>
+    <span class="str">"titulo"</span>: <span class="str">"Sua consulta foi marcada!"</span>,
+    <span class="str">"mensagem"</span>: <span class="str">"Cardiologia · 08/06 · 09:30"</span>,
+    <span class="str">"criadaEm"</span>: <span class="str">"2026-05-24T10:15:00.000Z"</span>,
+    <span class="str">"lidaEm"</span>: <span class="kw">null</span>,                       <span class="cmt">// null = não lida</span>
+    <span class="str">"encaminhamentoId"</span>: <span class="str">"uuid"</span>,            <span class="cmt">// ou null</span>
+    <span class="str">"pushStatus"</span>: <span class="str">"ENVIADO"</span>                <span class="cmt">// PENDENTE|ENVIADO|FALHOU|EXCEDIDO|SEM_DEVICE</span>
+  }
+]</pre>
+      <p>Ordenação: <code>criadaEm DESC</code>. Limite: 100.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/notificacoes/contagem-nao-lidas</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>{ <span class="str">"naoLidas"</span>: <span class="num">3</span> }</pre>
+      <p>Alias: <code>GET /paciente/notificacoes/count</code> retorna o mesmo shape.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/paciente/notificacoes/:id/marcar-lida</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p><strong>Response 204</strong>. <strong>Idempotente</strong>.</p>
+      <p>Alias: <code>POST .../lida</code>.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/paciente/notificacoes/marcar-todas-lidas</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p><strong>Response 200</strong> com <code>{ atualizadas: N }</code> (app não exige).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DOSSIÊ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="dossie">
+  <h2><span class="num">08</span>Dossiê médico (CFM 20a)</h2>
+
+  <div class="callout red">
+    <div class="title">Audit obrigatório · CFM Res. 1.821/2007</div>
+    <p style="margin:0">
+      Toda leitura aqui gera linha em <code>paciente_prontuario_audit</code>
+      (retenção <strong>20 anos</strong>, trigger SQL de imutabilidade ativo).
+      Backend não permite UPDATE/DELETE nessa tabela.
+    </p>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/dossie/resumo</span>
+      <span class="auth-badge auth">AUTH · rate-limited</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>{
+  <span class="str">"totalEncaminhamentos"</span>: <span class="num">4</span>,
+  <span class="str">"totalAtendimentos"</span>: <span class="num">21</span>,
+  <span class="str">"totalVacinas"</span>: <span class="num">14</span>,
+  <span class="str">"totalExames"</span>: <span class="num">5</span>,
+  <span class="str">"tipoSanguineo"</span>: <span class="str">"O+"</span>,                       <span class="cmt">// ou null</span>
+  <span class="str">"alergias"</span>: [<span class="str">"Dipirona"</span>, <span class="str">"Iodo"</span>],
+  <span class="str">"condicoesCronicas"</span>: [<span class="str">"Hipertensão arterial"</span>],
+  <span class="str">"medicamentosUsoContinuo"</span>: [
+    <span class="str">"Losartana 50mg · 1x/dia"</span>,
+    <span class="str">"Metformina 850mg · 2x/dia"</span>
+  ]
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/dossie/atendimentos</span>
+      <span class="auth-badge auth">AUTH · rate-limited · paginação</span>
+    </div>
+    <div class="body">
+      <h4>Query opcional</h4>
+      <p><code>?cursor=...&amp;limit=20</code> — paginação por cursor (default 20).</p>
+
+      <h4>Response 200</h4>
+<pre>{
+  <span class="str">"items"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+      <span class="str">"data"</span>: <span class="str">"2026-05-19T10:30:00.000Z"</span>,
+      <span class="str">"tipo"</span>: <span class="str">"CONSULTA_MEDICA"</span>,            <span class="cmt">// ver enum §13.4</span>
+      <span class="str">"localNome"</span>: <span class="str">"UBS Centro"</span>,
+      <span class="str">"profissionalNome"</span>: <span class="str">"Dr. Ricardo Santos"</span>,
+      <span class="str">"profissionalEspecialidade"</span>: <span class="str">"Clínica geral"</span>,
+      <span class="str">"queixaPrincipal"</span>: <span class="str">"Glicemia descompensada"</span>,
+      <span class="str">"cid10"</span>: <span class="str">"E11.9"</span>,
+      <span class="str">"cid10Descricao"</span>: <span class="str">"DM2 sem complicações"</span>,
+      <span class="str">"condutaResumida"</span>: <span class="str">"Ajuste de metformina"</span>
+    }
+  ],
+  <span class="str">"nextCursor"</span>: <span class="kw">null</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/dossie/vacinacoes</span>
+      <span class="auth-badge auth">AUTH · rate-limited</span>
+    </div>
+    <div class="body">
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"vacina"</span>: <span class="str">"Influenza tetravalente"</span>,
+    <span class="str">"dose"</span>: <span class="str">"Anual"</span>,
+    <span class="str">"aplicadaEm"</span>: <span class="str">"2026-04-12T14:00:00.000Z"</span>,
+    <span class="str">"localAplicacao"</span>: <span class="str">"UBS Centro"</span>,
+    <span class="str">"lote"</span>: <span class="str">"BR224-2026"</span>,
+    <span class="str">"fabricante"</span>: <span class="str">"Butantan"</span>,
+    <span class="str">"via"</span>: <span class="str">"INTRAMUSCULAR"</span>,           <span class="cmt">// enum §13.5</span>
+    <span class="str">"aplicadorNome"</span>: <span class="str">"Enf. João Silva"</span>  <span class="cmt">// nullable</span>
+  }
+]</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/dossie/exames</span>
+      <span class="auth-badge auth">AUTH · rate-limited</span>
+    </div>
+    <div class="body">
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"nome"</span>: <span class="str">"Hemoglobina glicada (HbA1c)"</span>,
+    <span class="str">"realizadoEm"</span>: <span class="str">"2026-05-05T09:00:00.000Z"</span>,
+    <span class="str">"solicitanteNome"</span>: <span class="str">"Dr. Ricardo Santos"</span>,
+    <span class="str">"alterado"</span>: <span class="kw">true</span>,
+    <span class="str">"unidadeExecutora"</span>: <span class="str">"Laboratório Municipal"</span>,
+    <span class="str">"categoria"</span>: <span class="str">"LABORATORIAL"</span>,        <span class="cmt">// enum §13.9</span>
+    <span class="str">"resultadoStatus"</span>: <span class="str">"ALTERADO"</span>,         <span class="cmt">// enum §13.9</span>
+    <span class="str">"resultadoResumo"</span>: <span class="str">"HbA1c = 8,4% (acima do alvo)"</span>,
+    <span class="str">"observacoes"</span>: <span class="str">"Reforçar adesão e revisar dieta"</span>
+  }
+]</pre>
+
+      <div class="callout amber">
+        <div class="title">LGPD / médico</div>
+        <p style="margin:0">
+          <code>resultadoResumo</code> é <strong>frase amigável</strong>, não dump
+          técnico. Não incluir valores que exijam interpretação médica sem contexto.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Rate limit dossiê</strong>: 120/15min/conta + 600/h/conta + 1000/15min/IP.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- UBS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="ubs">
+  <h2><span class="num">09</span>UBS vinculada</h2>
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/ubs/minha</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>{
+  <span class="str">"id"</span>: <span class="str">"35deeadb-..."</span>,
+  <span class="str">"nome"</span>: <span class="str">"UBS Centro Águas Belas"</span>,
+  <span class="str">"endereco"</span>: <span class="str">"Praça Central, s/n · Centro"</span>,
+  <span class="str">"bairro"</span>: <span class="str">"Centro"</span>,
+  <span class="str">"cidade"</span>: <span class="str">"Águas Belas"</span>,
+  <span class="str">"uf"</span>: <span class="str">"PE"</span>,
+  <span class="str">"cep"</span>: <span class="str">"55400-000"</span>,
+  <span class="str">"telefone"</span>: <span class="str">"(87) 3741-1100"</span>,
+  <span class="str">"whatsapp"</span>: <span class="str">"5587998765432"</span>,             <span class="cmt">// dígitos DDI — wa.me/{whatsapp}</span>
+  <span class="str">"email"</span>: <span class="str">"ubs.central@aguasbelas.pe.gov.br"</span>,
+  <span class="str">"horarioFuncionamento"</span>: <span class="str">"Seg-Sex · 07:00 às 17:00"</span>,
+  <span class="str">"coordenadoresNomes"</span>: [<span class="str">"Dra. Helena Rocha"</span>],
+  <span class="str">"latitude"</span>: <span class="num">-9.1100</span>,
+  <span class="str">"longitude"</span>: <span class="num">-37.1234</span>,
+  <span class="str">"observacoes"</span>: <span class="str">"Vacinação rotina às quartas"</span>
+}</pre>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th></tr></thead>
+        <tbody>
+          <tr><td>404</td><td><code>PACIENTE_SEM_UBS</code> — paciente não tem vínculo (app mostra empty state)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout amber">
+        <div class="title">⚠️ Crítico · WhatsApp</div>
+        <p style="margin:0">
+          <code>whatsapp</code> deve ser <strong>SÓ dígitos com DDI</strong>
+          (<code>5587998765432</code>). App concatena em <code>https://wa.me/{whatsapp}</code>
+          — qualquer máscara quebra o link.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- BANNERS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="banners">
+  <h2><span class="num">10</span>Banners SMS</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/banners</span>
+      <span class="auth-badge auth">AUTH · rate-limited</span>
+    </div>
+    <div class="body">
+      <h4>Response 200</h4>
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"titulo"</span>: <span class="str">"Campanha de vacinação Influenza"</span>,
+    <span class="str">"corpo"</span>: <span class="str">"Procure sua UBS..."</span>,
+    <span class="str">"tone"</span>: <span class="str">"CAMPANHA"</span>,                <span class="cmt">// URGENTE|CAMPANHA|INFO|ATENCAO</span>
+    <span class="str">"publicadoEm"</span>: <span class="str">"2026-05-26T08:00:00.000Z"</span>,
+    <span class="str">"expiraEm"</span>: <span class="str">"2026-07-26T00:00:00.000Z"</span>,
+    <span class="str">"imagemUrl"</span>: <span class="str">"https://cdn.sms.../banner1.jpg"</span>,
+    <span class="str">"ctaLabel"</span>: <span class="str">"Saiba mais"</span>,
+    <span class="str">"ctaUrl"</span>: <span class="str">"https://www.aguasbelas.pe.gov.br/saude/influenza"</span>,
+    <span class="str">"prioridadeOrdem"</span>: <span class="num">100</span>
+  }
+]</pre>
+
+      <p>
+        <strong>Filtros</strong>: <code>ativo=true</code> AND
+        <code>(expiraEm IS NULL OR expiraEm &gt; now())</code>.<br>
+        <strong>Ordenação</strong>: <code>prioridadeOrdem DESC, publicadoEm DESC</code>.
+      </p>
+
+      <div class="callout amber">
+        <div class="title">⚠️ HTTPS obrigatório</div>
+        <p style="margin:0">
+          <code>imagemUrl</code> e <code>ctaUrl</code> DEVEM ser HTTPS — Android
+          bloqueia HTTP por default (cleartext).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/banners/:id</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p>1 banner. <strong>404</strong> se expirado, inativo ou inexistente.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/paciente/banners/:id/visto</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p><strong>Response 204</strong>. <strong>Idempotente</strong>. Falha silenciosa no cliente.</p>
+      <p>UPSERT em <code>sms_banner_views(bannerId, contaId)</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TFD -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="tfd">
+  <h2><span class="num">11</span>TFD do paciente</h2>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/tfd/viagens</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"destinoCidade"</span>: <span class="str">"Recife"</span>,
+    <span class="str">"destinoUf"</span>: <span class="str">"PE"</span>,
+    <span class="str">"destinoLocal"</span>: <span class="str">"CEM · Av. Conde da Boa Vista"</span>,
+    <span class="str">"dataPartida"</span>: <span class="str">"2026-06-08T00:00:00.000Z"</span>,
+    <span class="str">"horaPartida"</span>: <span class="str">"06:30"</span>,
+    <span class="str">"localEmbarque"</span>: <span class="str">"Terminal Rodoviário · Plataforma B"</span>,
+    <span class="str">"vagasTotal"</span>: <span class="num">12</span>,
+    <span class="str">"vagasOcupadas"</span>: <span class="num">7</span>,
+    <span class="str">"veiculoDescricao"</span>: <span class="str">"Van Sprinter · 14 lugares"</span>,
+    <span class="str">"veiculoPlaca"</span>: <span class="str">"JLT-2K84"</span>,
+    <span class="str">"motoristaNome"</span>: <span class="str">"João Pedro Lima"</span>,
+    <span class="str">"observacoes"</span>: <span class="str">"Levar documento com foto"</span>
+  }
+]</pre>
+      <p>Filtros: <code>dataPartida &gt;= today</code> AND cidade do paciente compatível. Ordenação: <code>dataPartida ASC</code>.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/tfd/viagens/:viagemId</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p>1 viagem completa. <strong>404</strong> se não existe.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method get">GET</span>
+      <span class="path">/v1/paciente/tfd/solicitacoes</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+<pre>[
+  {
+    <span class="str">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"viagemId"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"status"</span>: <span class="str">"APROVADA"</span>,            <span class="cmt">// enum §13.7</span>
+    <span class="str">"prioridade"</span>: <span class="str">"PRIORITARIA"</span>,      <span class="cmt">// derivada no servidor</span>
+    <span class="str">"criadaEm"</span>: <span class="str">"2026-05-24T11:00:00.000Z"</span>,
+    <span class="str">"viagem"</span>: { <span class="cmt">/* TfdViagem embedado completo */</span> },
+    <span class="str">"numeroAssento"</span>: <span class="str">"07"</span>,
+    <span class="str">"justificativaPaciente"</span>: <span class="str">"Consulta cardio agendada"</span>,
+    <span class="str">"motivoRecusa"</span>: <span class="kw">null</span>,
+    <span class="str">"encaminhamentoId"</span>: <span class="str">"uuid"</span>,
+    <span class="str">"encaminhamentoProtocolo"</span>: <span class="str">"UBS-2026-100137"</span>,
+    <span class="str">"acompanhante"</span>: <span class="kw">null</span>,
+    <span class="str">"aprovadaEm"</span>: <span class="str">"2026-05-26T08:00:00.000Z"</span>
+  }
+]</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method post">POST</span>
+      <span class="path">/v1/paciente/tfd/solicitacoes</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <h4>Request</h4>
+<pre>{
+  <span class="str">"viagemId"</span>: <span class="str">"uuid"</span>,
+  <span class="str">"encaminhamentoId"</span>: <span class="str">"uuid"</span>,
+  <span class="str">"justificativa"</span>: <span class="str">"Consulta com cardiologista"</span>,
+  <span class="str">"acompanhante"</span>: <span class="str">"João Souza (filho)"</span>
+}</pre>
+
+      <p><strong>App NÃO envia prioridade</strong> — backend deriva.</p>
+
+      <div class="callout red">
+        <div class="title">🚨 Regra crítica · derivação de prioridade NO SERVIDOR</div>
+<pre style="margin:8px 0 0"><span class="kw">if</span> (encaminhamentoId == <span class="kw">null</span>) <span class="kw">return</span> <span class="str">'NORMAL'</span>;
+<span class="kw">const</span> enc = <span class="kw">await</span> encaminhamentoRepo.findById(encaminhamentoId);
+<span class="kw">if</span> (!enc || enc.paciente.cpf !== cpfPaciente) {
+  <span class="kw">throw</span> ValidationError(<span class="str">'ENC_NAO_ENCONTRADO'</span>);  <span class="cmt">// anti-enum</span>
+}
+<span class="kw">if</span> ([<span class="str">'URGENTE'</span>, <span class="str">'EMERGENCIA'</span>].includes(enc.prioridade)) <span class="kw">return</span> <span class="str">'URGENTE'</span>;
+<span class="kw">return</span> <span class="str">'PRIORITARIA'</span>;</pre>
+      </div>
+
+      <h4>Erros</h4>
+      <table>
+        <thead><tr><th>HTTP</th><th>code</th><th>Quando</th></tr></thead>
+        <tbody>
+          <tr><td>404</td><td><code>VIAGEM_NAO_ENCONTRADA</code></td><td><code>viagemId</code> inválida</td></tr>
+          <tr><td>422</td><td><code>VALIDATION_ERROR</code></td><td><code>justificativa.length &lt; 10</code></td></tr>
+          <tr><td>422</td><td><code>ENC_NAO_ENCONTRADO</code></td><td>Encaminhamento de outro paciente (anti-enum)</td></tr>
+          <tr><td>409</td><td><code>TFD_JA_TEM_SOLICITACAO</code></td><td>Já tem AGUARDANDO/APROVADA pra mesma viagem</td></tr>
+          <tr><td>409</td><td><code>TFD_VIAGEM_ENCERRADA</code></td><td><code>dataPartida &lt; now()</code></td></tr>
+          <tr><td>409</td><td><code>CONFLICT_NO_SEATS</code></td><td>Sem vagas (validação atômica com SELECT FOR UPDATE)</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Side effects</strong>: cria com <code>AGUARDANDO</code>, <strong>NÃO</strong> decrementa <code>vagasOcupadas</code>. Hash chain TFD registrado.</p>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="head">
+      <span class="method delete">DELETE</span>
+      <span class="path">/v1/paciente/tfd/solicitacoes/:id</span>
+      <span class="auth-badge auth">AUTH</span>
+    </div>
+    <div class="body">
+      <p><strong>Response 204</strong>. <strong>404</strong> se de outro paciente. <strong>409</strong> se <code>status != AGUARDANDO</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PUSH -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="push">
+  <h2><span class="num">12</span>Push via ntfy.sh</h2>
+
+  <p>
+    App usa <strong>ntfy.sh self-hosted</strong> (sem Firebase). Backend mantém
+    abstração <code>IPushProvider</code> que pode rotear pra ntfy, FCM ou web-push.
+    Default: NTFY.
+  </p>
+
+  <h3>12.1 Infra</h3>
+  <p>
+    Docker compose com <code>binwiederhier/ntfy:v2.11</code> + reverse proxy
+    via Caddy em <code>ntfy.aguasbelas.pe.gov.br</code>.
+  </p>
+
+  <h3>12.2 Worker backend → ntfy</h3>
+  <pre><span class="kw">await</span> axios.post(<span class="str">`${NTFY_BASE_URL}/${token.endpoint}`</span>, JSON.stringify({
+  message: notif.mensagem,
+  meta: {
+    tipo: <span class="str">'ENCAMINHAMENTO'</span>,
+    deepLink: <span class="str">`/encaminhamento/${notif.encaminhamentoId}`</span>,
+    notificacaoId: notif.id,
+    encaminhamentoId: notif.encaminhamentoId,
+  },
+}), {
+  headers: {
+    <span class="str">'Title'</span>: notif.titulo,
+    <span class="str">'Priority'</span>: <span class="str">'4'</span>,
+    <span class="str">'Authorization'</span>: <span class="str">`Bearer ${NTFY_AUTH_TOKEN}`</span>,
+  },
+});</pre>
+
+  <h3>12.3 Retry + dead-letter</h3>
+  <ul>
+    <li>Backoff exponencial: <code>[0, 1, 5, 30]</code> minutos · máx 4 tentativas</li>
+    <li>Após esgotar → status <code>EXCEDIDO</code> (alerta op)</li>
+    <li>Falha permanente (404/410 do ntfy) → remove device + status <code>FALHOU</code></li>
+    <li><strong>Fallback email</strong> em tipos críticos: APROVADO, REJEITADO, AGENDADO, PENDENCIA_REGISTRADA, RESPOSTA_SUS_DISPONIVEL</li>
+  </ul>
+
+  <h3>12.4 App: WebSocket subscribe</h3>
+  <pre><span class="cmt">// App conecta ao topic com WebSocket Streaming</span>
+<span class="kw">final</span> ws = WebSocketChannel.connect(
+  Uri.parse(<span class="str">'wss://ntfy.aguasbelas.pe.gov.br/$topic/ws'</span>),
+);
+ws.stream.listen((event) {
+  <span class="kw">final</span> json = jsonDecode(event);
+  flutterLocalNotifications.show(...);
+});</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ENUMS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="enums">
+  <h2><span class="num">13</span>Enums canônicos</h2>
+
+  <h3>13.1 StatusEncaminhamento</h3>
+<pre>RASCUNHO                Sua UBS está preparando
+AGUARDANDO_REGULACAO    Enviado, aguardando análise
+PENDENCIA_DOCUMENTO     Falta documento — paciente vai à UBS
+APROVADO                Aprovado, sem data ainda
+REJEITADO               Não aprovado (motivoRejeicao populado)</pre>
+  <p>App pode derivar visualmente <code>AGENDADO</code> a partir de <code>APROVADO + agendamentoPrevisto != null</code>.</p>
+
+  <h3>13.2 PrioridadeClinica</h3>
+<pre>ELETIVA | PRIORITARIA | URGENTE | EMERGENCIA</pre>
+
+  <h3>13.3 TipoEventoTimeline</h3>
+<pre>CRIADO  DOCUMENTO_ANEXADO  ENVIADO_REGULACAO  PENDENCIA_REGISTRADA
+APROVADO  REJEITADO  AGENDADO  OBSERVACAO  RESPOSTA_SUS_RECEBIDA  EDITADO</pre>
+
+  <h3>13.4 TipoAtendimento</h3>
+<pre>CONSULTA_MEDICA  ENFERMAGEM  VACINACAO  CURATIVO
+ODONTOLOGICO  PROCEDIMENTO  ACOLHIMENTO</pre>
+
+  <h3>13.5 ViaAplicacaoVacina</h3>
+<pre>INTRAMUSCULAR | SUBCUTANEA | ORAL | INTRADERMICA</pre>
+
+  <h3>13.6 TipoNotificacaoPaciente</h3>
+<pre>ENCAMINHAMENTO_CRIADO  PENDENCIA_REGISTRADA  PENDENCIA_RESOLVIDA
+APROVADO  AGENDADO  REJEITADO  RESPOSTA_SUS_DISPONIVEL</pre>
+
+  <h3>13.7 TfdPacienteStatus + TfdPacientePrioridade</h3>
+<pre>AGUARDANDO | APROVADA | RECUSADA | CANCELADA | EMBARCADA | CONCLUIDA
+
+NORMAL | PRIORITARIA | URGENTE</pre>
+
+  <h3>13.8 BannerTone</h3>
+<pre>URGENTE    vermelho — emergência sanitária
+CAMPANHA   verde — campanha positiva (vacinação)
+INFO       azul — informativo neutro
+ATENCAO    âmbar — atenção sem urgência</pre>
+
+  <h3>13.9 CategoriaExame + ResultadoExame</h3>
+<pre>LABORATORIAL | IMAGEM | FUNCIONAL | OUTROS
+
+NORMAL | ALTERADO | CRITICO | PENDENTE</pre>
+
+  <h3>13.10 TipoAnexo</h3>
+<pre>SOLICITACAO  RG  CPF  CARTAO_SUS  EXAME  LAUDO  RESPOSTA_SUS  OUTRO</pre>
+
+  <h3>13.11 StatusScanAnexo</h3>
+<pre>PENDENTE  → upload recente, scan em fila
+LIMPO     → liberado para download
+INFECTADO → bloqueado, mostrar aviso na UI
+FALHOU    → scanner indisponível; tratar como inseguro</pre>
+
+  <h3>13.12 PushProvider + StatusPushNotificacao</h3>
+<pre>NTFY | FCM | WEB_PUSH
+
+PENDENTE  → recém-criada, aguardando worker
+ENVIADO   → push entregue com sucesso
+FALHOU    → provider rejeitou
+EXCEDIDO  → todas as tentativas esgotadas (dead-letter)
+SEM_DEVICE → paciente não tem dispositivo</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FLUXOS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="fluxos">
+  <h2><span class="num">14</span>Fluxos críticos</h2>
+
+  <h3>14.1 🚨 Senha provisória (primeiro acesso)</h3>
+  <ol>
+    <li><strong>Backend</strong> auto-cria conta na consolidação do 1º encaminhamento da UBS:
+      <code>cpf, nome, senhaHash = bcrypt(cpf-digitos), ativo = true, senhaProvisoria = true</code>.</li>
+    <li><strong>App</strong> login com <code>cpf + senha=cpf-digitos</code></li>
+    <li><strong>Backend</strong> response <code>paciente.senhaProvisoria=true</code></li>
+    <li><strong>App</strong> router força redirect pra <code>/perfil/trocar-senha</code></li>
+    <li><strong>App</strong> tela bloqueante (sem botão X, PopScope bloqueia back)</li>
+    <li><strong>App</strong> chama <code>POST /auth/paciente/trocar-senha</code></li>
+    <li><strong>Backend</strong> zera <code>senhaProvisoria=false</code></li>
+    <li><strong>App</strong> chama <code>GET /me</code> confirmando</li>
+    <li><strong>App</strong> router libera, navega pra <code>/home</code></li>
+  </ol>
+
+  <h3>14.2 🚨 Refresh transparente (401 → refresh → retry)</h3>
+  <p>App tem interceptor Dio com single-flight:</p>
+  <ol>
+    <li>Request → 401 (não-auth path)</li>
+    <li>Tem refresh token? → chama <code>POST /auth/paciente/refresh</code></li>
+    <li>Sucesso → retry original com novo access (marcado <code>_retried</code> p/ evitar loop)</li>
+    <li>Falha (REUSE_DETECTED, EXPIRADO, etc.) → derruba sessão + vai pra <code>/login</code></li>
+  </ol>
+
+  <h3>14.3 🚨 Anti-enumeration global</h3>
+  <p>Toda rota <code>/paciente/:recurso/:id</code> deve:</p>
+  <ul>
+    <li>Filtrar por <code>cpf = req.paciente.cpf</code></li>
+    <li>Retornar <strong>404 <code>NOT_FOUND</code></strong> quando o recurso é de outro paciente</li>
+    <li><strong>Nunca 403</strong> (vaza existência)</li>
+  </ul>
+
+  <h3>14.4 🚨 Detecção de reuse de refresh</h3>
+  <ol>
+    <li>App envia refresh A → backend rotaciona → emite refresh B</li>
+    <li>Refresh A fica marcado <code>usadoEm != null</code></li>
+    <li>Se app envia refresh A de novo (ex: atacante clonou storage):</li>
+    <li>Backend detecta reuse → <strong>revoga toda a cadeia da conta</strong> (todos os refresh + todas as sessões)</li>
+    <li>Retorna <code>401 REFRESH_REUSE_DETECTED</code></li>
+    <li>App deve mostrar alerta de segurança antes de redirecionar pro login</li>
+  </ol>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ERROS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="erros">
+  <h2><span class="num">15</span>Códigos de erro</h2>
+
+  <h3>401 · Auth</h3>
+  <table>
+    <thead><tr><th>code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>CREDENCIAIS_INVALIDAS</code></td><td>CPF ou senha errados</td></tr>
+      <tr><td><code>SENHA_ATUAL_INCORRETA</code></td><td>Trocar senha — senha atual errada</td></tr>
+      <tr><td><code>TOKEN_AUSENTE</code></td><td>Sem <code>Authorization: Bearer</code></td></tr>
+      <tr><td><code>TOKEN_INVALIDO</code></td><td>Token malformado ou hash não existe</td></tr>
+      <tr><td><code>TOKEN_EXPIRADO</code></td><td>Access TTL passou (30 min)</td></tr>
+      <tr><td><code>REFRESH_TOKEN_INVALIDO</code></td><td>Refresh malformado ou não existe</td></tr>
+      <tr><td><code>REFRESH_TOKEN_EXPIRADO</code></td><td>Refresh &gt; 30 dias</td></tr>
+      <tr><td><code>REFRESH_TOKEN_REVOGADO</code></td><td>Logout anterior ou admin revogou</td></tr>
+      <tr><td><code>REFRESH_REUSE_DETECTED</code></td><td><strong>Token vazado — cadeia revogada</strong></td></tr>
+      <tr><td><code>TOKEN_JA_USADO</code></td><td>Recovery token de reset já consumido</td></tr>
+    </tbody>
+  </table>
+
+  <h3>403 · Forbidden</h3>
+  <table>
+    <thead><tr><th>code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>CONTA_DESATIVADA</code></td><td>Admin desativou (<code>ativo=false</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>404 · Not Found</h3>
+  <table>
+    <thead><tr><th>code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ENCAMINHAMENTO_NAO_ENCONTRADO</code></td><td>ID inválido ou de outro paciente</td></tr>
+      <tr><td><code>ANEXO_NAO_ENCONTRADO</code></td><td>Anexo inexistente ou de outro</td></tr>
+      <tr><td><code>VIAGEM_NAO_ENCONTRADA</code></td><td>TFD viagem ID inválido</td></tr>
+      <tr><td><code>SOLICITACAO_NAO_ENCONTRADA</code></td><td>TFD solicitação ID inválido</td></tr>
+      <tr><td><code>BANNER_NAO_ENCONTRADO</code></td><td>Banner expirado/inativo/inexistente</td></tr>
+      <tr><td><code>NOTIFICACAO_NAO_ENCONTRADA</code></td><td>Notificação ID inválido</td></tr>
+      <tr><td><code>PACIENTE_SEM_UBS</code></td><td><code>GET /paciente/ubs/minha</code> sem vínculo</td></tr>
+    </tbody>
+  </table>
+
+  <h3>409 · Conflict</h3>
+  <table>
+    <thead><tr><th>code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ANEXO_NAO_LIBERADO</code></td><td><code>scanStatus != LIMPO</code></td></tr>
+      <tr><td><code>SENHA_IGUAL</code></td><td>Nova senha igual à anterior</td></tr>
+      <tr><td><code>TFD_JA_TEM_SOLICITACAO</code></td><td>Já tem AGUARDANDO/APROVADA pra mesma viagem</td></tr>
+      <tr><td><code>TFD_VIAGEM_ENCERRADA</code></td><td>dataPartida no passado</td></tr>
+      <tr><td><code>CONFLICT_NO_SEATS</code></td><td>Sem vagas (atômico via SELECT FOR UPDATE)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>422 · Validation</h3>
+  <table>
+    <thead><tr><th>code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>SENHA_FRACA</code></td><td>Nova senha &lt; 8 chars ou padrão fraco</td></tr>
+      <tr><td><code>SENHA_IGUAL_ATUAL</code></td><td>Nova senha == atual</td></tr>
+      <tr><td><code>CPF_INVALIDO</code></td><td>Falha checksum mod 11</td></tr>
+      <tr><td><code>VALIDATION_ERROR</code></td><td>Zod genérico (details com array de issues)</td></tr>
+      <tr><td><code>ENC_NAO_ENCONTRADO</code></td><td>encaminhamentoId TFD inválido (anti-enum)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>429 · Rate Limit</h3>
+  <table>
+    <thead><tr><th>code</th><th>Limite</th></tr></thead>
+    <tbody>
+      <tr><td><code>RATE_LIMIT</code></td><td>Genérico Face 3: 30/15min/IP</td></tr>
+      <tr><td><code>RATE_LIMIT</code> (esqueci-senha)</td><td>3/h/CPF + 5/15min/IP + 100/h/IP</td></tr>
+      <tr><td><code>RATE_LIMIT</code> (download)</td><td>60/15min/conta + 200/h/conta + 300/15min/IP</td></tr>
+      <tr><td><code>RATE_LIMIT</code> (dossiê)</td><td>120/15min/conta + 600/h/conta + 1000/15min/IP</td></tr>
+      <tr><td><code>RATE_LIMIT</code> (banners)</td><td>240/15min/conta + 1200/h/conta + 2000/15min/IP</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CHECKLIST -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="checklist">
+  <h2><span class="num">16</span>Checklist de validação</h2>
+
+  <h3>Configuração</h3>
+  <ul>
+    <li>✅ Backend rodando em <code>http://localhost:3333/v1</code></li>
+    <li>✅ Prefixo <code>/auth/paciente/*</code> ativo</li>
+    <li>✅ Prefixo <code>/paciente/*</code> ativo</li>
+    <li>✅ Legacy <code>/paciente-app/*</code> mantido</li>
+    <li>✅ Shape de erro <code>{ error: { code, message, details? } }</code></li>
+  </ul>
+
+  <h3>Auth · 8 endpoints</h3>
+  <ul>
+    <li>✅ <code>POST /auth/paciente/login</code> retorna <code>accessToken</code> + <code>refreshToken</code> + <code>expiresAt</code> + <code>paciente</code></li>
+    <li>✅ <code>paciente.senhaProvisoria</code> presente (boolean)</li>
+    <li>✅ <code>paciente.cpfFormatado</code> presente</li>
+    <li>✅ <code>paciente.dataNascimento</code> presente (YYYY-MM-DD ou null)</li>
+    <li>✅ <code>paciente.cartaoSus</code> presente (ou null)</li>
+    <li>✅ <code>paciente.fotoUrl</code> presente (null reservado)</li>
+    <li>✅ <code>paciente.ubsVinculadaId</code> + <code>ubsVinculadaNome</code> presentes</li>
+    <li>✅ <code>POST /auth/paciente/refresh</code> rotaciona e detecta reuse</li>
+    <li>✅ <code>POST /auth/paciente/logout</code> → 204 + revoga refresh tokens da conta</li>
+    <li>✅ <code>GET /auth/paciente/me</code> shape idêntico ao paciente do login</li>
+    <li>✅ <code>POST /auth/paciente/trocar-senha</code> zera <code>senhaProvisoria</code></li>
+    <li>✅ <code>POST /auth/paciente/esqueci-senha</code> → 204 sempre (anti-enum)</li>
+    <li>✅ <code>POST /auth/paciente/redefinir-senha</code> TTL 30min + uso único</li>
+    <li>✅ <code>POST /auth/paciente/registrar-dispositivo</code> aceita <code>{fcmToken, plataforma}</code></li>
+  </ul>
+
+  <h3>Encaminhamentos · 5 endpoints</h3>
+  <ul>
+    <li>✅ <code>GET /paciente/encaminhamentos</code> array</li>
+    <li>✅ <code>GET /paciente/encaminhamentos/ativo</code> retorna <strong><code>null</code> literal</strong> (não 404)</li>
+    <li>✅ <code>GET /paciente/encaminhamentos/:id</code> 404 se de outro</li>
+    <li>✅ <code>GET /paciente/encaminhamentos/:id/anexos</code> array</li>
+    <li>✅ <code>GET /paciente/encaminhamentos/:id/timeline</code> array ordenada <code>em ASC</code></li>
+  </ul>
+
+  <h3>Demais</h3>
+  <ul>
+    <li>✅ Notificações · 4 endpoints (count + listar + marcar lida + todas lidas)</li>
+    <li>✅ Dossiê · 4 endpoints com audit CFM 20a</li>
+    <li>✅ UBS vinculada · 1 endpoint (whatsapp em dígitos com DDI)</li>
+    <li>✅ Banners · 3 endpoints (HTTPS-only nas URLs)</li>
+    <li>✅ TFD · 6 endpoints (prioridade derivada no servidor)</li>
+    <li>✅ Push ntfy · worker + retry + dead-letter + email fallback</li>
+  </ul>
+
+  <h3>Gotchas globais</h3>
+  <ul>
+    <li>✅ Datas ISO 8601 UTC (nunca DD/MM/YYYY)</li>
+    <li>✅ <code>null</code> literal em vez de objeto vazio em <code>/encaminhamentos/ativo</code></li>
+    <li>✅ 404 (não 403) para recurso de outro paciente</li>
+    <li>✅ CPF normalizado pra dígitos no banco</li>
+    <li>✅ WhatsApp em UBS com DDI dígitos</li>
+    <li>✅ HTTPS em todas URLs externas (banners, fotos)</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CURL -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<section class="chapter" id="curl">
+  <h2><span class="num">17</span>Verificação rápida via curl</h2>
+
+  <p>Sequência completa pra validar o backend contra o contrato.</p>
+
+  <pre><span class="cmt"># 1. Login</span>
+TOKEN=$(curl -sX POST http://localhost:3333/v1/auth/paciente/login \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{"cpf":"53474131826","senha":"53474131826"}'</span> | jq -r .accessToken)
+REFRESH=$(curl ... | jq -r .refreshToken)
+
+<span class="cmt"># 2. Me — confirma shape com 12 campos</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/auth/paciente/me | jq
+
+<span class="cmt"># 3. Encaminhamentos</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/paciente/encaminhamentos | jq
+
+<span class="cmt"># 4. Ativo — DEVE retornar null literal quando não há</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/paciente/encaminhamentos/ativo
+<span class="cmt"># → null</span>
+
+<span class="cmt"># 5. Notificações count</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/paciente/notificacoes/contagem-nao-lidas | jq
+<span class="cmt"># → {"naoLidas": 0}</span>
+
+<span class="cmt"># 6. Dossiê resumo</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/paciente/dossie/resumo | jq
+
+<span class="cmt"># 7. UBS minha</span>
+curl -sH <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/paciente/ubs/minha | jq
+
+<span class="cmt"># 8. Refresh — rotaciona par</span>
+curl -sX POST http://localhost:3333/v1/auth/paciente/refresh \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">"{\"refreshToken\":\"$REFRESH\"}"</span> | jq
+
+<span class="cmt"># 9. Logout — revoga sessão + todos refresh</span>
+curl -sX POST -H <span class="str">"Authorization: Bearer $TOKEN"</span> \
+  http://localhost:3333/v1/auth/paciente/logout</pre>
+
+  <div class="callout green">
+    <div class="title">✓ smoke test válido (executado)</div>
+    <p style="margin:0">
+      Validação rodada em <code>2026-05-29</code> contra paciente
+      <code>53474131826 / Mateus Santana</code>. Todos os 9 endpoints
+      retornaram 200/204 com shape conforme contrato.
+    </p>
+  </div>
+</section>
+
+<footer>
+  UNISISM · APP DO PACIENTE · v0.18.1 · DOC GERADA EM 2026-05-29<br>
+  31 ENDPOINTS · 100% CONTRATO_BACKEND.md CONFORMADO<br>
+  SECRETARIA MUNICIPAL DE SAÚDE · ÁGUAS BELAS / PE
+</footer>
+
+</main>
+</div>
+</body>
+</html>

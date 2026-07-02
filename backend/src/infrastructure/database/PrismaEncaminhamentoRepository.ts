@@ -24,6 +24,8 @@ import {
   INCLUDE_ENCAMINHAMENTO_FULL as INCLUDE_FULL,
   rowParaEncaminhamento as rowParaDominio,
 } from './encaminhamentoMapper';
+import { invalidarCacheArvorePorUbs } from '../cache/arvoreCacheInvalidator';
+
 
 export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository {
   async proximoProtocolo(): Promise<string> {
@@ -246,6 +248,7 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       include: INCLUDE_FULL,
     });
 
+    void invalidarCacheArvorePorUbs(enc.ubsId);
     return rowParaDominio(enc);
   }
 
@@ -265,12 +268,27 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       const range: Prisma.DateTimeFilter = {};
       if (filtro.desde) range.gte = filtro.desde;
       if (filtro.ate) range.lte = filtro.ate;
-      where.criadoEm = range;
+      
+      if (filtro.respostaSUS === true) {
+        where.respostaSusRegistradoEm = range;
+      } else {
+        where.criadoEm = range;
+      }
     }
+    if (filtro.respostaSUS === true) {
+      where.respostaSusAnexoId = { not: null };
+    } else if (filtro.respostaSUS === false) {
+      where.respostaSusAnexoId = null;
+    }
+    const orderBy: Prisma.EncaminhamentoOrderByWithRelationInput =
+      filtro.respostaSUS === true
+        ? { respostaSusRegistradoEm: 'desc' }
+        : { criadoEm: 'desc' };
+
     const rows = await prisma.encaminhamento.findMany({
       where,
       include: INCLUDE_FULL,
-      orderBy: { criadoEm: 'desc' },
+      orderBy,
       take: filtro.limit ?? 100,
     });
     return rows.map(rowParaDominio);
@@ -347,6 +365,7 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       });
     });
 
+    void invalidarCacheArvorePorUbs(resolvido.ubsId);
     return rowParaDominio(resolvido);
   }
 
@@ -359,7 +378,7 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
 
     const baseWhere = whereByScopeViaUbs(scope);
 
-    const [hoje, aguardando, pendencias, aprovadosHoje, semana, todos] = await Promise.all([
+    const [hoje, aguardando, pendencias, aprovadosHoje, semana, todos, enviados, respondidos] = await Promise.all([
       prisma.encaminhamento.count({ where: { ...baseWhere, criadoEm: { gte: inicioHoje } } }),
       prisma.encaminhamento.count({
         where: { ...baseWhere, status: StatusPrisma.AGUARDANDO_REGULACAO },
@@ -376,19 +395,81 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       }),
       prisma.encaminhamento.count({ where: { ...baseWhere, criadoEm: { gte: inicioSemana } } }),
       prisma.encaminhamento.findMany({
-        where: baseWhere,
-        select: { criadoEm: true, atualizadoEm: true },
+        where: {
+          ...baseWhere,
+          status: { not: StatusPrisma.RASCUNHO },
+          criadoEm: { gte: inicioSemana },
+        },
+        select: {
+          criadoEm: true,
+          atualizadoEm: true,
+          status: true,
+          timeline: {
+            select: { tipo: true, em: true },
+            orderBy: { em: 'asc' },
+          },
+        },
         take: 200,
         orderBy: { criadoEm: 'desc' },
       }),
+      prisma.encaminhamento.count({
+        where: { ...baseWhere, status: StatusPrisma.APROVADO, respostaSusAnexoId: null },
+      }),
+      prisma.encaminhamento.count({
+        where: { ...baseWhere, status: StatusPrisma.APROVADO, respostaSusAnexoId: { not: null } },
+      }),
     ]);
 
-    const tempos = todos
-      .map((e) => Math.max(0, e.atualizadoEm.getTime() - e.criadoEm.getTime()))
-      .filter((t) => t > 0);
+    const agoraMs = Date.now();
+    const tempos: number[] = [];
+    const limiteSlaMs = 48 * 60 * 60 * 1000; // 48 horas
+    let dentroSla = 0;
+    let totalCasosValidos = 0;
+
+    for (const e of todos) {
+      let totalTime = 0;
+      let lastEnterQueueTime: number | null = null;
+
+      const enviadoEvt = e.timeline.find((t) => t.tipo === 'ENVIADO_REGULACAO');
+      if (enviadoEvt) {
+        lastEnterQueueTime = enviadoEvt.em.getTime();
+      } else {
+        lastEnterQueueTime = e.criadoEm.getTime();
+      }
+
+      for (const evt of e.timeline) {
+        const tEvt = evt.em.getTime();
+        if (evt.tipo === 'ENVIADO_REGULACAO') {
+          lastEnterQueueTime = tEvt;
+        } else if (
+          evt.tipo === 'PENDENCIA_REGISTRADA' ||
+          evt.tipo === 'APROVADO' ||
+          evt.tipo === 'REJEITADO'
+        ) {
+          if (lastEnterQueueTime !== null) {
+            totalTime += Math.max(0, tEvt - lastEnterQueueTime);
+            lastEnterQueueTime = null;
+          }
+        }
+      }
+
+      if (e.status === StatusPrisma.AGUARDANDO_REGULACAO && lastEnterQueueTime !== null) {
+        totalTime += Math.max(0, agoraMs - lastEnterQueueTime);
+      }
+
+      tempos.push(totalTime);
+      totalCasosValidos++;
+      if (totalTime <= limiteSlaMs) {
+        dentroSla++;
+      }
+    }
+
     const tempoMedioMs = tempos.length
       ? tempos.reduce((a, b) => a + b, 0) / tempos.length
       : 180_000;
+    const slaRegulacaoPorcento = totalCasosValidos > 0
+      ? Math.round((dentroSla / totalCasosValidos) * 100)
+      : 100;
 
     return {
       encaminhamentosHoje: hoje,
@@ -397,6 +478,9 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
       aprovadosHoje,
       tempoMedioConsolidacaoSegundos: Math.round(tempoMedioMs / 1000),
       encaminhamentosSemana: semana,
+      enviadosAguardandoResposta: enviados,
+      respondidosTotal: respondidos,
+      slaRegulacaoPorcento,
     };
   }
 }

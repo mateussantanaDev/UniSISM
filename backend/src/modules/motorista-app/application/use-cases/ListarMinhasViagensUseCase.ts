@@ -86,14 +86,44 @@ export class ListarMinhasViagensUseCase {
             },
           },
         },
+        // Pacientes que solicitaram vaga via app (Face 3).
+        solicitacoesPaciente: {
+          where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+          include: {
+            conta: { select: { id: true, cpf: true, nome: true, telefone: true } },
+          },
+        },
       },
       orderBy: [{ data: 'asc' }, { horaSaida: 'asc' }],
       take: limit,
     });
 
+    // Batch-load Pacientes (clínico) por CPF — uma query só pra todas as viagens.
+    const cpfs = Array.from(
+      new Set(
+        rows.flatMap((r) =>
+          (r as any).solicitacoesPaciente?.map((s: any) => s.conta?.cpf).filter(Boolean) ?? [],
+        ),
+      ),
+    );
+    const pacientes = cpfs.length
+      ? await prisma.paciente.findMany({
+          where: { cpf: { in: cpfs }, deletadoEm: null },
+          select: {
+            id: true,
+            cpf: true,
+            nome: true,
+            dataNascimento: true,
+            telefone: true,
+            ubs: { select: { id: true, nome: true, municipio: true, endereco: true } },
+          },
+        })
+      : [];
+    const pacientesPorCpf = new Map(pacientes.map((p) => [p.cpf, p]));
+
     const nomeMot = auth.nome;
     const matriculaMot = auth.matricula;
 
-    return rows.map((r) => mapViagemMotorista(r, nomeMot, matriculaMot));
+    return rows.map((r) => mapViagemMotorista(r, nomeMot, matriculaMot, pacientesPorCpf));
   }
 }

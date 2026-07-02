@@ -2,7 +2,9 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
-	import { api } from '$lib/api';
+	import Modal from '$lib/presentation/components/Modal.svelte';
+	import EditarVeiculo from '$lib/presentation/components/EditarVeiculo.svelte';
+	import { api, ApiError } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarData, mesAtual } from '$lib/presentation/utils/tfdFormat';
 	import type {
@@ -18,6 +20,7 @@
 
 	const auth = useAuth();
 	let podeOperar = $derived(!!auth.podeGerenciarTFD);
+	let podeExcluir = $derived(!!auth.ehAdminOuDev);
 
 	const id = $derived(page.params.id ?? '');
 
@@ -29,9 +32,32 @@
 	let erro = $state<string | null>(null);
 	let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
+	let editarAberto = $state(false);
+	let excluirAberto = $state(false);
+	let excluindo = $state(false);
+
 	function notificar(tipo: 'ok' | 'erro', texto: string) {
 		mensagem = { tipo, texto };
 		setTimeout(() => (mensagem = null), 4000);
+	}
+
+	async function excluir() {
+		if (!v) return;
+		excluindo = true;
+		try {
+			await api.tfd.veiculos.remove(v.id);
+			notificar('ok', 'Veículo excluído.');
+			setTimeout(() => goto('/tfd/frota'), 800);
+		} catch (e) {
+			if (e instanceof ApiError && (e.code === 'CONFLITO' || e.code === 'TFD_VEICULO_EM_USO')) {
+				notificar('erro', 'Veículo tem viagens registradas — só pode ser desativado.');
+			} else {
+				notificar('erro', mensagemErroTfd(e));
+			}
+			excluirAberto = false;
+		} finally {
+			excluindo = false;
+		}
 	}
 
 	const totalGastoBRL = $derived(
@@ -141,13 +167,27 @@
 				<div class="font-mono text-base font-bold text-blue-900">{v.placa}</div>
 				<div class="font-sans text-xs text-slate-700">{v.modelo}</div>
 			</div>
-			{#if podeOperar && v.status !== 'INATIVO'}
-				<div class="flex gap-2">
+			{#if podeOperar}
+				<div class="flex flex-wrap gap-2">
 					<PrimaryButton
-						label={v.status === 'ATIVO' ? 'Marcar Manutenção' : 'Reativar'}
+						label="Editar"
 						variant="secondary"
-						onclick={toggleStatus}
+						onclick={() => (editarAberto = true)}
 					/>
+					{#if v.status !== 'INATIVO'}
+						<PrimaryButton
+							label={v.status === 'ATIVO' ? 'Marcar Manutenção' : 'Reativar'}
+							variant="secondary"
+							onclick={toggleStatus}
+						/>
+					{/if}
+					{#if podeExcluir}
+						<PrimaryButton
+							label="Excluir"
+							variant="danger"
+							onclick={() => (excluirAberto = true)}
+						/>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -340,3 +380,58 @@
 		</div>
 	{/if}
 </div>
+
+<!-- ─── Modal: Editar ─────────────────────────────────────────── -->
+{#if editarAberto && v}
+	<Modal
+		isOpen={editarAberto}
+		title="Editar veículo"
+		subtitle={v.placa + ' · ' + v.modelo}
+		maxWidth="lg"
+		onClose={() => (editarAberto = false)}
+	>
+		<EditarVeiculo
+			veiculo={v}
+			onCancel={() => (editarAberto = false)}
+			onSaved={(novo) => {
+				v = novo;
+				editarAberto = false;
+				notificar('ok', 'Veículo atualizado.');
+			}}
+		/>
+	</Modal>
+{/if}
+
+<!-- ─── Modal: Excluir ────────────────────────────────────────── -->
+{#if excluirAberto && v}
+	<Modal
+		isOpen={excluirAberto}
+		title="Excluir veículo"
+		subtitle="Ação irreversível"
+		onClose={() => (excluirAberto = false)}
+	>
+		<div class="flex flex-col gap-3 py-1">
+			<p class="text-sm text-slate-700">
+				Confirma a exclusão de <strong>{v.placa}</strong> ({v.modelo})?
+			</p>
+			<p class="text-xs text-slate-500">
+				Se houver viagens registradas, o backend impede a exclusão e sugere desativação.
+				Auditoria do veículo é preservada.
+			</p>
+			<div class="mt-3 flex justify-end gap-2">
+				<PrimaryButton
+					label="Cancelar"
+					variant="secondary"
+					onclick={() => (excluirAberto = false)}
+					disabled={excluindo}
+				/>
+				<PrimaryButton
+					label={excluindo ? 'Excluindo...' : 'Confirmar exclusão'}
+					variant="danger"
+					onclick={excluir}
+					disabled={excluindo}
+				/>
+			</div>
+		</div>
+	</Modal>
+{/if}

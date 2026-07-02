@@ -57,7 +57,7 @@
 
 	// ─── Aportar ───
 	let aportarAberto = $state(false);
-	let aporteValor = $state<number | undefined>(undefined);
+	let aporteValor = $state('');
 	let aporteFonte = $state<FonteRecurso>('EMPENHO');
 	let aporteDoc = $state('');
 	let aporteDescricao = $state('');
@@ -67,7 +67,7 @@
 	let erroAporte = $state('');
 
 	function resetAporte() {
-		aporteValor = undefined;
+		aporteValor = '';
 		aporteFonte = 'EMPENHO';
 		aporteDoc = '';
 		aporteDescricao = '';
@@ -78,7 +78,7 @@
 
 	async function aportar() {
 		erroAporte = '';
-		if (!aporteValor || aporteValor <= 0) {
+		if (!aporteValor.trim() || Number(aporteValor) <= 0) {
 			erroAporte = 'Informe um valor maior que zero.';
 			return;
 		}
@@ -119,19 +119,20 @@
 
 	// ─── Ajustar (saldo mensal + tetos por categoria) ───
 	let ajustarAberto = $state(false);
-	let novoSaldo = $state<number | undefined>(undefined);
-	let tetoAlim = $state<number | undefined>(undefined);
-	let tetoHosp = $state<number | undefined>(undefined);
-	let tetoDesl = $state<number | undefined>(undefined);
+	// Strings pra ligar direto no FormField. Convertidas pra Number no submit.
+	let novoSaldo = $state('');
+	let tetoAlim = $state('');
+	let tetoHosp = $state('');
+	let tetoDesl = $state('');
 	let justificativaAjuste = $state('');
 	let processandoAjuste = $state(false);
 	let erroAjuste = $state('');
 
 	function abrirAjuste() {
-		novoSaldo = saldo?.saldoMensal ?? 0;
-		tetoAlim = saldo?.tetoAlimentacao ?? 0;
-		tetoHosp = saldo?.tetoHospedagem ?? 0;
-		tetoDesl = saldo?.tetoDeslocamento ?? 0;
+		novoSaldo = String(saldo?.saldoMensal ?? 0);
+		tetoAlim = String(saldo?.tetoAlimentacao ?? 0);
+		tetoHosp = String(saldo?.tetoHospedagem ?? 0);
+		tetoDesl = String(saldo?.tetoDeslocamento ?? 0);
 		justificativaAjuste = '';
 		erroAjuste = '';
 		ajustarAberto = true;
@@ -139,7 +140,7 @@
 
 	async function ajustar() {
 		erroAjuste = '';
-		if (novoSaldo === undefined || novoSaldo < 0) {
+		if (!novoSaldo.trim() || Number(novoSaldo) < 0) {
 			erroAjuste = 'Informe um saldo mensal válido.';
 			return;
 		}
@@ -152,9 +153,9 @@
 			await api.tfd.saldoAjudaCusto.ajustar({
 				mes,
 				novoSaldoMensal: Number(novoSaldo),
-				tetoAlimentacao: tetoAlim !== undefined ? Number(tetoAlim) : undefined,
-				tetoHospedagem: tetoHosp !== undefined ? Number(tetoHosp) : undefined,
-				tetoDeslocamento: tetoDesl !== undefined ? Number(tetoDesl) : undefined,
+				tetoAlimentacao: tetoAlim.trim() ? Number(tetoAlim) : undefined,
+				tetoHospedagem: tetoHosp.trim() ? Number(tetoHosp) : undefined,
+				tetoDeslocamento: tetoDesl.trim() ? Number(tetoDesl) : undefined,
 				justificativa: justificativaAjuste.trim()
 			});
 			ajustarAberto = false;
@@ -409,7 +410,7 @@
 				type="number"
 				span={6}
 				mono
-				bind:value={aporteValor as unknown as string}
+				bind:value={aporteValor}
 			/>
 			<div class="col-span-6 flex flex-col">
 				<label
@@ -520,7 +521,7 @@
 				type="number"
 				span={12}
 				mono
-				bind:value={novoSaldo as unknown as string}
+				bind:value={novoSaldo}
 			/>
 			<FormField
 				label="Teto · Alimentação"
@@ -528,7 +529,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={tetoAlim as unknown as string}
+				bind:value={tetoAlim}
 			/>
 			<FormField
 				label="Teto · Hospedagem"
@@ -536,7 +537,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={tetoHosp as unknown as string}
+				bind:value={tetoHosp}
 			/>
 			<FormField
 				label="Teto · Deslocamento"
@@ -544,7 +545,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={tetoDesl as unknown as string}
+				bind:value={tetoDesl}
 			/>
 		</div>
 

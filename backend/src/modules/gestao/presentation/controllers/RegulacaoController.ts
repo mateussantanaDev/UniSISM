@@ -61,6 +61,16 @@ const arvoreQuerySchema = z.object({
   ubsId: z.string().optional(),
   ano: z.coerce.number().int().min(1900).max(9999).optional(),
   mes: z.coerce.number().int().min(1).max(12).optional(),
+  respostaSUS: z.preprocess((val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  }, z.boolean().optional()),
+  excluirRascunho: z.preprocess((val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  }, z.boolean().optional()),
 });
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -176,6 +186,8 @@ export class RegulacaoController {
       ...(q.ubsId !== undefined ? { ubsId: q.ubsId } : {}),
       ...(q.ano !== undefined ? { ano: q.ano } : {}),
       ...(q.mes !== undefined ? { mes: q.mes } : {}),
+      ...(q.respostaSUS !== undefined ? { respostaSUS: q.respostaSUS } : {}),
+      ...(q.excluirRascunho !== undefined ? { excluirRascunho: q.excluirRascunho } : {}),
     });
     res.json(lista);
   };

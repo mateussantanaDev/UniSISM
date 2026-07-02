@@ -9,6 +9,7 @@ export interface ListEncaminhamentosInput {
   desde?: Date;
   ate?: Date;
   limit?: number;
+  respostaSUS?: boolean;
 }
 
 export class ListEncaminhamentosUseCase {

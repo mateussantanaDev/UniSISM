@@ -36,6 +36,13 @@ const INCLUDE = {
       },
     },
   },
+  // Pacientes que solicitaram vaga via app (Face 3) — relação separada.
+  solicitacoesPaciente: {
+    where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+    include: {
+      conta: { select: { id: true, cpf: true, nome: true, telefone: true } },
+    },
+  },
 };
 
 export class ObterViagemMotoristaUseCase {
@@ -45,6 +52,27 @@ export class ObterViagemMotoristaUseCase {
       include: INCLUDE,
     });
     if (!v) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
-    return mapViagemMotorista(v, auth.nome, auth.matricula);
+
+    // Batch-load dos Pacientes (entidade clínica) por CPF — dá ao motorista
+    // o nome/UBS oficial em vez do snapshot da PacienteConta (app).
+    const cpfs = (v.solicitacoesPaciente ?? [])
+      .map((s: any) => s.conta?.cpf)
+      .filter((c: string | undefined): c is string => !!c);
+    const pacientes = cpfs.length
+      ? await prisma.paciente.findMany({
+          where: { cpf: { in: cpfs }, deletadoEm: null },
+          select: {
+            id: true,
+            cpf: true,
+            nome: true,
+            dataNascimento: true,
+            telefone: true,
+            ubs: { select: { id: true, nome: true, municipio: true, endereco: true } },
+          },
+        })
+      : [];
+    const pacientesPorCpf = new Map(pacientes.map((p) => [p.cpf, p]));
+
+    return mapViagemMotorista(v, auth.nome, auth.matricula, pacientesPorCpf);
   }
 }

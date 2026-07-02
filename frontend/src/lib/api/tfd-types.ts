@@ -419,6 +419,11 @@ export interface ListAbastecimentosQuery {
 	veiculoId?: string;
 	desde?: string;
 	ate?: string;
+	/**
+	 * Obrigatório para escopo GLOBAL (DESENVOLVEDOR) — backend retorna
+	 * 403 `PREFEITURA_REQUERIDA` quando ausente nesse escopo.
+	 */
+	prefeituraId?: string;
 }
 
 // ============================================================
@@ -604,6 +609,8 @@ export interface SolicitarAjudaCustoRequest {
 export interface ListAjudasCustoQuery {
 	status?: StatusAjudaCusto;
 	pacienteId?: string;
+	/** Obrigatório em escopo GLOBAL — backend retorna 403 sem. */
+	prefeituraId?: string;
 }
 
 // ============================================================
@@ -709,4 +716,95 @@ export interface RelatorioEspecialidadeResposta {
 	totalGeralSolicitacoes: number;
 	totalGeralCustoBRL: number;
 	itens: RelatorioEspecialidadeItem[];
+}
+
+// ============================================================
+// SOLICITAÇÕES TFD VINDAS DO APP PACIENTE (Face 3 → Face 4)
+// ============================================================
+// Endpoints: `/v1/tfd/solicitacoes-paciente/*` (6 endpoints).
+// RBAC: GESTOR_TFD, ADMIN, DESENVOLVEDOR (rwGestor).
+//
+// Fluxo de estados (sempre transição única, audit hash-chain):
+//   AGUARDANDO → APROVADA  (com numeroAssento auto ou explícito)
+//   AGUARDANDO → RECUSADA  (com motivo ≥5 chars)
+//   APROVADA   → EMBARCADA (sem body)
+//   EMBARCADA  → CONCLUIDA (sem body)
+//   * → CANCELADA (vem do app paciente — DELETE /v1/paciente/tfd/solicitacoes/:id)
+//
+// Concorrência: backend usa lock pessimista `SELECT FOR UPDATE` na viagem ao
+// aprovar; 2 gestores aprovando concorrente disputam → um sai com 409
+// `TFD_VIAGEM_SEM_VAGAS` em vez de overbook.
+
+export type StatusTfdPaciente =
+	| 'AGUARDANDO'
+	| 'APROVADA'
+	| 'RECUSADA'
+	| 'CANCELADA'
+	| 'EMBARCADA'
+	| 'CONCLUIDA';
+
+/**
+ * Prioridade derivada NO SERVIDOR a partir do encaminhamento vinculado:
+ *   - sem encaminhamento OU ELETIVA          → NORMAL
+ *   - encaminhamento PRIORITARIA             → PRIORITARIA
+ *   - encaminhamento URGENTE ou EMERGENCIA   → URGENTE
+ */
+export type PrioridadeTfdPaciente = 'NORMAL' | 'PRIORITARIA' | 'URGENTE';
+
+/** DTO de solicitação retornada pelas rotas admin. */
+export interface TfdPacienteSolicAdmin {
+	id: string;
+	status: StatusTfdPaciente;
+	prioridade: PrioridadeTfdPaciente;
+	paciente: {
+		contaId: string;
+		nome: string;
+		/** CPF formatado se disponível, dígitos caso contrário. */
+		cpf: string;
+	};
+	viagem: {
+		id: string;
+		destino: string;
+		unidadeDestino: string;
+		/** ISO 8601 UTC da data da viagem (00:00). */
+		data: string;
+		/** Hora local 'HH:mm' do embarque. */
+		horaSaida: string;
+		vagasTotais: number;
+		/** Conta passageiros UBS + solicitações app APROVADAS/EMBARCADAS. */
+		vagasOcupadas: number;
+	};
+	justificativaPaciente: string;
+	/** Nome do acompanhante quando informado. */
+	acompanhante: string | null;
+	encaminhamentoId: string | null;
+	encaminhamentoProtocolo: string | null;
+	/** Atribuído na aprovação (auto "A{n}" ou explícito do operador). */
+	numeroAssento: string | null;
+	motivoRecusa: string | null;
+	/** Nome do gestor TFD que tomou a última ação. */
+	operadorNome: string | null;
+	tentativasReabertura: number;
+	criadaEm: string;
+	aprovadaEm: string | null;
+	recusadaEm: string | null;
+	canceladaEm: string | null;
+}
+
+export interface ListTfdPacienteSolicQuery {
+	status?: StatusTfdPaciente;
+	viagemId?: string;
+	prioridade?: PrioridadeTfdPaciente;
+	/** Obrigatório em escopo GLOBAL — backend retorna 403 sem. */
+	prefeituraId?: string;
+}
+
+/** Body do POST `/aprovar`. Se omitido, backend atribui sequencial. */
+export interface AprovarTfdPacienteSolicRequest {
+	numeroAssento?: string;
+}
+
+/** Body do POST `/recusar`. */
+export interface RecusarTfdPacienteSolicRequest {
+	motivo: string; // ≥ 5 chars
 }

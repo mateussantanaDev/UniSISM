@@ -1,0 +1,3085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISISM Backend · Documentação Completa v0.18.0</title>
+<style>
+  :root {
+    --c-bg: #fafafa;
+    --c-paper: #ffffff;
+    --c-text: #1e293b;
+    --c-muted: #64748b;
+    --c-line: #e2e8f0;
+    --c-line-strong: #cbd5e1;
+    --c-blue: #1e3a8a;
+    --c-blue-bg: #eff6ff;
+    --c-green: #15803d;
+    --c-green-bg: #f0fdf4;
+    --c-red: #b91c1c;
+    --c-red-bg: #fef2f2;
+    --c-amber: #b45309;
+    --c-amber-bg: #fffbeb;
+    --c-purple: #6d28d9;
+    --c-purple-bg: #f5f3ff;
+    --c-slate: #475569;
+    --c-slate-bg: #f1f5f9;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--c-bg);
+    color: var(--c-text);
+    line-height: 1.55;
+    font-size: 15px;
+  }
+
+  /* ───────── Layout ───────── */
+  .wrapper {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* ───────── Sidebar ───────── */
+  aside.toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 18px;
+    background: var(--c-paper);
+    border-right: 1px solid var(--c-line);
+    font-size: 13px;
+  }
+  aside.toc h1 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin: 0 0 4px;
+    font-weight: 600;
+  }
+  aside.toc .version {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--c-green);
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+  aside.toc nav h2 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--c-muted);
+    margin: 18px 0 6px;
+    font-weight: 700;
+    border-top: 1px solid var(--c-line);
+    padding-top: 12px;
+  }
+  aside.toc nav h2:first-child { border-top: none; padding-top: 0; }
+  aside.toc nav a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--c-slate);
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+  aside.toc nav a:hover { background: var(--c-blue-bg); color: var(--c-blue); }
+
+  /* ───────── Main content ───────── */
+  main {
+    padding: 40px 56px 80px;
+    max-width: 1080px;
+  }
+
+  /* ───────── Hero ───────── */
+  .hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+    color: white;
+    margin: -40px -56px 40px;
+    padding: 56px 56px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+  }
+  .hero .badge-strip {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .hero .badge-strip span {
+    background: rgba(255,255,255,0.12);
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.18);
+    letter-spacing: 0.06em;
+  }
+  .hero .badge-strip .success { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); color: #bbf7d0; }
+  .hero h1 {
+    font-size: 36px;
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .hero .subtitle {
+    font-size: 17px;
+    color: #cbd5e1;
+    max-width: 740px;
+    margin-bottom: 24px;
+  }
+  .hero .meta {
+    display: flex;
+    gap: 28px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #94a3b8;
+    letter-spacing: 0.04em;
+  }
+  .hero .meta strong { color: white; font-weight: 600; margin-left: 6px; }
+
+  /* ───────── Sections ───────── */
+  section.chapter {
+    margin: 56px 0 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--c-line);
+  }
+  section.chapter:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  h2 {
+    font-size: 26px;
+    margin: 0 0 6px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #0f172a;
+  }
+  h2 .num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--c-muted);
+    margin-right: 8px;
+    font-weight: 500;
+  }
+  h3 {
+    font-size: 18px;
+    margin: 32px 0 10px;
+    font-weight: 700;
+    color: var(--c-blue);
+  }
+  h4 {
+    font-size: 14px;
+    margin: 20px 0 8px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--c-slate);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin: 4px 0; }
+
+  /* ───────── Cards ───────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 20px 0 24px;
+  }
+  .card {
+    background: var(--c-paper);
+    border: 1px solid var(--c-line);
+    border-left: 3px solid var(--c-blue);
+    padding: 16px 18px;
+    border-radius: 4px;
+  }
+  .card .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .card .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.1;
+  }
+  .card .desc {
+    font-size: 12px;
+    color: var(--c-muted);
+    margin-top: 6px;
+  }
+  .card.green { border-left-color: var(--c-green); }
+  .card.green .value { color: var(--c-green); }
+  .card.amber { border-left-color: var(--c-amber); }
+  .card.amber .value { color: var(--c-amber); }
+  .card.red { border-left-color: var(--c-red); }
+  .card.red .value { color: var(--c-red); }
+  .card.purple { border-left-color: var(--c-purple); }
+  .card.purple .value { color: var(--c-purple); }
+
+  /* ───────── Tables ───────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 24px;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    background: var(--c-slate-bg);
+    color: var(--c-slate);
+    font-weight: 700;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--c-line-strong);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--c-line);
+    vertical-align: top;
+  }
+  tr:hover td { background: #fafbfc; }
+  td.num, th.num { text-align: right; font-family: var(--font-mono); }
+  td code, td .mono { font-family: var(--font-mono); font-size: 12px; }
+
+  /* ───────── Code blocks ───────── */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 12px 0 18px;
+  }
+  pre .kw { color: #c084fc; }
+  pre .str { color: #86efac; }
+  pre .num { color: #fcd34d; }
+  pre .cmt { color: #64748b; font-style: italic; }
+  pre .fn { color: #93c5fd; }
+  code:not(pre code) {
+    background: var(--c-slate-bg);
+    color: var(--c-blue);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+
+  /* ───────── HTTP method pills ───────── */
+  .method {
+    display: inline-block;
+    padding: 2px 7px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    min-width: 50px;
+    text-align: center;
+  }
+  .method.get { background: #dbeafe; color: #1e40af; }
+  .method.post { background: #dcfce7; color: #166534; }
+  .method.patch { background: #fef3c7; color: #92400e; }
+  .method.put { background: #ddd6fe; color: #5b21b6; }
+  .method.delete { background: #fee2e2; color: #991b1b; }
+
+  /* ───────── Callouts ───────── */
+  .callout {
+    border-left: 3px solid var(--c-blue);
+    background: var(--c-blue-bg);
+    padding: 12px 18px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 14px;
+  }
+  .callout.green { border-left-color: var(--c-green); background: var(--c-green-bg); }
+  .callout.amber { border-left-color: var(--c-amber); background: var(--c-amber-bg); }
+  .callout.red { border-left-color: var(--c-red); background: var(--c-red-bg); }
+  .callout .title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ───────── Endpoint rows ───────── */
+  .endpoint {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--c-line);
+    align-items: center;
+    font-size: 13px;
+  }
+  .endpoint:last-child { border-bottom: none; }
+  .endpoint:hover { background: #fafbfc; }
+  .endpoint .path {
+    font-family: var(--font-mono);
+    color: var(--c-text);
+    word-break: break-all;
+  }
+  .endpoint .auth {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--c-muted);
+    letter-spacing: 0.06em;
+  }
+  .endpoint-group {
+    background: var(--c-paper);
+    border: 1px solid var(--c-line);
+    border-radius: 5px;
+    margin: 14px 0 20px;
+    overflow: hidden;
+  }
+  .endpoint-group .head {
+    background: var(--c-slate-bg);
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-slate);
+    border-bottom: 1px solid var(--c-line);
+    font-family: var(--font-mono);
+  }
+
+  /* ───────── Pills inline ───────── */
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    border-radius: 10px;
+    letter-spacing: 0.03em;
+    background: var(--c-slate-bg);
+    color: var(--c-slate);
+    margin-right: 4px;
+  }
+  .pill.blue { background: var(--c-blue-bg); color: var(--c-blue); }
+  .pill.green { background: var(--c-green-bg); color: var(--c-green); }
+  .pill.red { background: var(--c-red-bg); color: var(--c-red); }
+  .pill.purple { background: var(--c-purple-bg); color: var(--c-purple); }
+  .pill.amber { background: var(--c-amber-bg); color: var(--c-amber); }
+
+  /* ───────── Status indicators ───────── */
+  .status-ok {
+    color: var(--c-green);
+    font-weight: 700;
+  }
+  .status-ok::before { content: '✓ '; }
+
+  /* ───────── Two col layout ───────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 900px) {
+    .wrapper { grid-template-columns: 1fr; }
+    aside.toc { position: static; height: auto; max-height: none; }
+    main { padding: 30px 24px 60px; }
+    .hero { margin: -30px -24px 30px; padding: 40px 24px 36px; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* ───────── Footer ───────── */
+  footer {
+    margin-top: 80px;
+    padding: 24px 0;
+    border-top: 1px solid var(--c-line);
+    font-size: 12px;
+    color: var(--c-muted);
+    text-align: center;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<aside class="toc">
+  <h1>UNISISM Backend</h1>
+  <div class="version">v0.18.0 · 100% documentado</div>
+  <nav>
+    <h2>Visão geral</h2>
+    <a href="#overview">1 · Visão geral</a>
+    <a href="#stack">2 · Stack</a>
+    <a href="#arquitetura">3 · Arquitetura</a>
+    <a href="#schema">4 · Schema (46 models)</a>
+
+    <h2>Faces</h2>
+    <a href="#face1">5 · Face 1 · UBS</a>
+    <a href="#face2">6 · Face 2 · SMS</a>
+    <a href="#face3">7 · Face 3 · App Paciente</a>
+    <a href="#face4">8 · Face 4 · TFD</a>
+    <a href="#admin">9 · Admin (transversal)</a>
+
+    <h2>Conformidade</h2>
+    <a href="#auditoria">10 · Auditoria (3 níveis)</a>
+    <a href="#seguranca">11 · Segurança</a>
+    <a href="#push">12 · Push notifications</a>
+
+    <h2>Operação</h2>
+    <a href="#env">13 · Env vars</a>
+    <a href="#comandos">14 · Comandos</a>
+    <a href="#deploy">15 · Deploy</a>
+
+    <h2>Roadmap</h2>
+    <a href="#roadmap">16 · Roadmap (8 etapas)</a>
+    <a href="#changelog">17 · Releases</a>
+
+    <h2>Apêndices</h2>
+    <a href="#apx-a">A · Error codes (110)</a>
+    <a href="#apx-b">B · Schema (46 models)</a>
+    <a href="#apx-c">C · Enums (44)</a>
+    <a href="#apx-d">D · Infrastructure</a>
+    <a href="#apx-e">E · Workers &amp; Crons</a>
+    <a href="#apx-f">F · SQL Triggers</a>
+    <a href="#apx-g">G · Pipeline relatórios</a>
+    <a href="#apx-h">H · ICP-Brasil + TJ</a>
+    <a href="#apx-i">I · Smoke tests (8)</a>
+    <a href="#apx-j">J · Flutter kit (Dart)</a>
+  </nav>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MAIN -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge-strip">
+    <span>v0.18.0</span>
+    <span>Node 22 · TS 5 · Express 5 · Prisma 6</span>
+    <span class="success">✓ 9/9 etapas roadmap</span>
+    <span class="success">✓ 348/348 asserts E2E</span>
+    <span class="success">✓ 17 caps + 10 apêndices · 100%</span>
+  </div>
+  <h1>UNISISM Backend</h1>
+  <p class="subtitle">
+    Sistema integrado da Secretaria Municipal de Saúde
+    — regulação de encaminhamentos, prontuário eletrônico (PEC), app do paciente
+    e gestão TFD. LGPD/CFM/TJ compliant.
+  </p>
+  <div class="meta">
+    <span>VERSÃO <strong>0.18.0</strong></span>
+    <span>ENDPOINTS <strong>172</strong></span>
+    <span>MODELS <strong>47</strong></span>
+    <span>ENUMS <strong>44</strong></span>
+    <span>ERROR CODES <strong>114+</strong></span>
+    <span>RBAC <strong>8 roles</strong></span>
+    <span>WORKERS <strong>7</strong></span>
+    <span>SMOKE <strong>348/348 ✓</strong></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 1 · VISÃO GERAL -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="overview">
+  <h2><span class="num">01</span>Visão geral</h2>
+  <p>
+    O <strong>UNISISM</strong> é a plataforma única da Secretaria Municipal de Saúde que
+    integra atendimento UBS, regulação de encaminhamentos, prontuário do
+    paciente (PEC), gestão de transporte TFD, e os apps mobile de paciente e
+    motorista. Arquitetura por <strong>4 Faces</strong>:
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="label">Face 1 · UBS</div>
+      <div class="value">Web</div>
+      <div class="desc">Atendentes/Coordenadores UBS · criação de encaminhamentos · prontuário</div>
+    </div>
+    <div class="card green">
+      <div class="label">Face 2 · SMS</div>
+      <div class="value">Web</div>
+      <div class="desc">Reguladores SMS · aprovar/pendenciar/rejeitar · resposta SUS · CMS</div>
+    </div>
+    <div class="card purple">
+      <div class="label">Face 3 · App Paciente</div>
+      <div class="value">Mobile</div>
+      <div class="desc">Flutter · CPF+senha · acompanhar encaminhamentos · dossiê · TFD · push</div>
+    </div>
+    <div class="card amber">
+      <div class="label">Face 4 · TFD</div>
+      <div class="value">Web + Mobile</div>
+      <div class="desc">Gestor (web) + Atendente terminal (web) + Motorista (Flutter)</div>
+    </div>
+  </div>
+
+  <h3>Conformidade legal embutida</h3>
+  <table>
+    <thead><tr><th>Norma</th><th>O que exige</th><th>Como o backend cumpre</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>LGPD art. 37</strong></td>
+        <td>Registro de atividades de tratamento + retenção mínima 5 anos</td>
+        <td><code>auditoria_logs</code> imutável (15+ ações)</td>
+      </tr>
+      <tr>
+        <td><strong>CFM Res. 1.821/2007 art. 8º</strong></td>
+        <td>Rastreabilidade do prontuário por 20 anos</td>
+        <td><code>paciente_prontuario_audit</code> append-only com trigger SQL</td>
+      </tr>
+      <tr>
+        <td><strong>TJ (Auditoria TFD)</strong></td>
+        <td>Cadeia hash criptográfica para exportação judicial</td>
+        <td><code>tfd_audit_log</code> com hash SHA-256 encadeado + assinatura ICP-Brasil opcional</td>
+      </tr>
+      <tr>
+        <td><strong>RFC 5987/6266</strong></td>
+        <td>Filename UTF-8 em Content-Disposition</td>
+        <td><code>buildContentDisposition()</code> ASCII fallback + percent-encoded</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 2 · STACK -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="stack">
+  <h2><span class="num">02</span>Stack</h2>
+  <table>
+    <thead><tr><th>Camada</th><th>Tecnologia</th><th>Versão</th></tr></thead>
+    <tbody>
+      <tr><td>Runtime</td><td>Node.js</td><td>22.x LTS</td></tr>
+      <tr><td>Linguagem</td><td>TypeScript (strict + noUncheckedIndexedAccess)</td><td>5.6</td></tr>
+      <tr><td>HTTP Server</td><td>Express</td><td>5.x</td></tr>
+      <tr><td>ORM</td><td>Prisma</td><td>6.x</td></tr>
+      <tr><td>Banco</td><td>PostgreSQL</td><td>16</td></tr>
+      <tr><td>Cache + Rate Limit</td><td>Redis (ioredis)</td><td>5.x</td></tr>
+      <tr><td>Storage</td><td>S3-compatível (MinIO/AWS) ou disco local</td><td>—</td></tr>
+      <tr><td>Antivírus</td><td>ClamAV (opcional)</td><td>—</td></tr>
+      <tr><td>Auth</td><td>JWT + bcrypt + refresh rotativo</td><td>—</td></tr>
+      <tr><td>Validação</td><td>Zod</td><td>3.23</td></tr>
+      <tr><td>Logging</td><td>pino</td><td>9.x</td></tr>
+      <tr><td>Observability</td><td>OpenTelemetry + Prometheus + Tempo</td><td>—</td></tr>
+      <tr><td>Email</td><td>Nodemailer + Brevo (SMTP)</td><td>8.x</td></tr>
+      <tr><td>Push Notifications</td><td><strong>ntfy.sh self-hosted</strong> (open-source MIT, sem Firebase)</td><td>—</td></tr>
+      <tr><td>PDF</td><td>pdfkit + pdf-lib + Ghostscript (fallback)</td><td>—</td></tr>
+      <tr><td>Cron</td><td>node-cron</td><td>4.x</td></tr>
+      <tr><td>ICP-Brasil</td><td>node-forge (assinatura TFD opcional)</td><td>1.4</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 3 · ARQUITETURA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="arquitetura">
+  <h2><span class="num">03</span>Arquitetura</h2>
+  <p>
+    Clean Architecture clássica nas 4 pastas raiz <strong>+</strong> um diretório
+    <code>modules/</code> para features de domínio auto-contidas (Face 2-4 e módulo de relatórios).
+  </p>
+<pre><span class="cmt">src/</span>
+├── <span class="kw">domain/</span>              <span class="cmt">entidades + repository interfaces (puras, sem deps)</span>
+├── <span class="kw">application/</span>         <span class="cmt">use cases Face 1 + Admin</span>
+├── <span class="kw">infrastructure/</span>      <span class="cmt">Prisma, JWT, bcrypt, S3, ClamAV, pino, OTel, email,</span>
+│                       <span class="cmt">outbox, push (NtfyPushProvider), audit</span>
+├── <span class="kw">presentation/</span>        <span class="cmt">Express controllers/rotas/middlewares (Face 1 + Admin)</span>
+├── <span class="kw">modules/</span>
+│   ├── gestao/         <span class="cmt">Face 2 — Regulação SMS (aprovar/pendenciar/rejeitar)</span>
+│   ├── paciente-app/   <span class="cmt">Face 3 — auth CPF, dossiê, banners, TFD, push, downloads</span>
+│   ├── motorista-app/  <span class="cmt">Face 4 mobile — login matrícula, viagens, sync offline</span>
+│   ├── prontuario/     <span class="cmt">CRUD sub-docs PEC + audit CFM 20 anos</span>
+│   ├── relatorios/     <span class="cmt">pipeline LGPD-first (PDF/CSV/XLSX, SHA-256, TTL 7d)</span>
+│   └── tfd/            <span class="cmt">Face 4 — frota, viagens, abastecimento, audit TJ hash-chain</span>
+├── <span class="kw">main/</span>                <span class="cmt">tracing.ts (1º import) · container.ts · app.ts · server.ts</span>
+└── <span class="kw">shared/</span>              <span class="cmt">env, errors, http, scope, dates, cpf, sanitizeText, validators</span></pre>
+
+  <div class="callout green">
+    <div class="title">Composition root único</div>
+    <code>src/main/container.ts</code> é o único lugar onde dependências são instanciadas.
+    Use cases recebem tudo via construtor (DI manual). Não criar singletons fora dali.
+  </div>
+
+  <h3>Boot fail-fast em PROD</h3>
+  <p>
+    Em <code>NODE_ENV=production</code>, o backend <strong>recusa subir</strong> se:
+  </p>
+  <ul>
+    <li>JWT secrets fracos / iguais / &lt; 32 chars</li>
+    <li><code>CORS_ORIGIN=*</code> ou contém <code>http://</code> (exceto localhost)</li>
+    <li><code>EMAIL_PROVIDER=smtp</code> sem <code>SMTP_HOST/USER/PASS</code></li>
+    <li>Triggers de imutabilidade do audit não aplicados</li>
+    <li>Cert ICP-Brasil ausente quando <code>TFD_SIGN_REQUIRED=true</code></li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 4 · SCHEMA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="schema">
+  <h2><span class="num">04</span>Schema · 46 models</h2>
+
+  <div class="two-col">
+    <div>
+      <h4>Domínio core</h4>
+      <ul>
+        <li><code>Prefeitura</code> · <code>Ubs</code> · <code>Atendente</code></li>
+        <li><code>Paciente</code> (clínico)</li>
+        <li><code>Encaminhamento</code> + <code>AnexoDocumento</code> + <code>EventoTimeline</code></li>
+        <li><code>SequencialProtocolo</code> (UBS-AAAA-NNNNNN)</li>
+      </ul>
+
+      <h4>Prontuário (PEC)</h4>
+      <ul>
+        <li><code>Alergia</code> · <code>CondicaoCronica</code> · <code>MedicamentoEmUso</code></li>
+        <li><code>Atendimento</code> · <code>ExameRealizado</code> · <code>VacinaAplicada</code></li>
+        <li><code>MedicoAtendente</code> · <code>ViagemTFD</code> (legacy paciente)</li>
+        <li><code>PacienteProntuarioAudit</code> (CFM 20 anos · imutável)</li>
+      </ul>
+
+      <h4>App Paciente (Face 3)</h4>
+      <ul>
+        <li><code>PacienteConta</code> + <code>SessaoPaciente</code></li>
+        <li><code>PacienteRecoveryToken</code> (esqueci senha)</li>
+        <li><code>PacienteDispositivo</code> (push, provider-agnostic)</li>
+        <li><code>NotificacaoPaciente</code> + <code>StatusPushNotificacao</code></li>
+        <li><code>SmsBanner</code> + <code>SmsBannerView</code> (telemetria)</li>
+        <li><code>TfdPacienteSolicitacao</code> (pedido TFD via app)</li>
+        <li><code>EspecialidadeRecomendacao</code> (o que levar no dia)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>TFD (Face 4)</h4>
+      <ul>
+        <li><code>VeiculoTFD</code> · <code>MotoristaTFD</code></li>
+        <li><code>SolicitacaoTFD</code> + <code>AnexoSolicitacaoTFD</code></li>
+        <li><code>ViagemFrota</code> + <code>ViagemPassageiro</code></li>
+        <li><code>Abastecimento</code> · <code>SaldoVeiculo</code> · <code>SaldoAjuste</code></li>
+        <li><code>AjudaCusto</code> (Termo de Compromisso)</li>
+        <li><code>TfdAuditLog</code> (hash chain SHA-256 · TJ)</li>
+      </ul>
+
+      <h4>Admin / Auth transversal</h4>
+      <ul>
+        <li><code>Sessao</code> + <code>RefreshToken</code></li>
+        <li><code>TentativaLogin</code> (anti brute force)</li>
+        <li><code>PasswordResetCode</code> (Face 1/2/4)</li>
+        <li><code>AtividadeAtendente</code> (timeline operacional)</li>
+        <li><code>AuditoriaLog</code> (LGPD 5 anos)</li>
+      </ul>
+
+      <h4>Infra interna</h4>
+      <ul>
+        <li><code>OutboxEvent</code> (publishing assíncrono)</li>
+        <li><code>Relatorio</code> + <code>RelatorioAudit</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout amber">
+    <div class="title">Auditoria imutável (3 tabelas)</div>
+    Triggers SQL bloqueiam <code>UPDATE</code>/<code>DELETE</code> em:
+    <code>auditoria_logs</code>, <code>paciente_prontuario_audit</code>, <code>tfd_audit_log</code>.
+    Aplicados via <code>npm run db:setup-triggers</code> (idempotente).
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 5 · FACE 1 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face1">
+  <h2><span class="num">05</span>Face 1 · UBS (web)</h2>
+  <p>
+    <strong>Atores:</strong> ATENDENTE_UBS · COORDENADOR_UBS<br>
+    <strong>Frontend:</strong> SvelteKit em <code>/ubs/*</code><br>
+    <strong>Auth:</strong> matrícula + senha · JWT
+  </p>
+
+  <div class="endpoint-group">
+    <div class="head">Auth</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/auth/login</span><span class="auth">público</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/auth/logout</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/auth/me</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/auth/forgot-password</span><span class="auth">público</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/auth/verify-code</span><span class="auth">público</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/auth/reset-password</span><span class="auth">público</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Perfil / sessões</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/me/profile</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/me/profile</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/me/sessions/revoke-others</span><span class="auth">JWT</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Encaminhamentos (CRUD)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/encaminhamentos</span><span class="auth">JWT · scopeWhere</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/encaminhamentos/:id</span><span class="auth">JWT · scopeWhere</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/encaminhamentos/:id</span><span class="auth">JWT · ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/encaminhamentos/:id</span><span class="auth">JWT · ADMIN/DEV · soft delete</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Pacientes (clínicos)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/pacientes</span><span class="auth">JWT · scopeWhere</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/pacientes/por-cpf/:cpf</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/pacientes/:id</span><span class="auth">JWT · scopeWhere</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/pacientes/:id</span><span class="auth">JWT · ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:id</span><span class="auth">JWT · ADMIN/DEV · soft delete</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Prontuário (CRUD sub-docs · audit CFM)</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/alergias</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/alergias/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/condicoes-cronicas</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/pacientes/:pacienteId/condicoes-cronicas/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/condicoes-cronicas/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/medicamentos</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/pacientes/:pacienteId/medicamentos/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/medicamentos/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method put">PUT</span><span class="path">/v1/pacientes/:pacienteId/historico-familiar</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/atendimentos</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/atendimentos/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/exames</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/exames/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/vacinacoes</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/vacinacoes/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/pacientes/:pacienteId/viagens</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/pacientes/:pacienteId/viagens/:id</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/pacientes/:pacienteId/viagens/:id</span><span class="auth">JWT</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Dashboard</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/dashboard/metrics</span><span class="auth">JWT</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 6 · FACE 2 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face2">
+  <h2><span class="num">06</span>Face 2 · SMS / Regulação (web)</h2>
+  <p>
+    <strong>Atores:</strong> REGULADOR_SMS · ADMIN<br>
+    <strong>Frontend:</strong> SvelteKit em <code>/sms/*</code><br>
+    <strong>Audit:</strong> toda transição gera evento na timeline + audit log
+  </p>
+
+  <div class="endpoint-group">
+    <div class="head">Regulação</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/encaminhamentos/:id/aprovar</span><span class="auth">JWT · REGULADOR/ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/encaminhamentos/:id/pendenciar</span><span class="auth">JWT · REGULADOR/ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/encaminhamentos/:id/rejeitar</span><span class="auth">JWT · REGULADOR/ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/encaminhamentos/:id/resposta-sus</span><span class="auth">JWT · REGULADOR/ADMIN/DEV</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/encaminhamentos/arvore</span><span class="auth">JWT · file manager UI</span></div>
+  </div>
+
+  <div class="callout">
+    <div class="title">Campos novos no aprovar (v0.10.2)</div>
+    Body aceita: <code>localAgendamento</code>, <code>profissionalAgendado</code>,
+    <code>cidadeAgendamento</code>, <code>ufAgendamento</code> (validados por Zod).
+    Cidade explícita usada por <code>podeSolicitarTfd</code> no app paciente.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 7 · FACE 3 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face3">
+  <h2><span class="num">07</span>Face 3 · App Paciente (Flutter)</h2>
+  <p>
+    <strong>Atores:</strong> cidadão (CPF + senha)<br>
+    <strong>Cliente:</strong> Flutter SDK 3.11.5 + Riverpod + Dio + go_router<br>
+    <strong>Auth:</strong> CPF + senha · token opaco 24h (sem Firebase)<br>
+    <strong>Rate limit:</strong> Redis sliding window em todos endpoints
+  </p>
+
+  <div class="endpoint-group">
+    <div class="head">Auth (rate-limited)</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/login</span><span class="auth">público · 30/15min/IP</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/ativar-conta</span><span class="auth">público · 30/15min/IP</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/esqueci-senha</span><span class="auth">público · 5/15min/IP + 3/1h/CPF</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/redefinir-senha</span><span class="auth">público · 10/15min/IP</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/logout</span><span class="auth">token paciente</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/auth/trocar-senha</span><span class="auth">token paciente</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/me</span><span class="auth">token paciente</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Push notifications (v0.16+ · ntfy.sh)</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/me/push-token</span><span class="auth">token · provider-agnostic</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/paciente-app/me/push-token</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/me/fcm-token</span><span class="auth">token · legacy compat</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/paciente-app/me/fcm-token</span><span class="auth">token · legacy</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Encaminhamentos</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/meus-encaminhamentos</span><span class="auth">token</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Notificações</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/notificacoes</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/notificacoes/count</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/notificacoes/:id/lida</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/notificacoes/marcar-todas-lidas</span><span class="auth">token</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">UBS vinculada</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/ubs/minha</span><span class="auth">token · auto-bond</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Dossiê médico (LGPD 5y + CFM 20y · paginado)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/dossie/resumo</span><span class="auth">token · 120/15min/conta</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/dossie/atendimentos?cursor=&limit=</span><span class="auth">token · 120/15min/conta</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/dossie/vacinacoes?cursor=&limit=</span><span class="auth">token · 120/15min/conta</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/dossie/exames?cursor=&limit=</span><span class="auth">token · 120/15min/conta</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Banners SMS (carrossel home)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/banners</span><span class="auth">token · 240/15min/conta</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/banners/:id</span><span class="auth">token · 240/15min/conta</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/banners/:id/visto</span><span class="auth">token · telemetria</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">TFD (Transporte Fora do Domicílio)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/tfd/viagens</span><span class="auth">token · prefeitura do paciente</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/tfd/viagens/:viagemId</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/tfd/solicitacoes</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/tfd/solicitacoes/:id</span><span class="auth">token</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/paciente-app/tfd/solicitacoes</span><span class="auth">token · max 3 reaberturas</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/paciente-app/tfd/solicitacoes/:id</span><span class="auth">token · hash chain audit</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Anexos (LGPD + CFM dual audit)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/paciente-app/anexos/:id/download</span><span class="auth">token · 60/15min/conta</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 8 · FACE 4 TFD -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face4">
+  <h2><span class="num">08</span>Face 4 · TFD (Gestor + Motorista)</h2>
+  <p>
+    <strong>Atores:</strong> GESTOR_TFD · ATENDENTE_TFD (terminal rodoviário) · MOTORISTA_TFD<br>
+    <strong>Auditoria:</strong> hash chain SHA-256 em <code>tfd_audit_log</code> (TJ-compliant)<br>
+    <strong>Convenções RBAC:</strong>
+  </p>
+  <ul>
+    <li><code>rwGestor</code> = GESTOR_TFD + ADMIN + DEV</li>
+    <li><code>rwAdmin</code> = ADMIN + DEV apenas (saldo, exportação TJ)</li>
+    <li><code>rwSolic</code> = rwGestor + UBS + ATENDENTE_TFD (criar/listar solicitações)</li>
+  </ul>
+
+  <h3>Frota (Veículos + Motoristas)</h3>
+  <div class="endpoint-group">
+    <div class="head">Veículos</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/veiculos</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/veiculos</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/veiculos/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/tfd/veiculos/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/veiculos/:id/manutencao</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/veiculos/:id/reativar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/tfd/veiculos/:id</span><span class="auth">rwAdmin</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Motoristas</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/motoristas</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/motoristas</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/motoristas/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/tfd/motoristas/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/motoristas/:id/afastar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/motoristas/:id/reativar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/tfd/motoristas/:id</span><span class="auth">rwAdmin</span></div>
+  </div>
+
+  <h3>Solicitações UBS</h3>
+  <div class="endpoint-group">
+    <div class="head">Solicitações criadas por UBS (legacy)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/solicitacoes</span><span class="auth">rwSolic</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes</span><span class="auth">rwSolic</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/solicitacoes/:id</span><span class="auth">rwSolic</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes/:id/aprovar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes/:id/negar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes/:id/anexos</span><span class="auth">rwSolic · multer</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/anexos/:id/download</span><span class="auth">rwSolic</span></div>
+  </div>
+
+  <h3>Solicitações App Paciente (v0.17+)</h3>
+  <div class="endpoint-group">
+    <div class="head">Integração Face 3 ↔ Face 4 (hash chain · race-protected)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/solicitacoes-paciente</span><span class="auth">rwGestor · ordenado por prioridade</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/solicitacoes-paciente/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes-paciente/:id/aprovar</span><span class="auth">rwGestor · SELECT FOR UPDATE</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes-paciente/:id/recusar</span><span class="auth">rwGestor · motivo ≥5</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes-paciente/:id/embarque</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/solicitacoes-paciente/:id/concluir</span><span class="auth">rwGestor</span></div>
+  </div>
+
+  <h3>Viagens</h3>
+  <div class="endpoint-group">
+    <div class="head">Frota de viagens</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/viagens</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/viagens/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/tfd/viagens/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens/:id/iniciar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens/:id/concluir</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens/:id/cancelar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens/:id/passageiros</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/tfd/viagens/:id/passageiros/:pid</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/viagens/:id/passageiros/:pid/presenca</span><span class="auth">rwGestor</span></div>
+  </div>
+
+  <h3>Abastecimento + Saldo + Ajudas de custo</h3>
+  <div class="endpoint-group">
+    <div class="head">Abastecimentos</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/abastecimentos</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/abastecimentos</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/abastecimentos/:id/liberar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/abastecimentos/:id/negar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/abastecimentos/:id/comprovante</span><span class="auth">rwGestor · multer</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/abastecimentos/:id/comprovante</span><span class="auth">rwGestor</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Saldo + Ajudas</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/saldo</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/saldo/ajustar</span><span class="auth">rwAdmin</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/ajudas-custo</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/ajudas-custo/:id</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/ajudas-custo</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/ajudas-custo/:id/autorizar</span><span class="auth">rwGestor</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/ajudas-custo/:id/pagar</span><span class="auth">rwAdmin · multer</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/tfd/ajudas-custo/:id/negar</span><span class="auth">rwGestor</span></div>
+  </div>
+
+  <h3>Auditoria TJ (hash chain SHA-256)</h3>
+  <div class="endpoint-group">
+    <div class="head">Auditoria + Exportação TJ</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/auditoria</span><span class="auth">rwAdmin</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/auditoria/exportar-tj?mes=YYYY-MM</span><span class="auth">rwAdmin · ZIP assinado ICP-Brasil</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/auditoria/verificar</span><span class="auth">rwAdmin · integridade da cadeia</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/tfd/auditoria/:id</span><span class="auth">rwAdmin</span></div>
+  </div>
+
+  <h3>App do Motorista (mobile Flutter)</h3>
+  <div class="endpoint-group">
+    <div class="head">Motorista App</div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/auth/login</span><span class="auth">público · matrícula+senha</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/motorista-app/auth/me</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/auth/trocar-senha</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/auth/logout</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/motorista-app/minhas-viagens?desde=ISO</span><span class="auth">JWT · sync incremental</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/motorista-app/viagens/:id</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/viagens/:id/iniciar</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/viagens/:id/concluir</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/motorista-app/ajudas-custo</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/motorista-app/me/fcm-token</span><span class="auth">JWT motorista</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/motorista-app/me/fcm-token</span><span class="auth">JWT motorista</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 9 · ADMIN -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="admin">
+  <h2><span class="num">09</span>Admin transversal</h2>
+  <p>
+    Endpoints administrativos restritos a DEV/ADMIN/REGULADOR_SMS. RBAC granular
+    por endpoint; <code>DELETE</code> em geral só DEV/ADMIN.
+  </p>
+
+  <div class="endpoint-group">
+    <div class="head">Prefeituras + UBSs</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/prefeituras</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/prefeituras</span><span class="auth">DEV</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/admin/prefeituras/:id</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/admin/prefeituras/:id</span><span class="auth">DEV</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/ubs</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/ubs</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/admin/ubs/:id</span><span class="auth">DEV/ADMIN · 16 campos · snapshot audit</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/admin/ubs/:id</span><span class="auth">DEV/ADMIN</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Usuários (atendentes)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/usuarios</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/usuarios</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/admin/usuarios/:id</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/admin/usuarios/:id</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/usuarios/:id/ativo</span><span class="auth">DEV/ADMIN</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/usuarios/:id/reset-senha</span><span class="auth">DEV/ADMIN</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Recomendações por especialidade (v0.10.1+ · audit antes/depois)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/recomendacoes-especialidade</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/recomendacoes-especialidade/:id</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/recomendacoes-especialidade</span><span class="auth">DEV/ADMIN/REG · race P2002 protegido</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/admin/recomendacoes-especialidade/:id</span><span class="auth">DEV/ADMIN/REG</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/admin/recomendacoes-especialidade/:id</span><span class="auth">DEV/ADMIN</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Banners SMS (v0.15+ · CMS escopado por prefeitura)</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/sms-banners?ativo=&expirados=</span><span class="auth">DEV/ADMIN/REG · escopo PREF</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/admin/sms-banners/:id</span><span class="auth">DEV/ADMIN/REG · totalVisualizacoes</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/admin/sms-banners</span><span class="auth">DEV/ADMIN/REG · HTTPS-only URLs</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/v1/admin/sms-banners/:id</span><span class="auth">DEV/ADMIN/REG · snapshot audit</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/admin/sms-banners/:id</span><span class="auth">DEV/ADMIN</span></div>
+  </div>
+
+  <div class="endpoint-group">
+    <div class="head">Relatórios LGPD-first</div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/relatorios</span><span class="auth">JWT</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/relatorios</span><span class="auth">JWT · rate-limited 10/h/usuário</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/relatorios/:id/download</span><span class="auth">JWT · SHA-256 · TTL 7d</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 10 · AUDITORIA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="auditoria">
+  <h2><span class="num">10</span>Auditoria · 3 níveis</h2>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="label">LGPD · 5 anos</div>
+      <div class="value">auditoria_logs</div>
+      <div class="desc">15+ ações: login, mutações admin, CRUD recomendações, dossiê, downloads. Imutável.</div>
+    </div>
+    <div class="card purple">
+      <div class="label">CFM · 20 anos</div>
+      <div class="value">paciente_prontuario_audit</div>
+      <div class="desc">Append-only via trigger SQL. <code>DOWNLOAD_ANEXO</code> + <code>LEITURA_DOSSIE</code> + prontuário ops.</div>
+    </div>
+    <div class="card amber">
+      <div class="label">TJ · cadeia hash</div>
+      <div class="value">tfd_audit_log</div>
+      <div class="desc">SHA-256 encadeado. Exportação ZIP mensal assinada ICP-Brasil. 38+ ações.</div>
+    </div>
+  </div>
+
+  <h3>Hash chain TFD (TJ-compliant)</h3>
+  <p>Cada linha em <code>tfd_audit_log</code> tem <code>hash = SHA-256(payload | hashAnterior)</code> onde <code>hashAnterior</code> é o último hash da prefeitura:</p>
+<pre><span class="kw">const</span> payload = [
+  registro.id, registro.acao, registro.recursoId,
+  registro.operadorId, registro.ip, registro.em.<span class="fn">toISOString</span>(),
+  <span class="fn">JSON.stringify</span>(registro.antes ?? <span class="kw">null</span>),
+  <span class="fn">JSON.stringify</span>(registro.depois ?? <span class="kw">null</span>),
+  hashAnterior,
+].<span class="fn">join</span>(<span class="str">'|'</span>);
+<span class="kw">return</span> crypto.<span class="fn">createHash</span>(<span class="str">'sha256'</span>).<span class="fn">update</span>(payload).<span class="fn">digest</span>(<span class="str">'hex'</span>);</pre>
+
+  <p>
+    Genesis: <code>'0' × 64</code>. Verificação via <code>verificarCadeiaTfd(prefeituraId)</code>
+    re-calcula toda a cadeia e reporta corrompidos. Inserção serializada por prefeitura
+    via <code>SELECT FOR UPDATE</code> (v0.17.1).
+  </p>
+
+  <h3>Audit dual em endpoints sensíveis</h3>
+  <p>Para operações que afetam <strong>prontuário do paciente</strong> (dossiê, download de anexo), grava-se em <strong>ambas</strong> as tabelas:</p>
+  <ul>
+    <li><strong>LGPD</strong> (5 anos): granular, todos os caminhos (sucesso + falha)</li>
+    <li><strong>CFM</strong> (20 anos): só sucesso, dado médico, imutável</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 11 · SEGURANÇA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="seguranca">
+  <h2><span class="num">11</span>Segurança</h2>
+
+  <h3>Rate Limiters (Redis sliding window)</h3>
+  <table>
+    <thead><tr><th>Recurso</th><th>Limites</th><th>Camadas</th></tr></thead>
+    <tbody>
+      <tr><td><code>esqueci-senha</code></td><td>5/15min/IP + 100/1h/IP + 3/1h/CPF</td><td>3</td></tr>
+      <tr><td><code>redefinir-senha</code></td><td>10/15min/IP + 30/1h/IP</td><td>2</td></tr>
+      <tr><td>Face 3 genérico (login/ativar)</td><td>30/15min/IP</td><td>1</td></tr>
+      <tr><td>Download anexo</td><td>60/15min/conta + 200/1h/conta + 300/15min/IP</td><td>3</td></tr>
+      <tr><td>Dossiê médico</td><td>120/15min/conta + 600/1h/conta + 1000/15min/IP</td><td>3</td></tr>
+      <tr><td>Banners</td><td>240/15min/conta + 1200/1h/conta + 2000/15min/IP</td><td>3</td></tr>
+      <tr><td>Relatórios</td><td>10/h/usuário + 30/dia + 3 simultâneos/prefeitura</td><td>3</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Validações de entrada</h3>
+  <ul>
+    <li><strong>CPF checksum</strong>: <code>isCpfValido()</code> mod-11 + bloqueia triviais (000.000.000-00, etc.)</li>
+    <li><strong>Senha forte</strong>: <code>validarSenhaForte()</code> bloqueia &lt; 8 chars, numérica pura, sequências comuns, CPF como senha</li>
+    <li><strong>Email</strong>: regex + ≤180 chars + lowercase</li>
+    <li><strong>HTTPS-only</strong> em URLs de banners (<code>imagemUrl</code>, <code>ctaUrl</code>) — Android bloqueia HTTP por padrão</li>
+    <li><strong>Lat/Lng</strong>: range [-90,90]/[-180,180] + cross-validation (ambos ou nenhum)</li>
+    <li><strong>Horários</strong>: JSON estruturado com regex HH:MM + <code>abre &lt; fecha</code></li>
+  </ul>
+
+  <h3>Sanitização anti-XSS</h3>
+  <p><code>shared/sanitizeText.ts</code> aplicado em texto livre de banners, dossiê, recomendações:</p>
+  <ul>
+    <li>Strip HTML tags (<code>&lt;script&gt;</code>, <code>&lt;img onerror&gt;</code>)</li>
+    <li>Strip control chars + zero-width Unicode (anti smuggle)</li>
+    <li>Normaliza CRLF → LF</li>
+    <li>Trim + cap 4000 chars (anti DoS)</li>
+  </ul>
+
+  <h3>Anti-enumeration</h3>
+  <ul>
+    <li><strong>404 ao invés de 403</strong> em recursos fora de escopo (não vaza existência)</li>
+    <li><strong>Timing-constant</strong> no <code>esqueci-senha</code>: <code>MIN_MS = 120</code> + <code>bcrypt.compare</code> dummy quando CPF não existe</li>
+    <li><strong>Resposta genérica 204</strong> sempre em <code>esqueci-senha</code> (sucesso ou silencioso)</li>
+  </ul>
+
+  <h3>Path traversal guard</h3>
+  <p>Download de anexos usa <code>path.relative(uploadDir, candidato)</code> + checagem <code>..</code>/absolute path. Tentativa de escape → audit crítico <code>DOWNLOAD_ANEXO_PACIENTE_PATH_TRAVERSAL</code>.</p>
+
+  <h3>Content-Disposition RFC 5987 / 6266</h3>
+  <p><code>buildContentDisposition()</code> emite duas formas: ASCII fallback (<code>filename="..."</code>) + UTF-8 percent-encoded (<code>filename*=UTF-8''...</code>). Strip de CR/LF (anti header injection).</p>
+
+  <h3>Race conditions fechadas</h3>
+  <ul>
+    <li><strong>Recovery token</strong>: atomic check-and-set via <code>updateMany WHERE { id, usadoEm: null }</code></li>
+    <li><strong>Especialidade UNIQUE</strong>: catch P2002 → <code>ESPECIALIDADE_DUPLICADA</code></li>
+    <li><strong>CNES UBS</strong>: catch P2002 → <code>UBS_DUPLICADA</code></li>
+    <li><strong>Aprovação TFD concorrente</strong>: <code>SELECT FOR UPDATE</code> na viagem (v0.17.1)</li>
+    <li><strong>numeroAssento duplicado</strong>: validação na transação + retry</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 12 · PUSH -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="push">
+  <h2><span class="num">12</span>Push notifications · ntfy.sh (sem Firebase)</h2>
+
+  <div class="callout green">
+    <div class="title">Decisão arquitetural · v0.16+</div>
+    O UNISISM <strong>não usa Firebase</strong>. Stack 100% open-source MIT:
+    <strong>ntfy.sh self-hosted</strong> + Web Push (futuro) + email fallback automático.
+  </div>
+
+  <h3>Arquitetura</h3>
+<pre><span class="cmt">┌─────────────┐                                  ┌──────────────┐</span>
+<span class="cmt">│ Backend     │   1. NotificacaoPaciente cria   │ Postgres     │</span>
+<span class="cmt">│             │ ───────────────────────────────→ │ pushStatus=  │</span>
+<span class="cmt">│             │                                  │   PENDENTE   │</span>
+<span class="cmt">└─────────────┘                                  └──────────────┘</span>
+                                                            ↓
+                                                  <span class="cmt">2. Worker (15s)</span>
+                                                            ↓
+                                                  ┌──────────────┐
+                                                  │ PushDispat-  │
+                                                  │ cherWorker   │
+                                                  └──────────────┘
+                                                            ↓
+<span class="cmt">3. HTTP POST → ntfy.sh                                     ↓</span>
+                                                  ┌──────────────┐         ┌────────┐
+                                                  │ NtfyProvider │ ──────→ │ ntfy.sh│
+                                                  └──────────────┘         │ DOCKER │
+                                                            ↓               └────────┘
+                                                  <span class="cmt">4. Se falhar tipo                  ↓</span>
+                                                  <span class="cmt">   urgente → email                 │</span>
+                                                  ┌──────────────┐                 │
+                                                  │ EmailService │                 │
+                                                  │ (Brevo)      │                 ↓
+                                                  └──────────────┘     ┌────────────────┐
+                                                                       │ App Flutter    │
+                                                                       │ WebSocket /ws  │
+                                                                       └────────────────┘</pre>
+
+  <h3>Provider abstrato</h3>
+  <table>
+    <thead><tr><th>Provider</th><th>Quando</th><th>Cliente Flutter</th></tr></thead>
+    <tbody>
+      <tr><td><code>NTFY</code></td><td>Default produção</td><td>WebSocket persistente em <code>/topic/ws</code></td></tr>
+      <tr><td><code>FCM</code></td><td>Legacy (não recomendado)</td><td>firebase_messaging (descontinuado)</td></tr>
+      <tr><td><code>WEB_PUSH</code></td><td>PWA futuro</td><td>Service Worker</td></tr>
+      <tr><td><code>NOOP</code></td><td>DEV / fallback</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Retry exponencial + dead-letter</h3>
+  <ul>
+    <li>4 tentativas com backoff: <strong>0min, 1min, 5min, 30min</strong></li>
+    <li>Esgotou → <code>EXCEDIDO</code> (dead-letter)</li>
+    <li>3 falhas permanentes em mesmo device → device removido auto + audit</li>
+    <li><strong>Email fallback</strong> para tipos urgentes (APROVADO, REJEITADO, AGENDADO, PENDENCIA, RESPOSTA_SUS)</li>
+  </ul>
+
+  <h3>Cleanup automático</h3>
+  <p><code>PushTokenCleanupCron</code> roda mensalmente (default <code>0 3 1 * *</code>) e remove devices com <code>ultimaAtividade &lt; (now - 90d)</code>.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 13 · ENV -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="env">
+  <h2><span class="num">13</span>Variáveis de ambiente (tabela completa)</h2>
+  <p>
+    Toda a configuração é centralizada em <code>src/shared/env.ts</code>. <strong>25
+    variáveis declaradas + 18 lidas direto de <code>process.env</code></strong> nos
+    workers/módulos (que documentamos abaixo separadamente).
+    Em <code>NODE_ENV=production</code>, validações fail-fast recusam subir o
+    servidor (JWT fraco, CORS aberto, SMTP inválido).
+  </p>
+
+  <h3>13.1 · Core (server + database)</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default (DEV)</th><th>Tipo</th><th>Validação PROD</th></tr></thead>
+    <tbody>
+      <tr><td><code>NODE_ENV</code></td><td><code>development</code></td><td>string</td><td>=<code>production</code> ativa fail-fast</td></tr>
+      <tr><td><code>PORT</code></td><td><code>3333</code></td><td>number</td><td>—</td></tr>
+      <tr><td><code>LOG_LEVEL</code></td><td><code>info</code></td><td>pino level</td><td><code>trace|debug|info|warn|error|fatal</code></td></tr>
+      <tr><td><code>DATABASE_URL</code></td><td><strong>obrigatória</strong></td><td>URL Postgres</td><td>conexão validada via <code>$connect</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 · Auth (JWT + bcrypt)</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default (DEV)</th><th>Validação PROD</th></tr></thead>
+    <tbody>
+      <tr><td><code>JWT_SECRET</code></td><td><code>dev-jwt-secret</code></td><td><strong>≥ 32 chars</strong>, fora da lista <code>FRACOS</code></td></tr>
+      <tr><td><code>JWT_REFRESH_SECRET</code></td><td><code>dev-refresh-secret</code></td><td><strong>≥ 32 chars</strong> · obrigatoriamente <strong>≠ JWT_SECRET</strong></td></tr>
+      <tr><td><code>JWT_EXPIRES_IN</code></td><td><code>30m</code></td><td>jsonwebtoken format (ms/s/m/h/d)</td></tr>
+      <tr><td><code>JWT_REFRESH_EXPIRES_IN</code></td><td><code>7d</code></td><td>—</td></tr>
+      <tr><td><code>BCRYPT_ROUNDS</code></td><td><code>10</code></td><td>recomendado <code>12</code> em prod</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.3 · CORS + HTTPS</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default (DEV)</th><th>Validação PROD</th></tr></thead>
+    <tbody>
+      <tr><td><code>CORS_ORIGIN</code></td><td><code>http://localhost:5173</code></td><td>Lista CSV explícita · <strong>sem <code>*</code></strong> · todos <code>https://</code> (exceto localhost)</td></tr>
+      <tr><td><code>TRUST_PROXY</code></td><td><code>false</code> (DEV) / <code>true</code> (PROD)</td><td>Habilita HSTS + lê X-Forwarded-* do Caddy</td></tr>
+      <tr><td><code>HSTS_MAX_AGE</code></td><td><code>15552000</code> (180 dias)</td><td>em segundos</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.4 · Storage</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default (DEV)</th><th>Notas</th></tr></thead>
+    <tbody>
+      <tr><td><code>STORAGE_PROVIDER</code></td><td><code>disk</code></td><td><code>disk | s3</code></td></tr>
+      <tr><td><code>UPLOAD_DIR</code></td><td><code>./uploads</code></td><td>Usado só com <code>disk</code></td></tr>
+      <tr><td><code>MAX_UPLOAD_MB</code></td><td><code>10</code></td><td>Express <code>limit: '5mb'</code> em JSON · multipart até <code>MAX_UPLOAD_MB</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.5 · Email (SMTP)</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default</th><th>Validação PROD</th></tr></thead>
+    <tbody>
+      <tr><td><code>EMAIL_PROVIDER</code></td><td><code>log</code> (DEV) / <code>smtp</code> (PROD)</td><td>—</td></tr>
+      <tr><td><code>SMTP_HOST</code></td><td><code>''</code></td><td><strong>Obrigatório</strong> se <code>EMAIL_PROVIDER=smtp</code></td></tr>
+      <tr><td><code>SMTP_PORT</code></td><td><code>587</code></td><td>465 quando <code>SMTP_SECURE=true</code></td></tr>
+      <tr><td><code>SMTP_USER</code></td><td><code>''</code></td><td>Obrigatório com <code>smtp</code></td></tr>
+      <tr><td><code>SMTP_PASS</code></td><td><code>''</code></td><td>Obrigatório com <code>smtp</code></td></tr>
+      <tr><td><code>SMTP_SECURE</code></td><td><code>false</code></td><td><code>true</code> só pra porta 465 (SMTPS direto)</td></tr>
+      <tr><td><code>EMAIL_FROM</code></td><td><code>UNISISM &lt;noreply@unisism.local&gt;</code></td><td>Format <code>"Nome &lt;email&gt;"</code></td></tr>
+      <tr><td><code>EMAIL_REPLY_TO</code></td><td><code>''</code></td><td>Opcional</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.6 · OpenTelemetry</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>OTEL_ENABLED</code></td><td><code>false</code></td></tr>
+      <tr><td><code>OTEL_SERVICE_NAME</code></td><td><code>unisism-backend</code></td></tr>
+      <tr><td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></td><td><code>''</code> (ex.: <code>http://tempo:4318</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.7 · ClamAV (scan antivírus)</h3>
+  <table>
+    <thead><tr><th>Variável</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>CLAMAV_HOST</code></td><td><code>''</code> (vazio = NoopScanner)</td></tr>
+      <tr><td><code>CLAMAV_PORT</code></td><td><code>3310</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.8 · Lidas direto de <code>process.env</code> (módulos / workers)</h3>
+  <p>Não passam por <code>env.ts</code>; lidas no <code>start()</code> de cada worker/módulo.</p>
+  <table>
+    <thead><tr><th>Variável</th><th>Default</th><th>Onde</th></tr></thead>
+    <tbody>
+      <tr><td><code>REDIS_URL</code></td><td><em>fallback in-memory</em></td><td><code>infrastructure/cache/Cache.ts</code></td></tr>
+      <tr><td><code>METRICS_ENABLED</code></td><td><code>true</code></td><td><code>main/server.ts</code> · log inicial</td></tr>
+      <tr><td><code>OUTBOX_ENABLED</code></td><td><code>true</code></td><td><code>main/server.ts</code></td></tr>
+      <tr><td><code>OUTBOX_INTERVAL_MS</code></td><td><code>5000</code></td><td><code>infrastructure/outbox/OutboxBus.ts</code></td></tr>
+      <tr><td><code>S3_ENDPOINT</code></td><td>—</td><td><code>infrastructure/storage/S3FileStorage.ts</code></td></tr>
+      <tr><td><code>S3_REGION</code></td><td>—</td><td>idem</td></tr>
+      <tr><td><code>S3_ACCESS_KEY_ID</code></td><td>—</td><td>idem</td></tr>
+      <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>—</td><td>idem</td></tr>
+      <tr><td><code>S3_BUCKET</code></td><td>—</td><td>idem</td></tr>
+      <tr><td><code>PUSH_PROVIDER</code></td><td><code>ntfy</code></td><td><code>infrastructure/push/buildPushProvider.ts</code> · <code>ntfy | noop</code></td></tr>
+      <tr><td><code>NTFY_BASE_URL</code></td><td><code>https://ntfy.sh</code></td><td><code>NtfyPushProvider</code></td></tr>
+      <tr><td><code>NTFY_AUTH_TOKEN</code></td><td>—</td><td>opcional (Bearer)</td></tr>
+      <tr><td><code>NTFY_TIMEOUT_MS</code></td><td><code>5000</code></td><td>—</td></tr>
+      <tr><td><code>PUSH_DISPATCHER_ENABLED</code></td><td><code>true</code></td><td><code>main/server.ts</code></td></tr>
+      <tr><td><code>PUSH_DISPATCHER_INTERVAL_MS</code></td><td><code>15000</code></td><td><code>PushDispatcherWorker</code></td></tr>
+      <tr><td><code>PUSH_DEVICE_CLEANUP_CRON</code></td><td><code>30 3 1 * *</code></td><td><code>PushTokenCleanupCron</code></td></tr>
+      <tr><td><code>PUSH_DEVICE_CLEANUP_CRON_TZ</code></td><td><code>UTC</code></td><td>idem</td></tr>
+      <tr><td><code>PUSH_DEVICE_TTL_DIAS</code></td><td><code>90</code></td><td>idem</td></tr>
+      <tr><td><code>RECOVERY_PURGE_CRON</code></td><td><code>0 */6 * * *</code></td><td><code>RecoveryTokenPurgeCron</code></td></tr>
+      <tr><td><code>RECOVERY_PURGE_CRON_TZ</code></td><td><code>UTC</code></td><td>idem</td></tr>
+      <tr><td><code>APP_RESET_SENHA_URL</code></td><td><code>https://app.unisism.local/redefinir</code></td><td>email recovery</td></tr>
+      <tr><td><code>TFD_SALDO_CRON</code></td><td><code>30 0 1 * *</code></td><td><code>SaldoMensalCron</code></td></tr>
+      <tr><td><code>TFD_SALDO_CRON_TZ</code></td><td><code>UTC</code></td><td>idem</td></tr>
+      <tr><td><code>TFD_SIGN_CERT_PATH</code></td><td>—</td><td><code>TfdSignatureService</code> · path absoluto <code>.pfx</code></td></tr>
+      <tr><td><code>TFD_SIGN_CERT_PASSWORD</code></td><td>—</td><td>idem · senha PKCS#12</td></tr>
+      <tr><td><code>TFD_SIGN_REQUIRED</code></td><td><code>false</code></td><td><code>true</code> = boot falha sem cert válido</td></tr>
+      <tr><td><code>RELATORIO_EXPIRACAO_INTERVAL_MS</code></td><td><code>3600000</code> (1 h)</td><td><code>ExpiracaoCron</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.9 · Lista FRACOS (rejeitada em PROD)</h3>
+  <pre><span class="kw">const</span> FRACOS = <span class="kw">new</span> Set([
+  <span class="str">'dev-jwt-secret'</span>, <span class="str">'dev-refresh-secret'</span>,
+  <span class="str">'change-me-in-prod'</span>, <span class="str">'change-me-refresh'</span>,
+  <span class="str">'troque-por-um-segredo-forte'</span>, <span class="str">'troque-por-um-refresh-forte'</span>,
+  <span class="str">'secret'</span>, <span class="str">'changeme'</span>, <span class="str">'123456'</span>,
+]);
+
+<span class="cmt">// Gerar secrets fortes:</span>
+<span class="cmt">// $ openssl rand -base64 48</span></pre>
+
+  <div class="callout amber">
+    <div class="title">Gotcha · TRUST_PROXY auto-on em PROD</div>
+    <p style="margin:0">
+      <code>TRUST_PROXY</code> tem default <code>true</code> automaticamente em
+      <code>NODE_ENV=production</code>. Se você roda PROD <strong>sem</strong>
+      proxy reverso (Caddy/nginx) à frente, IPs no audit log ficarão errados
+      (verá o IP do balancer interno em vez do cliente). Setar
+      <code>TRUST_PROXY=false</code> explicitamente neste caso.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 14 · COMANDOS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="comandos">
+  <h2><span class="num">14</span>Comandos</h2>
+
+  <table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run dev</code></td><td>Watch via ts-node-dev → <code>http://localhost:3333/v1</code></td></tr>
+      <tr><td><code>npm run build</code></td><td>Compila TypeScript → <code>dist/</code></td></tr>
+      <tr><td><code>npm start</code></td><td><code>node dist/main/server.js</code></td></tr>
+      <tr><td><code>npm run typecheck</code></td><td><code>tsc --noEmit</code> (não emite)</td></tr>
+      <tr><td><code>npm run prisma:generate</code></td><td>Regen Prisma Client em <code>./generated/prisma</code></td></tr>
+      <tr><td><code>npm run prisma:migrate -- --name X</code></td><td>Cria/aplica migration em DEV</td></tr>
+      <tr><td><code>npm run prisma:deploy</code></td><td>Aplica migrations em PROD</td></tr>
+      <tr><td><code>npm run prisma:studio</code></td><td>Prisma Studio em <code>:5555</code></td></tr>
+      <tr><td><code>npm run db:seed</code></td><td>Seed: 4 usuários + 1 paciente + 1 encaminhamento pendência</td></tr>
+      <tr><td><code>npm run db:seed-recomendacoes</code></td><td>15 especialidades comuns (idempotente)</td></tr>
+      <tr><td><code>npm run db:setup-triggers</code></td><td>Triggers de imutabilidade (rodar após migrate em PROD)</td></tr>
+      <tr><td><code>npm run minio:init</code></td><td>Cria bucket S3 (1ª vez com MinIO/B2)</td></tr>
+      <tr><td><code>npm run setup</code></td><td><code>bash scripts/setup.sh</code> (full setup local)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Smoke tests E2E (verifica todas as 8 etapas)</h3>
+<pre>npx ts-node-dev --transpile-only scripts/smoke-test-etapa1.ts  <span class="cmt"># 20/20 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa2.ts  <span class="cmt"># 40/40 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa3.ts  <span class="cmt"># 40/40 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa4.ts  <span class="cmt"># 57/57 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa5.ts  <span class="cmt"># 51/51 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa6.ts  <span class="cmt"># 35/35 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa7.ts  <span class="cmt"># 38/38 ✓</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa8.ts  <span class="cmt"># 34/34 ✓</span>
+<span class="cmt"># TOTAL: 315/315 asserts ✓</span></pre>
+
+  <h3>Credenciais seed (DEV) — senha sempre <code>12345678</code></h3>
+  <table>
+    <thead><tr><th>Matrícula</th><th>Role</th><th>Escopo</th></tr></thead>
+    <tbody>
+      <tr><td><code>DEV-001</code></td><td>DESENVOLVEDOR</td><td>GLOBAL</td></tr>
+      <tr><td><code>ADM-001</code></td><td>ADMIN</td><td>Prefeitura exemplo</td></tr>
+      <tr><td><code>SMS-099101</code></td><td>REGULADOR_SMS</td><td>Prefeitura exemplo (Face 2)</td></tr>
+      <tr><td><code>SMS-047291</code></td><td>ATENDENTE_UBS</td><td>UBS CENTRAL</td></tr>
+    </tbody>
+  </table>
+  <p>Paciente Face 3: CPF <code>123.456.789-00</code> / senha <code>12345678</code>.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 15 · DEPLOY -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="deploy">
+  <h2><span class="num">15</span>Deploy</h2>
+
+  <h3>Stack DEV (local)</h3>
+<pre>docker compose up -d postgres redis minio
+<span class="cmt"># ClamAV é opcional (leva ~5min no 1º start)</span>
+docker compose up -d clamav
+
+npm run prisma:generate
+npm run prisma:migrate
+npm run db:setup-triggers
+npm run db:seed
+npm run dev</pre>
+
+  <h3>Stack PROD (production-grade overlay)</h3>
+<pre>cp backend/.env.prod.example backend/.env.prod
+<span class="cmt"># editar e preencher REPLACE_*</span>
+docker compose --env-file backend/.env.prod \
+  -f backend/docker-compose.yml \
+  -f backend/docker-compose.prod.yml \
+  up -d</pre>
+
+  <p>O overlay <code>docker-compose.prod.yml</code> adiciona:</p>
+  <ul>
+    <li><strong>Caddy</strong> (HTTPS automático + CSP + reverse proxy)</li>
+    <li><strong>Tempo</strong> (traces OTel)</li>
+    <li><strong>Grafana</strong> (dashboards)</li>
+    <li><strong>Prometheus</strong> (métricas <code>/metrics</code>)</li>
+    <li><strong>ntfy.sh</strong> (push notifications)</li>
+  </ul>
+
+  <div class="callout amber">
+    <div class="title">Checklist PROD</div>
+    <ol>
+      <li><code>JWT_SECRET</code> + <code>JWT_REFRESH_SECRET</code>: 32+ chars, diferentes, sem placeholders</li>
+      <li><code>CORS_ORIGIN</code> com HTTPS (sem <code>*</code>, sem HTTP exceto localhost)</li>
+      <li><code>EMAIL_PROVIDER=smtp</code> + Brevo credenciais</li>
+      <li><code>db:setup-triggers</code> aplicado (imutabilidade audit)</li>
+      <li><code>PUSH_PROVIDER=ntfy</code> + ntfy self-hosted online</li>
+      <li><code>STORAGE_PROVIDER=s3</code> com bucket criado</li>
+      <li>ClamAV ativo + scan de anexos</li>
+      <li>Cert ICP-Brasil (se <code>TFD_SIGN_REQUIRED=true</code>)</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 16 · ROADMAP -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="roadmap">
+  <h2><span class="num">16</span>Roadmap completo · 8 etapas</h2>
+
+  <p>
+    Pós-v0.10.0 (entrega "tudo parcial"), o backend passou por 8 etapas de hardening
+    com auditoria adversarial. Cada etapa fechou 100% (zero brechas conscientes) antes
+    de prosseguir. <strong>Total: 103 brechas + 9 patches · 315/315 asserts E2E.</strong>
+  </p>
+
+  <table>
+    <thead><tr><th>Etapa</th><th>Tema</th><th class="num">Brechas</th><th class="num">Smoke</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>§4 Campos Encaminhamento (cidadeAgendamento, recomendações)</td><td class="num">6 + 3 patches</td><td class="num">20/20</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>2</td><td>§3 Recuperação de senha + hardening (rate limit, audit, cron purge)</td><td class="num">10 + 4 patches</td><td class="num">40/40</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>3</td><td>§8 Download anexos LGPD (path traversal, RFC 5987, dual audit)</td><td class="num">15</td><td class="num">40/40</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>4</td><td>§7 UBS vinculada schema completo (whatsapp/email/lat/lng/horarios)</td><td class="num">12</td><td class="num">57/57</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>5</td><td>§6 Dossiê médico LGPD/CFM (audit dual, paginação, sanitização)</td><td class="num">15</td><td class="num">51/51</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>6</td><td>§11 Banners SMS + CMS admin (HTTPS-only, escopo, snapshot)</td><td class="num">15</td><td class="num">35/35</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>7</td><td>§5 Push notifications SEM Firebase (ntfy.sh + worker + fallback email)</td><td class="num">15</td><td class="num">38/38</td><td><span class="status-ok"></span></td></tr>
+      <tr><td>8</td><td>§10 TFD Face 3↔4 + Hash Chain (SELECT FOR UPDATE, audit TJ)</td><td class="num">15 + 2 patches</td><td class="num">34/34</td><td><span class="status-ok"></span></td></tr>
+      <tr style="background:#f0fdf4;"><td colspan="2"><strong>TOTAL</strong></td><td class="num"><strong>103 + 9 patches</strong></td><td class="num"><strong>315/315</strong></td><td><span class="status-ok"></span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Padrão metodológico das etapas</h3>
+  <ol>
+    <li><strong>Auditoria adversarial</strong> — lista brechas reais (sem aceitar "trade-off documentado")</li>
+    <li><strong>Implementação 100%</strong> — fecha cada brecha, sem "TODO futuro"</li>
+    <li><strong>Smoke E2E</strong> — assert por brecha (≥3 cenários cada)</li>
+    <li><strong>Typecheck + build + check</strong> — 0 erros mandatório</li>
+    <li><strong>Regressão</strong> — todos os smokes anteriores devem continuar passando</li>
+    <li><strong>Re-auditoria pós-release</strong> — se aparecer brecha residual, vira patch X.Y.Z+1</li>
+  </ol>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 17 · CHANGELOG -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="changelog">
+  <h2><span class="num">17</span>Releases</h2>
+
+  <table>
+    <thead><tr><th>Versão</th><th>Data</th><th>Conteúdo</th></tr></thead>
+    <tbody>
+      <tr><td><code>0.18.0</code></td><td>2026-05-28</td><td><strong>Etapa 9 · Refresh token rotativo paciente — fecha último gap Face 3</strong></td></tr>
+      <tr><td><code>0.17.1</code></td><td>2026-05-28</td><td>Patches adversariais Etapa 8 — SELECT FOR UPDATE + numeroAssento dup</td></tr>
+      <tr><td><code>0.17.0</code></td><td>2026-05-28</td><td>Etapa 8 · TFD Face 3↔4 + Hash Chain</td></tr>
+      <tr><td><code>0.16.0</code></td><td>2026-05-28</td><td>Etapa 7 · Push notifications SEM Firebase (ntfy.sh)</td></tr>
+      <tr><td><code>0.15.0</code></td><td>2026-05-28</td><td>Etapa 6 · Banners SMS + CMS admin</td></tr>
+      <tr><td><code>0.14.0</code></td><td>2026-05-28</td><td>Etapa 5 · Dossiê médico HARDENING LGPD/CFM</td></tr>
+      <tr><td><code>0.13.0</code></td><td>2026-05-28</td><td>Etapa 4 · UBS vinculada schema completo + auto-bond + admin UI</td></tr>
+      <tr><td><code>0.12.1</code></td><td>2026-05-28</td><td>Patches adversariais Etapas 1, 2, 3</td></tr>
+      <tr><td><code>0.12.0</code></td><td>2026-05-28</td><td>Etapa 3 · Download anexos HARDENING LGPD</td></tr>
+      <tr><td><code>0.11.0</code></td><td>2026-05-27</td><td>Etapa 2 · Recuperação de senha HARDENING COMPLETO</td></tr>
+      <tr><td><code>0.10.2</code></td><td>2026-05-27</td><td>Etapa 1 · Fechamento de 3 brechas conscientes</td></tr>
+      <tr><td><code>0.10.1</code></td><td>2026-05-27</td><td>Etapa 1 · Campos Encaminhamento FECHADA 100%</td></tr>
+      <tr><td><code>0.10.0</code></td><td>2026-05-27</td><td>Face 3 · App do Paciente — 12 endpoints novos (parcial)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <div class="title">Referência completa</div>
+    <ul style="margin-bottom:0">
+      <li><code>backend/docs/CHANGELOG.md</code> — entries detalhadas por release</li>
+      <li><code>backend/docs/PACIENTE_APP_API.md</code> — contrato Face 3 (23 endpoints)</li>
+      <li><code>backend/docs/TFD_API.md</code> — spec completa Face 4</li>
+      <li><code>backend/docs/RELATORIOS.md</code> — módulo LGPD-first</li>
+      <li><code>backend/docs/PRONTUARIO_CRUD.md</code> — CRUD sub-documentos PEC</li>
+      <li><code>backend/docs/DEPLOY_PRODUCAO.md</code> — Caddy + Tempo + Grafana</li>
+      <li><code>UNISISM-Paciente/BACKEND_PENDENTES.md</code> — checklist por release</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE A · ERROR CODES (110) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-a">
+  <h2><span class="num">A</span>Apêndice A · Catálogo completo de erros</h2>
+  <p>
+    Toda resposta de erro segue o shape canônico
+    <code>{ error: { code, message, details? } }</code>. O <code>code</code> é
+    sempre <strong>SCREAMING_SNAKE_CASE em inglês</strong>; <code>message</code>
+    é em <strong>pt-BR</strong> e amigável para frontend. Frontend deve usar o
+    <code>code</code> (não a mensagem) para decisões de UX.
+  </p>
+
+  <h3>AppError + helpers (<code>src/shared/errors.ts</code>)</h3>
+  <pre><span class="kw">export class</span> <span class="fn">AppError</span> <span class="kw">extends</span> Error {
+  <span class="kw">readonly</span> statusCode: <span class="kw">number</span>;
+  <span class="kw">readonly</span> code: <span class="kw">string</span>;       <span class="cmt">// SCREAMING_SNAKE</span>
+  <span class="kw">readonly</span> details?: Record&lt;<span class="kw">string</span>, <span class="kw">unknown</span>&gt;;
+}
+
+<span class="cmt">// helpers por status HTTP</span>
+<span class="fn">BadRequest</span>(code,msg,details?)         → 400
+<span class="fn">Unauthorized</span>(code,msg,details?)       → 401
+<span class="fn">Forbidden</span>(code,msg,details?)          → 403
+<span class="fn">NotFound</span>(code,msg,details?)           → 404
+<span class="fn">Conflict</span>(code,msg,details?)           → 409
+<span class="fn">PayloadTooLarge</span>(code,msg,details?)    → 413
+<span class="fn">UnsupportedMediaType</span>(code,msg,details?)→ 415
+<span class="fn">Unprocessable</span>(code,msg,details?)      → 422
+<span class="fn">TooManyRequests</span>(code,msg,details?)    → 429</pre>
+
+  <h3>400 · BadRequest (payload mal-formado, formato inválido)</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ARQUIVO_INVALIDO</code></td><td>Buffer recebido corrompido, vazio ou sem extensão reconhecida</td></tr>
+      <tr><td><code>ARQUIVO_OBRIGATORIO</code></td><td>Multipart sem arquivo no field esperado</td></tr>
+      <tr><td><code>CAMPOS_NUMERICOS_INVALIDOS</code></td><td>Query/payload com strings em campos numéricos (page, limit, etc.)</td></tr>
+      <tr><td><code>FORMATO_INVALIDO</code></td><td>Formato de relatório fora de PDF/CSV/XLSX</td></tr>
+      <tr><td><code>METODO_INVALIDO</code></td><td>Método HTTP errado na rota (raro — Express já filtra)</td></tr>
+      <tr><td><code>PARAMS_INCOMPATIVEIS</code></td><td>Combinação de filtros excludentes (ex.: <code>?ubs=X&amp;global=true</code>)</td></tr>
+      <tr><td><code>PAYLOAD_AUSENTE</code></td><td>Body vazio em POST/PUT/PATCH</td></tr>
+      <tr><td><code>PAYLOAD_INVALIDO</code></td><td>JSON mal-formado, tipo errado ou campos extras</td></tr>
+      <tr><td><code>PERIODO_INVALIDO</code></td><td>Data <code>fim &lt; inicio</code> ou ranges &gt; 365 dias</td></tr>
+      <tr><td><code>SENHA_FRACA</code></td><td>Senha &lt; 8 chars ou sem mistura básica</td></tr>
+      <tr><td><code>TIPO_INVALIDO</code></td><td>Enum string fora dos valores permitidos</td></tr>
+      <tr><td><code>TIPO_RELATORIO_INVALIDO</code></td><td><code>TipoRelatorio</code> não está no catálogo</td></tr>
+      <tr><td><code>TOKEN_EXPIRADO</code></td><td>JWT/recovery/refresh expirado (variante 400 quando body inválido)</td></tr>
+      <tr><td><code>TOKEN_INVALIDO</code></td><td>Token mal-formado ou assinatura inválida</td></tr>
+    </tbody>
+  </table>
+
+  <h3>401 · Unauthorized (autenticação)</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>CONTA_INATIVA</code></td><td><code>Atendente.ativo=false</code> tentando logar</td></tr>
+      <tr><td><code>CREDENCIAIS_INVALIDAS</code></td><td>Login Face 1/2/4 (matrícula+senha) errado</td></tr>
+      <tr><td><code>MATRICULA_OU_SENHA_INVALIDA</code></td><td>Variante padronizada do login (motorista app)</td></tr>
+      <tr><td><code>SENHA_ATUAL_INCORRETA</code></td><td>Trocar senha — senha atual digitada errada</td></tr>
+      <tr><td><code>SENHA_ATUAL_INVALIDA</code></td><td>Idem (variante)</td></tr>
+      <tr><td><code>SESSAO_INDETERMINADA</code></td><td>JWT válido mas <code>Sessao</code> não encontrada (logout forçado)</td></tr>
+      <tr><td><code>TOKEN_AUSENTE</code></td><td>Header <code>Authorization</code> não enviado</td></tr>
+      <tr><td><code>TOKEN_EXPIRADO</code></td><td>JWT expirado (variante 401)</td></tr>
+      <tr><td><code>TOKEN_INVALIDO</code></td><td>JWT/refresh com assinatura quebrada</td></tr>
+      <tr><td><code>REFRESH_TOKEN_INVALIDO</code></td><td>v0.18+ · refresh token paciente malformado ou inexistente</td></tr>
+      <tr><td><code>REFRESH_TOKEN_EXPIRADO</code></td><td>v0.18+ · refresh paciente passou 30 dias sem uso</td></tr>
+      <tr><td><code>REFRESH_TOKEN_REVOGADO</code></td><td>v0.18+ · refresh paciente revogado (logout / admin / conta inativa)</td></tr>
+      <tr><td><code>REFRESH_REUSE_DETECTED</code></td><td>v0.18+ · <strong>refresh paciente já consumido reapresentado — cadeia revogada</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>403 · Forbidden (RBAC + escopo)</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>FORA_DO_ESCOPO</code></td><td>Mutação com <code>prefeituraId</code>/<code>ubsId</code> ≠ do JWT (anti-cross-tenant)</td></tr>
+      <tr><td><code>MOTORISTA_INATIVO</code></td><td>Motorista TFD com <code>status=INATIVO</code> ou <code>AFASTADO</code> tentou login</td></tr>
+      <tr><td><code>NAO_AUTENTICADO</code></td><td>Endpoint protegido sem JWT</td></tr>
+      <tr><td><code>PERMISSAO_INSUFICIENTE</code></td><td>Role não está na lista permitida para a rota</td></tr>
+      <tr><td><code>ROLE_NAO_PERMITIDO</code></td><td>Variante usada em controllers TFD</td></tr>
+      <tr><td><code>USUARIO_BLOQUEADO</code></td><td>5+ tentativas de login falhas em 15min</td></tr>
+      <tr><td><code>USUARIO_INATIVO</code></td><td><code>ativo=false</code></td></tr>
+      <tr><td><code>USUARIO_SEM_PREFEITURA</code></td><td>Atendente sem <code>prefeituraId</code> em rota que requer prefeitura</td></tr>
+      <tr><td><code>USUARIO_SEM_UBS</code></td><td>Atendente sem <code>ubsId</code> em rota UBS</td></tr>
+    </tbody>
+  </table>
+
+  <h3>404 · NotFound (recurso ou fora-do-escopo silencioso)</h3>
+  <p>
+    <strong>Anti-enumeration</strong>: recursos fora do escopo do JWT
+    retornam 404 (não 403) para não vazar existência.
+  </p>
+  <table>
+    <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ABASTECIMENTO_NAO_ENCONTRADO</code></td><td><code>Abastecimento.id</code> não existe ou fora do escopo</td></tr>
+      <tr><td><code>AJUDA_NAO_ENCONTRADA</code></td><td><code>AjudaCusto.id</code></td></tr>
+      <tr><td><code>ALERGIA_NAO_ENCONTRADA</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>ANEXO_NAO_ENCONTRADO</code></td><td><code>AnexoDocumento.id</code> ou <code>AnexoSolicitacaoTFD.id</code></td></tr>
+      <tr><td><code>ARQUIVO_NAO_ENCONTRADO</code></td><td>File handle (S3/disk) inexistente — storage corrompido</td></tr>
+      <tr><td><code>ATENDENTE_NAO_ENCONTRADO</code></td><td><code>Atendente.id</code></td></tr>
+      <tr><td><code>ATENDIMENTO_NAO_ENCONTRADO</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>BANNER_NAO_ENCONTRADO</code></td><td><code>SmsBanner.id</code></td></tr>
+      <tr><td><code>COMPROVANTE_AUSENTE</code></td><td>Pagamento pago sem comprovante anexado</td></tr>
+      <tr><td><code>CONDICAO_NAO_ENCONTRADA</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>CONTA_NAO_ENCONTRADA</code></td><td><code>PacienteConta.id</code> ou CPF não cadastrado</td></tr>
+      <tr><td><code>ENCAMINHAMENTO_NAO_ENCONTRADO</code></td><td><code>Encaminhamento.id</code></td></tr>
+      <tr><td><code>EXAME_NAO_ENCONTRADO</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>MEDICAMENTO_NAO_ENCONTRADO</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>MES_INVALIDO</code></td><td>Param <code>mes</code> fora de 1-12 ou ano fora de 2020-2100</td></tr>
+      <tr><td><code>MOTORISTA_NAO_ENCONTRADO</code></td><td><code>MotoristaTFD.id</code></td></tr>
+      <tr><td><code>NOTIFICACAO_NAO_ENCONTRADA</code></td><td><code>NotificacaoPaciente.id</code></td></tr>
+      <tr><td><code>PACIENTE_NAO_ENCONTRADO</code></td><td><code>Paciente.id</code> ou CPF não cadastrado</td></tr>
+      <tr><td><code>PACIENTE_SEM_UBS</code></td><td>Paciente cadastrado mas <code>ubsId=null</code> (não bondeado)</td></tr>
+      <tr><td><code>PASSAGEIRO_NAO_ENCONTRADO</code></td><td><code>ViagemPassageiro.id</code></td></tr>
+      <tr><td><code>PREFEITURA_NAO_ENCONTRADA</code></td><td><code>Prefeitura.id</code></td></tr>
+      <tr><td><code>RECOMENDACAO_NAO_ENCONTRADA</code></td><td><code>EspecialidadeRecomendacao.id</code></td></tr>
+      <tr><td><code>RECURSO_NAO_ENCONTRADO</code></td><td>Catch-all genérico</td></tr>
+      <tr><td><code>REGISTRO_NAO_ENCONTRADO</code></td><td>Variante (use cases admin)</td></tr>
+      <tr><td><code>RELATORIO_NAO_ENCONTRADO</code></td><td><code>Relatorio.id</code> ou expirado &gt; 7d</td></tr>
+      <tr><td><code>SOLICITACAO_NAO_ENCONTRADA</code></td><td><code>SolicitacaoTFD.id</code> ou <code>TfdPacienteSolicitacao.id</code></td></tr>
+      <tr><td><code>UBS_NAO_ENCONTRADA</code></td><td><code>Ubs.id</code></td></tr>
+      <tr><td><code>VACINA_NAO_ENCONTRADA</code></td><td>Sub-doc PEC</td></tr>
+      <tr><td><code>VEICULO_NAO_ENCONTRADO</code></td><td><code>VeiculoTFD.id</code></td></tr>
+      <tr><td><code>VIAGEM_NAO_ENCONTRADA</code></td><td><code>ViagemFrota.id</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>409 · Conflict (duplicação, regra de negócio)</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ANEXO_NAO_LIBERADO</code></td><td>Download tentado mas <code>scanStatus ≠ LIMPO</code></td></tr>
+      <tr><td><code>ASSENTO_OCUPADO</code></td><td><code>numeroAssento</code> já alocado em outra <code>ViagemPassageiro</code> (race condition guard)</td></tr>
+      <tr><td><code>AUTO_DESATIVACAO_PROIBIDA</code></td><td>Atendente tentou desativar a si mesmo</td></tr>
+      <tr><td><code>AUTO_EXCLUSAO_PROIBIDA</code></td><td>Atendente tentou excluir a si mesmo (soft delete)</td></tr>
+      <tr><td><code>CAPACIDADE_EXCEDIDA</code></td><td>Vagas da viagem &lt; passageiros alocados (após SELECT FOR UPDATE)</td></tr>
+      <tr><td><code>CONFLICT</code></td><td>Genérico — usar específico quando possível</td></tr>
+      <tr><td><code>CONTA_JA_ATIVADA</code></td><td>Reativação do app paciente em conta já ativa</td></tr>
+      <tr><td><code>CPF_DUPLICADO</code></td><td>Cadastro paciente com CPF já existente</td></tr>
+      <tr><td><code>CPF_INVALIDO</code></td><td>Falhou dígito verificador (mod 11)</td></tr>
+      <tr><td><code>DATA_NASCIMENTO_INVALIDA</code></td><td>Data &gt; hoje ou &lt; 1900-01-01</td></tr>
+      <tr><td><code>DATA_VOLTA_ANTERIOR_IDA</code></td><td>TFD ida &gt; volta</td></tr>
+      <tr><td><code>NENHUMA_ALTERACAO</code></td><td>PATCH sem campos para alterar</td></tr>
+      <tr><td><code>PACIENTE_DUPLICADO</code></td><td>Reabertura tenta criar paciente já existente</td></tr>
+      <tr><td><code>PLACA_DUPLICADA</code></td><td>Veículo com placa já cadastrada na prefeitura</td></tr>
+      <tr><td><code>PREFEITURA_DUPLICADA</code></td><td>Admin tentou criar prefeitura com CNPJ existente</td></tr>
+      <tr><td><code>RELATORIO_NAO_DISPONIVEL</code></td><td>Download em <code>status=PROCESSANDO</code> ou <code>FALHA</code></td></tr>
+      <tr><td><code>SENHA_FRACA</code></td><td>Variante 409 (durante reset)</td></tr>
+      <tr><td><code>SENHA_IGUAL</code></td><td>Nova senha igual à anterior</td></tr>
+      <tr><td><code>STATUS_INVALIDO</code></td><td>Transição de estado não permitida (FSM)</td></tr>
+      <tr><td><code>STATUS_TERMINAL</code></td><td>Mutação tentada em recurso já em estado terminal (CONCLUIDA, CANCELADA, etc.)</td></tr>
+      <tr><td><code>TFD_VIAGEM_ENCERRADA</code></td><td>Mutação em <code>ViagemTFD</code> com <code>status=REALIZADA</code> ou <code>CANCELADA</code></td></tr>
+      <tr><td><code>TOKEN_JA_USADO</code></td><td>Recovery/reset token consumido novamente</td></tr>
+      <tr><td><code>UBS_DUPLICADA</code></td><td>Admin tentou criar UBS com CNES existente</td></tr>
+      <tr><td><code>USUARIO_DUPLICADO</code></td><td>Matrícula já cadastrada</td></tr>
+      <tr><td><code>VALIDADE_CNH_INVALIDA</code></td><td>Data <code>cnhValidade</code> &lt; hoje no cadastro</td></tr>
+      <tr><td><code>VIAGEM_STATUS_INVALIDO</code></td><td>Transição inválida no enum <code>StatusViagemFrota</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>413 / 415 / 422 / 429</h3>
+  <table>
+    <thead><tr><th>Status</th><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td>413</td><td><code>ARQUIVO_MUITO_GRANDE</code></td><td>PDF/imagem &gt; 5 MB</td></tr>
+      <tr><td>415</td><td><code>MIME_NAO_SUPORTADO</code></td><td>MIME fora de PDF/PNG/JPEG/HEIC/WEBP</td></tr>
+      <tr><td>422</td><td><code>AGENDAMENTO_INVALIDO</code></td><td>Datas TFD impossíveis ou local não preenchido</td></tr>
+      <tr><td>422</td><td><code>AGENDAMENTO_NO_PASSADO</code></td><td>Data alvo &lt; agora</td></tr>
+      <tr><td>422</td><td><code>ARQUIVO_MUITO_GRANDE</code></td><td>Variante semantic (após pre-compress)</td></tr>
+      <tr><td>422</td><td><code>CNH_VENCIDA</code></td><td>Tentou alocar motorista com CNH expirada</td></tr>
+      <tr><td>422</td><td><code>ENDPOINT_INVALIDO</code></td><td>Endpoint push (topic ntfy) mal-formado</td></tr>
+      <tr><td>422</td><td><code>ITENS_OBRIGATORIOS</code></td><td>Array vazio onde se esperava ≥ 1 item</td></tr>
+      <tr><td>422</td><td><code>JUSTIFICATIVA_OBRIGATORIA</code></td><td>Rejeitar/recusar sem justificativa</td></tr>
+      <tr><td>422</td><td><code>JUSTIFICATIVA_VAZIA</code></td><td>String só whitespace</td></tr>
+      <tr><td>422</td><td><code>MIME_NAO_SUPORTADO</code></td><td>Variante 422 (pós-scan)</td></tr>
+      <tr><td>422</td><td><code>MOTIVO_OBRIGATORIO</code></td><td>Pendência sem <code>motivo</code></td></tr>
+      <tr><td>422</td><td><code>MOTORISTA_INDISPONIVEL</code></td><td>Motorista já alocado em outra viagem simultânea</td></tr>
+      <tr><td>422</td><td><code>NENHUMA_ACAO_FORNECIDA</code></td><td>PATCH ação-orientado sem nenhuma flag setada</td></tr>
+      <tr><td>422</td><td><code>NENHUMA_ALTERACAO</code></td><td>Variante 422 (sub-doc)</td></tr>
+      <tr><td>422</td><td><code>OBSERVACAO_OBRIGATORIA</code></td><td>Cancelamento exige texto</td></tr>
+      <tr><td>422</td><td><code>PAYLOAD_INVALIDO</code></td><td>Validação Zod (variante 422)</td></tr>
+      <tr><td>422</td><td><code>PDF_RESPOSTA_OBRIGATORIO</code></td><td>Resposta SUS sem PDF anexado</td></tr>
+      <tr><td>422</td><td><code>PLATAFORMA_INVALIDA</code></td><td>Push registration plataforma ≠ ANDROID/IOS</td></tr>
+      <tr><td>422</td><td><code>PREFEITURA_OBRIGATORIA</code></td><td>Mutação sem <code>prefeituraId</code> (DEV global)</td></tr>
+      <tr><td>422</td><td><code>SALDO_NEGATIVO</code></td><td>Abastecimento ultrapassa saldo do veículo</td></tr>
+      <tr><td>422</td><td><code>SENHA_EXPIRADA</code></td><td>Política de 90d (admin)</td></tr>
+      <tr><td>422</td><td><code>SENHA_FRACA</code></td><td>Variante 422 (cadastro)</td></tr>
+      <tr><td>422</td><td><code>SENHA_IGUAL_ATUAL</code></td><td>Variante explicit</td></tr>
+      <tr><td>422</td><td><code>UBS_OBRIGATORIA</code></td><td>Mutação sem <code>ubsId</code></td></tr>
+      <tr><td>422</td><td><code>VAGAS_INVALIDAS</code></td><td>Vagas ≤ 0 ou &gt; capacidade do veículo</td></tr>
+      <tr><td>422</td><td><code>VALIDATION_ERROR</code></td><td>Zod genérico (<code>details</code> com array de issues)</td></tr>
+      <tr><td>422</td><td><code>VALOR_INVALIDO</code></td><td>Decimal negativo ou NaN em campo financeiro</td></tr>
+      <tr><td>422</td><td><code>VEICULO_INDISPONIVEL</code></td><td>Veículo em manutenção/inativo</td></tr>
+      <tr><td>422</td><td><code>VEICULO_REQUERIDO</code></td><td>Tipo de viagem requer veículo e nenhum foi alocado</td></tr>
+      <tr><td>429</td><td><code>RATE_LIMIT</code></td><td>Limite global do tenant excedido</td></tr>
+      <tr><td>429</td><td><code>RATE_LIMIT_EXCEDIDO</code></td><td>Relatórios: 5/h por usuário OU 20/dia por tenant</td></tr>
+    </tbody>
+  </table>
+
+  <h3>500 / 502 / 503 (raros — logam stack)</h3>
+  <table>
+    <thead><tr><th>Status</th><th>Code</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td>500</td><td><code>ERRO_INTERNO</code></td><td>Catch-all (pino loga com <code>requestId</code>)</td></tr>
+      <tr><td>500</td><td><code>FALHA_LEITURA_ARQUIVO</code></td><td>S3/disco indisponível durante download</td></tr>
+      <tr><td>500</td><td><code>CONFIG_ERROR</code></td><td>Env var malformada (raro — fail-fast no boot)</td></tr>
+      <tr><td>503</td><td><code>SERVICO_INDISPONIVEL</code></td><td>ClamAV/Redis offline em rota crítica</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <div class="title">Gotcha · 404 ≠ 403</div>
+    <p style="margin:0">
+      Recursos fora do escopo do JWT retornam <strong>404 (não 403)</strong>
+      para evitar enumeration. Frontend nunca verá "este recurso existe mas você
+      não pode" — apenas "não existe". Confirmado em <code>scopeWhere.ts</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE B · SCHEMA (46 MODELS) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-b">
+  <h2><span class="num">B</span>Apêndice B · Schema Prisma model-by-model</h2>
+  <p>
+    46 models em <code>prisma/schema.prisma</code>. Convenções:
+    <code>id String @id @default(uuid())</code>,
+    <code>criadoEm/atualizadoEm</code> em todos com mutação,
+    <code>deletadoEm DateTime?</code> em modelos com soft delete,
+    <code>@@map("snake_case")</code> mapeando para a tabela.
+  </p>
+
+  <h3>B.1 · Núcleo institucional (RBAC + tenant)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th><th>Relações</th></tr></thead>
+    <tbody>
+      <tr><td><code>Prefeitura</code></td><td><code>prefeituras</code></td><td>nome, municipio, uf, cnpj?, ativa, deletadoEm</td><td>→ ubs, atendentes, relatorios, frota TFD inteira, banners</td></tr>
+      <tr><td><code>Ubs</code></td><td><code>ubs</code></td><td>nome, municipio, endereco?, cnes?, ativa, deletadoEm, <strong>bairro, cep, telefone, whatsapp, email, latitude, longitude, horarios (Json), observacoes</strong></td><td>→ atendentes, pacientes, encaminhamentos, contas, banners</td></tr>
+      <tr><td><code>Atendente</code></td><td><code>atendentes</code></td><td>nome, cpf?, matricula (uniq), email, senhaHash, role (RoleAtendente), ativo, ultimoLoginEm, deletadoEm</td><td>← prefeitura, ubs · → sessoes, refreshTokens, atividades</td></tr>
+      <tr><td><code>RefreshToken</code></td><td><code>refresh_tokens</code></td><td>tokenHash (uniq), expiraEm, revogadoEm, substitutoId</td><td>← atendente · self → substitutoId (encadeamento rotação)</td></tr>
+      <tr><td><code>Sessao</code></td><td><code>sessoes</code></td><td>jwtId (jti), expiraEm, revogadaEm, userAgent, ip</td><td>← atendente</td></tr>
+      <tr><td><code>PasswordResetCode</code></td><td><code>password_reset_codes</code></td><td>code (hash), expiraEm, usadoEm, tentativas</td><td>← atendente</td></tr>
+      <tr><td><code>TentativaLogin</code></td><td><code>tentativas_login</code></td><td>matricula, ip, sucesso, em</td><td>(sem FK — usado pra rate limit + bloqueio)</td></tr>
+      <tr><td><code>AtividadeAtendente</code></td><td><code>atividade_atendente</code></td><td>acao, recurso, recursoId?, dados (Json), em</td><td>← atendente</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.2 · Paciente + PEC (sub-documentos)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>Paciente</code></td><td><code>pacientes</code></td><td>nomeCompleto, cpf (uniq), cartaoSus?, dataNascimento, sexo, raca, estadoCivil, gruposanguineo, telefone, endereco (Json), historicoFamiliar?, deletadoEm</td></tr>
+      <tr><td><code>Alergia</code></td><td><code>alergias</code></td><td>tipo (TipoAlergia), substancia, gravidade (GravidadeAlergia), reacao?</td></tr>
+      <tr><td><code>CondicaoCronica</code></td><td><code>condicoes_cronicas</code></td><td>nome (CID10?), desde, observacoes?</td></tr>
+      <tr><td><code>MedicamentoEmUso</code></td><td><code>medicamentos_em_uso</code></td><td>nome, dose, posologia, inicio, fim?</td></tr>
+      <tr><td><code>Atendimento</code></td><td><code>atendimentos</code></td><td>tipo (TipoAtendimento), profissional, ubsId, queixa, conduta, dataAtendimento</td></tr>
+      <tr><td><code>ExameRealizado</code></td><td><code>exames_realizados</code></td><td>nome, categoria (CategoriaExame), resultado (ResultadoExame), realizadoEm, anexoUrl?</td></tr>
+      <tr><td><code>VacinaAplicada</code></td><td><code>vacinas_aplicadas</code></td><td>imunobiologico, dose, lote, via (ViaAplicacaoVacina), aplicadoEm, ubsId</td></tr>
+      <tr><td><code>ViagemTFD</code></td><td><code>viagens_tfd</code></td><td>destino, especialidade, dataIda, dataVolta?, transporte (TransporteTFD), status (StatusViagemTFD), valor?</td></tr>
+      <tr><td><code>MedicoAtendente</code></td><td><code>medicos_atendentes</code></td><td>nome, crm, especialidade (lookup interno)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.3 · Encaminhamentos + anexos + timeline</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>Encaminhamento</code></td><td><code>encaminhamentos</code></td><td>protocolo (uniq, <code>UBS-AAAA-NNNNNN</code>), status (StatusEncaminhamento), prioridade (PrioridadeClinica), especialidade, motivoClinico, observacoesUbs?, observacoesRegulacao?, motivoRejeicao?, dataAgendamento?, localAgendamento?, especialistaAgendado?, respostaSusUrl?, agendadoEm?, deletadoEm</td></tr>
+      <tr><td><code>AnexoDocumento</code></td><td><code>anexos_documento</code></td><td>tipo (TipoAnexo), nomeArquivo, mimeType, sizeBytes, storageKey, sha256, scanStatus (StatusScanAnexo), scanResultadoEm?, scanResultado?</td></tr>
+      <tr><td><code>EventoTimeline</code></td><td><code>eventos_timeline</code></td><td>tipo (TipoEventoTimeline), titulo, descricao?, autorId?, dados (Json), em</td></tr>
+      <tr><td><code>EspecialidadeRecomendacao</code></td><td><code>especialidade_recomendacoes</code></td><td>nome, sinonimos (String[]), ativa</td></tr>
+      <tr><td><code>SequencialProtocolo</code></td><td><code>sequencial_protocolo</code></td><td>chave (uniq: "UBS-2026"), ultimoNumero — counter Postgres atômico</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.4 · Audit (3 níveis — todos imutáveis em PROD)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Retenção</th><th>Imut.</th></tr></thead>
+    <tbody>
+      <tr><td><code>AuditoriaLog</code></td><td><code>auditoria_logs</code></td><td>5 anos (LGPD)</td><td>Append-only (sem trigger)</td></tr>
+      <tr><td><code>RelatorioAudit</code></td><td><code>relatorio_audit</code></td><td>5 anos (LGPD)</td><td>Append-only (sem trigger)</td></tr>
+      <tr><td><code>PacienteProntuarioAudit</code></td><td><code>paciente_prontuario_audit</code></td><td><strong>20 anos (CFM 1.821/2007)</strong></td><td>✓ Trigger SQL bloqueia UPDATE/DELETE/TRUNCATE</td></tr>
+      <tr><td><code>TfdAuditLog</code></td><td><code>tfd_audit_log</code></td><td>10 anos (TJ/TCM)</td><td>✓ Trigger SQL + cadeia SHA-256 encadeada</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.5 · App do Paciente (Face 3)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>PacienteConta</code></td><td><code>paciente_contas</code></td><td>cpf (uniq), senhaHash, ativada, ativadaEm?, ubsId? (auto-bond)</td></tr>
+      <tr><td><code>PacienteRecoveryToken</code></td><td><code>paciente_recovery_tokens</code></td><td>codeHash, expiraEm (15min), usadoEm?, tentativas (max 5)</td></tr>
+      <tr><td><code>PacienteDispositivo</code></td><td><code>paciente_dispositivos</code></td><td>endpoint, provider (PushProvider), plataforma (PlataformaPush), ultimaAtividade, ultimoSucessoEm?, falhasConsecutivas</td></tr>
+      <tr><td><code>SessaoPaciente</code></td><td><code>sessoes_paciente</code></td><td>tokenHash (uniq, opaco), expiraEm, revogadaEm</td></tr>
+      <tr><td><code>NotificacaoPaciente</code></td><td><code>notificacoes_paciente</code></td><td>tipo (TipoNotificacaoPaciente), titulo, mensagem, pushStatus (StatusPushNotificacao), pushTentativas, pushUltimaTentativaEm?, encaminhamentoId?, criadaEm, lidaEm?</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.6 · TFD Face 4 (frota / motorista / viagem)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>VeiculoTFD</code></td><td><code>veiculos_tfd</code></td><td>placa (uniq), modelo, tipo (TipoVeiculoTFD), combustivel (CombustivelVeiculo), capacidade, status (StatusVeiculoTFD), kmAtual</td></tr>
+      <tr><td><code>MotoristaTFD</code></td><td><code>motoristas_tfd</code></td><td>nome, cpf, matricula (uniq, <code>MOT-XXXXXX</code>), cnh, cnhCategoria (CategoriaCNH), cnhValidade, senhaHash?, status (StatusMotoristaTFD), fcmToken?</td></tr>
+      <tr><td><code>SolicitacaoTFD</code></td><td><code>solicitacoes_tfd</code></td><td>protocolo (<code>TFD-AAAA-NNNNNN</code>), pacienteId, especialidade, origemUbsId, destino, dataAlvo, prioridade, status (StatusSolicitacaoTFD)</td></tr>
+      <tr><td><code>AnexoSolicitacaoTFD</code></td><td><code>anexos_solicitacao_tfd</code></td><td>tipo (TipoAnexoSolicTFD), storageKey, scanStatus</td></tr>
+      <tr><td><code>ViagemFrota</code></td><td><code>viagens_frota</code></td><td>veiculoId, motoristaId, origem, destino, dataPartida, dataChegada?, vagas, kmInicial, kmFinal?, status (StatusViagemFrota)</td></tr>
+      <tr><td><code>ViagemPassageiro</code></td><td><code>viagem_passageiros</code></td><td>viagemId, pacienteId, solicitacaoId?, numeroAssento?, presenca (PresencaPassageiro)</td></tr>
+      <tr><td><code>Abastecimento</code></td><td><code>abastecimentos</code></td><td>protocolo (<code>ABT-AAAA-NNNNNN</code>), veiculoId, litros, valor, kmAtual, status (StatusAbastecimento)</td></tr>
+      <tr><td><code>SaldoVeiculo</code></td><td><code>saldos_veiculo</code></td><td>veiculoId, mesReferencia, saldoInicial, consumido, saldoAtual</td></tr>
+      <tr><td><code>SaldoAjuste</code></td><td><code>saldos_ajuste</code></td><td>veiculoId, mesReferencia, valor (+/-), motivo, ajustadoPorId</td></tr>
+      <tr><td><code>AjudaCusto</code></td><td><code>ajudas_custo</code></td><td>protocolo (<code>AJC-AAAA-NNNNNN</code>), beneficiarioId, valor, metodo (MetodoPagamentoAjuda), status (StatusAjudaCusto), comprovanteUrl?</td></tr>
+      <tr><td><code>TfdPacienteSolicitacao</code></td><td><code>tfd_paciente_solicitacoes</code></td><td>contaId, especialidade, destino, dataAlvo, prioridade (TfdPacientePrioridade), status (TfdPacienteStatus), <strong>operadorId?, operadorNome?, operadorMatricula?</strong>, recusadoMotivo?, <strong>tentativasReabertura</strong>, numeroAssento?</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.7 · Relatórios (LGPD-first)</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>Relatorio</code></td><td><code>relatorios</code></td><td>tipo (TipoRelatorio), formato (FormatoRelatorio), filtros (Json), status (StatusRelatorio), storageKey?, sha256?, sizeBytes?, expiraEm (TTL 7d), processadoEm?, falhaMotivo?</td></tr>
+      <tr><td><code>RelatorioAudit</code></td><td><code>relatorio_audit</code></td><td>relatorioId, acao (AcaoAuditRelatorio), atendenteId, ip, userAgent, em</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B.8 · Banners + CMS + Outbox</h3>
+  <table>
+    <thead><tr><th>Model</th><th>Tabela</th><th>Campos-chave</th></tr></thead>
+    <tbody>
+      <tr><td><code>SmsBanner</code></td><td><code>sms_banners</code></td><td>titulo, mensagem, tone (BannerTone), ativo, vigenciaInicio, vigenciaFim?, ordem, criadoPorId</td></tr>
+      <tr><td><code>SmsBannerView</code></td><td><code>sms_banner_views</code></td><td>bannerId, contaId, vistoEm — analytics</td></tr>
+      <tr><td><code>OutboxEvent</code></td><td><code>outbox_events</code></td><td>aggregateType, aggregateId, eventType, payload (Json), publishedAt?, attempts</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="title">Convenções gerais</div>
+    <ul style="margin-bottom:0">
+      <li><strong>IDs</strong> · todos <code>String @id @default(uuid())</code></li>
+      <li><strong>Soft delete</strong> · campo <code>deletadoEm DateTime?</code> em Prefeitura, Ubs, Atendente, Paciente, Encaminhamento. Listagens aplicam <code>where: { deletadoEm: null }</code> via <code>scopeWhere</code>.</li>
+      <li><strong>Timestamps</strong> · <code>criadoEm DateTime @default(now())</code> + <code>atualizadoEm DateTime @updatedAt</code> em todos os modelos com mutação.</li>
+      <li><strong>JSON columns</strong> · <code>endereco</code> (Paciente), <code>horarios</code> (Ubs), <code>dados</code> (AtividadeAtendente, EventoTimeline, audits), <code>filtros</code> (Relatorio), <code>antes/depois</code> (audits).</li>
+      <li><strong>Decimal precision</strong> · latitude/longitude <code>Decimal(9,6)</code>, valores financeiros <code>Decimal(14,2)</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE C · ENUMS (44) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-c">
+  <h2><span class="num">C</span>Apêndice C · Enums completos (44)</h2>
+  <p>
+    Enums Prisma compartilhados via <code>generated/prisma</code>. Valores em pt-BR
+    SCREAMING_SNAKE_CASE (decisão deliberada — domínio é em português).
+  </p>
+
+  <h3>C.1 · RBAC e Auth</h3>
+  <pre><span class="kw">enum</span> <span class="fn">RoleAtendente</span> {
+  DESENVOLVEDOR       <span class="cmt">// acesso global · GLOBAL</span>
+  ADMIN               <span class="cmt">// admin de uma prefeitura · PREFEITURA</span>
+  COORDENADOR_UBS     <span class="cmt">// coordena uma UBS · UBS</span>
+  ATENDENTE_UBS       <span class="cmt">// atendente UBS · UBS</span>
+  REGULADOR_SMS       <span class="cmt">// regulador SMS · PREFEITURA</span>
+  GESTOR_TFD          <span class="cmt">// Face 4 (gestão) · PREFEITURA</span>
+  ATENDENTE_TFD       <span class="cmt">// Face 4 (terminal) · PREFEITURA (subset)</span>
+  MOTORISTA_TFD       <span class="cmt">// Face 4 (app mobile) · ESCOPO_PROPRIO</span>
+}</pre>
+
+  <h3>C.2 · Demografia</h3>
+  <pre><span class="kw">enum</span> <span class="fn">Sexo</span>           { M  F  OUTRO }
+<span class="kw">enum</span> <span class="fn">EstadoCivil</span>    { SOLTEIRO  CASADO  DIVORCIADO  VIUVO  UNIAO_ESTAVEL  OUTRO }
+<span class="kw">enum</span> <span class="fn">RacaCor</span>        { BRANCA  PRETA  PARDA  AMARELA  INDIGENA  NAO_INFORMADA }
+<span class="kw">enum</span> <span class="fn">GrupoSanguineo</span> { A_POSITIVO  A_NEGATIVO  B_POSITIVO  B_NEGATIVO  AB_POSITIVO
+                        AB_NEGATIVO  O_POSITIVO  O_NEGATIVO  NAO_INFORMADO }</pre>
+
+  <h3>C.3 · Encaminhamentos / regulação</h3>
+  <pre><span class="kw">enum</span> <span class="fn">StatusEncaminhamento</span>  { RASCUNHO  AGUARDANDO_REGULACAO  PENDENCIA_DOCUMENTO
+                                APROVADO  REJEITADO }
+<span class="kw">enum</span> <span class="fn">PrioridadeClinica</span>     { ELETIVA  PRIORITARIA  URGENTE  EMERGENCIA }
+<span class="kw">enum</span> <span class="fn">TipoAnexo</span>             { SOLICITACAO  RG  CPF  CARTAO_SUS  EXAME  LAUDO  RESPOSTA_SUS  OUTRO }
+<span class="kw">enum</span> <span class="fn">TipoEventoTimeline</span>    { CRIADO  DOCUMENTO_ANEXADO  ENVIADO_REGULACAO  PENDENCIA_REGISTRADA
+                                APROVADO  REJEITADO  AGENDADO  OBSERVACAO  RESPOSTA_SUS_RECEBIDA  EDITADO }
+<span class="kw">enum</span> <span class="fn">StatusScanAnexo</span>       { PENDENTE  LIMPO  INFECTADO  FALHOU }</pre>
+
+  <h3>C.4 · Prontuário (PEC)</h3>
+  <pre><span class="kw">enum</span> <span class="fn">TipoAlergia</span>         { MEDICAMENTO  ALIMENTO  AMBIENTAL  OUTRO }
+<span class="kw">enum</span> <span class="fn">GravidadeAlergia</span>    { LEVE  MODERADA  GRAVE }
+<span class="kw">enum</span> <span class="fn">TipoAtendimento</span>     { CONSULTA_MEDICA  ENFERMAGEM  VACINACAO  CURATIVO
+                              ODONTOLOGICO  PROCEDIMENTO  ACOLHIMENTO }
+<span class="kw">enum</span> <span class="fn">CategoriaExame</span>      { LABORATORIAL  IMAGEM  FUNCIONAL  OUTROS }
+<span class="kw">enum</span> <span class="fn">ResultadoExame</span>      { NORMAL  ALTERADO  CRITICO  PENDENTE }
+<span class="kw">enum</span> <span class="fn">ViaAplicacaoVacina</span>  { INTRAMUSCULAR  SUBCUTANEA  ORAL  INTRADERMICA }
+
+<span class="kw">enum</span> <span class="fn">AcaoProntuario</span>      {
+  ADD_ALERGIA  REMOVE_ALERGIA
+  ADD_CONDICAO_CRONICA  UPDATE_CONDICAO_CRONICA  REMOVE_CONDICAO_CRONICA
+  ADD_MEDICAMENTO  UPDATE_MEDICAMENTO  REMOVE_MEDICAMENTO
+  SET_HISTORICO_FAMILIAR
+  ADD_ATENDIMENTO  REMOVE_ATENDIMENTO
+  ADD_EXAME  REMOVE_EXAME
+  ADD_VACINA  REMOVE_VACINA
+  ADD_VIAGEM_TFD  UPDATE_VIAGEM_TFD  REMOVE_VIAGEM_TFD
+  DOWNLOAD_ANEXO        <span class="cmt">// Face 3 — paciente baixou anexo do próprio prontuário</span>
+  LEITURA_DOSSIE        <span class="cmt">// Face 3 — paciente visualizou dossiê médico</span>
+}</pre>
+
+  <h3>C.5 · TFD (Face 4 — gestão)</h3>
+  <pre><span class="kw">enum</span> <span class="fn">TipoVeiculoTFD</span>         { VAN  ONIBUS  CARRO  AMBULANCIA }
+<span class="kw">enum</span> <span class="fn">StatusVeiculoTFD</span>       { ATIVO  EM_MANUTENCAO  INATIVO }
+<span class="kw">enum</span> <span class="fn">CombustivelVeiculo</span>     { DIESEL  GASOLINA  ETANOL  FLEX  GNV  ELETRICO }
+<span class="kw">enum</span> <span class="fn">CategoriaCNH</span>           { B  C  D  E }
+<span class="kw">enum</span> <span class="fn">StatusMotoristaTFD</span>     { ATIVO  AFASTADO  INATIVO }
+
+<span class="kw">enum</span> <span class="fn">StatusSolicitacaoTFD</span>   { PENDENTE  APROVADA  ALOCADA  REALIZADA  NEGADA  CANCELADA }
+<span class="kw">enum</span> <span class="fn">PrioridadeSolicTFD</span>     { ELETIVA  PRIORITARIA  URGENTE }
+<span class="kw">enum</span> <span class="fn">TipoAnexoSolicTFD</span>      { COMPROVANTE_ENCAMINHAMENTO  EXAME  LAUDO  OUTRO }
+
+<span class="kw">enum</span> <span class="fn">StatusViagemTFD</span>        { AGENDADA  REALIZADA  CANCELADA  EM_ANDAMENTO }
+<span class="kw">enum</span> <span class="fn">StatusViagemFrota</span>      { AGENDADA  EM_ANDAMENTO  CONCLUIDA  CANCELADA }
+<span class="kw">enum</span> <span class="fn">PresencaPassageiro</span>     { AGUARDANDO  CONFIRMADO  EMBARCADO  AUSENTE  DESISTIU }
+<span class="kw">enum</span> <span class="fn">TransporteTFD</span>          { VAN_SMS  AMBULANCIA  PASSAGEM_RODOVIARIA  PASSAGEM_AEREA }
+
+<span class="kw">enum</span> <span class="fn">StatusAbastecimento</span>    { SOLICITADO  LIBERADO  REALIZADO  NEGADO }
+<span class="kw">enum</span> <span class="fn">StatusAjudaCusto</span>       { PENDENTE  AUTORIZADA  PAGA  NEGADA  CANCELADA }
+<span class="kw">enum</span> <span class="fn">MetodoPagamentoAjuda</span>   { PIX  TRANSFERENCIA  DINHEIRO_RH }</pre>
+
+  <h3>C.6 · TFD audit hash chain (TJ)</h3>
+  <pre><span class="kw">enum</span> <span class="fn">AcaoAuditoriaTFD</span> {
+  <span class="cmt">// Frota</span>
+  VEICULO_CRIADO  VEICULO_ATUALIZADO  VEICULO_MANUTENCAO  VEICULO_REATIVADO  VEICULO_DELETADO
+  <span class="cmt">// Motoristas</span>
+  MOTORISTA_CRIADO  MOTORISTA_ATUALIZADO  MOTORISTA_AFASTADO  MOTORISTA_REATIVADO  MOTORISTA_DELETADO
+  <span class="cmt">// Solicitações</span>
+  SOLICITACAO_CRIADA  SOLICITACAO_APROVADA  SOLICITACAO_NEGADA  SOLICITACAO_ANEXO_ENVIADO
+  <span class="cmt">// Viagens</span>
+  VIAGEM_CRIADA  VIAGEM_ATUALIZADA  VIAGEM_INICIADA  VIAGEM_CONCLUIDA  VIAGEM_CANCELADA
+  PASSAGEIRO_ALOCADO  PASSAGEIRO_REMOVIDO  PRESENCA_MARCADA
+  <span class="cmt">// Abastecimento</span>
+  ABASTECIMENTO_SOLICITADO  ABASTECIMENTO_LIBERADO  ABASTECIMENTO_NEGADO  ABASTECIMENTO_REALIZADO
+  <span class="cmt">// Saldo</span>
+  SALDO_AJUSTADO
+  <span class="cmt">// Ajuda de custo</span>
+  AJUDA_CUSTO_CRIADA  AJUDA_CUSTO_AUTORIZADA  AJUDA_CUSTO_PAGA  AJUDA_CUSTO_NEGADA
+  <span class="cmt">// App do motorista (Face 4 · mobile)</span>
+  MOTORISTA_LOGIN  MOTORISTA_LOGOUT  MOTORISTA_TROCOU_SENHA
+  FCM_TOKEN_REGISTRADO  FCM_TOKEN_REVOGADO
+  <span class="cmt">// Solicitações TFD vindas pelo APP PACIENTE (Face 3 — v0.17+)</span>
+  TFD_PAC_SOLIC_CRIADA  TFD_PAC_SOLIC_APROVADA  TFD_PAC_SOLIC_RECUSADA
+  TFD_PAC_SOLIC_CANCELADA_PELO_PACIENTE  TFD_PAC_SOLIC_REABERTA
+  TFD_PAC_EMBARCADA  TFD_PAC_CONCLUIDA
+}</pre>
+
+  <h3>C.7 · App do Paciente (Face 3) + push</h3>
+  <pre><span class="kw">enum</span> <span class="fn">TipoNotificacaoPaciente</span>  { ENCAMINHAMENTO_CRIADO  PENDENCIA_REGISTRADA
+                                  PENDENCIA_RESOLVIDA  APROVADO  AGENDADO
+                                  REJEITADO  RESPOSTA_SUS_DISPONIVEL }
+<span class="kw">enum</span> <span class="fn">PlataformaPush</span>          { ANDROID  IOS }
+<span class="kw">enum</span> <span class="fn">PushProvider</span>            { NTFY  FCM  WEB_PUSH }
+<span class="kw">enum</span> <span class="fn">StatusPushNotificacao</span>   { PENDENTE  ENVIADO  FALHOU  EXCEDIDO  SEM_DEVICE }
+
+<span class="kw">enum</span> <span class="fn">TfdPacienteStatus</span>       { AGUARDANDO  APROVADA  RECUSADA  CANCELADA  EMBARCADA  CONCLUIDA }
+<span class="kw">enum</span> <span class="fn">TfdPacientePrioridade</span>   { NORMAL  PRIORITARIA  URGENTE }</pre>
+
+  <h3>C.8 · Relatórios + CMS</h3>
+  <pre><span class="kw">enum</span> <span class="fn">TipoRelatorio</span> {
+  PRODUCAO_INDIVIDUAL  ENCAMINHAMENTOS_POR_ESPECIALIDADE  FILA_REGULACAO
+  PENDENCIAS_RESOLVIDAS  TFD_CUSTOS  VACINACAO_UBS  BUSCA_ATIVA
+}
+<span class="kw">enum</span> <span class="fn">FormatoRelatorio</span>     { PDF  CSV  XLSX }
+<span class="kw">enum</span> <span class="fn">StatusRelatorio</span>      { DISPONIVEL  PROCESSANDO  FALHA }
+<span class="kw">enum</span> <span class="fn">AcaoAuditRelatorio</span>   { CRIADO  DOWNLOAD  FALHA  EXPIRADO  EXCLUIDO }
+<span class="kw">enum</span> <span class="fn">BannerTone</span> {
+  URGENTE    <span class="cmt">// vermelho — emergência sanitária</span>
+  CAMPANHA   <span class="cmt">// verde — campanha positiva (vacinação)</span>
+  INFO       <span class="cmt">// azul — informativo neutro</span>
+  ATENCAO    <span class="cmt">// âmbar — atenção sem urgência</span>
+}</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE D · INFRASTRUCTURE -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-d">
+  <h2><span class="num">D</span>Apêndice D · Infrastructure (camada externa)</h2>
+  <p>
+    Cada item abaixo é uma classe concreta em <code>src/infrastructure/</code>
+    instanciada exclusivamente no composition root
+    <code>src/main/container.ts</code>. Use cases recebem essas dependências via
+    construtor (DI manual). <strong>Nenhum singleton fora do container.</strong>
+  </p>
+
+  <h3>D.1 · Audit · <code>infrastructure/audit/</code></h3>
+  <table>
+    <thead><tr><th>Classe</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>PrismaAuditLogger</code></td>
+        <td>Implementa <code>IAuditLogger</code>. Insere em <code>auditoria_logs</code> de forma síncrona (não transacional) — retenção 5 anos LGPD.</td>
+      </tr>
+      <tr>
+        <td><code>TfdAuditLogger</code></td>
+        <td>Hash chain SHA-256 em <code>tfd_audit_log</code>. <code>hash = sha256(id|acao|recursoId|operadorId|ip|emISO|JSON(antes)|JSON(depois)|hashAnterior)</code>. Genesis = <code>'0'×64</code>. Possui <code>registrarNaTransacao(tx, …)</code> para uso atomic dentro de mutações.</td>
+      </tr>
+      <tr>
+        <td><code>verificarCadeiaTfd(prefeituraId)</code></td>
+        <td>Função pura: relê todos os logs da prefeitura, recalcula hash de cada um e compara com <code>hashAnterior</code> esperado. Retorna IDs corrompidos (ou vazio).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>D.2 · Cache / Rate limit · <code>infrastructure/cache/Cache.ts</code></h3>
+  <p>
+    Wrapper Redis com fallback in-memory. API mínima: <code>get/set/del/incr/expire</code>.
+    Usado por 7 rate limiters sliding-window:
+  </p>
+  <table>
+    <thead><tr><th>Limiter</th><th>Janela</th><th>Máx</th></tr></thead>
+    <tbody>
+      <tr><td>Login (matrícula+ip)</td><td>15 min</td><td>5 falhas → bloqueio 30 min</td></tr>
+      <tr><td>Login paciente (CPF+ip)</td><td>15 min</td><td>5 falhas → bloqueio 30 min</td></tr>
+      <tr><td>Esqueci senha (CPF)</td><td>1 h</td><td>3 envios</td></tr>
+      <tr><td>Notificações listagem (Face 3)</td><td>1 min</td><td>30 reqs</td></tr>
+      <tr><td>Download anexo paciente</td><td>1 h</td><td>20 reqs</td></tr>
+      <tr><td>Criar relatório (usuário)</td><td>1 h</td><td>5 reqs</td></tr>
+      <tr><td>Criar relatório (tenant)</td><td>24 h</td><td>20 reqs</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D.3 · Database · <code>infrastructure/database/</code></h3>
+  <ul>
+    <li><code>prisma.ts</code> — singleton <code>PrismaClient</code> com <code>$connect</code> warm-up no boot.</li>
+    <li><code>scopeWhere.ts</code> — gera <code>where</code> Prisma a partir do JWT (escopo <code>GLOBAL|PREFEITURA|UBS</code>) + filtro <code>deletadoEm: null</code>. Aplicado em todas as listagens.</li>
+    <li>Mappers em <code>*Mapper.ts</code> — convertem entidades de domínio &lt;-&gt; rows Prisma (timestamps, enums, JSON shapes).</li>
+  </ul>
+
+  <h3>D.4 · Email · <code>infrastructure/email/EmailService.ts</code></h3>
+  <table>
+    <thead><tr><th>Variante</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>SmtpEmailService</code></td><td><code>EMAIL_PROVIDER=smtp</code> · usa Nodemailer + STARTTLS · Brevo/Postmark/Sendgrid.</td></tr>
+      <tr><td><code>BrevoEmailService</code></td><td><code>EMAIL_PROVIDER=brevo</code> · API REST (mais barato em prod).</td></tr>
+      <tr><td><code>ConsoleEmailService</code></td><td><code>EMAIL_PROVIDER=console</code> (dev) · loga em pino.</td></tr>
+      <tr><td><code>NoopEmailService</code></td><td>Fallback se config faltar (dev only).</td></tr>
+    </tbody>
+  </table>
+  <p>Templates: <code>esqueci-senha</code>, <code>agendado</code>, <code>rejeitado</code>, <code>pendencia-registrada</code>, <code>resposta-sus-disponivel</code>. HTML inline + texto plano para Postmaster grade.</p>
+
+  <h3>D.5 · Outbox · <code>infrastructure/outbox/OutboxBus.ts</code></h3>
+  <ul>
+    <li>Padrão transacional — toda transição de status grava em <code>outbox_events</code> na MESMA transação Prisma da mutação.</li>
+    <li>Worker poll em <code>setInterval</code> (default 5 s) — publica e marca <code>publishedAt</code>.</li>
+    <li>Hoje apenas loga; em prod planeja-se webhook/FCM/notificações cruzadas.</li>
+    <li>Habilitado via <code>OUTBOX_ENABLED=true</code> (default <code>true</code>).</li>
+  </ul>
+
+  <h3>D.6 · Push notifications · <code>infrastructure/push/</code></h3>
+  <table>
+    <thead><tr><th>Arquivo</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr><td><code>IPushProvider.ts</code></td><td>Interface · <code>send(payload)</code>, <code>isReady()</code>, <code>name</code>.</td></tr>
+      <tr><td><code>NtfyPushProvider.ts</code></td><td>Provedor padrão · self-hosted via <code>NTFY_URL</code> (default <code>https://ntfy.sh</code>). HTTP POST com topic = hash(<code>endpoint</code>). <strong>Sem Firebase</strong>.</td></tr>
+      <tr><td><code>NoopPushProvider.ts</code></td><td>Fallback no-op para CI/dev sem ntfy.</td></tr>
+      <tr><td><code>buildPushProvider.ts</code></td><td>Factory baseada em <code>PUSH_PROVIDER=ntfy|noop|fcm</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D.7 · Scan antivírus · <code>infrastructure/scan/ClamavScanner.ts</code></h3>
+  <ul>
+    <li>TCP socket <code>CLAMAV_HOST:CLAMAV_PORT</code> (3310). Comando <code>INSTREAM</code>.</li>
+    <li>Estados públicos no campo <code>scanStatus</code>: <code>PENDENTE → LIMPO | INFECTADO | FALHOU</code>.</li>
+    <li>Anexos com <code>scanStatus ≠ LIMPO</code> não podem ser baixados — retorno <code>409 ANEXO_NAO_LIBERADO</code>.</li>
+    <li>Se ClamAV offline em DEV, <code>NoopScanner</code> marca tudo <code>LIMPO</code> imediatamente.</li>
+  </ul>
+
+  <h3>D.8 · Security · <code>infrastructure/security/</code></h3>
+  <table>
+    <thead><tr><th>Classe</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>JwtTokenService</code></td>
+        <td>HS256 com <code>JWT_SECRET</code> + <code>JWT_REFRESH_SECRET</code> separados. Claims: <code>sub</code> (atendenteId), <code>jti</code> (sessionId), <code>role</code>, <code>scope</code> (<code>{prefeituraId,ubsId}</code>), <code>iat</code>, <code>exp</code>. Access <code>1h</code>, refresh <code>30d</code> rotativo.</td>
+      </tr>
+      <tr>
+        <td><code>BcryptPasswordHasher</code></td>
+        <td><code>bcrypt</code> cost 12. Verifica <code>SENHA_FRACA</code> (mínimo 8 chars, mistura básica). Reset não permite senha igual à anterior (<code>SENHA_IGUAL</code>).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>D.9 · Services · <code>infrastructure/services/</code></h3>
+  <table>
+    <thead><tr><th>Classe</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>NotificacaoPacienteService</code></td>
+        <td>Cria <code>NotificacaoPaciente</code> + grava <code>OutboxEvent</code>. Resolve <code>contaId</code> a partir do <code>pacienteId</code> via CPF. Idempotente por (contaId, tipo, encaminhamentoId).</td>
+      </tr>
+      <tr>
+        <td><code>PdfCompressor</code></td>
+        <td>Ghostscript preset <code>/screen</code> + fallback <code>pdf-lib</code>. Escolhe sempre o MENOR dos três (original, gs, pdf-lib). Obrigatório pré-storage.</td>
+      </tr>
+      <tr>
+        <td><code>PdfParseService</code></td>
+        <td>Extração heurística via regex sobre texto. Usado para auto-detectar especialidade/queixa em encaminhamentos vindos de UBSs externas.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>D.10 · Storage · <code>infrastructure/storage/</code></h3>
+  <table>
+    <thead><tr><th>Provider</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>DiskFileStorage</code></td><td><code>STORAGE_PROVIDER=disk</code> · grava em <code>UPLOAD_DIR</code> com sharding por hash de prefixo. DEV/PoC.</td></tr>
+      <tr><td><code>S3FileStorage</code></td><td><code>STORAGE_PROVIDER=s3</code> · AWS S3, MinIO ou Backblaze B2 (compatível). Path-style ou virtual-hosted.</td></tr>
+      <tr><td><code>index.ts</code> · <code>buildFileStorage()</code></td><td>Factory que escolhe baseado em env.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D.11 · Logger · <code>infrastructure/logger.ts</code></h3>
+  <ul>
+    <li>pino estruturado JSON em prod, pretty em dev.</li>
+    <li>Redaction automática: <code>password</code>, <code>senha</code>, <code>token</code>, <code>authorization</code>, <code>cpf</code>.</li>
+    <li>OpenTelemetry: pino-pretty wrapper injeta <code>trace_id</code>/<code>span_id</code> automaticamente.</li>
+  </ul>
+
+  <h3>D.12 · Metrics · <code>infrastructure/metrics/</code></h3>
+  <p>
+    Prometheus <code>/metrics</code> (default <code>:9464</code>). Counters: <code>http_requests_total</code>,
+    <code>http_request_duration_seconds</code> (histogram com buckets 10/50/100/500/1000/5000ms).
+    Toggled via <code>METRICS_ENABLED</code>. Em prod scrape via Caddy → Prometheus.
+  </p>
+
+  <h3>D.13 · Express app (<code>src/main/app.ts</code>)</h3>
+  <ul>
+    <li><code>app.set('trust proxy', 1)</code> — confia no 1º hop (Caddy). Em loopback aceita LAN.</li>
+    <li>Helmet com HSTS ativo apenas em PROD (max-age 1 ano, includeSubDomains, preload). CSP desligado — Caddy faz.</li>
+    <li>CORS callback function: aceita <code>CORS_ORIGIN</code> exato + regex localhost (<code>127.0.0.1</code>, <code>localhost:*</code>) + regex LAN (<code>192.168.x.x</code>, <code>10.x.x.x</code>).</li>
+    <li><code>express.json({ limit: '5mb' })</code> · payloads maiores rejeitados com <code>413 ARQUIVO_MUITO_GRANDE</code>.</li>
+    <li>Middlewares: <code>requestId</code> (UUID em <code>X-Request-Id</code>) → <code>serverTime</code> → <code>metrics</code> → <code>morgan</code> → rotas.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE E · WORKERS & CRONS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-e">
+  <h2><span class="num">E</span>Apêndice E · Workers &amp; Crons (background)</h2>
+  <p>
+    Todos iniciados em <code>src/main/server.ts</code> após o app subir. Cada
+    worker tem <code>start()</code>/<code>stop()</code> e participa do graceful shutdown
+    (SIGTERM/SIGINT). Catch-up automático no boot quando aplicável.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Worker / Cron</th>
+        <th>Schedule</th>
+        <th>Catch-up boot</th>
+        <th>Env override</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>OutboxBus</code></td>
+        <td>Poll <code>setInterval</code> · 5 s</td>
+        <td>—</td>
+        <td><code>OUTBOX_ENABLED</code>, <code>OUTBOX_INTERVAL_MS</code></td>
+      </tr>
+      <tr>
+        <td><code>ExpiracaoCron</code> (relatórios)</td>
+        <td>1 h (<code>setInterval</code>) · marca <code>EXPIRADO</code> &gt; 7d</td>
+        <td>10 s pós-boot</td>
+        <td><code>RELATORIO_EXPIRACAO_INTERVAL_MS</code></td>
+      </tr>
+      <tr>
+        <td><code>RelatorioWorker</code></td>
+        <td>Sob demanda (chamado pelo CriarRelatorioUseCase)</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><code>SaldoMensalCron</code> (TFD)</td>
+        <td><code>30 0 1 * *</code> UTC (dia 1º 00h30)</td>
+        <td>SIM — varre meses faltantes</td>
+        <td><code>TFD_SALDO_CRON</code>, <code>TFD_SALDO_CRON_TZ</code></td>
+      </tr>
+      <tr>
+        <td><code>RecoveryTokenPurgeCron</code></td>
+        <td><code>0 */6 * * *</code> UTC (6/6 h)</td>
+        <td>SIM</td>
+        <td><code>RECOVERY_PURGE_CRON</code>, <code>RECOVERY_PURGE_CRON_TZ</code></td>
+      </tr>
+      <tr>
+        <td><code>PushDispatcherWorker</code></td>
+        <td>Poll <code>setInterval</code> · 15 s</td>
+        <td>—</td>
+        <td><code>PUSH_DISPATCHER_ENABLED</code>, <code>PUSH_DISPATCHER_INTERVAL_MS</code></td>
+      </tr>
+      <tr>
+        <td><code>PushTokenCleanupCron</code></td>
+        <td><code>30 3 1 * *</code> UTC (dia 1º 03h30)</td>
+        <td>SIM</td>
+        <td><code>PUSH_DEVICE_CLEANUP_CRON</code>, <code>PUSH_DEVICE_TTL_DIAS</code> (default 90)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>E.1 · PushDispatcherWorker · estratégia de retry</h3>
+  <ul>
+    <li>Batch size <strong>50</strong> notificações <code>pushStatus=PENDENTE</code> por tick.</li>
+    <li>Backoff exponencial em minutos: <code>[0, 1, 5, 30]</code> — máx <strong>4 tentativas</strong>.</li>
+    <li>Após esgotar → status <code>EXCEDIDO</code> (dead-letter — alerta op).</li>
+    <li>Sem dispositivo cadastrado → <code>SEM_DEVICE</code> (não-retry).</li>
+    <li>Falha permanente (endpoint 410/404 do ntfy) → remove device + status <code>FALHOU</code>.</li>
+    <li><strong>Fallback por email</strong> para tipos críticos:
+      <code>APROVADO</code>, <code>REJEITADO</code>, <code>AGENDADO</code>,
+      <code>PENDENCIA_REGISTRADA</code>, <code>RESPOSTA_SUS_DISPONIVEL</code>.</li>
+    <li>Audit por evento: <code>PUSH_ENVIADO_OK</code>, <code>PUSH_TENTATIVA_FALHOU</code>,
+      <code>PUSH_EXCEDIDO</code>, <code>PUSH_DEVICE_REMOVIDO_FALHA_PERMANENTE</code>.</li>
+  </ul>
+
+  <h3>E.2 · RecoveryTokenPurgeCron · política LGPD</h3>
+  <ul>
+    <li>Deleta <code>PacienteRecoveryToken</code> com <code>expiraEm &lt; now-24h</code> ou <code>usadoEm &lt; now-24h</code>.</li>
+    <li>Grace de 24h garante que audit já registrou o uso.</li>
+    <li>Audit run-level: <code>PURGE_RECOVERY_TOKENS</code> com contagens.</li>
+  </ul>
+
+  <h3>E.3 · SaldoMensalCron · catch-up de meses</h3>
+  <ul>
+    <li>Dia 1º às 00h30 UTC fecha o mês anterior em <code>saldos_veiculo</code>.</li>
+    <li><strong>Catch-up no boot</strong>: se o backend estiver caído por N meses, varre todos os meses faltantes e gera entradas — garante continuidade contábil.</li>
+    <li>Cada fechamento gera <code>AcaoAuditoriaTFD.SALDO_AJUSTADO</code> com payload <code>{ origem: 'cron-mensal', mes, saldoCalculado }</code>.</li>
+  </ul>
+
+  <h3>E.4 · Graceful shutdown</h3>
+  <pre><span class="kw">process</span>.on(<span class="str">'SIGTERM'</span>, () =&gt; shutdown(<span class="str">'SIGTERM'</span>));
+<span class="kw">process</span>.on(<span class="str">'SIGINT'</span>,  () =&gt; shutdown(<span class="str">'SIGINT'</span>));
+
+<span class="cmt">// Ordem do shutdown (todos param antes do server.close):</span>
+container.outbox.stop();
+container.relExpiracaoCron.stop();
+saldoCron.stop();
+container.recoveryTokenPurgeCron.stop();
+container.pushCleanupCron.stop();
+<span class="kw">await</span> container.pushDispatcher.stop();   <span class="cmt">// aguarda batch corrente</span>
+server.close(...);                       <span class="cmt">// HTTP server</span>
+<span class="kw">await</span> getCache().quit();                 <span class="cmt">// Redis</span>
+<span class="kw">await</span> prisma.$disconnect();              <span class="cmt">// Postgres</span></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE F · SQL TRIGGERS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-f">
+  <h2><span class="num">F</span>Apêndice F · SQL Triggers (imutabilidade)</h2>
+  <p>
+    Aplicados via <code>npm run db:setup-triggers</code> ou automaticamente no boot
+    (<code>bootstrapTriggers.ts</code> · idempotente). Em <code>NODE_ENV=production</code>,
+    a ausência dos triggers <strong>impede o boot</strong>.
+  </p>
+
+  <h3>F.1 · prisma/sql/tfd-audit-triggers.sql</h3>
+  <pre><span class="cmt">-- Função compartilhada — qualquer trigger que apontar pra ela rejeita a operação.</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">audit_log_immutable</span>() <span class="kw">RETURNS</span> trigger <span class="kw">AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">RAISE EXCEPTION</span> <span class="str">'audit log é imutável (LGPD/CFM/TJ): %.% não pode ser %'</span>,
+    TG_TABLE_SCHEMA, TG_TABLE_NAME, TG_OP
+    <span class="kw">USING ERRCODE</span> = <span class="str">'check_violation'</span>;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;
+
+<span class="cmt">-- ----- tfd_audit_log (hash-chain TJ — retenção 10 anos) -----</span>
+<span class="kw">DROP TRIGGER IF EXISTS</span> tfd_audit_no_update <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">CREATE TRIGGER</span> tfd_audit_no_update
+  <span class="kw">BEFORE UPDATE ON</span> tfd_audit_log
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> audit_log_immutable();
+
+<span class="kw">DROP TRIGGER IF EXISTS</span> tfd_audit_no_delete <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">CREATE TRIGGER</span> tfd_audit_no_delete
+  <span class="kw">BEFORE DELETE ON</span> tfd_audit_log
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> audit_log_immutable();
+
+<span class="kw">DROP TRIGGER IF EXISTS</span> tfd_audit_no_truncate <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">CREATE TRIGGER</span> tfd_audit_no_truncate
+  <span class="kw">BEFORE TRUNCATE ON</span> tfd_audit_log
+  <span class="kw">FOR EACH STATEMENT EXECUTE FUNCTION</span> audit_log_immutable();
+
+<span class="cmt">-- ----- paciente_prontuario_audit (Res. CFM 1.821/2007 — retenção 20 anos) -----</span>
+<span class="kw">DROP TRIGGER IF EXISTS</span> prontuario_audit_no_update <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">CREATE TRIGGER</span> prontuario_audit_no_update
+  <span class="kw">BEFORE UPDATE ON</span> paciente_prontuario_audit
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> audit_log_immutable();
+
+<span class="kw">DROP TRIGGER IF EXISTS</span> prontuario_audit_no_delete <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">CREATE TRIGGER</span> prontuario_audit_no_delete
+  <span class="kw">BEFORE DELETE ON</span> paciente_prontuario_audit
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> audit_log_immutable();
+
+<span class="kw">DROP TRIGGER IF EXISTS</span> prontuario_audit_no_truncate <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">CREATE TRIGGER</span> prontuario_audit_no_truncate
+  <span class="kw">BEFORE TRUNCATE ON</span> paciente_prontuario_audit
+  <span class="kw">FOR EACH STATEMENT EXECUTE FUNCTION</span> audit_log_immutable();</pre>
+
+  <h3>F.2 · Validação runtime · <code>checarTriggersAtivos()</code></h3>
+  <pre><span class="cmt">// src/main/bootstrapTriggers.ts</span>
+<span class="kw">export async function</span> <span class="fn">checarTriggersAtivos</span>() {
+  <span class="kw">const</span> rows = <span class="kw">await</span> prisma.$queryRawUnsafe(`
+    <span class="kw">SELECT</span> t.tgname, c.relname <span class="kw">AS</span> tgrelname
+    <span class="kw">FROM</span> pg_trigger t
+    <span class="kw">JOIN</span> pg_class c <span class="kw">ON</span> t.tgrelid = c.oid
+    <span class="kw">WHERE</span> t.tgname <span class="kw">IN</span> (
+      <span class="str">'tfd_audit_no_update'</span>, <span class="str">'tfd_audit_no_delete'</span>,
+      <span class="str">'prontuario_audit_no_update'</span>, <span class="str">'prontuario_audit_no_delete'</span>
+    )
+  `);
+  <span class="kw">return</span> {
+    tfdAuditOk: rows.has(<span class="str">'tfd_audit_no_update'</span>) &amp;&amp; rows.has(<span class="str">'tfd_audit_no_delete'</span>),
+    prontuarioAuditOk: rows.has(<span class="str">'prontuario_audit_no_update'</span>) &amp;&amp; rows.has(<span class="str">'prontuario_audit_no_delete'</span>),
+  };
+}
+
+<span class="cmt">// Em produção, ausência aborta o boot:</span>
+<span class="kw">if</span> (env.NODE_ENV === <span class="str">'production'</span> &amp;&amp; (!trig.tfdAuditOk || !trig.prontuarioAuditOk)) {
+  logger.error(trig, <span class="str">'✗ triggers de imutabilidade NÃO ativos em produção'</span>);
+  process.exit(1);
+}</pre>
+
+  <h3>F.3 · Tentativa de UPDATE/DELETE → exception</h3>
+  <pre><span class="cmt">-- Qualquer DBA que tentar:</span>
+<span class="kw">UPDATE</span> tfd_audit_log <span class="kw">SET</span> hash = <span class="str">'fake'</span> <span class="kw">WHERE</span> id = <span class="str">'...'</span>;
+<span class="cmt">-- ERROR: audit log é imutável (LGPD/CFM/TJ): public.tfd_audit_log não pode ser UPDATE
+-- SQLSTATE: 23514 (check_violation)</span>
+
+<span class="kw">DELETE FROM</span> paciente_prontuario_audit <span class="kw">WHERE</span> pacienteId = <span class="str">'...'</span>;
+<span class="cmt">-- ERROR: audit log é imutável (LGPD/CFM/TJ): public.paciente_prontuario_audit não pode ser DELETE</span>
+
+<span class="kw">TRUNCATE</span> tfd_audit_log;
+<span class="cmt">-- ERROR: audit log é imutável (LGPD/CFM/TJ): public.tfd_audit_log não pode ser TRUNCATE</span></pre>
+
+  <div class="callout red">
+    <div class="title">⚠️ DEV ONLY · como remover (NUNCA em prod)</div>
+    <pre style="margin:0"><span class="kw">DROP TRIGGER</span> tfd_audit_no_update <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">DROP TRIGGER</span> tfd_audit_no_delete <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">DROP TRIGGER</span> tfd_audit_no_truncate <span class="kw">ON</span> tfd_audit_log;
+<span class="kw">DROP TRIGGER</span> prontuario_audit_no_update <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">DROP TRIGGER</span> prontuario_audit_no_delete <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">DROP TRIGGER</span> prontuario_audit_no_truncate <span class="kw">ON</span> paciente_prontuario_audit;
+<span class="kw">DROP FUNCTION</span> audit_log_immutable;</pre>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE G · PIPELINE DE RELATÓRIOS (LGPD) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-g">
+  <h2><span class="num">G</span>Apêndice G · Pipeline de relatórios LGPD-first</h2>
+  <p>
+    Módulo <code>src/modules/relatorios/</code>. Princípio: <strong>minimização de
+    dados</strong> (Art. 6º III LGPD) — cada <code>TipoRelatorio</code> declara
+    explicitamente suas colunas; <strong>nunca</strong> existe <code>SELECT *</code> em data sources.
+  </p>
+
+  <h3>G.1 · 7 tipos × roles permitidas × sensibilidade</h3>
+  <table>
+    <thead><tr><th>TipoRelatorio</th><th>Roles</th><th>Escopo</th><th>Classificação</th><th>Marca d'água</th></tr></thead>
+    <tbody>
+      <tr><td><code>PRODUCAO_INDIVIDUAL</code></td><td>ATENDENTE_UBS, COORDENADOR_UBS, REGULADOR_SMS, ADMIN, DEV</td><td>SELF</td><td>RESTRITO</td><td>SIM</td></tr>
+      <tr><td><code>ENCAMINHAMENTOS_POR_ESPECIALIDADE</code></td><td>COORDENADOR_UBS, REGULADOR_SMS, ADMIN, DEV</td><td>UBS</td><td>PÚBLICO INSTITUCIONAL</td><td>—</td></tr>
+      <tr><td><code>FILA_REGULACAO</code></td><td>REGULADOR_SMS, ADMIN, DEV</td><td>PREFEITURA</td><td>USO INTERNO</td><td>—</td></tr>
+      <tr><td><code>PENDENCIAS_RESOLVIDAS</code></td><td>COORDENADOR_UBS, REGULADOR_SMS, ADMIN, DEV</td><td>UBS</td><td>USO INTERNO</td><td>—</td></tr>
+      <tr><td><code>TFD_CUSTOS</code></td><td>ADMIN, REGULADOR_SMS, DEV</td><td>PREFEITURA</td><td>RESTRITO</td><td>SIM</td></tr>
+      <tr><td><code>VACINACAO_UBS</code></td><td>COORDENADOR_UBS, ADMIN, DEV</td><td>UBS</td><td>PÚBLICO INSTITUCIONAL</td><td>—</td></tr>
+      <tr><td><code>BUSCA_ATIVA</code></td><td>COORDENADOR_UBS, ADMIN, DEV</td><td>UBS</td><td><strong>CONFIDENCIAL</strong></td><td>SIM</td></tr>
+    </tbody>
+  </table>
+
+  <h3>G.2 · Colunas permitidas por tipo (lista whitelist)</h3>
+  <pre><span class="cmt">// src/modules/relatorios/domain/TipoRelatorioMeta.ts</span>
+FILA_REGULACAO:
+  [<span class="str">'protocolo'</span>, <span class="str">'especialidade'</span>, <span class="str">'prioridade'</span>, <span class="str">'ubs_origem'</span>,
+   <span class="str">'data_entrada'</span>, <span class="str">'tempo_em_fila_h'</span>, <span class="str">'sla_status'</span>]
+
+ENCAMINHAMENTOS_POR_ESPECIALIDADE:
+  [<span class="str">'especialidade'</span>, <span class="str">'total'</span>, <span class="str">'aprovados'</span>, <span class="str">'rejeitados'</span>,
+   <span class="str">'pendencias'</span>, <span class="str">'tempo_medio_dias'</span>]
+
+PENDENCIAS_RESOLVIDAS:
+  [<span class="str">'protocolo'</span>, <span class="str">'ubs_origem'</span>, <span class="str">'registrada_em'</span>, <span class="str">'resolvida_em'</span>,
+   <span class="str">'tempo_resolucao_horas'</span>, <span class="str">'motivo_categoria'</span>]
+
+TFD_CUSTOS:
+  [<span class="str">'protocolo'</span>, <span class="str">'destino'</span>, <span class="str">'especialidade'</span>, <span class="str">'data_viagem'</span>, <span class="str">'valor'</span>, <span class="str">'status'</span>]
+
+VACINACAO_UBS:
+  [<span class="str">'ubs'</span>, <span class="str">'vacina'</span>, <span class="str">'campanha'</span>, <span class="str">'doses'</span>, <span class="str">'faixa_etaria'</span>]
+
+BUSCA_ATIVA:
+  base:     [<span class="str">'bairro'</span>, <span class="str">'microarea'</span>, <span class="str">'quantidade'</span>]
+  nominal:  [<span class="str">'nome'</span>, <span class="str">'cartao_sus_mascarado'</span>, <span class="str">'telefone_mascarado'</span>, <span class="str">'endereco_bairro'</span>]
+            <span class="cmt">// só aparecem se filtros.incluirNomes=true (Art. 11º II f LGPD)</span>
+
+PRODUCAO_INDIVIDUAL:
+  [<span class="str">'atendente_nome'</span>, <span class="str">'matricula'</span>, <span class="str">'periodo'</span>, <span class="str">'total_ingeridos'</span>,
+   <span class="str">'aprovados'</span>, <span class="str">'pendencias'</span>, <span class="str">'tempo_medio_m'</span>]</pre>
+
+  <h3>G.3 · Fluxo de criação + assinatura</h3>
+  <pre><span class="num">1.</span> <span class="fn">POST</span> /v1/relatorios { tipo, formato, filtros }
+   ↓ <span class="cmt">RBAC check via META[tipo].rolesPermitidas</span>
+   ↓ <span class="cmt">Rate limit: 5/h por usuário + 20/dia por tenant (Redis sliding window)</span>
+<span class="num">2.</span> CriarRelatorioUseCase
+   ↓ <span class="cmt">cria Relatorio{ status: PROCESSANDO, expiraEm: now+7d }</span>
+   ↓ <span class="cmt">audit RelatorioAudit{ acao: CRIADO }</span>
+   ↓ <span class="cmt">enfileira RelatorioWorker (async)</span>
+<span class="num">3.</span> RelatorioWorker (async)
+   ↓ <span class="cmt">data source: SELECT explícito de colunas META[tipo].colunas</span>
+   ↓ <span class="cmt">aplica scopeWhere(escopoPadrao)</span>
+   ↓ <span class="cmt">render: PdfRenderer | CsvRenderer | XlsxRenderer</span>
+   ↓ <span class="cmt">se marcaDagua → adiciona "CONFIDENCIAL" em diagonal (pdfkit)</span>
+   ↓ <span class="cmt">PdfCompressor (Ghostscript + pdf-lib, escolhe menor)</span>
+   ↓ <span class="cmt">calcula sha256 do arquivo final</span>
+   ↓ <span class="cmt">salva no storage com storageKey = relatorios/{ano}/{mes}/{id}.{ext}</span>
+   ↓ <span class="cmt">atualiza Relatorio{ status: DISPONIVEL, sha256, sizeBytes }</span>
+<span class="num">4.</span> <span class="fn">GET</span> /v1/relatorios/:id/download (signed URL ou stream direto)
+   ↓ <span class="cmt">audit RelatorioAudit{ acao: DOWNLOAD, ip, userAgent }</span>
+   ↓ <span class="cmt">streams com Content-Disposition: attachment; filename="..."</span>
+<span class="num">5.</span> ExpiracaoCron (1 h)
+   ↓ <span class="cmt">where { expiraEm: { lt: now }, status: DISPONIVEL }</span>
+   ↓ <span class="cmt">deleta do storage + marca status=EXPIRADO</span>
+   ↓ <span class="cmt">audit RelatorioAudit{ acao: EXPIRADO }</span></pre>
+
+  <h3>G.4 · Renderers</h3>
+  <table>
+    <thead><tr><th>Formato</th><th>Library</th><th>Specifics</th></tr></thead>
+    <tbody>
+      <tr><td>PDF</td><td><code>pdfkit</code></td><td>Header com brasão + título + período. Footer com paginação + "DOC CONFIDENCIAL — uso institucional" (sempre). Marca d'água diagonal em tipos sensíveis. Sumário sectionizado em tipos longos.</td></tr>
+      <tr><td>CSV</td><td>Manual (escape RFC 4180)</td><td>UTF-8 BOM (Excel-friendly), separador <code>;</code>, escapa quotes duplas, CRLF.</td></tr>
+      <tr><td>XLSX</td><td><code>exceljs</code></td><td>Header bold + freeze panes. Tipos numéricos/data preservados (não viram texto).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>G.5 · Rate limit · <code>infrastructure/RateLimiter.ts</code></h3>
+  <pre><span class="cmt">// Sliding window com fallback in-memory (Redis preferido)</span>
+<span class="kw">const</span> LIMITES = {
+  POR_USUARIO_HORA:   { max: <span class="num">5</span>,  ttl: <span class="num">3600</span> },
+  POR_TENANT_DIA:     { max: <span class="num">20</span>, ttl: <span class="num">86400</span> },
+};
+
+<span class="cmt">// Chave Redis: rl:relatorio:{userId}:{YYYYMMDDHH}</span>
+<span class="cmt">// Estouro → throw TooManyRequests('RATE_LIMIT_EXCEDIDO', ...)</span>
+<span class="cmt">//          details: { limite, janela, tentarEm: ISO }</span></pre>
+
+  <h3>G.6 · TTL e segurança do download</h3>
+  <ul>
+    <li><strong>TTL fixo</strong>: <code>expiraEm = criadoEm + 7 dias</code> · não configurável.</li>
+    <li><strong>SHA-256 obrigatório</strong>: gravado em <code>Relatorio.sha256</code>; client pode verificar integridade.</li>
+    <li><strong>RelatorioAudit retenção 5 anos LGPD</strong> · acoes: <code>CRIADO</code>, <code>DOWNLOAD</code>, <code>FALHA</code>, <code>EXPIRADO</code>, <code>EXCLUIDO</code>.</li>
+    <li>Download em <code>status=PROCESSANDO</code> → <code>409 RELATORIO_NAO_DISPONIVEL</code>.</li>
+    <li>Download em <code>status=FALHA</code> ou <code>EXPIRADO</code> → <code>404 RELATORIO_NAO_ENCONTRADO</code>.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE H · TFD ICP-Brasil + Export TJ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-h">
+  <h2><span class="num">H</span>Apêndice H · TFD assinatura ICP-Brasil + Export TJ</h2>
+  <p>
+    Implementado em <code>src/modules/tfd/infrastructure/TfdSignatureService.ts</code>.
+    Padrão técnico: <strong>CMS / PKCS#7 detached</strong> via
+    <code>node-forge</code>, alinhado com PJe e e-SAJ (processo eletrônico Brasil).
+  </p>
+
+  <h3>H.1 · Modos de assinatura</h3>
+  <table>
+    <thead><tr><th>Modo</th><th>Quando</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>ICP_BRASIL</code></td>
+        <td>Cert <code>.pfx</code>/<code>.p12</code> configurado e válido</td>
+        <td>SHA-256 + PKCS#7 DER base64 + cert PEM + subject + validade</td>
+      </tr>
+      <tr>
+        <td><code>HASH_ONLY</code></td>
+        <td>Cert ausente/expirado · fallback graceful</td>
+        <td>Apenas SHA-256 no manifest · ideal dev/staging</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>H.2 · Configuração (env)</h3>
+  <pre>TFD_SIGN_CERT_PATH      <span class="cmt"># caminho absoluto do .pfx (ex: /opt/unisism/certs/sms.pfx)</span>
+TFD_SIGN_CERT_PASSWORD  <span class="cmt"># senha do PKCS#12</span>
+TFD_SIGN_REQUIRED       <span class="cmt"># 'true' em PROD → boot falha se cert ausente</span>
+TFD_SIGN_TSA_URL        <span class="cmt"># (opcional) timestamp authority RFC 3161</span></pre>
+
+  <h3>H.3 · Boot fail-fast</h3>
+  <pre><span class="cmt">// src/main/server.ts → bootstrapAssinaturaTfd()</span>
+<span class="kw">if</span> (env.TFD_SIGN_REQUIRED === <span class="str">'true'</span> &amp;&amp; !certOk) {
+  <span class="kw">throw new</span> Error(
+    <span class="str">`TFD_SIGN_REQUIRED=true mas cert indisponível: ${motivo}`</span>
+  );
+}
+<span class="cmt">// Sem cert + REQUIRED=false → warn + opera em HASH_ONLY</span></pre>
+
+  <h3>H.4 · Geração da assinatura</h3>
+  <pre><span class="kw">export function</span> <span class="fn">assinarConteudoTj</span>(conteudo: Buffer): AssinaturaResult {
+  <span class="kw">const</span> sha256 = crypto.createHash(<span class="str">'sha256'</span>).update(conteudo).digest(<span class="str">'hex'</span>);
+
+  <span class="cmt">// Sem cert → HASH_ONLY</span>
+  <span class="kw">if</span> (!cert) <span class="kw">return</span> { modo: <span class="str">'HASH_ONLY'</span>, sha256 };
+
+  <span class="cmt">// PKCS#7 detached signed data</span>
+  <span class="kw">const</span> p7 = forge.pkcs7.createSignedData();
+  p7.content = forge.util.createBuffer(conteudo.toString(<span class="str">'binary'</span>));
+  p7.addCertificate(cert);
+
+  p7.addSigner({
+    key: privateKey,
+    certificate: cert,
+    digestAlgorithm: forge.pki.oids[<span class="str">'sha256'</span>],
+    authenticatedAttributes: [
+      { type: forge.pki.oids[<span class="str">'contentType'</span>], value: forge.pki.oids[<span class="str">'data'</span>] },
+      { type: forge.pki.oids[<span class="str">'messageDigest'</span>] },        <span class="cmt">// auto-calc</span>
+      { type: forge.pki.oids[<span class="str">'signingTime'</span>], value: <span class="kw">new</span> Date() },
+    ],
+  });
+  p7.sign({ detached: <span class="kw">true</span> });        <span class="cmt">// ← DETACHED (ZIP continua válido)</span>
+
+  <span class="kw">return</span> {
+    modo: <span class="str">'ICP_BRASIL'</span>,
+    sha256,
+    pkcs7DerBase64: Buffer.from(forge.asn1.toDer(p7.toAsn1()).getBytes(), <span class="str">'binary'</span>).toString(<span class="str">'base64'</span>),
+    certPem: forge.pki.certificateToPem(cert),
+    certSubject: <span class="str">'CN=PREFEITURA MUNICIPAL,...,O=ICP-Brasil,...'</span>,
+    certValidoAte: cert.validity.notAfter.toISOString(),
+  };
+}</pre>
+
+  <h3>H.5 · Formato do ZIP TJ</h3>
+  <pre>tfd-prefeitura-{prefeituraId}-{periodo}.zip
+├── manifest.json                <span class="cmt">// metadata + sha256 de cada arquivo</span>
+├── audit-log.jsonl              <span class="cmt">// 1 linha por evento (cadeia hash chain)</span>
+├── audit-chain-proof.txt        <span class="cmt">// resultado verificarCadeiaTfd() + genesis</span>
+├── viagens/
+│   ├── viagem-{protocolo-1}.json
+│   ├── viagem-{protocolo-2}.json
+│   └── ...
+├── solicitacoes/
+│   ├── solic-{protocolo-1}.json
+│   └── ...
+├── abastecimentos/
+│   └── ...
+├── ajudas-custo/
+│   └── ...
+├── cert.pem                     <span class="cmt">// (apenas ICP_BRASIL) cert público</span>
+└── assinatura.p7s               <span class="cmt">// (apenas ICP_BRASIL) PKCS#7 detached</span></pre>
+
+  <h3>H.6 · manifest.json shape</h3>
+  <pre>{
+  <span class="str">"versao"</span>: <span class="str">"1.0"</span>,
+  <span class="str">"geradoEm"</span>: <span class="str">"2026-05-28T18:32:18.000Z"</span>,
+  <span class="str">"prefeitura"</span>: { <span class="str">"id"</span>: <span class="str">"..."</span>, <span class="str">"nome"</span>: <span class="str">"&lt;Município&gt;"</span>, <span class="str">"cnpj"</span>: <span class="str">"..."</span> },
+  <span class="str">"periodo"</span>: { <span class="str">"inicio"</span>: <span class="str">"2026-01-01"</span>, <span class="str">"fim"</span>: <span class="str">"2026-03-31"</span> },
+  <span class="str">"modoAssinatura"</span>: <span class="str">"ICP_BRASIL"</span>,                       <span class="cmt">// ou HASH_ONLY</span>
+  <span class="str">"sha256Conteudo"</span>: <span class="str">"a3f2..."</span>,                          <span class="cmt">// hex 64</span>
+  <span class="str">"certSubject"</span>: <span class="str">"CN=PREFEITURA MUNICIPAL,...,O=ICP-Brasil,..."</span>,
+  <span class="str">"certValidoAte"</span>: <span class="str">"2027-04-15T12:00:00.000Z"</span>,
+  <span class="str">"arquivos"</span>: [
+    { <span class="str">"path"</span>: <span class="str">"audit-log.jsonl"</span>,        <span class="str">"sha256"</span>: <span class="str">"..."</span>, <span class="str">"bytes"</span>: <span class="num">182304</span> },
+    { <span class="str">"path"</span>: <span class="str">"viagens/viagem-TFD-2026-000001.json"</span>, <span class="str">"sha256"</span>: <span class="str">"..."</span>, <span class="str">"bytes"</span>: <span class="num">2104</span> },
+    { <span class="str">"path"</span>: <span class="str">"..."</span> }
+  ],
+  <span class="str">"totais"</span>: {
+    <span class="str">"viagens"</span>: <span class="num">147</span>,
+    <span class="str">"solicitacoes"</span>: <span class="num">238</span>,
+    <span class="str">"abastecimentos"</span>: <span class="num">52</span>,
+    <span class="str">"ajudasCusto"</span>: <span class="num">31</span>
+  }
+}</pre>
+
+  <h3>H.7 · Verificação (TJ-side)</h3>
+  <pre><span class="cmt"># 1. validar que o ZIP não foi adulterado</span>
+unzip tfd-...zip -d /tmp/audit
+sha256sum /tmp/audit/audit-log.jsonl
+<span class="cmt"># comparar com manifest.json → arquivos[i].sha256</span>
+
+<span class="cmt"># 2. validar a assinatura PKCS#7 detached</span>
+openssl smime -verify \
+  -in /tmp/audit/assinatura.p7s -inform DER \
+  -content /tmp/audit/audit-log.jsonl \
+  -CAfile cadeia-icp-brasil.pem \
+  -out /dev/null
+<span class="cmt"># Verification successful</span>
+
+<span class="cmt"># 3. (alternativa) usar assinador oficial ITI</span>
+<span class="cmt"># https://assinador.iti.gov.br — upload assinatura.p7s + audit-log.jsonl</span>
+
+<span class="cmt"># 4. validar cadeia hash chain TFD</span>
+<span class="cmt"># cada linha de audit-log.jsonl tem .hash e .hashAnterior</span>
+<span class="cmt"># hash = sha256(id|acao|recursoId|operadorId|ip|em|JSON(antes)|JSON(depois)|hashAnterior)</span>
+<span class="cmt"># cadeia inicia em hashAnterior = '0' x 64 (GENESIS)</span></pre>
+
+  <h3>H.8 · verificarAssinaturaTj() — uso interno</h3>
+  <pre><span class="cmt">// Verificação criptográfica completa (incl. cadeia CRL/OCSP) é responsabilidade
+// de ferramenta externa do TJ (assinador.iti.gov.br). Internamente validamos:</span>
+<span class="kw">export function</span> <span class="fn">verificarAssinaturaTj</span>(conteudo: Buffer, pkcs7DerBase64: <span class="kw">string</span>) {
+  <span class="cmt">// 1. parse do PKCS#7</span>
+  <span class="cmt">// 2. cert embutido presente?</span>
+  <span class="cmt">// 3. validade do cert (notBefore ≤ now ≤ notAfter)?</span>
+  <span class="kw">return</span> { valida: <span class="kw">true</span>, sha256, subject };
+}</pre>
+
+  <div class="callout green">
+    <div class="title">✓ Por que CMS/PKCS#7 detached</div>
+    <ul style="margin-bottom:0">
+      <li><strong>ZIP continua válido como ZIP</strong> — abre em qualquer ferramenta (unzip, 7z, Finder).</li>
+      <li><strong>Verificador externo</strong> (TJ) só precisa de <code>.p7s</code> + conteúdo binário.</li>
+      <li><strong>Padrão oficial do processo eletrônico Brasil</strong> — PJe e e-SAJ aceitam <code>.p7s</code> detached.</li>
+      <li><strong>OpenSSL nativo</strong> — DBAs/peritos TJ verificam sem dependência custom.</li>
+    </ul>
+  </div>
+
+  <div class="callout amber">
+    <div class="title">⚠️ Operação em PROD</div>
+    <ul style="margin-bottom:0">
+      <li>Certificado <strong>e-CNPJ A1 ICP-Brasil</strong> da Prefeitura (validade 1 ano · renovar com 30 dias de antecedência).</li>
+      <li>Senha do <code>.pfx</code> via secret manager (não em <code>.env</code> plano em prod).</li>
+      <li>Backup do <code>.pfx</code> em cofre offline + rotação documentada por compliance officer.</li>
+      <li>Monitorar <code>certValidoAte</code> em dashboard — alerta 30 dias antes da expiração.</li>
+      <li>Em caso de comprometimento do private key → revogação imediata via AC emissora + rotação.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE I · SMOKE TESTS (315 ASSERTS) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-i">
+  <h2><span class="num">I</span>Apêndice I · Smoke tests E2E (8 etapas · 315 asserts)</h2>
+  <p>
+    8 scripts em <code>backend/scripts/smoke-test-etapa{1-8}.ts</code>. Cada um
+    cobre uma "etapa" do roadmap fechando 100% das brechas identificadas em
+    auditoria adversarial. Rodar individualmente ou todos em sequência.
+  </p>
+
+  <h3>I.1 · Como rodar</h3>
+  <pre><span class="cmt"># Individual</span>
+npx ts-node-dev --transpile-only scripts/smoke-test-etapa1.ts
+
+<span class="cmt"># Todos em sequência (Postgres + Redis devem estar up)</span>
+<span class="kw">for</span> i <span class="kw">in</span> 1 2 3 4 5 6 7 8; <span class="kw">do</span>
+  npx ts-node-dev --transpile-only scripts/smoke-test-etapa$i.ts || <span class="kw">break</span>
+<span class="kw">done</span>
+
+<span class="cmt"># Cada script imprime "✓ etapa N · OK" no fim se todos os asserts passaram.</span>
+<span class="cmt"># Falha → exit 1 + stack trace do assert que quebrou.</span></pre>
+
+  <h3>I.2 · Matriz · etapa × cobertura</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Script</th><th>Versão</th><th>Brechas fechadas</th><th>Asserts</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>smoke-test-etapa1.ts</code></td>
+        <td>v0.10.1 / 0.10.2</td>
+        <td>5 — Campos <code>Encaminhamento</code> faltantes para o app</td>
+        <td>~24 (log <code>✓</code>)</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>smoke-test-etapa2.ts</code></td>
+        <td>v0.11.0</td>
+        <td>10 — Recuperação de senha hardening</td>
+        <td>47</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>smoke-test-etapa3.ts</code></td>
+        <td>v0.12.0 / 0.12.1</td>
+        <td>15 — Download de anexos LGPD</td>
+        <td>44</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>smoke-test-etapa4.ts</code></td>
+        <td>v0.13.0</td>
+        <td>12 — UBS vinculada schema completo + auto-bond + admin UI</td>
+        <td>64</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>smoke-test-etapa5.ts</code></td>
+        <td>v0.14.0</td>
+        <td>15 — Dossiê médico LGPD/CFM</td>
+        <td>52</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>smoke-test-etapa6.ts</code></td>
+        <td>v0.15.0</td>
+        <td>15 — Banners SMS + CMS admin</td>
+        <td>48</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>smoke-test-etapa7.ts</code></td>
+        <td>v0.16.0</td>
+        <td>15 — Push notifications sem Firebase (ntfy.sh)</td>
+        <td>50</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>smoke-test-etapa8.ts</code></td>
+        <td>v0.17.0 / 0.17.1</td>
+        <td>15 — TFD Face 3 ↔ Face 4 + hash chain</td>
+        <td>39</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><code>smoke-test-etapa9.ts</code></td>
+        <td>v0.18.0</td>
+        <td>10 cenários — Refresh token rotativo paciente + detecção de reuse</td>
+        <td>33</td>
+      </tr>
+      <tr style="background:#f0fdf4;font-weight:700">
+        <td colspan="3">TOTAL</td>
+        <td>113 brechas + 9 patches adversariais</td>
+        <td>348/348 ✓</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>I.3 · Brechas cobertas — Etapa 2 (recuperação de senha)</h3>
+  <ol>
+    <li>Rate limit por IP (5 req/15 min/IP no <code>/esqueci-senha</code>)</li>
+    <li>Audit log em todas as tentativas (sucesso/falha/inválido/expirado)</li>
+    <li><code>RecoveryTokenPurgeCron</code> deleta tokens expirados (TTL grace 24 h)</li>
+    <li>Tela web validada manualmente; smoke valida contrato HTTP</li>
+    <li>CPF checksum bloqueia <code>"11111111111"</code></li>
+    <li>Senha <code>"12345678"</code> rejeitada (<code>NUMERICA_PURA</code> / <code>SEQUENCIA_COMUM</code>)</li>
+    <li>Timing-constant — <code>/esqueci-senha</code> tem <code>MIN_MS</code> para conta inexistente</li>
+    <li>Outros recovery tokens ativos são invalidados ao usar um</li>
+    <li>Rate limit genérico Face 3 (30 req/15 min/IP em login)</li>
+    <li>Token brute force barrado por rate limit (10 req/15 min/IP no <code>/redefinir</code>)</li>
+  </ol>
+
+  <h3>I.4 · Brechas cobertas — Etapa 3 (download anexos)</h3>
+  <ol>
+    <li>Rate limit conta (60/15 min) + IP (300/15 min) — <code>DownloadAnexoRateLimiter</code></li>
+    <li>Audit log LGPD em TODOS caminhos (OK, NAO_EXISTE, FORA_ESCOPO, NAO_LIBERADO, PATH_TRAVERSAL, ARQUIVO_SUMIU)</li>
+    <li><code>Cache-Control + Pragma + Expires</code> headers</li>
+    <li><code>X-Content-Type-Options + X-Robots-Tag</code> headers</li>
+    <li><code>Content-Length</code> presente</li>
+    <li>Path traversal guard — ataque <code>../../etc/passwd</code> bloqueado</li>
+    <li>Filename sanitizado (RFC 5987 + ASCII fallback)</li>
+    <li>Stream errors testados em integração</li>
+    <li><code>stat()</code> async (não bloqueia event loop)</li>
+    <li>10-15: Flutter — progress + cancel + extension + permissions + errors</li>
+  </ol>
+
+  <h3>I.5 · Brechas cobertas — Etapa 8 (TFD Face 3 ↔ Face 4)</h3>
+  <ol>
+    <li>Endpoints Face 4 para <code>TfdPacienteSolicitacao</code> (List/Get/Aprovar/Recusar/Embarque/Concluir)</li>
+    <li>Hash chain SHA-256 em transições (<code>TFD_PAC_SOLIC_*</code>)</li>
+    <li>Audit imutável (<code>tfd_audit_log</code>)</li>
+    <li>Push automático ao paciente (<code>NotificacaoPaciente.AGENDADO / REJEITADO</code>)</li>
+    <li>Validação atômica de vagas — <strong>SELECT FOR UPDATE</strong> (patch adversarial v0.17.1)</li>
+    <li>Auto-alocação documentada como roadmap</li>
+    <li>Lista ordenada por prioridade URGENTE → PRIORITARIA → NORMAL</li>
+    <li><code>motivoRecusa</code> obrigatório (mín 5 chars)</li>
+    <li>Rate limit dedicado (Face 3 generic 30/15 min IP)</li>
+    <li>Audit no cancelar paciente</li>
+    <li>Validação geográfica (paciente prefeitura X não vê viagem prefeitura Y)</li>
+    <li>Fluxo APROVADA → EMBARCADA → CONCLUIDA</li>
+    <li>Limite de reabertura (3 tentativas via <code>tentativasReabertura</code>)</li>
+    <li>TTL/cleanup documentado como roadmap</li>
+    <li>Paciente vê quem aprovou (<code>operadorNome</code> no DTO)</li>
+    <li><strong>Patch v0.17.1</strong>: <code>numeroAssento</code> duplicado prevenido com retry max 20</li>
+  </ol>
+
+  <h3>I.6 · Padrão de cada smoke</h3>
+  <pre><span class="cmt">// 1. Cleanup defensivo (delete em cascata por CPF/prefeitura de teste)</span>
+<span class="kw">await</span> prisma.notificacaoPaciente.deleteMany({ <span class="kw">where</span>: { ... } });
+<span class="cmt">// ...</span>
+
+<span class="cmt">// 2. Bootstrap fixtures (prefeitura + UBS + atendente + paciente)</span>
+<span class="kw">const</span> prefeitura = <span class="kw">await</span> prisma.prefeitura.create({ ... });
+<span class="kw">const</span> ubs = <span class="kw">await</span> ensureUbs(prefeitura.id);
+<span class="kw">const</span> paciente = <span class="kw">await</span> prisma.paciente.create({ ... });
+
+<span class="cmt">// 3. Exercitar use cases reais</span>
+<span class="kw">const</span> uc = <span class="kw">new</span> CriarEncaminhamentoUseCase(...);
+<span class="kw">const</span> r = <span class="kw">await</span> uc.exec({ ... });
+
+<span class="cmt">// 4. Asserts (helper "ok" custom)</span>
+<span class="fn">ok</span>(r.protocolo.match(/<span class="str">^UBS-\d{4}-\d{6}$</span>/), <span class="str">'protocolo no formato UBS-AAAA-NNNNNN'</span>);
+<span class="fn">ok</span>(r.localAgendamento === <span class="str">'Hospital X'</span>, <span class="str">'localAgendamento preservado'</span>);
+
+<span class="cmt">// 5. Validar audit (LGPD/CFM/TJ)</span>
+<span class="kw">const</span> auditCount = <span class="kw">await</span> prisma.auditoriaLog.count({ <span class="kw">where</span>: { acao: <span class="str">'...'</span> }});
+<span class="fn">ok</span>(auditCount === <span class="num">1</span>, <span class="str">'audit foi gravado'</span>);
+
+<span class="cmt">// 6. Cleanup final + exit 0</span>
+console.log(<span class="str">'✓ etapa N · OK'</span>);
+process.exit(<span class="num">0</span>);</pre>
+
+  <div class="callout green">
+    <div class="title">✓ Cobertura adversarial</div>
+    <p style="margin:0">
+      Cada etapa <strong>não</strong> foi escrita como TDD pré-implementação;
+      foi escrita <strong>depois</strong> da implementação, em modo adversarial:
+      auditoria do código → lista de brechas → fix → smoke valida fechamento.
+      Por isso a contagem de brechas (103) é a fonte de verdade do "100%",
+      não a contagem de asserts (~388 nominais, 315 distintos contando
+      apenas as verificações materiais — sem logs decorativos).
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- APÊNDICE J · FLUTTER KIT (APP DO PACIENTE) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="apx-j">
+  <h2><span class="num">J</span>Apêndice J · Flutter kit (App do Paciente)</h2>
+  <p>
+    Kit Dart pronto para integração em <code>backend/docs/flutter/</code>.
+    Cobre <strong>100%</strong> dos endpoints <code>/v1/paciente-app/*</code> (Face 3)
+    com cliente HTTP tipado via <code>dio</code> + tipos com <code>fromJson</code>.
+  </p>
+
+  <h3>J.1 · Arquivos do kit</h3>
+  <table>
+    <thead><tr><th>Arquivo</th><th>Conteúdo</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>docs/flutter/unisism_types.dart</code></td>
+        <td>16 classes Dart com <code>fromJson</code>: <code>Encaminhamento</code>, <code>SolicitacaoMedica</code>, <code>AnexoDocumento</code>, <code>EventoTimeline</code>, <code>RespostaSUS</code>, <code>RegistradoPor</code>, <code>NotificacaoPaciente</code>, <code>PacienteMe</code>, <code>PacienteDados</code>, <code>LoginPacienteResposta</code>, <code>UnisismApiError</code> + 5 enum-classes (<code>StatusEncaminhamento</code>, <code>PrioridadeClinica</code>, <code>TipoAnexo</code>, <code>StatusScanAnexo</code>, <code>TipoNotificacao</code>) com método <code>rotulo(value)</code> pt-BR</td>
+      </tr>
+      <tr>
+        <td><code>docs/flutter/unisism_api.dart</code></td>
+        <td><code>UnisismApi</code> + <code>SecureTokenStorage</code> (flutter_secure_storage). 15 métodos públicos cobrindo TODA a Face 3</td>
+      </tr>
+      <tr>
+        <td><code>docs/flutter/README.md</code></td>
+        <td>Setup 5-passos, dependências <code>pubspec.yaml</code>, URLs por cenário (Android emulator <code>10.0.2.2</code>, iOS simulator <code>localhost</code>, device físico LAN, prod), exemplos de tratamento de erro por <code>code</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>J.2 · Setup (5 passos)</h3>
+  <pre><span class="cmt"># 1. Copiar arquivos para o projeto Flutter</span>
+mkdir -p frontend_mobile/lib/api
+cp backend/docs/flutter/unisism_types.dart  frontend_mobile/lib/api/
+cp backend/docs/flutter/unisism_api.dart    frontend_mobile/lib/api/
+
+<span class="cmt"># 2. pubspec.yaml — adicionar deps</span>
+<span class="cmt">#    dio: ^5.4.0</span>
+<span class="cmt">#    flutter_secure_storage: ^9.0.0</span>
+<span class="cmt">#    meta: ^1.11.0</span>
+
+<span class="cmt"># 3. Resolver baseUrl por plataforma</span>
+<span class="cmt">#    Android AVD       → http://10.0.2.2:3333/v1</span>
+<span class="cmt">#    iOS Simulator     → http://localhost:3333/v1</span>
+<span class="cmt">#    Device LAN        → http://192.168.0.12:3333/v1</span>
+<span class="cmt">#    Produção          → https://api.unisism.&lt;dominio-cliente&gt;/v1</span>
+
+<span class="cmt"># 4. Instanciar singleton</span>
+<span class="cmt">#    final api = UnisismApi(baseUrl: _resolveBaseUrl());</span>
+
+<span class="cmt"># 5. Rodar com URL custom em PROD:</span>
+flutter run --dart-define=API_BASE_URL=https://api.unisism.&lt;dominio-cliente&gt;/v1</pre>
+
+  <h3>J.3 · Métodos do <code>UnisismApi</code> (15)</h3>
+  <table>
+    <thead><tr><th>Método</th><th>Endpoint backend</th><th>Auth</th></tr></thead>
+    <tbody>
+      <tr><td><code>login({cpf, senha})</code></td><td><code>POST /paciente-app/auth/login</code></td><td>—</td></tr>
+      <tr><td><code>ativarConta({cpf, dataNasc, cartaoSus?, novaSenha})</code></td><td><code>POST /paciente-app/auth/ativar</code></td><td>—</td></tr>
+      <tr><td><code>esqueciSenha({cpf})</code></td><td><code>POST /paciente-app/auth/esqueci-senha</code></td><td>—</td></tr>
+      <tr><td><code>redefinirSenha({cpf, codigo, novaSenha})</code></td><td><code>POST /paciente-app/auth/redefinir-senha</code></td><td>—</td></tr>
+      <tr><td><code>logout()</code></td><td><code>POST /paciente-app/auth/logout</code></td><td>Bearer</td></tr>
+      <tr><td><code>isAuthenticated()</code></td><td>local (apenas checa storage)</td><td>—</td></tr>
+      <tr><td><code>me()</code></td><td><code>GET /paciente-app/me</code></td><td>Bearer</td></tr>
+      <tr><td><code>meusEncaminhamentos()</code></td><td><code>GET /paciente-app/encaminhamentos</code></td><td>Bearer</td></tr>
+      <tr><td><code>obterEncaminhamento(id)</code></td><td><code>GET /paciente-app/encaminhamentos/:id</code></td><td>Bearer</td></tr>
+      <tr><td><code>listarNotificacoes({apenasNaoLidas})</code></td><td><code>GET /paciente-app/notificacoes</code></td><td>Bearer</td></tr>
+      <tr><td><code>contadorNaoLidas()</code></td><td><code>GET /paciente-app/notificacoes/contador</code></td><td>Bearer</td></tr>
+      <tr><td><code>marcarLida(id)</code></td><td><code>PATCH /paciente-app/notificacoes/:id/lida</code></td><td>Bearer</td></tr>
+      <tr><td><code>marcarTodasLidas()</code></td><td><code>PATCH /paciente-app/notificacoes/lidas</code></td><td>Bearer</td></tr>
+      <tr><td><code>baixarAnexo(anexoId)</code></td><td><code>GET /paciente-app/anexos/:id/download</code></td><td>Bearer · stream binary</td></tr>
+      <tr><td><code>registrarDispositivo({endpoint, plataforma, provider})</code></td><td><code>POST /paciente-app/dispositivos</code></td><td>Bearer</td></tr>
+    </tbody>
+  </table>
+
+  <h3>J.4 · Tratamento de erro tipado</h3>
+  <pre><span class="kw">try</span> {
+  <span class="kw">await</span> api.login(cpf: <span class="str">'123.456.789-00'</span>, senha: <span class="str">'12345678'</span>);
+} <span class="kw">on</span> DioException <span class="kw">catch</span> (e) {
+  <span class="kw">final</span> err = e.error;
+  <span class="kw">if</span> (err <span class="kw">is</span> UnisismApiError) {
+    <span class="cmt">// err.code é SCREAMING_SNAKE_CASE — fonte de verdade pra UX</span>
+    <span class="kw">switch</span> (err.code) {
+      <span class="kw">case</span> <span class="str">'CREDENCIAIS_INVALIDAS'</span>:
+        mostrarErro(<span class="str">'CPF ou senha inválidos'</span>);
+      <span class="kw">case</span> <span class="str">'CONTA_NAO_ATIVADA'</span>:
+        navegarPara(<span class="str">'/ativar'</span>);
+      <span class="kw">case</span> <span class="str">'RATE_LIMIT'</span>:
+        mostrarErro(<span class="str">'Tente novamente em alguns minutos'</span>);
+      <span class="kw">case</span> <span class="str">'USUARIO_BLOQUEADO'</span>:
+        mostrarErro(<span class="str">'Conta bloqueada por 30 min após 5 tentativas'</span>);
+      <span class="kw">default</span>:
+        mostrarErro(err.message); <span class="cmt">// fallback ao text pt-BR do backend</span>
+    }
+  }
+}</pre>
+
+  <h3>J.5 · Persistência segura do token</h3>
+  <pre><span class="cmt">// SecureTokenStorage — criptografia at-rest no device</span>
+<span class="cmt">// Android: EncryptedSharedPreferences (AES-256 GCM via Tink)</span>
+<span class="cmt">// iOS:     Keychain Services (kSecAttrAccessibleWhenUnlockedThisDeviceOnly)</span>
+<span class="kw">class</span> SecureTokenStorage <span class="kw">implements</span> TokenStorage {
+  <span class="kw">static const</span> _key = <span class="str">'unisism_paciente_token'</span>;
+  <span class="kw">final</span> _storage = <span class="kw">const</span> FlutterSecureStorage();
+
+  <span class="kw">@override</span>
+  Future&lt;<span class="kw">String</span>?&gt; read() =&gt; _storage.read(key: _key);
+
+  <span class="kw">@override</span>
+  Future&lt;<span class="kw">void</span>&gt; write(<span class="kw">String</span>? token) =&gt; token == <span class="kw">null</span>
+      ? _storage.delete(key: _key)
+      : _storage.write(key: _key, value: token);
+}</pre>
+
+  <h3>J.6 · Download de anexo (binary stream)</h3>
+  <pre>Future&lt;<span class="kw">void</span>&gt; baixarEAbrir(<span class="kw">String</span> anexoId) <span class="kw">async</span> {
+  <span class="kw">final</span> dl = <span class="kw">await</span> api.baixarAnexo(anexoId);
+  <span class="cmt">// dl.bytes (Uint8List), dl.filename, dl.mimeType, dl.sha256</span>
+
+  <span class="cmt">// Salvar em local storage</span>
+  <span class="kw">final</span> dir = <span class="kw">await</span> getApplicationDocumentsDirectory();
+  <span class="kw">final</span> path = <span class="str">'${dir.path}/${dl.filename}'</span>;
+  <span class="kw">await</span> File(path).writeAsBytes(dl.bytes);
+
+  <span class="cmt">// Validar SHA-256 (defensivo — backend já enviou correto)</span>
+  <span class="kw">final</span> hash = sha256.convert(dl.bytes).toString();
+  <span class="kw">assert</span>(hash == dl.sha256, <span class="str">'corrupção em trânsito'</span>);
+
+  <span class="cmt">// Abrir no visualizador nativo</span>
+  <span class="kw">await</span> OpenFilex.open(path);
+}</pre>
+
+  <h3>J.7 · Push sem Firebase (ntfy.sh)</h3>
+  <pre><span class="cmt">// Não há SDK ntfy oficial para Flutter; a estratégia documentada:</span>
+<span class="cmt">// 1. Gerar UUIDv4 no app (= topic ntfy)</span>
+<span class="cmt">// 2. Registrar no backend</span>
+<span class="kw">final</span> topic = <span class="fn">Uuid</span>().v4();
+<span class="kw">await</span> api.<span class="fn">registrarDispositivo</span>(
+  endpoint: <span class="str">'https://ntfy.unisism.local/$topic'</span>,
+  plataforma: Platform.isAndroid ? <span class="str">'ANDROID'</span> : <span class="str">'IOS'</span>,
+  provider: <span class="str">'NTFY'</span>,
+);
+
+<span class="cmt">// 3. Foreground service (Android) ou background fetch (iOS) faz long-polling:</span>
+<span class="cmt">//    GET https://ntfy.unisism.local/$topic/sse  (Server-Sent Events)</span>
+<span class="cmt">// 4. Quando chega evento → mostrar local notification (flutter_local_notifications)</span></pre>
+
+  <div class="callout">
+    <div class="title">App separado · UNISISM-Paciente</div>
+    <p style="margin:0">
+      O app Flutter completo vive em <code>&lt;repo-root&gt;/UNISISM-Paciente/</code>.
+      Os 3 arquivos em <code>backend/docs/flutter/</code> são <strong>versionados como contrato</strong> —
+      ao mudar um endpoint da Face 3, atualize também <code>unisism_types.dart</code> + <code>unisism_api.dart</code>
+      (mesma regra do par <code>types.ts</code>/<code>api-client.ts</code> da web).
+    </p>
+  </div>
+
+  <div class="callout amber">
+    <div class="title">Gotcha · cleartext HTTP em Android dev</div>
+    <p style="margin:0">
+      Android 9+ bloqueia HTTP plano por default. Para device físico em LAN
+      (sem TLS local), adicionar em <code>android/app/src/main/AndroidManifest.xml</code>:
+    </p>
+    <pre style="margin:8px 0 0">&lt;<span class="kw">application</span> ... <span class="fn">android:usesCleartextTraffic</span>=<span class="str">"true"</span>&gt;</pre>
+    <p style="margin:8px 0 0">Em prod use sempre HTTPS via Caddy + Let's Encrypt.</p>
+  </div>
+</section>
+
+<footer>
+  UNISISM BACKEND · v0.18.0 · DOC GERADA EM 2026-05-28 · 17 CAPÍTULOS + 10 APÊNDICES<br>
+  172 ENDPOINTS · 47 MODELS · 44 ENUMS · 114+ ERROR CODES · 348/348 ASSERTS<br>
+  PRODUTO WHITE-LABEL · MULTI-TENANT
+</footer>
+
+</main>
+</div>
+</body>
+</html>

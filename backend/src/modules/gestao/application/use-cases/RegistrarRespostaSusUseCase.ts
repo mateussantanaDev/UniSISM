@@ -18,6 +18,8 @@
 import { StatusEncaminhamento } from '../../../../../generated/prisma';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arvoreCacheInvalidator';
+
 import {
   INCLUDE_ENCAMINHAMENTO_FULL,
   rowParaEncaminhamento,
@@ -191,6 +193,10 @@ export class RegistrarRespostaSusUseCase {
         },
       })
       .catch((err) => logger.warn({ err }, 'notificar RESPOSTA_SUS falhou'));
+
+    // Invalida cache da árvore para esta UBS e globalmente
+    void invalidarCacheArvorePorUbs(atualizado.ubsId);
+
 
     return rowParaEncaminhamento(atualizado);
   }

@@ -43,6 +43,12 @@
 		excluirRascunho?: boolean;
 		/** Caminho-base para o detalhe ao clicar numa linha. */
 		detalheBasePath?: string;
+		/**
+		 * Query string opcional acrescentada ao link de detalhe.
+		 * Ex.: `?aba=anexos` para abrir o explorador de Respostas SUS já na
+		 * aba certa em vez da ficha do paciente.
+		 */
+		detalheQuery?: string;
 		dica?: string;
 	}
 
@@ -55,6 +61,7 @@
 		respostaSUS,
 		excluirRascunho = true,
 		detalheBasePath = '/sms/encaminhamentos',
+		detalheQuery = '',
 		dica = 'Navegação: UBS → Ano → Mês → Dia → Encaminhamentos.'
 	}: Props = $props();
 
@@ -478,7 +485,7 @@
 							{#each encsDoDia as e (e.id)}
 								<tr
 									class="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
-									onclick={() => goto(`${detalheBasePath}/${e.id}`)}
+									onclick={() => goto(`${detalheBasePath}/${e.id}${detalheQuery}`)}
 								>
 									<td class="border-r border-slate-100 px-3 py-2 text-slate-600">
 										{formatarData(e.criadoEm)}
@@ -502,7 +509,7 @@
 									<td class="px-3 py-2" onclick={(ev) => ev.stopPropagation()}>
 										<button
 											type="button"
-											onclick={() => goto(`${detalheBasePath}/${e.id}`)}
+											onclick={() => goto(`${detalheBasePath}/${e.id}${detalheQuery}`)}
 											class="border border-blue-900 bg-blue-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase hover:bg-blue-100"
 										>
 											Abrir

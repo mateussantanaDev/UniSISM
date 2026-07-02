@@ -4,18 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/errors/api_exception.dart';
 import '../../core/router.dart';
-import '../../data/push/null_push_service.dart';
+import '../../data/push/ntfy_push_service.dart';
 import '../../data/push/push_service.dart';
 import '../../sync/outbox_kinds.dart';
 import 'api_providers.dart';
 import 'sync_providers.dart';
 
-/// Provider do `PushService`. Default = `NullPushService` (sem Firebase).
-///
-/// Quando o usuário configurar Firebase, substituir o factory aqui pelo
-/// `FirebasePushService()` — ver `lib/data/push/README.md`.
+/// Provider do `PushService`. Default = `NtfyPushService` (ntfy.sh).
 final pushServiceProvider = Provider<PushService>((ref) {
-  final svc = NullPushService();
+  final svc = NtfyPushService();
   ref.onDispose(svc.dispose);
   return svc;
 });

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/api/auth_interceptor.dart';
@@ -16,10 +15,7 @@ import '../../data/api/tfd_api_remote.dart';
 String resolveApiBaseUrl() {
   const custom = String.fromEnvironment('API_BASE_URL');
   if (custom.isNotEmpty) return custom;
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    return 'http://10.0.2.2:3333/v1';
-  }
-  return 'http://localhost:3333/v1';
+  return 'http://10.0.0.101:3333/v1';
 }
 
 /// Token JWT do motorista. Atualizado pelo `AuthController` no login e

@@ -25,8 +25,24 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { dev } from '$app/environment';
 	import { api, ApiError } from '$lib/api';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
+
+	/**
+	 * CSP renderizada via Svelte para permitir relaxar em DEV.
+	 *
+	 * Produção: `script-src 'self'` — bloqueia totalmente XSS via inline.
+	 * DEV: precisa 'unsafe-inline' + 'unsafe-eval' + ws://localhost para o
+	 *      Vite HMR funcionar. Em prod o bundle é externo, não há inline.
+	 *
+	 * `connect-src` em prod usa `https:` curinga genérico (white-label) —
+	 * cada tenant aponta seu domínio. Em DEV precisa de localhost:3333 +
+	 * ws://localhost:5173 (HMR).
+	 */
+	const cspContent = dev
+		? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' http://localhost:3333 ws://localhost:5173; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+		: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
 
 	let token = $state('');
 	let novaSenha = $state('');
@@ -119,10 +135,7 @@
 		- envio de dados pra terceiros (`form-action 'self'` + `connect-src 'self'`)
 		- iframe externo (`frame-ancestors 'none'`)
 	-->
-	<meta
-		http-equiv="content-security-policy"
-		content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3333 https://*.aguasbelas.pe.gov.br; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
-	/>
+	<meta http-equiv="content-security-policy" content={cspContent} />
 	<meta name="referrer" content="no-referrer" />
 </svelte:head>
 

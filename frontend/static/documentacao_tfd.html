@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNISISM — Face 4: Gestão Logística e TFD</title>
+  
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['ui-monospace', 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              900: '#1e3a8a', // blue-900 (Ação principal)
+            },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonte Inter via CDN -->
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+  <style>
+    /* B2G Brutalist Styles */
+    *, *::before, *::after {
+      border-radius: 0px !important; /* Reset global de cantos arredondados */
+    }
+    
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      -webkit-font-smoothing: antialiased;
+      background-color: rgb(248 250 252); /* bg-slate-50 */
+      color: rgb(15 23 42); /* text-slate-900 */
+    }
+
+    /* Sombras brutalistas sólidas e secas */
+    .brutalist-border {
+      border: 1px solid rgb(15 23 42);
+    }
+    
+    .brutalist-shadow {
+      box-shadow: 4px 4px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-sm {
+      box-shadow: 2px 2px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-lg {
+      box-shadow: 8px 8px 0px rgba(15, 23, 42, 0.12);
+    }
+
+    /* Scrollbars quadradas e densas */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgb(241 245 249);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(203 213 225);
+      border: 1px solid rgb(15 23 42);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgb(15 23 42);
+    }
+
+    /* Inputs focados brutalistas */
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgb(30 58 138) !important;
+      box-shadow: 2px 2px 0px rgb(30 58 138) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header Superior -->
+  <header class="h-14 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="h-8 w-8 bg-blue-900 text-white flex items-center justify-center font-mono font-bold text-lg select-none">
+        T
+      </div>
+      <div>
+        <div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase leading-none">UNISISM / DOCUMENTAÇÃO / FACE 4</div>
+        <h1 class="font-mono text-sm font-bold tracking-widest text-slate-900 uppercase">Tratamento Fora do Domicílio (TFD)</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="hidden md:flex gap-2">
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">FACETA: LOGÍSTICA</span>
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">VERSÃO: v0.10.0</span>
+      </div>
+      <div class="font-mono text-[11px] text-slate-600" id="current-clock">02/07/2026 10:35</div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- Sidebar de Navegação -->
+    <aside class="w-64 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
+      <div class="p-4 border-b border-slate-200 bg-slate-50">
+        <div class="font-mono text-[10px] text-slate-500 font-bold uppercase tracking-widest">Painel Logístico</div>
+        <div class="font-sans text-xs font-semibold text-slate-800">Operação & Custos de Transporte</div>
+      </div>
+      
+      <nav class="p-3 flex-1 space-y-1">
+        <a href="#tfd-visao" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors bg-blue-50 text-blue-900 border-l-2 border-blue-900">
+          <span>01. Visão & Escopo</span>
+        </a>
+
+        <a href="#funcionalidades-tfd" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>02. Funcionalidades</span>
+        </a>
+
+        <a href="#relatorio-decisao" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>03. Contratar vs. Enviar</span>
+        </a>
+
+        <a href="#simulador-tfd" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>04. Simulador Logístico</span>
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50">
+        <div class="font-mono text-[9px] text-slate-500 uppercase tracking-widest leading-normal">
+          UNISISM v0.10.0 <br>
+          TFD LOGISTICS SYSTEM
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo Principal -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-6">
+      <div class="max-w-[1400px] mx-auto space-y-6">
+
+        <!-- SEÇÃO 1: VISÃO & ESCOPO -->
+        <section id="tfd-visao" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">Centro de Comando Logístico</div>
+            <h2 class="font-mono text-xl font-bold tracking-tight text-slate-900 mt-1 uppercase">O que é a Face 4 (TFD)</h2>
+            <p class="mt-4 text-sm text-slate-700 leading-relaxed font-sans">
+              O **Tratamento Fora de Domicílio (TFD)** é o programa federal/municipal que garante transporte e despesas de permanência para pacientes que necessitam de consultas e procedimentos que a rede do próprio município não consegue oferecer. A <strong>Face 4 do UNISISM</strong> foi construída para atuar como o cérebro das operações de transporte, frotas, combustíveis e repasses financeiros da saúde pública municipal.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-blue-900">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">PERSONA PRINCIPAL</span>
+                <span class="font-mono text-sm font-bold text-slate-900 mt-1 block">Gestor Logístico / Operador TFD</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Servidores responsáveis por monitorar a frota municipal, organizar assentos de viagens, liberar abastecimentos de combustível e certificar o repasse e comprovante das ajudas de custo de pacientes em viagem.
+                </p>
+              </div>
+
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-emerald-700">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">AUDITORIA FISCAL (TCM)</span>
+                <span class="font-mono text-sm font-bold text-slate-900 mt-1 block">Imutabilidade de Gastos</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Toda modificação financeira (combustível e ajuda de custo) é assinada digitalmente por meio de hashes sequenciais que blindam juridicamente o ordenador de despesas.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 2: FUNCIONALIDADES -->
+        <section id="funcionalidades-tfd" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <h2 class="font-mono text-lg font-bold text-slate-900 uppercase border-b border-slate-200 pb-3 mb-4">Funcionalidades e Impacto Municipal</h2>
+
+            <div class="space-y-6">
+              <!-- Funcionalidade 1 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 4.1</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Controle Operacional de Frotas e Motoristas</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Segurança Operacional</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Permite cadastrar os veículos da saúde (vans, micro-ônibus, ambulâncias) registrando placa, capacidade física de assentos, consumo de combustível estimado e quilometragem. Também acompanha a validade de CNH e categoria obrigatória de todos os motoristas ativos.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Blindagem legal e redução de acidentes:</strong> o sistema bloqueia preventivamente o agendamento de viagens com motoristas sem CNH compatível ou com exames periódicos vencidos. Evita que o município sofra multas pesadas de trânsito ou seja responsabilizado judicialmente em eventuais sinistros na estrada.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 2 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 4.2</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Planejamento Visual de Viagens (BlaBlaCar UX)</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Otimização</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Exibe um mapa de poltronas da van ou ônibus. O operador do TFD pode alocar graficamente cada paciente (e seu acompanhante cadastrado) a um assento específico na rota. O sistema consolida o manifesto obrigatório da viagem automaticamente para fiscalizações rodoviárias.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Economia de escala no tráfego:</strong> impede o desperdício de enviar dois carros pequenos subocupados para a mesma cidade de destino na mesma data. A alocação visual inteligente incentiva o preenchimento de ônibus e vans, otimizando o custo por paciente transportado e poupando custos de combustível e desgaste de frota.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 3 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 4.3</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Gestão de Cotas de Combustível por Veículo</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Controle Financeiro</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Determina saldos mensais de abastecimento para cada veículo. Os motoristas registram o abastecimento realizado inserindo os litros na bomba, o hodômetro atual do veículo e anexando a foto do cupom fiscal correspondente para conferência do gestor.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Fim de desvios e fraudes de combustível:</strong> o sistema calcula continuamente a quilometragem percorrida e a média real de consumo do veículo (KM/L). Eventuais divergências ou saltos inexplicáveis de hodômetro disparam alertas de auditoria de consumo imediato, resultando em economia direta estimada entre 15% e 25% nas contas de postos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 4 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 4.4</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Gestão de Repasses de Ajuda de Custo</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Dignidade Social</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Registra e gerencia o pagamento de diárias de ajuda de custo aos pacientes (alimentação, hospedagem e locomoção urbana) conforme os tetos e saldos mensais vigentes do município, anexando comprovantes de depósitos ou PIX.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Suporte humanitário auditado:</strong> garante que cidadãos de baixa renda possuam recursos mínimos de alimentação e estadia para realizar tratamentos prolongados (oncologia, hemodiálise) longe de casa. O sistema bloqueia duplicidades e estouros de saldo orçamentário.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 3: TOMADA DE DECISÃO E CONTRATAÇÃO DE MÉDICO LOCAL -->
+        <section id="relatorio-decisao" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow-lg border-t-4 border-blue-900">
+            <div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">Mecanismo Estratégico de Planejamento</div>
+            <h2 class="font-mono text-lg font-bold text-slate-900 uppercase mt-1">O Relatório por Especialidade (Contratar Local vs. Enviar TFD)</h2>
+            <p class="mt-4 text-sm text-slate-700 leading-relaxed font-sans">
+              Um dos maiores gargalos ocultos da saúde municipal são os custos fracionados do TFD. Combustível, diárias do motorista, manutenção de veículos e ajudas de custo de alimentação e hospedagem são pagos por secretarias diferentes ou verbas variadas, mascarando o custo real da viagem.
+            </p>
+            <p class="mt-2 text-sm text-slate-700 leading-relaxed font-sans">
+              Com o <strong>Relatório por Especialidade (`GET /v1/tfd/relatorios/especialidades`)</strong>, o sistema unifica todos esses gastos por especialidade médica de forma retroativa (últimos 12 meses). O gestor municipal visualiza com precisão matemática o quanto gasta enviando pacientes e pode comparar se é financeiramente viável <strong>contratar um médico local</strong> para atender diretamente no município.
+            </p>
+            
+            <div class="bg-blue-50/50 p-4 border border-slate-200 mt-4">
+              <span class="font-mono text-[10px] text-blue-900 font-bold uppercase tracking-widest block">Exemplo Real de Análise</span>
+              <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                Se o município realiza 12 viagens mensais de van para levar 130 pacientes de <strong>Oftalmologia</strong> para a capital (distante 200km) e gasta R$ 14.500,00 por mês somando diárias do motorista, óleo diesel, pedágio e ajuda de custo para refeições, a Secretaria de Saúde pode concluir que é mais vantajoso contratar um oftalmologista para atender 1 vez por semana no posto de saúde local por R$ 9.000,00 mensais. O município economiza R$ 5.500,00 mensais e <strong>evita que pacientes idosos ou debilitados fiquem 6 horas na estrada</strong>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 4: SIMULADOR DE CUSTO LOGÍSTICO -->
+        <section id="simulador-tfd" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">CALCULADORA DE ROI E LOGÍSTICA</span>
+            <h3 class="font-mono text-base font-bold text-slate-900 uppercase mt-1">Simulador de Custos do TFD e Contratação Local</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed font-sans">
+              Simule a viabilidade econômica da sua operação de viagens TFD em comparação direta com a contratação de especialistas médicos locais.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <!-- Inputs Col 1 -->
+              <div class="space-y-3">
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Pacientes Transportados / Mês</label>
+                  <input type="number" id="tfd-pacientes" value="100" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Capacidade Média do Veículo</label>
+                  <input type="number" id="tfd-capacidade" value="15" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+              </div>
+
+              <!-- Inputs Col 2 -->
+              <div class="space-y-3">
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Distância Ida e Volta (KM)</label>
+                  <input type="number" id="tfd-distancia" value="300" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Média Consumo Veículo (KM/L)</label>
+                  <input type="number" id="tfd-consumo" value="7.5" step="0.1" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+              </div>
+
+              <!-- Inputs Col 3 -->
+              <div class="space-y-3">
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Preço do Litro Combustível (R$)</label>
+                  <input type="number" id="tfd-preco-comb" value="5.90" step="0.01" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Diária Motorista + Pedágio (R$)</label>
+                  <input type="number" id="tfd-diaria-mot" value="220" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+              </div>
+
+              <!-- Inputs Col 4 -->
+              <div class="space-y-3">
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Ajuda de Custo Paciente (R$)</label>
+                  <input type="number" id="tfd-ajuda" value="60" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Salário Especialista Local (R$)</label>
+                  <input type="number" id="tfd-salario-medico" value="14000" oninput="calcularLogisticaTFD()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+              </div>
+            </div>
+
+            <!-- Comparativo e Decisão -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t border-slate-200 pt-6">
+              <div>
+                <h4 class="font-mono text-xs font-bold uppercase text-slate-800">MEMÓRIA DE CÁLCULO MENSAL</h4>
+                <div class="space-y-2 mt-3 text-xs">
+                  <div class="flex justify-between border-b border-slate-200 pb-1">
+                    <span class="text-slate-600 font-sans">Viagens TFD necessárias por mês:</span>
+                    <span id="tfd-calc-viagens" class="font-mono font-bold text-slate-900">0</span>
+                  </div>
+                  <div class="flex justify-between border-b border-slate-200 pb-1">
+                    <span class="text-slate-600 font-sans">Custo de combustível mensal:</span>
+                    <span id="tfd-calc-combustivel" class="font-mono font-bold text-slate-900">R$ 0,00</span>
+                  </div>
+                  <div class="flex justify-between border-b border-slate-200 pb-1">
+                    <span class="text-slate-600 font-sans">Custo de diárias e pedágios do motorista:</span>
+                    <span id="tfd-calc-diarias" class="font-mono font-bold text-slate-900">R$ 0,00</span>
+                  </div>
+                  <div class="flex justify-between border-b border-slate-200 pb-1">
+                    <span class="text-slate-600 font-sans">Total repassado em ajuda de custo:</span>
+                    <span id="tfd-calc-ajudas" class="font-mono font-bold text-slate-900">R$ 0,00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Painel Dinâmico de Decisão -->
+              <div class="border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between brutalist-shadow">
+                <div class="grid grid-cols-2 gap-2 text-center">
+                  <div class="border-r border-slate-200 px-2">
+                    <span class="font-mono text-[9px] text-slate-500 uppercase block font-bold">CUSTO DO TFD</span>
+                    <span id="tfd-res-custo" class="font-mono text-lg font-bold text-slate-900">R$ 0,00</span>
+                  </div>
+                  <div class="px-2">
+                    <span class="font-mono text-[9px] text-slate-500 uppercase block font-bold">CUSTO MÉDICO LOCAL</span>
+                    <span id="tfd-res-medico" class="font-mono text-lg font-bold text-slate-900">R$ 0,00</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 p-3 text-center border" id="tfd-status-box">
+                  <span id="tfd-badge" class="font-mono text-[10px] font-bold tracking-widest uppercase block mb-1">PROJETO DE ECONOMIA</span>
+                  <span id="tfd-economia" class="font-mono text-xl font-bold block">R$ 0,00</span>
+                  <p id="tfd-texto-decisao" class="text-xs mt-2 font-sans font-medium leading-tight"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="h-10 border-t border-slate-200 bg-white px-6 flex items-center justify-between text-[10px] font-mono text-slate-500 shrink-0">
+    <div>UNISISM v0.10.0 — FACE 4 DOCUMENTAÇÃO TFD</div>
+    <div class="hidden sm:block">SISTEMA INTEGRADO DE SAÚDE MUNICIPAL</div>
+  </footer>
+
+  <script>
+    // Live Clock Update
+    function updateClock() {
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const str = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById('current-clock').innerText = str;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    // Calculadora Logística TFD
+    function calcularLogisticaTFD() {
+      // Inputs
+      const pacientes = parseFloat(document.getElementById('tfd-pacientes').value) || 0;
+      const capacidade = parseFloat(document.getElementById('tfd-capacidade').value) || 1;
+      const distancia = parseFloat(document.getElementById('tfd-distancia').value) || 0;
+      const consumo = parseFloat(document.getElementById('tfd-consumo').value) || 1;
+      const precoComb = parseFloat(document.getElementById('tfd-preco-comb').value) || 0;
+      const diariaMot = parseFloat(document.getElementById('tfd-diaria-mot').value) || 0;
+      const ajudaCusto = parseFloat(document.getElementById('tfd-ajuda').value) || 0;
+      const salarioMedico = parseFloat(document.getElementById('tfd-salario-medico').value) || 0;
+
+      // Cálculos operacionais
+      const viagens = Math.ceil(pacientes / (capacidade || 1));
+      const combustivelViagem = (distancia / (consumo || 1)) * precoComb;
+      const combustivelMensal = viagens * combustivelViagem;
+      const motoristaMensal = viagens * diariaMot;
+      const ajudasMensal = pacientes * ajudaCusto;
+
+      const custoTFDTotal = combustivelMensal + motoristaMensal + ajudasMensal;
+      const custoMedicoTotal = salarioMedico;
+      const economia = custoTFDTotal - custoMedicoTotal;
+
+      // Renderização da memória de cálculo
+      document.getElementById('tfd-calc-viagens').innerText = viagens.toString();
+      document.getElementById('tfd-calc-combustivel').innerText = formatterBRL(combustivelMensal);
+      document.getElementById('tfd-calc-diarias').innerText = formatterBRL(motoristaMensal);
+      document.getElementById('tfd-calc-ajudas').innerText = formatterBRL(ajudasMensal);
+
+      // Renderização do painel de decisão
+      document.getElementById('tfd-res-custo').innerText = formatterBRL(custoTFDTotal);
+      document.getElementById('tfd-res-medico').innerText = formatterBRL(custoMedicoTotal);
+
+      const statusBox = document.getElementById('tfd-status-box');
+      const badge = document.getElementById('tfd-badge');
+      const valor = document.getElementById('tfd-economia');
+      const texto = document.getElementById('tfd-texto-decisao');
+
+      if (economia > 0) {
+        statusBox.className = "mt-4 p-3 text-center border-2 border-emerald-700 bg-emerald-50 text-emerald-800 brutalist-shadow-sm";
+        badge.innerText = "✓ RECOMENDAÇÃO: CONTRATAR MÉDICO LOCAL";
+        valor.innerText = `Economia de ${formatterBRL(economia)} /mês`;
+        texto.innerText = `O custo logístico de viagens supera o salário do médico especialista. É financeiramente viável contratar o profissional local e realizar os atendimentos no próprio município.`;
+      } else {
+        const diferenca = Math.abs(economia);
+        statusBox.className = "mt-4 p-3 text-center border-2 border-amber-600 bg-amber-50 text-amber-800 brutalist-shadow-sm";
+        badge.innerText = "⚠ RECOMENDAÇÃO: MANTER LOGÍSTICA TFD";
+        valor.innerText = `Diferença de ${formatterBRL(diferenca)} /mês`;
+        texto.innerText = `Neste cenário de demanda, o custeio de viagens é financeiramente mais barato. Contudo, avalie o impacto do cansaço e segurança dos pacientes nas estradas.`;
+      }
+    }
+
+    function formatterBRL(value) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Run on init
+    calcularLogisticaTFD();
+  </script>
+</body>
+</html>

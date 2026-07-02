@@ -56,12 +56,16 @@ export const roleEnum = z.enum([
   'COORDENADOR_UBS',
   'ATENDENTE_UBS',
   'REGULADOR_SMS',
+  'GESTOR_TFD',
+  'ATENDENTE_TFD',
+  'MOTORISTA_TFD',
+  'REGULADOR_TFD',
 ]);
 
 export const criarUsuarioSchema = z.object({
   nome: z.string().min(2),
   email: z.string().email(),
-  matricula: z.string().min(3),
+  matricula: z.string().min(3).optional(),
   cpf: z.string().min(11),
   senha: z.string().min(8),
   role: roleEnum,

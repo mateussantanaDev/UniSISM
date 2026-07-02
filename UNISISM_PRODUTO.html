@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISISM — Plataforma de Gestão Integrada para Saúde Pública Municipal</title>
+<meta name="description" content="Sistema integrado de regulação ambulatorial, PEC, app do cidadão e gestão TFD para Secretarias Municipais de Saúde. Multi-tenant, LGPD/CFM compliant, B2G brutalist.">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   UNISISM — Design System B2G Brutalist
+   Aplicado nesta própria documentação como demonstração viva.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Neutros — base do produto */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+
+  /* Cor de ação institucional — único token customizável por tenant */
+  --brand-primary:       #1e3a8a;  /* blue-900 */
+  --brand-primary-hover: #1e40af;  /* blue-800 */
+  --brand-bg-soft:       #eff6ff;  /* blue-50 */
+  --brand-border:        #1d4ed8;  /* blue-700 */
+
+  /* Semânticos — APENAS para comunicar estado, nunca decoração */
+  --success:    #15803d;  --success-bg: #f0fdf4;  --success-border: #15803d;
+  --warning:    #a16207;  --warning-bg: #fffbeb;  --warning-border: #ca8a04;
+  --critical:   #991b1b;  --critical-bg: #fef2f2; --critical-border: #b91c1c;
+  --info:       #0e7490;  --info-bg:    #ecfeff;  --info-border:    #0891b2;
+
+  /* Tipografia */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 15px;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv02','cv03','cv04','cv11';
+  background: var(--slate-50);
+  color: var(--slate-900);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reset brutal — sem cantos arredondados padrão (P3) */
+button, input, select, textarea { border-radius: 0; font-family: inherit; }
+
+/* ─── Layout principal ────────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* ─── Sidebar / Table of Contents ─────────────────────────────── */
+aside.toc {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: white;
+  border-right: 1px solid var(--slate-200);
+  padding: 24px 0;
+}
+aside.toc .brand {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--slate-200);
+}
+aside.toc .brand-logo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--brand-primary);
+  margin-bottom: 4px;
+}
+aside.toc .brand-tag {
+  font-size: 11px;
+  color: var(--slate-500);
+  letter-spacing: 0.05em;
+}
+aside.toc nav { padding: 16px 0; }
+aside.toc nav h3 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  font-weight: 700;
+  padding: 16px 20px 6px;
+  border-top: 1px solid var(--slate-200);
+  margin-top: 8px;
+}
+aside.toc nav h3:first-child { border-top: none; margin-top: 0; }
+aside.toc nav a {
+  display: block;
+  padding: 5px 20px;
+  color: var(--slate-700);
+  font-size: 13px;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+aside.toc nav a:hover {
+  background: var(--slate-100);
+  color: var(--brand-primary);
+  border-left-color: var(--brand-primary);
+}
+aside.toc nav a .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-400);
+  margin-right: 8px;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Main content ─────────────────────────────────────────────── */
+main {
+  padding: 0 64px 80px;
+  max-width: 1180px;
+}
+
+/* ─── Hero (P1 autoridade institucional) ──────────────────────── */
+.hero {
+  background: var(--slate-900);
+  color: white;
+  margin: 0 -64px 48px;
+  padding: 80px 64px 64px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--brand-primary);
+}
+.hero .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--slate-400);
+  margin-bottom: 18px;
+}
+.hero h1 {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 16px;
+  color: white;
+}
+.hero .tagline {
+  font-size: 22px;
+  color: var(--slate-300);
+  max-width: 760px;
+  line-height: 1.4;
+  font-weight: 400;
+  margin-bottom: 36px;
+}
+.hero .pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+.hero .pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  letter-spacing: 0.08em;
+  color: var(--slate-200);
+}
+.hero .pill.accent {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: white;
+}
+.hero .hero-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: 28px;
+}
+.hero .hero-meta .stat {
+  border-right: 1px solid rgba(255,255,255,0.15);
+  padding-right: 24px;
+}
+.hero .hero-meta .stat:last-child { border-right: none; }
+.hero .hero-meta .stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--slate-400);
+  margin-bottom: 4px;
+}
+.hero .hero-meta .stat-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.hero .hero-meta .stat-desc {
+  font-size: 11px;
+  color: var(--slate-400);
+  margin-top: 6px;
+}
+
+/* ─── Seções principais ──────────────────────────────────────── */
+section.chapter {
+  margin: 64px 0 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--slate-200);
+}
+section.chapter:first-of-type { border-top: none; padding-top: 0; }
+
+.chapter-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--slate-500);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+  color: var(--slate-900);
+}
+h2 + .lede {
+  font-size: 18px;
+  color: var(--slate-600);
+  max-width: 760px;
+  line-height: 1.5;
+  margin-bottom: 32px;
+}
+
+h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 40px 0 14px;
+  color: var(--slate-900);
+  letter-spacing: -0.01em;
+}
+h4 {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--slate-500);
+  margin: 28px 0 12px;
+}
+
+p { margin-bottom: 14px; color: var(--slate-700); }
+p.lead { font-size: 17px; color: var(--slate-600); }
+
+ul, ol { margin: 0 0 16px 22px; }
+li { margin: 6px 0; color: var(--slate-700); }
+li::marker { color: var(--slate-400); }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--slate-100);
+  color: var(--brand-primary);
+  padding: 1.5px 6px;
+  border: 1px solid var(--slate-200);
+  font-weight: 500;
+}
+
+strong { color: var(--slate-900); font-weight: 700; }
+
+/* ─── Card grid ─────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0 28px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0 28px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0 28px; }
+@media (max-width: 900px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-left: 3px solid var(--brand-primary);
+  padding: 20px 22px;
+}
+.card .card-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--slate-500);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.card h4 { margin-top: 0; }
+.card .card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.card .card-body {
+  font-size: 14px;
+  color: var(--slate-600);
+  line-height: 1.5;
+}
+.card .card-body ul { margin: 8px 0 0 18px; }
+.card .card-body li { font-size: 13px; margin: 3px 0; }
+
+.card.success { border-left-color: var(--success-border); }
+.card.warning { border-left-color: var(--warning-border); }
+.card.critical { border-left-color: var(--critical-border); }
+.card.info { border-left-color: var(--info-border); }
+.card.neutral { border-left-color: var(--slate-500); }
+
+/* ─── Stat card ─────────────────────────────────────────────── */
+.stat-card {
+  background: white;
+  border: 1px solid var(--slate-200);
+  padding: 20px 22px;
+  position: relative;
+}
+.stat-card .stat-num {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand-primary);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-card .stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--slate-500);
+  margin-bottom: 4px;
+}
+.stat-card .stat-desc {
+  font-size: 12px;
+  color: var(--slate-500);
+  margin-top: 4px;
+}
+
+/* ─── Tabela densa ──────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0 28px;
+  font-size: 13px;
+  background: white;
+  border: 1px solid var(--slate-200);
+}
+th {
+  text-align: left;
+  background: var(--slate-100);
+  color: var(--slate-700);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--slate-300);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--slate-200);
+  vertical-align: top;
+  color: var(--slate-700);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--slate-50); }
+td code { font-size: 11.5px; }
+
+/* ─── Badges (estado) ───────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.badge.success  { background: var(--success-bg);  color: var(--success);  border-color: var(--success-border); }
+.badge.warning  { background: var(--warning-bg);  color: var(--warning);  border-color: var(--warning-border); }
+.badge.critical { background: var(--critical-bg); color: var(--critical); border-color: var(--critical-border); }
+.badge.info     { background: var(--info-bg);     color: var(--info);     border-color: var(--info-border); }
+.badge.brand    { background: var(--brand-bg-soft); color: var(--brand-primary); border-color: var(--brand-border); }
+.badge.neutral  { background: var(--slate-100); color: var(--slate-700); border-color: var(--slate-400); }
+
+/* ─── Callout ───────────────────────────────────────────────── */
+.callout {
+  border-left: 3px solid var(--brand-primary);
+  background: var(--brand-bg-soft);
+  padding: 16px 20px;
+  margin: 20px 0;
+  font-size: 14px;
+  color: var(--slate-800);
+}
+.callout.success  { border-color: var(--success-border);  background: var(--success-bg); }
+.callout.warning  { border-color: var(--warning-border);  background: var(--warning-bg); }
+.callout.critical { border-color: var(--critical-border); background: var(--critical-bg); }
+.callout-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* ─── Face card (a estrela do produto) ──────────────────────── */
+.face-card {
+  background: white;
+  border: 1px solid var(--slate-200);
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
+}
+.face-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--brand-primary);
+}
+.face-card .face-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  margin-bottom: 8px;
+}
+.face-card .face-name {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+  color: var(--slate-900);
+}
+.face-card .face-actors {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--slate-500);
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+.face-card .face-desc {
+  font-size: 14px;
+  color: var(--slate-600);
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+.face-card .face-features {
+  border-top: 1px solid var(--slate-200);
+  padding-top: 14px;
+}
+.face-card .face-features h5 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--slate-500);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.face-card .face-features ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.face-card .face-features li {
+  font-size: 13px;
+  color: var(--slate-700);
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+.face-card .face-features li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--brand-primary);
+  font-size: 11px;
+  top: 6px;
+}
+
+/* ─── Process flow ──────────────────────────────────────────── */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin: 28px 0 32px;
+}
+@media (max-width: 1100px) { .flow { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px) { .flow { grid-template-columns: 1fr; } }
+
+.flow-step {
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-top: 3px solid var(--brand-primary);
+  padding: 16px;
+  position: relative;
+}
+.flow-step .step-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--slate-500);
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+.flow-step .step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--slate-900);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.flow-step .step-desc {
+  font-size: 12px;
+  color: var(--slate-600);
+  line-height: 1.45;
+}
+
+/* ─── Design system demo ────────────────────────────────────── */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin: 16px 0 28px;
+  border: 1px solid var(--slate-200);
+}
+@media (max-width: 900px) { .swatch-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.swatch {
+  padding: 18px 16px;
+  border-right: 1px solid var(--slate-200);
+  border-bottom: 1px solid var(--slate-200);
+}
+.swatch:last-child { border-right: none; }
+.swatch .swatch-block {
+  width: 100%;
+  height: 56px;
+  border: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 10px;
+}
+.swatch .swatch-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-700);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.swatch .swatch-hex {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-500);
+  margin-top: 2px;
+}
+.swatch .swatch-use {
+  font-size: 11px;
+  color: var(--slate-500);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+/* Tipografia demo */
+.type-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 200px;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--slate-200);
+  align-items: baseline;
+}
+.type-row:last-child { border-bottom: none; }
+.type-row .type-spec {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-500);
+  letter-spacing: 0.05em;
+}
+.type-row .type-use {
+  font-size: 12px;
+  color: var(--slate-500);
+}
+
+.type-sample-xxl { font-size: 36px; font-weight: 800; letter-spacing: -0.02em; color: var(--slate-900); }
+.type-sample-xl  { font-size: 24px; font-weight: 700; letter-spacing: -0.015em; color: var(--slate-900); }
+.type-sample-lg  { font-size: 18px; font-weight: 700; color: var(--slate-900); }
+.type-sample-base { font-size: 16px; color: var(--slate-700); }
+.type-sample-sm   { font-size: 14px; color: var(--slate-700); }
+.type-sample-xs   { font-size: 12px; color: var(--slate-700); }
+.type-sample-mono { font-family: var(--font-mono); font-size: 12px; color: var(--slate-700); letter-spacing: 0.04em; }
+.type-sample-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--slate-500); }
+.type-sample-num   { font-family: var(--font-mono); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; color: var(--brand-primary); }
+
+/* Component examples */
+.demo-box {
+  background: white;
+  border: 1px solid var(--slate-200);
+  padding: 24px;
+  margin: 16px 0 24px;
+}
+.demo-box .demo-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid;
+  text-decoration: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.btn-primary {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: white;
+}
+.btn-primary:hover { background: var(--brand-primary-hover); border-color: var(--brand-primary-hover); }
+.btn-secondary {
+  background: white;
+  border-color: var(--slate-300);
+  color: var(--slate-800);
+}
+.btn-secondary:hover { background: var(--slate-100); }
+.btn-danger {
+  background: white;
+  border-color: var(--critical-border);
+  color: var(--critical);
+}
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+.kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  background: var(--slate-200);
+  color: var(--slate-700);
+  padding: 1.5px 5px;
+  border: 1px solid var(--slate-300);
+  letter-spacing: 0.05em;
+  margin-left: 6px;
+}
+
+/* Pull quote */
+.pull {
+  border-left: 4px solid var(--brand-primary);
+  padding: 24px 28px;
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-left: 4px solid var(--brand-primary);
+  margin: 32px 0;
+}
+.pull-text {
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--slate-900);
+}
+.pull-attr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 14px;
+  font-weight: 700;
+}
+
+/* Footer */
+footer.site-foot {
+  margin: 80px -64px -80px;
+  padding: 40px 64px;
+  background: var(--slate-900);
+  color: var(--slate-400);
+  font-size: 13px;
+}
+footer.site-foot .foot-brand {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: white;
+  margin-bottom: 12px;
+}
+footer.site-foot .foot-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--slate-500);
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--slate-700);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: 1fr; }
+  aside.toc { display: none; }
+  main { padding: 0 32px 60px; }
+  .hero { margin: 0 -32px 40px; padding: 60px 32px 48px; }
+  .hero h1 { font-size: 42px; }
+  .hero .hero-meta { grid-template-columns: repeat(2, 1fr); }
+  footer.site-foot { margin: 60px -32px -60px; padding: 32px; }
+}
+
+@media print {
+  aside.toc { display: none; }
+  .shell { grid-template-columns: 1fr; }
+  main { max-width: 100%; }
+  .hero { background: white; color: var(--slate-900); }
+  .hero h1, .hero .tagline { color: var(--slate-900); }
+}
+
+/* Scroll target offset (sidebar fixa) */
+:target { scroll-margin-top: 20px; }
+
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+<!-- ═══════════════════════════════════════════════════════════
+     SIDEBAR / TABLE OF CONTENTS
+     ═══════════════════════════════════════════════════════════ -->
+<aside class="toc">
+  <div class="brand">
+    <div class="brand-logo">UNISISM</div>
+    <div class="brand-tag">Doc do Produto · v2026.05</div>
+  </div>
+  <nav>
+    <h3>Visão</h3>
+    <a href="#problema"><span class="num">01</span>O Problema</a>
+    <a href="#solucao"><span class="num">02</span>A Solução</a>
+    <a href="#faces"><span class="num">03</span>As 4 Faces</a>
+    <a href="#fluxo"><span class="num">04</span>Fluxo End-to-End</a>
+
+    <h3>Para quem</h3>
+    <a href="#personas"><span class="num">05</span>Personas</a>
+    <a href="#casos-uso"><span class="num">06</span>Casos de Uso</a>
+
+    <h3>O que entrega</h3>
+    <a href="#face1"><span class="num">07</span>Face 1 — UBS</a>
+    <a href="#face2"><span class="num">08</span>Face 2 — Regulação</a>
+    <a href="#face3"><span class="num">09</span>Face 3 — App Cidadão</a>
+    <a href="#face4"><span class="num">10</span>Face 4 — TFD</a>
+
+    <h3>Diferenciais</h3>
+    <a href="#diferenciais"><span class="num">11</span>Diferenciais</a>
+    <a href="#compliance"><span class="num">12</span>Conformidade Legal</a>
+    <a href="#metricas"><span class="num">13</span>Indicadores</a>
+
+    <h3>Design</h3>
+    <a href="#design-filosofia"><span class="num">14</span>Filosofia Visual</a>
+    <a href="#design-paleta"><span class="num">15</span>Paleta</a>
+    <a href="#design-tipografia"><span class="num">16</span>Tipografia</a>
+    <a href="#design-componentes"><span class="num">17</span>Componentes</a>
+
+    <h3>Plataforma</h3>
+    <a href="#whitelabel"><span class="num">18</span>White-label</a>
+    <a href="#tecnologia"><span class="num">19</span>Tecnologia</a>
+    <a href="#contato"><span class="num">20</span>Próximos Passos</a>
+  </nav>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════════════ -->
+<main>
+
+<!-- ────────── HERO ─────────────────────────────────────────── -->
+<div class="hero">
+  <div class="eyebrow">Plataforma B2G · Saúde Pública Municipal · Multi-tenant</div>
+  <h1>UNISISM</h1>
+  <p class="tagline">
+    Sistema integrado de <strong style="color:white">regulação ambulatorial</strong>,
+    <strong style="color:white">prontuário eletrônico do cidadão</strong>, app do paciente e
+    <strong style="color:white">gestão de Tratamento Fora do Domicílio</strong> — projetado para Secretarias Municipais de Saúde brasileiras.
+  </p>
+  <div class="pill-row">
+    <span class="pill accent">SUS · CFM · LGPD</span>
+    <span class="pill">Multi-tenant</span>
+    <span class="pill">White-label</span>
+    <span class="pill">4 Faces</span>
+    <span class="pill">8 Roles</span>
+    <span class="pill">Auditoria TJ/TCM</span>
+    <span class="pill">App Cidadão</span>
+    <span class="pill">App Motorista</span>
+  </div>
+  <div class="hero-meta">
+    <div class="stat">
+      <div class="stat-label">Faces</div>
+      <div class="stat-value">4</div>
+      <div class="stat-desc">UBS · SMS · Cidadão · TFD</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Perfis</div>
+      <div class="stat-value">8</div>
+      <div class="stat-desc">RBAC granular por escopo</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Modelos</div>
+      <div class="stat-value">50+</div>
+      <div class="stat-desc">Entidades do domínio</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Conformidade</div>
+      <div class="stat-value">3</div>
+      <div class="stat-desc">LGPD · CFM · TFD/TJ</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="problema">
+  <div class="chapter-num">Capítulo 01 · O problema</div>
+  <h2>A regulação ambulatorial no SUS municipal está quebrada</h2>
+  <p class="lede">
+    Cinco dores crônicas atingem praticamente toda Secretaria Municipal de Saúde —
+    independente do porte do município. O UNISISM nasce para resolver as cinco simultaneamente.
+  </p>
+
+  <div class="grid-2">
+    <div class="card critical">
+      <div class="card-label">Dor #1 · Cidadão</div>
+      <div class="card-title">Fila opaca para o paciente</div>
+      <div class="card-body">
+        O paciente que recebe um encaminhamento da UBS não sabe se foi protocolado,
+        em que estágio está, se foi aprovado, se há agendamento. Volta à UBS para
+        perguntar — quando volta. Muitos desistem.
+      </div>
+    </div>
+    <div class="card critical">
+      <div class="card-label">Dor #2 · Operação</div>
+      <div class="card-title">Documentos em papel ou PDF avulso</div>
+      <div class="card-body">
+        Encaminhamentos circulam em pasta física ou PDF perdido no email. Pendência
+        registrada pela Regulação exige que o paciente seja reconvocado à UBS —
+        a maioria não retorna no prazo.
+      </div>
+    </div>
+    <div class="card critical">
+      <div class="card-label">Dor #3 · Compliance</div>
+      <div class="card-title">Auditoria impossível de reconstruir</div>
+      <div class="card-body">
+        Quando o Ministério Público, TCM ou Tribunal de Justiça questiona um caso,
+        a SMS não consegue dizer com precisão quem decidiu o quê, quando.
+        Risco real de responsabilização administrativa e judicial.
+      </div>
+    </div>
+    <div class="card critical">
+      <div class="card-label">Dor #4 · Orçamento</div>
+      <div class="card-title">TFD é ralo orçamentário sem rastreio</div>
+      <div class="card-body">
+        Viagens em Van/ambulância/passagem rodoviária para tratamento fora do
+        município concentram fraude: overbook, abastecimento sem comprovante,
+        ajuda de custo paga sem trilha. Saldo escorre.
+      </div>
+    </div>
+    <div class="card critical">
+      <div class="card-label">Dor #5 · Sistêmica</div>
+      <div class="card-title">Múltiplos sistemas desconectados</div>
+      <div class="card-body">
+        UBS usa um sistema, regulação usa outro, TFD opera em planilha Excel,
+        paciente fica de fora. Cada SMS reinventa a roda. Integração é dor permanente.
+      </div>
+    </div>
+    <div class="card neutral">
+      <div class="card-label">Resultado</div>
+      <div class="card-title">Cidadão perdido, gestor exposto, dinheiro sumindo</div>
+      <div class="card-body">
+        Atendente não sabe como ajudar. Regulador afoga em pilha de papel.
+        Gestor descobre fraude tarde demais. Cidadão desiste do tratamento.
+        Município paga a conta — financeira, política e jurídica.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="solucao">
+  <div class="chapter-num">Capítulo 02 · A proposta</div>
+  <h2>Uma plataforma única, do médico ao Tribunal</h2>
+  <p class="lede">
+    UNISISM cobre todo o ciclo: a UBS digitaliza o encaminhamento sem digitar,
+    a Regulação decide com fila inteligente, o cidadão acompanha pelo app, o TFD
+    opera com frota auditável criptograficamente, e o auditor externo consulta
+    uma cadeia hash que não pode ser adulterada.
+  </p>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-label">Pilar 1</div>
+      <div class="card-title">Digitalização sem digitação</div>
+      <div class="card-body">
+        OCR extrai dados estruturados do PDF original do médico.
+        Atendente revisa, não digita. Tempo médio de consolidação cai
+        de 15 minutos para 90 segundos.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pilar 2</div>
+      <div class="card-title">Visibilidade total ao cidadão</div>
+      <div class="card-body">
+        App próprio do paciente com login por CPF, notificações push
+        em cada mudança de estado e download do PDF oficial do SUS
+        quando volta da Regulação.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pilar 3</div>
+      <div class="card-title">Decisão acelerada na Regulação</div>
+      <div class="card-body">
+        Fila hierárquica estilo file-manager (UBS → Ano → Mês → Dia).
+        Aprovação, pendência ou rejeição em 3 cliques.
+        Resposta SUS sobe direto para o paciente.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pilar 4</div>
+      <div class="card-title">TFD end-to-end auditável</div>
+      <div class="card-body">
+        Solicitação → aprovação → programação de frota → abastecimento
+        com comprovante → ajuda de custo via PIX → presença digital →
+        trilha hash exportável para Tribunal de Justiça.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pilar 5</div>
+      <div class="card-title">Prontuário com retenção de 20 anos</div>
+      <div class="card-body">
+        PEC completo (alergias, condições crônicas, medicamentos, atendimentos,
+        exames, vacinas) com auditoria CFM Res. 1.821/2007 imutável por trigger SQL.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pilar 6</div>
+      <div class="card-title">LGPD nativa, não bolted-on</div>
+      <div class="card-body">
+        Minimização de dados em relatórios, anti-enumeration em toda API,
+        retenção mínima legal automática, audit trail de cada operação
+        de tratamento por 5 anos.
+      </div>
+    </div>
+  </div>
+
+  <div class="pull">
+    <div class="pull-text">
+      "O sistema não é a soma das 4 faces — é o que acontece quando elas se conversam.
+      O paciente vê o que o atendente fez. O gestor vê o que o motorista registrou.
+      O auditor reconstrói o que ninguém pode mais negar."
+    </div>
+    <div class="pull-attr">Princípio Fundador · UNISISM</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="faces">
+  <div class="chapter-num">Capítulo 03 · As 4 faces</div>
+  <h2>Quatro experiências, um sistema</h2>
+  <p class="lede">
+    Cada Face é um conjunto de rotas, telas e regras de acesso pensadas
+    para um perfil específico de usuário. Tudo conectado pelo mesmo banco
+    de dados e o mesmo contrato HTTP.
+  </p>
+
+  <div class="grid-2">
+    <div class="face-card">
+      <div class="face-num">Face 01 · Web</div>
+      <div class="face-name">Atendimento UBS</div>
+      <div class="face-actors">atendente · coordenador da UBS</div>
+      <div class="face-desc">
+        Onde o ciclo começa. Atendente da UBS recebe o paciente, faz upload do PDF
+        de solicitação médica e o sistema preenche o formulário automaticamente.
+      </div>
+      <div class="face-features">
+        <h5>Funcionalidades</h5>
+        <ul>
+          <li>OCR e extração estruturada do PDF</li>
+          <li>Cadastro automático do paciente novo</li>
+          <li>Anexos com varredura antivírus</li>
+          <li>Resolução de pendências da Regulação</li>
+          <li>PEC completo (sub-documentos)</li>
+          <li>Dashboard de produção da UBS</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="face-card">
+      <div class="face-num">Face 02 · Web</div>
+      <div class="face-name">Regulação SMS</div>
+      <div class="face-actors">regulador · admin do tenant</div>
+      <div class="face-desc">
+        Fila inteligente que organiza o trabalho. Árvore navegável por UBS, ano, mês, dia.
+        Decisão clínica documentada e enviada ao cidadão instantaneamente.
+      </div>
+      <div class="face-features">
+        <h5>Funcionalidades</h5>
+        <ul>
+          <li>Fila estilo file-manager hierárquico</li>
+          <li>Aprovação, pendência, rejeição com motivo</li>
+          <li>Anexar PDF oficial do SUS Federal</li>
+          <li>Visualizador de PDFs inline</li>
+          <li>Relatórios LGPD-first (PDF/CSV/XLSX)</li>
+          <li>Painel de administração de UBSs e usuários</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="face-card">
+      <div class="face-num">Face 03 · Mobile</div>
+      <div class="face-name">App do Cidadão</div>
+      <div class="face-actors">paciente — Flutter Android + iOS</div>
+      <div class="face-desc">
+        Conta criada automaticamente no primeiro encaminhamento. Login por CPF.
+        Notificações push em cada mudança. Download do PDF oficial do SUS.
+      </div>
+      <div class="face-features">
+        <h5>Funcionalidades</h5>
+        <ul>
+          <li>Auto-cadastro na consolidação do 1º encaminhamento</li>
+          <li>Notificações push em cada mudança de estado</li>
+          <li>Visualização de encaminhamentos e timeline</li>
+          <li>Dossiê médico (atendimentos, vacinas, exames)</li>
+          <li>Localização e contato da UBS vinculada</li>
+          <li>Solicitação de TFD com encaminhamento aprovado</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="face-card">
+      <div class="face-num">Face 04 · Web + Mobile</div>
+      <div class="face-name">Tratamento Fora do Domicílio</div>
+      <div class="face-actors">gestor TFD · atendente terminal · motorista</div>
+      <div class="face-desc">
+        Gestão logística completa de viagens custeadas: frota, motoristas, abastecimento,
+        ajuda de custo. Auditoria criptograficamente encadeada exportável para o TJ.
+      </div>
+      <div class="face-features">
+        <h5>Funcionalidades</h5>
+        <ul>
+          <li>Cadastro de veículos com saldo orçamentário mensal</li>
+          <li>Cadastro de motoristas com alerta de CNH</li>
+          <li>Programação de viagens com alocação atômica</li>
+          <li>App mobile do motorista com sync offline</li>
+          <li>Cadeia hash SHA-256 para prestação de contas</li>
+          <li>Exportação ZIP assinada (ICP-Brasil opcional)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="fluxo">
+  <div class="chapter-num">Capítulo 04 · Fluxo end-to-end</div>
+  <h2>Do encaminhamento à prestação de contas</h2>
+  <p class="lede">
+    Visão macro de como um único caso percorre o sistema — atravessando todas as Faces,
+    do primeiro contato do paciente com a UBS até a auditoria do Tribunal de Justiça.
+  </p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-num">PASSO 01</div>
+      <div class="step-title">UBS digitaliza</div>
+      <div class="step-desc">Atendente faz upload do PDF; OCR extrai dados; form é revisado.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 02</div>
+      <div class="step-title">Paciente notificado</div>
+      <div class="step-desc">Conta criada automaticamente; push: "encaminhamento protocolado".</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 03</div>
+      <div class="step-title">Regulação decide</div>
+      <div class="step-desc">Aprovar, pendência ou rejeição com motivo registrado.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 04</div>
+      <div class="step-title">SUS Federal devolve</div>
+      <div class="step-desc">PDF oficial anexado; cidadão baixa pelo app.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 05</div>
+      <div class="step-title">TFD opera viagem</div>
+      <div class="step-desc">Frota programada; ajuda de custo paga; presença digital.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 06</div>
+      <div class="step-title">TJ/TCM audita</div>
+      <div class="step-desc">ZIP com cadeia hash íntegra exportado mensalmente.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Conexão entre Faces</div>
+    Cada passo gera evento que dispara o seguinte. O paciente recebe notificação em cada
+    transição — não há "telegrama de convocação" perdido. O auditor, no fim, vê a cadeia
+    inteira sem precisar pedir documento a ninguém.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="personas">
+  <div class="chapter-num">Capítulo 05 · Personas</div>
+  <h2>Para quem este produto foi feito</h2>
+  <p class="lede">
+    Oito perfis operam o sistema, cada um com tela, ações e métricas próprias.
+    A interface é desenhada para o trabalho real de cada um — não é "um sistema único pra todo mundo".
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Persona</th>
+        <th>Onde atua</th>
+        <th>Pain real</th>
+        <th>Como resolvemos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Atendente UBS</strong><br><span class="badge brand">ATENDENTE_UBS</span></td>
+        <td>Web · UBS</td>
+        <td>Re-digitar dados do PDF; reconvocar paciente que sumiu</td>
+        <td>OCR automático; paciente avisado pelo app</td>
+      </tr>
+      <tr>
+        <td><strong>Coordenador UBS</strong><br><span class="badge brand">COORDENADOR_UBS</span></td>
+        <td>Web · UBS</td>
+        <td>Não saber a produção dos atendentes; gargalos invisíveis</td>
+        <td>Dashboard com métricas por atendente e por especialidade</td>
+      </tr>
+      <tr>
+        <td><strong>Regulador SMS</strong><br><span class="badge brand">REGULADOR_SMS</span></td>
+        <td>Web · SMS</td>
+        <td>Volume alto; perder visão de quem espera o quê</td>
+        <td>Fila hierárquica com filtros; decisão em 3 cliques</td>
+      </tr>
+      <tr>
+        <td><strong>Admin</strong><br><span class="badge brand">ADMIN</span></td>
+        <td>Web · SMS</td>
+        <td>Provisionar acesso, revogar quem saiu, responder a auditoria</td>
+        <td>CRUD completo de usuários, UBSs; auditoria queryable</td>
+      </tr>
+      <tr>
+        <td><strong>Gestor TFD</strong><br><span class="badge brand">GESTOR_TFD</span></td>
+        <td>Web · TFD</td>
+        <td>Orçamento estourando; vaga ociosa; TCM/TJ pedindo prestação</td>
+        <td>Saldo por veículo; alocação atômica; trilha exportável</td>
+      </tr>
+      <tr>
+        <td><strong>Atendente TFD</strong><br><span class="badge brand">ATENDENTE_TFD</span></td>
+        <td>Web · Terminal rodoviário</td>
+        <td>Confusão sobre quem pode pedir e com qual documentação</td>
+        <td>Formulário único com upload do comprovante</td>
+      </tr>
+      <tr>
+        <td><strong>Motorista</strong><br><span class="badge brand">MOTORISTA_TFD</span></td>
+        <td>Mobile · App Flutter</td>
+        <td>Escala no WhatsApp; km no caderno; comprovante sumir</td>
+        <td>Escala no app; presença digital; hodômetro registrado</td>
+      </tr>
+      <tr>
+        <td><strong>Cidadão</strong><br><span class="badge neutral">paciente</span></td>
+        <td>Mobile · App Flutter</td>
+        <td>Não saber em que pé está; perder convocação</td>
+        <td>Push em cada mudança; PDF oficial disponível no app</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="casos-uso">
+  <div class="chapter-num">Capítulo 06 · Casos de uso</div>
+  <h2>O que muda no dia-a-dia</h2>
+
+  <h3>Caso A — Encaminhamento de especialidade</h3>
+  <p>
+    Paciente vai à UBS com PDF do médico solicitando cardiologista. Atendente arrasta
+    o PDF para a tela, o sistema extrai CPF, CID, especialidade e prioridade.
+    Em 90 segundos o caso está na fila da Regulação e o paciente recebeu push:
+    <em>"Seu encaminhamento foi protocolado."</em>
+  </p>
+
+  <h3>Caso B — Pendência sem reconvocação</h3>
+  <p>
+    Regulador detecta que faltou exame de sangue. Registra pendência com a observação:
+    <em>"Anexar hemograma recente (até 90 dias)."</em>
+    O paciente recebe push imediatamente. A UBS de origem é notificada por email.
+    Quando o paciente retorna, a atendente vê na lista — anexa o documento sem precisar
+    abrir caso novo. Volta para a Regulação em menos de 24h em média.
+  </p>
+
+  <h3>Caso C — Aprovação e resposta SUS</h3>
+  <p>
+    Regulador aprova com agendamento previsto. Quando o SUS Federal devolve com PDF
+    oficial da data definitiva, o regulador faz upload na tela <code>/sms/respostas</code>.
+    O paciente recebe push: <em>"Sua consulta foi agendada — PDF disponível no app."</em>
+    Cidadão baixa o PDF, vai à consulta no dia marcado.
+  </p>
+
+  <h3>Caso D — TFD para tratamento fora do município</h3>
+  <p>
+    Paciente aprovado precisa ir para a capital. Atendente UBS cria solicitação TFD.
+    Gestor TFD aprova e aloca em uma viagem com Van + motorista designado.
+    Antes da viagem: motorista solicita abastecimento (gestor libera), gestor pagamenta
+    ajuda de custo via PIX para alimentação.
+    No dia: motorista inicia viagem com hodômetro, faz chamada digital de passageiros,
+    conclui com hodômetro final. Tudo gera linha na cadeia hash SHA-256.
+    Final do mês: exportação ZIP com a cadeia inteira, opcionalmente assinada por
+    ICP-Brasil, vai para o Tribunal de Justiça.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face1">
+  <div class="chapter-num">Capítulo 07 · Face 1 em detalhe</div>
+  <h2>Atendimento UBS</h2>
+  <p class="lede">
+    A face onde o ciclo nasce. Onde o atendente da Unidade Básica de Saúde digitaliza,
+    consolida e envia o encaminhamento para análise — e o paciente é descoberto, cadastrado,
+    notificado.
+  </p>
+
+  <h3>Funcionalidades</h3>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">Wizard de Consolidação</div>
+      <div class="card-title">Upload → OCR → revisão → submit</div>
+      <div class="card-body">
+        4 etapas visuais. Tempo médio: 90 segundos por encaminhamento.
+        Rascunho salvo em localStorage permite refresh sem perder progresso.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">PEC Completo</div>
+      <div class="card-title">Prontuário Eletrônico do Cidadão</div>
+      <div class="card-body">
+        Alergias, condições crônicas, medicamentos em uso, atendimentos (SOAP),
+        exames, vacinações, viagens TFD, histórico familiar. Toda mutação auditada.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Resolução de Pendência</div>
+      <div class="card-title">Sem reabrir caso novo</div>
+      <div class="card-body">
+        Paciente retorna, atendente abre a lista, vê os encaminhamentos em pendência,
+        anexa documento, escreve nota — em menos de 1 minuto está de volta à fila.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Dashboard de Produção</div>
+      <div class="card-title">KPIs em tempo real</div>
+      <div class="card-body">
+        Encaminhamentos do mês, taxa de aprovação na 1ª, pendências ativas,
+        pacientes únicos. Para coordenadores: visão agregada da UBS.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face2">
+  <div class="chapter-num">Capítulo 08 · Face 2 em detalhe</div>
+  <h2>Regulação SMS</h2>
+  <p class="lede">
+    A face onde decisões clínicas e administrativas acontecem.
+    Onde a fila vira inteligível, onde a decisão é registrada com motivo,
+    onde a resposta oficial do SUS volta para o cidadão.
+  </p>
+
+  <h3>Funcionalidades</h3>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">Fila File-Manager</div>
+      <div class="card-title">Árvore hierárquica UBS → Ano → Mês → Dia</div>
+      <div class="card-body">
+        Navegação estilo Finder. Conta de pendentes por nó. Drill-down para lista plana.
+        Filtros laterais: status, prioridade, especialidade, idade da fila.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Painel de Decisão</div>
+      <div class="card-title">Aprovar · Pendência · Rejeitar</div>
+      <div class="card-body">
+        3 botões com atalho de teclado (A/P/R). Cada decisão exige motivo
+        quando aplicável. Timeline registra automaticamente.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Resposta SUS</div>
+      <div class="card-title">PDF oficial direto pro paciente</div>
+      <div class="card-body">
+        Upload do PDF federal anexa ao encaminhamento. Push automático para o
+        paciente com link de download. UBS de origem também é notificada.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Administração</div>
+      <div class="card-title">Rede, usuários, banners</div>
+      <div class="card-body">
+        CRUD de UBSs, atendentes, banners do app paciente.
+        Reset de senha admin. Ativação/desativação com revogação de sessão.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face3">
+  <div class="chapter-num">Capítulo 09 · Face 3 em detalhe</div>
+  <h2>App do Cidadão</h2>
+  <p class="lede">
+    A face que coloca o paciente no centro do fluxo. App Flutter Android + iOS.
+    Conta criada automaticamente no primeiro encaminhamento.
+    Notificação a cada mudança de estado.
+  </p>
+
+  <h3>Funcionalidades</h3>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">Auto-cadastro</div>
+      <div class="card-title">Conta criada quando UBS consolida</div>
+      <div class="card-body">
+        Senha inicial = CPF. Flag de senha provisória força troca bloqueante no
+        primeiro login. Paciente nunca precisa "cadastrar-se" — só baixar e logar.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Notificações Push</div>
+      <div class="card-title">Mudança de estado em tempo real</div>
+      <div class="card-body">
+        Cada transição (criado, pendência, aprovado, rejeitado, agendado,
+        resposta SUS) dispara push. Fallback email em transições críticas.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Dossiê Médico</div>
+      <div class="card-title">Histórico clínico no bolso</div>
+      <div class="card-body">
+        Atendimentos, vacinações, exames. Read-only para o cidadão.
+        Toda leitura auditada pelo backend (CFM Res. 1.821/2007).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Solicitação de TFD</div>
+      <div class="card-title">Pedido de viagem direto pelo app</div>
+      <div class="card-body">
+        Lista de viagens com vagas disponíveis. Solicitação vinculada a encaminhamento
+        aprovado. Prioridade derivada no servidor (não confia em input do cliente).
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Segurança que respeita o cidadão</div>
+    Token opaco (não JWT) permite revogação instantânea por delete-row. Refresh rotativo
+    com TTL 30 dias e detecção de reuso: se token é clonado, toda a cadeia é revogada e
+    o usuário é alertado. Anti-enumeration global: tentar ID de outro paciente sempre retorna 404.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="face4">
+  <div class="chapter-num">Capítulo 10 · Face 4 em detalhe</div>
+  <h2>Tratamento Fora do Domicílio (TFD)</h2>
+  <p class="lede">
+    A face mais complexa: gestão logística end-to-end de transporte de pacientes para
+    tratamento em outro município. Cadastro de frota, programação de viagens,
+    abastecimento controlado, ajuda de custo, trilha imutável para o TJ.
+  </p>
+
+  <h3>Módulos</h3>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-label">Operacional</div>
+      <div class="card-title">Frota e Motoristas</div>
+      <div class="card-body">
+        Cadastro de veículos (placa, modelo, capacidade, hodômetro), motoristas
+        com CNH e categoria. Alerta de CNH a vencer em 30 dias.
+        Manutenção e afastamento auditados.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Operacional</div>
+      <div class="card-title">Solicitações e Viagens</div>
+      <div class="card-body">
+        Fila de solicitações com filtros. Aprovação atômica com alocação opcional.
+        Programação de viagem com vagas (default = capacidade do veículo).
+        Lock pessimista evita overbook.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Operacional</div>
+      <div class="card-title">App do Motorista</div>
+      <div class="card-body">
+        Flutter com sync incremental offline. Inicia viagem com hodômetro,
+        faz chamada digital de passageiros, conclui com hodômetro final.
+        Push para mudanças de escala.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Financeiro</div>
+      <div class="card-title">Abastecimento</div>
+      <div class="card-body">
+        Motorista solicita → Gestor libera → Motorista anexa cupom fiscal.
+        Modo "valor direto" ou "litros × preço". Deduz do saldo do veículo.
+        Saldo negativo bloqueia novos abastecimentos.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Financeiro</div>
+      <div class="card-title">Saldo Orçamentário</div>
+      <div class="card-body">
+        Saldo mensal por veículo, alimentado por aportes. Ajuste manual (apenas Admin)
+        exige motivo. Visão consolidada por veículo e por mês.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Financeiro</div>
+      <div class="card-title">Ajuda de Custo</div>
+      <div class="card-body">
+        Alimentação, hospedagem, deslocamento local. Fluxo: criar → autorizar → pagar.
+        Pagamento via PIX ou transferência com upload de comprovante.
+        Saldo separado do saldo de frota.
+      </div>
+    </div>
+  </div>
+
+  <h3>Auditoria criptográfica para o Tribunal</h3>
+  <div class="grid-2">
+    <div class="card success">
+      <div class="card-label">Cadeia Hash SHA-256</div>
+      <div class="card-title">Cada linha amarrada à anterior</div>
+      <div class="card-body">
+        Toda operação TFD relevante gera linha em <code>tfd_audit_log</code> com
+        <code>hash = SHA-256(payload || hashAnterior)</code>. Adulteração de qualquer
+        linha quebra a cadeia. Verificação periódica (hourly cron).
+      </div>
+    </div>
+    <div class="card success">
+      <div class="card-label">Exportação para TJ/TCM</div>
+      <div class="card-title">ZIP com manifest assinado</div>
+      <div class="card-body">
+        Endpoint exporta período em ZIP contendo CSV/JSON da cadeia, comprovantes
+        referenciados, manifest com primeiros e últimos hashes, e — opcionalmente —
+        assinatura ICP-Brasil (cert A1 PFX).
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="diferenciais">
+  <div class="chapter-num">Capítulo 11 · Diferenciais</div>
+  <h2>O que torna o UNISISM diferente</h2>
+  <p class="lede">
+    Pontos onde a abordagem do produto se distingue de soluções genéricas
+    de prontuário ou de planilhas espalhadas em pasta compartilhada.
+  </p>
+
+  <div class="grid-3">
+    <div class="stat-card">
+      <div class="stat-num">90s</div>
+      <div class="stat-label">Tempo de consolidação</div>
+      <div class="stat-desc">Antes: 15 min · com OCR: 1m30s</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">3<span style="font-size:18px">×</span></div>
+      <div class="stat-label">Resolução de pendência</div>
+      <div class="stat-desc">UBS recebe email; paciente é avisado pelo app</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Cobertura LGPD</div>
+      <div class="stat-desc">Anti-enum, retenção 5a, minimização nativa</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">20<span style="font-size:18px">a</span></div>
+      <div class="stat-label">Retenção CFM</div>
+      <div class="stat-desc">Trigger SQL bloqueia UPDATE/DELETE no audit</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Cadeia hash TFD</div>
+      <div class="stat-desc">Permanente; verificação automática</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">N</div>
+      <div class="stat-label">Tenants por instância</div>
+      <div class="stat-desc">Multi-tenant single-DB com isolamento lógico</div>
+    </div>
+  </div>
+
+  <h3>Onze decisões arquiteturais que importam</h3>
+  <table>
+    <tr><th>#</th><th>Decisão</th><th>Por quê</th></tr>
+    <tr><td>1</td><td><strong>Backend é fonte única de verdade</strong></td><td>Frontend nunca decide regra; RBAC visível só espelha o que o backend já força.</td></tr>
+    <tr><td>2</td><td><strong>Anti-enumeration por 404 (não 403)</strong></td><td>404 não confirma existência; impede enumeração de IDs entre tenants.</td></tr>
+    <tr><td>3</td><td><strong>Soft delete com audit preservado</strong></td><td>Compliance — apagar paciente não apaga seu histórico clínico.</td></tr>
+    <tr><td>4</td><td><strong>Triggers SQL bloqueiam audit</strong></td><td>UPDATE/DELETE em audit lançam exception; legalmente blindado.</td></tr>
+    <tr><td>5</td><td><strong>Hash chain SHA-256 no TFD</strong></td><td>Adulteração quebra cadeia; matemática garante integridade.</td></tr>
+    <tr><td>6</td><td><strong>Boot fail-fast em produção</strong></td><td>Recusa subir com secret fraco, CORS aberto, audit ausente, etc.</td></tr>
+    <tr><td>7</td><td><strong>Composition root único</strong></td><td>Wiring de dependências em um lugar; sem singletons soltos.</td></tr>
+    <tr><td>8</td><td><strong>ClamAV scan antes de servir anexo</strong></td><td>scanStatus PENDENTE → LIMPO obrigatório para download.</td></tr>
+    <tr><td>9</td><td><strong>PDF comprimido antes de armazenar</strong></td><td>Ghostscript + fallback pdf-lib; reduz custo de storage e banda.</td></tr>
+    <tr><td>10</td><td><strong>Refresh rotativo com reuse detection</strong></td><td>Token clonado revoga toda a cadeia da conta; alerta de segurança.</td></tr>
+    <tr><td>11</td><td><strong>Rate limit em camadas (IP + usuário + feature)</strong></td><td>Mitiga abuso e proteção em profundidade.</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="compliance">
+  <div class="chapter-num">Capítulo 12 · Conformidade legal</div>
+  <h2>Três regimes brasileiros, simultâneos</h2>
+  <p class="lede">
+    O produto opera dentro de três frameworks legais brasileiros ao mesmo tempo.
+    Nenhum é "best practice opcional" — todos são requisitos com responsabilidade
+    civil e/ou criminal em caso de violação.
+  </p>
+
+  <div class="grid-3">
+    <div class="card success">
+      <div class="card-label">Lei 13.709/2018</div>
+      <div class="card-title">LGPD</div>
+      <div class="card-body">
+        <strong>Art. 37</strong> — Registro de operações de tratamento.
+        <ul>
+          <li>Retenção mínima: <strong>5 anos</strong></li>
+          <li>Tabela <code>relatorio_audit</code></li>
+          <li>Append-only por trigger SQL</li>
+          <li>Minimização: cada relatório tem lista explícita de colunas</li>
+          <li>Anti-enumeration em toda API</li>
+          <li>Direito de revogação atendido</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card success">
+      <div class="card-label">CFM Res. 1.821/2007</div>
+      <div class="card-title">Prontuário Eletrônico</div>
+      <div class="card-body">
+        <strong>Art. 8º</strong> — Imutabilidade do prontuário.
+        <ul>
+          <li>Retenção mínima: <strong>20 anos</strong> após último atendimento</li>
+          <li>Tabela <code>paciente_prontuario_audit</code></li>
+          <li>Append-only por trigger SQL</li>
+          <li>Registro do profissional (CRM/COREN/CRO) em cada audit</li>
+          <li>Soft delete preserva histórico</li>
+          <li>Reconstrução de estado em qualquer data passada</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card success">
+      <div class="card-label">TFD / Prestação de Contas</div>
+      <div class="card-title">Tribunal de Justiça / TCM</div>
+      <div class="card-body">
+        Trilha imutável para auditoria externa.
+        <ul>
+          <li>Retenção: <strong>permanente</strong></li>
+          <li>Tabela <code>tfd_audit_log</code></li>
+          <li>Cadeia hash SHA-256 encadeada</li>
+          <li>Verificação automática hourly</li>
+          <li>Exportação ZIP por período</li>
+          <li>Assinatura ICP-Brasil opcional (cert A1 PFX)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>Mecanismos de segurança em profundidade</h3>
+  <table>
+    <tr><th>Categoria</th><th>Mecanismo</th></tr>
+    <tr><td>Autenticação</td><td>JWT HS256 (servidores) · token opaco (cidadão) · refresh rotativo com reuse detection</td></tr>
+    <tr><td>Senha</td><td>bcrypt cost configurável · blocklist de senhas fracas · senha provisória bloqueante</td></tr>
+    <tr><td>Sessão</td><td>Revogação instantânea via DB · expiração 30 min · refresh 7-30 dias</td></tr>
+    <tr><td>RBAC</td><td>8 roles · escopo GLOBAL/PREFEITURA/UBS · filtro automático em todas as queries</td></tr>
+    <tr><td>Anti-enumeration</td><td>404 (não 403) em recurso fora do escopo · resposta única em login · timing-constant em reset</td></tr>
+    <tr><td>Rate limit</td><td>Por IP + usuário + feature · tiered (login mais restrito que listagem)</td></tr>
+    <tr><td>Upload</td><td>MIME allowlist · max 10 MB · ClamAV antes de servir · URL pré-assinada TTL 5 min</td></tr>
+    <tr><td>Headers</td><td>HSTS · CSP · X-Frame-Options DENY · Referrer-Policy strict · Permissions-Policy</td></tr>
+    <tr><td>Logs</td><td>Redaction de senhas, tokens, CPF · request ID propagado fim-a-fim</td></tr>
+    <tr><td>Backup</td><td>Postgres diário · MinIO/S3 versionado · teste de restore trimestral</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="metricas">
+  <div class="chapter-num">Capítulo 13 · Indicadores</div>
+  <h2>O que medir para saber se está funcionando</h2>
+  <p class="lede">
+    Métricas operacionais e clínicas que o gestor da SMS pode acompanhar diariamente,
+    semanalmente ou mensalmente — todas calculáveis automaticamente pelo sistema.
+  </p>
+
+  <div class="grid-4">
+    <div class="stat-card">
+      <div class="stat-label">Volume</div>
+      <div class="stat-num" style="font-size:24px">Encaminhamentos / mês</div>
+      <div class="stat-desc">Total e por UBS/atendente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Velocidade</div>
+      <div class="stat-num" style="font-size:24px">Idade média da fila</div>
+      <div class="stat-desc">Tempo até decisão da Regulação</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Qualidade</div>
+      <div class="stat-num" style="font-size:24px">Aprovação 1ª tentativa</div>
+      <div class="stat-desc">% sem pendência registrada</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Responsividade</div>
+      <div class="stat-num" style="font-size:24px">Pendência em 48h</div>
+      <div class="stat-desc">% resolvida pelo paciente em 2 dias</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cobertura</div>
+      <div class="stat-num" style="font-size:24px">Resposta SUS</div>
+      <div class="stat-desc">% aprovados com PDF oficial entregue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TFD</div>
+      <div class="stat-num" style="font-size:24px">Custo / km</div>
+      <div class="stat-desc">Abastecimento ÷ km rodados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TFD</div>
+      <div class="stat-num" style="font-size:24px">Taxa de ocupação</div>
+      <div class="stat-desc">Passageiros presentes ÷ vagas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TFD</div>
+      <div class="stat-num" style="font-size:24px">Taxa de faltas</div>
+      <div class="stat-desc">AUSENTE + DESISTIU ÷ alocações</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DESIGN SYSTEM SECTION
+     Aqui o doc passa a demonstrar visualmente o que a interface usa.
+     ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="design-filosofia">
+  <div class="chapter-num">Capítulo 14 · Design System · Filosofia</div>
+  <h2>B2G Brutalist</h2>
+  <p class="lede">
+    Business-to-Government. Software institucional operado por servidores públicos
+    treinados, sob jornadas de 8 horas, exibindo dados sensíveis, sob auditoria.
+    Mental model: terminal Bloomberg · console AWS · Mission Control NASA.
+    Não é "startup fofa".
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Princípio</th><th>Tradução prática</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>P1</td><td><strong>Autoridade institucional</strong></td><td>Fonte sem-serifa · alto contraste · azul marinho como cor de ação. Nada "startup fofa".</td></tr>
+      <tr><td>P2</td><td><strong>Densidade informacional</strong></td><td>Tela ≈ painel Bloomberg. Texto pequeno e legível. Sem rolagem longa.</td></tr>
+      <tr><td>P3</td><td><strong>Cantos retos</strong></td><td>Proibido <code>rounded-*</code> além de <code>rounded-sm</code>. Reset zera <code>border-radius</code> em inputs.</td></tr>
+      <tr><td>P4</td><td><strong>Bordas finas, não sombras</strong></td><td>Hierarquia por <code>border-slate-200</code> + cor de fundo. Nunca <code>shadow-md</code> difuso.</td></tr>
+      <tr><td>P5</td><td><strong>Cores sóbrias</strong></td><td>Azul marinho = ação. Cinzas = neutro. Verde/âmbar/vermelho apenas em estado.</td></tr>
+      <tr><td>P6</td><td><strong>Monoespaçada para dados</strong></td><td>Protocolos, CPF, datas, IDs, badges, labels. Sans em nomes e textos corridos.</td></tr>
+      <tr><td>P7</td><td><strong>Atalhos de teclado</strong></td><td>Todo botão primário e aba ganha <code>&lt;kbd&gt;</code>. Operador navega com teclado.</td></tr>
+      <tr><td>P8</td><td><strong>Sub-rotas sobre modais</strong></td><td>Informação persistente = rota. Ação pontual = sub-rota ou modal focado.</td></tr>
+      <tr><td>P9</td><td><strong>Zero gradiente colorido</strong></td><td>Única exceção: gradientes muito sutis branco→cinza em cabeçalhos.</td></tr>
+      <tr><td>P10</td><td><strong>RBAC visível</strong></td><td>UI esconde o que o backend já proíbe. Não mostra botão que o usuário não pode usar.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pull">
+    <div class="pull-text">
+      "A interface vendeu sua alma quando virou apresentação. Aqui ela volta a ser ferramenta.
+      O operador é um piloto, não um turista — entrega densidade, tira distração, respeita
+      a inteligência de quem está do outro lado da tela."
+    </div>
+    <div class="pull-attr">Manifesto do Design System B2G</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="design-paleta">
+  <div class="chapter-num">Capítulo 15 · Design System · Paleta</div>
+  <h2>Cores como semântica</h2>
+  <p class="lede">
+    Nada decorativo. Cada cor comunica algo específico — ação institucional,
+    estado operacional, hierarquia. A paleta é deliberadamente pequena.
+  </p>
+
+  <h3>Neutros — espinha dorsal</h3>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-50)"></div>
+      <div class="swatch-name">slate-50</div>
+      <div class="swatch-hex">#f8fafc</div>
+      <div class="swatch-use">Fundo da página</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:white"></div>
+      <div class="swatch-name">white</div>
+      <div class="swatch-hex">#ffffff</div>
+      <div class="swatch-use">Painéis e cards</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-100)"></div>
+      <div class="swatch-name">slate-100</div>
+      <div class="swatch-hex">#f1f5f9</div>
+      <div class="swatch-use">Hover de linhas</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-200)"></div>
+      <div class="swatch-name">slate-200</div>
+      <div class="swatch-hex">#e2e8f0</div>
+      <div class="swatch-use">Borda padrão (1px)</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-300)"></div>
+      <div class="swatch-name">slate-300</div>
+      <div class="swatch-hex">#cbd5e1</div>
+      <div class="swatch-use">Borda de inputs</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-500)"></div>
+      <div class="swatch-name">slate-500</div>
+      <div class="swatch-hex">#64748b</div>
+      <div class="swatch-use">Labels uppercase</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-700)"></div>
+      <div class="swatch-name">slate-700</div>
+      <div class="swatch-hex">#334155</div>
+      <div class="swatch-use">Tabelas e corpo</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-900)"></div>
+      <div class="swatch-name">slate-900</div>
+      <div class="swatch-hex">#0f172a</div>
+      <div class="swatch-use">Texto primário</div>
+    </div>
+  </div>
+
+  <h3>Ação institucional — único token customizável por tenant</h3>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--brand-primary)"></div>
+      <div class="swatch-name">brand-primary</div>
+      <div class="swatch-hex">#1e3a8a</div>
+      <div class="swatch-use">Botão primário · ação principal</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--brand-primary-hover)"></div>
+      <div class="swatch-name">brand-hover</div>
+      <div class="swatch-hex">#1e40af</div>
+      <div class="swatch-use">Hover do primário</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--brand-bg-soft)"></div>
+      <div class="swatch-name">brand-soft</div>
+      <div class="swatch-hex">#eff6ff</div>
+      <div class="swatch-use">Tabs ativas · informativo</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--brand-border)"></div>
+      <div class="swatch-name">brand-border</div>
+      <div class="swatch-hex">#1d4ed8</div>
+      <div class="swatch-use">Borda de elementos ativos</div>
+    </div>
+    <div class="swatch" style="background:var(--slate-100)">
+      <div class="swatch-name" style="font-size:10px">⚠️ White-label</div>
+      <div class="swatch-use" style="margin-top:6px;font-size:10px;line-height:1.4">
+        Cada tenant pode sobrescrever <code>--brand-primary</code> via CSS variable
+      </div>
+    </div>
+  </div>
+
+  <h3>Semânticos — apenas para estado</h3>
+  <p>Regra de ouro: nenhum uso estético de cor semântica. Verde, âmbar e vermelho são reservados para <strong>comunicar estado</strong> — nunca para "destacar" ou "decorar".</p>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--success-bg);border:2px solid var(--success-border)"></div>
+      <div class="swatch-name">success</div>
+      <div class="swatch-hex">#15803d</div>
+      <div class="swatch-use">APROVADO · sessão ativa · exame normal</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--warning-bg);border:2px solid var(--warning-border)"></div>
+      <div class="swatch-name">warning</div>
+      <div class="swatch-hex">#a16207</div>
+      <div class="swatch-use">PENDÊNCIA · PRIORITÁRIA · aguardando</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--critical-bg);border:2px solid var(--critical-border)"></div>
+      <div class="swatch-name">critical</div>
+      <div class="swatch-hex">#991b1b</div>
+      <div class="swatch-use">URGENTE · alergia grave · REJEITADO</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--info-bg);border:2px solid var(--info-border)"></div>
+      <div class="swatch-name">info</div>
+      <div class="swatch-hex">#0e7490</div>
+      <div class="swatch-use">Informativo · ajuda contextual</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:var(--slate-50);border:2px solid var(--slate-500)"></div>
+      <div class="swatch-name">neutro</div>
+      <div class="swatch-hex">#64748b</div>
+      <div class="swatch-use">RASCUNHO · ENCERRADO</div>
+    </div>
+  </div>
+
+  <h3>Badges em ação</h3>
+  <div class="demo-box">
+    <div class="demo-label">Exemplo · Estados de encaminhamento</div>
+    <div class="btn-row">
+      <span class="badge success">APROVADO</span>
+      <span class="badge warning">PENDÊNCIA</span>
+      <span class="badge critical">REJEITADO</span>
+      <span class="badge info">AGUARDANDO_REGULACAO</span>
+      <span class="badge neutral">RASCUNHO</span>
+      <span class="badge brand">URGENTE</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="design-tipografia">
+  <div class="chapter-num">Capítulo 16 · Design System · Tipografia</div>
+  <h2>Duas famílias, escala mínima</h2>
+  <p class="lede">
+    <strong>Inter</strong> (sans-serif) para nomes, textos corridos e cabeçalhos.
+    <strong>JetBrains Mono</strong> (monoespaçada) para protocolos, CPF, datas, IDs,
+    badges e labels uppercase. Nenhuma outra família, nenhum tamanho fora da escala.
+  </p>
+
+  <h3>Demonstração de escala</h3>
+  <div style="background:white;border:1px solid var(--slate-200);padding:8px 28px">
+    <div class="type-row">
+      <div class="type-sample-xxl">Número Grande · 36px</div>
+      <div class="type-spec">36px / 800</div>
+      <div class="type-use">Métricas em KPI cards</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-xl">Título de Seção · 24px</div>
+      <div class="type-spec">24px / 700</div>
+      <div class="type-use">H3 · cabeçalho de painel</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-lg">Título de Modal · 18px</div>
+      <div class="type-spec">18px / 700</div>
+      <div class="type-use">H4 · cabeçalho de modal</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-base">Texto Principal · 16px — para parágrafos institucionais e descrições.</div>
+      <div class="type-spec">16px / 400</div>
+      <div class="type-use">Texto institucional</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-sm">Texto Padrão · 14px — usado em inputs e copy padrão da interface operacional.</div>
+      <div class="type-spec">14px / 400</div>
+      <div class="type-use">Inputs · texto padrão</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-xs">Corpo de Tabela · 12px — densidade alta em listas longas e formulários extensos.</div>
+      <div class="type-spec">12px / 400</div>
+      <div class="type-use">Tabelas · formulários</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-mono">Mono · UBS-2026-100137 · 87654321 · 2026-05-29T14:32:18Z</div>
+      <div class="type-spec">12px mono</div>
+      <div class="type-use">IDs · protocolos · datas</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-label">Label Uppercase · 10px tracking-widest</div>
+      <div class="type-spec">10px mono</div>
+      <div class="type-use">Cabeçalhos de painel</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample-num">87.342</div>
+      <div class="type-spec">30px mono</div>
+      <div class="type-use">Métrica numérica destacada</div>
+    </div>
+  </div>
+
+  <h3>Convenções de aplicação</h3>
+  <table>
+    <tr><th>Contexto</th><th>Classe / Pattern</th></tr>
+    <tr><td>Labels uppercase</td><td><code>text-[10px] font-semibold tracking-widest uppercase</code></td></tr>
+    <tr><td>Títulos de painéis</td><td><code>font-mono text-xs font-bold tracking-widest uppercase</code></td></tr>
+    <tr><td>Dados tabulares</td><td><code>font-mono text-xs</code></td></tr>
+    <tr><td>Números grandes</td><td><code>font-mono text-3xl font-bold tracking-tight</code></td></tr>
+    <tr><td>Features da Inter</td><td><code>font-feature-settings: 'cv02','cv03','cv04','cv11'</code></td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="design-componentes">
+  <div class="chapter-num">Capítulo 17 · Design System · Componentes</div>
+  <h2>Padrões recorrentes</h2>
+  <p class="lede">
+    Componentes que aparecem em toda a interface, demonstrados aqui em seu estado real.
+    Cada um existe para uma intenção específica do produto.
+  </p>
+
+  <h3>Botões</h3>
+  <div class="demo-box">
+    <div class="demo-label">Botões · padrão B2G</div>
+    <div class="btn-row">
+      <button class="btn btn-primary">Aprovar <span class="kbd">A</span></button>
+      <button class="btn btn-secondary">Cancelar <span class="kbd">ESC</span></button>
+      <button class="btn btn-danger">Rejeitar <span class="kbd">R</span></button>
+    </div>
+    <p style="margin-top:18px;font-size:12px;color:var(--slate-500)">
+      Todo botão primário e cada aba ganha um <code>&lt;kbd&gt;</code> com letra ou número.
+      O operador navega com teclado — não está clicando o dia inteiro.
+    </p>
+  </div>
+
+  <h3>KPI Cards</h3>
+  <div class="grid-4">
+    <div class="stat-card">
+      <div class="stat-label">Encaminhamentos</div>
+      <div class="stat-num">87</div>
+      <div class="stat-desc">↑ 12% vs mês anterior</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aprovação 1ª</div>
+      <div class="stat-num">94<span style="font-size:18px">%</span></div>
+      <div class="stat-desc">Meta 90%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pendências</div>
+      <div class="stat-num" style="color:var(--warning)">12</div>
+      <div class="stat-desc">3 há mais de 48h</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Idade da fila</div>
+      <div class="stat-num">2.4<span style="font-size:18px">d</span></div>
+      <div class="stat-desc">P95 média</div>
+    </div>
+  </div>
+
+  <h3>Tabela densa</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Protocolo</th>
+        <th>Paciente</th>
+        <th>Especialidade</th>
+        <th>Prioridade</th>
+        <th>Status</th>
+        <th>Idade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>UBS-2026-100137</code></td>
+        <td>Maria da Silva</td>
+        <td>Cardiologia</td>
+        <td><span class="badge warning">PRIORITÁRIA</span></td>
+        <td><span class="badge info">AGUARDANDO</span></td>
+        <td><code>2.1d</code></td>
+      </tr>
+      <tr>
+        <td><code>UBS-2026-100138</code></td>
+        <td>João Santos</td>
+        <td>Ortopedia</td>
+        <td><span class="badge neutral">ELETIVA</span></td>
+        <td><span class="badge warning">PENDÊNCIA</span></td>
+        <td><code>4.7d</code></td>
+      </tr>
+      <tr>
+        <td><code>UBS-2026-100139</code></td>
+        <td>Ana Souza</td>
+        <td>Oncologia</td>
+        <td><span class="badge critical">URGENTE</span></td>
+        <td><span class="badge success">APROVADO</span></td>
+        <td><code>0.4d</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Callouts contextuais</h3>
+  <div class="callout">
+    <div class="callout-title">Informação</div>
+    Mensagens neutras de contexto, dicas de uso ou notas de comportamento esperado.
+  </div>
+  <div class="callout success">
+    <div class="callout-title">Sucesso</div>
+    Confirmações de operações concluídas, validações que passaram.
+  </div>
+  <div class="callout warning">
+    <div class="callout-title">Atenção</div>
+    Estados pendentes, aguardando ação do usuário ou de outro perfil.
+  </div>
+  <div class="callout critical">
+    <div class="callout-title">Crítico</div>
+    Erros bloqueantes, ações irreversíveis, requisitos legais não atendidos.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="whitelabel">
+  <div class="chapter-num">Capítulo 18 · Multi-tenant & White-label</div>
+  <h2>Uma plataforma, N clientes</h2>
+  <p class="lede">
+    UNISISM é multi-tenant single-database. Cada cliente (Prefeitura, Fundação, Consórcio)
+    é uma linha em <code>Prefeitura</code> com isolamento lógico estrito. Branding é
+    100% parametrizável — nenhum nome de cliente entra em código, seed ou copy.
+  </p>
+
+  <h3>Como o branding é customizado por cliente</h3>
+  <table>
+    <thead>
+      <tr><th>Item</th><th>Onde mora</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Nome institucional (ex.: "Prefeitura Municipal de X")</td><td>Campo <code>Prefeitura.nome</code></td></tr>
+      <tr><td>Logo do cabeçalho</td><td><code>static/brand/&lt;tenantId&gt;/logo.svg</code></td></tr>
+      <tr><td>Cor primária (ação)</td><td>CSS variable <code>--brand-primary</code> sobrescrita por tenant</td></tr>
+      <tr><td>Domínio próprio</td><td>DNS + Caddy reverse-proxy (cliente aponta <code>api.&lt;dominio&gt;</code>)</td></tr>
+      <tr><td>Templates de email</td><td>Parametrizados por <code>{{tenant.nome}}</code></td></tr>
+      <tr><td>Copy institucional ("Bem-vindo, servidor")</td><td>i18n por tenant em <code>frontend/src/lib/i18n/</code></td></tr>
+      <tr><td>Termos de uso · Política de privacidade · DPO</td><td>URLs e email do encarregado configurados por tenant</td></tr>
+      <tr><td>Apps Flutter (paciente · motorista)</td><td>Build flavor ou config remota carregada no startup</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Provisionar um novo cliente — passo a passo</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-num">PASSO 01</div>
+      <div class="step-title">Criar Prefeitura</div>
+      <div class="step-desc">Desenvolvedor cria tenant via API admin.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 02</div>
+      <div class="step-title">Criar Admin</div>
+      <div class="step-desc">Primeiro ADMIN do cliente com senha provisória.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 03</div>
+      <div class="step-title">Branding</div>
+      <div class="step-desc">Logo, cor primária, termos, DPO.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 04</div>
+      <div class="step-title">DNS</div>
+      <div class="step-desc">Cliente aponta domínio. Caddy emite TLS auto.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 05</div>
+      <div class="step-title">UBSs e usuários</div>
+      <div class="step-desc">Admin do cliente provisiona via UI.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PASSO 06</div>
+      <div class="step-title">Go-live</div>
+      <div class="step-desc">Treinamento + comunicação aos cidadãos.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Isolamento estrito</div>
+    Toda query no banco passa por <code>scopeWhere</code> que injeta <code>prefeituraId</code>
+    automaticamente. Acesso a recurso de outro tenant retorna <strong>404</strong> (não 403)
+    para não vazar existência. Cadeia hash do TFD é per-tenant — cada cliente tem sua
+    própria cadeia com seu próprio genesis.
+  </div>
+
+  <h3>Modelo comercial sugerido para revenda</h3>
+  <table>
+    <thead>
+      <tr><th>Plano</th><th>Inclui</th><th>Indicado para</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge neutral">STARTER</span></td>
+        <td>Faces 1, 2 e 3 · até 3 UBSs · relatórios básicos</td>
+        <td>Municípios pequenos · sem TFD operando</td>
+      </tr>
+      <tr>
+        <td><span class="badge brand">PROFISSIONAL</span></td>
+        <td>+ Face 4 (TFD básico) · até 10 UBSs · hash chain</td>
+        <td>Municípios médios com TFD ativo</td>
+      </tr>
+      <tr>
+        <td><span class="badge success">ENTERPRISE</span></td>
+        <td>+ ICP-Brasil · SLA 99.9% · suporte L3 · UBSs ilimitadas</td>
+        <td>Municípios grandes · consórcios intermunicipais</td>
+      </tr>
+      <tr>
+        <td><span class="badge info">ON-PREMISE</span></td>
+        <td>Instância dedicada · cliente hospeda · licenciamento perpétuo</td>
+        <td>Clientes com requisito de soberania de dados</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="tecnologia">
+  <div class="chapter-num">Capítulo 19 · Stack tecnológica</div>
+  <h2>Tecnologias maduras, escolhidas com cuidado</h2>
+  <p class="lede">
+    Não é stack hype, é stack que aguenta auditoria pública. Cada escolha tem trade-off
+    explícito documentado e segue padrões de mercado consolidados.
+  </p>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-label">Backend</div>
+      <div class="card-title">Node.js · TypeScript · Express · Prisma</div>
+      <div class="card-body">
+        Node 22 LTS · TS strict · Express 5 · Prisma 6 ORM com type safety completo.
+        Clean Architecture em 4 camadas. Composition root único.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Frontend Web</div>
+      <div class="card-title">SvelteKit · Svelte 5 · Tailwind 4</div>
+      <div class="card-body">
+        Bundle pequeno, performance superior para UI densa.
+        Tailwind v4 com tokens via CSS variables (sobrescritíveis por tenant).
+        Type safe end-to-end.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Mobile</div>
+      <div class="card-title">Flutter · Dart</div>
+      <div class="card-body">
+        Single codebase Android + iOS. Dois apps: paciente (token opaco) e
+        motorista (JWT 30 dias com sync offline em SQLite).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Banco</div>
+      <div class="card-title">PostgreSQL 16</div>
+      <div class="card-body">
+        ACID completo, JSONB para payloads de audit, triggers para imutabilidade,
+        ~50 tabelas, índices compostos por <code>prefeituraId</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Storage</div>
+      <div class="card-title">S3-compatible</div>
+      <div class="card-body">
+        MinIO em dev, AWS S3 / Backblaze B2 em prod. URL pré-assinada TTL 5 min.
+        Versionamento + lifecycle para limpeza automática.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Antivírus</div>
+      <div class="card-title">ClamAV</div>
+      <div class="card-body">
+        TCP em 3310, worker assíncrono consome fila <code>scanStatus: PENDENTE</code>.
+        Download bloqueado até <code>LIMPO</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Cache + Rate Limit</div>
+      <div class="card-title">Redis</div>
+      <div class="card-body">
+        Cache de dashboard, sessões, rate-limiter-flexible. Consistente entre
+        réplicas do backend em prod.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Email</div>
+      <div class="card-title">SMTP (Brevo · Postmark · SES)</div>
+      <div class="card-body">
+        Abstração via provider. Reset de senha, notificações críticas, fallback
+        quando push falha.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Push</div>
+      <div class="card-title">FCM ou ntfy.sh self-hosted</div>
+      <div class="card-body">
+        Provider abstraído. Default FCM; ntfy.sh self-hosted opcional para
+        privacidade extrema (sem Google).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Observabilidade</div>
+      <div class="card-title">pino · Prometheus · OpenTelemetry · Tempo · Grafana</div>
+      <div class="card-body">
+        Logs JSON estruturados, métricas Prometheus, traces distribuídos.
+        Request ID propagado fim-a-fim.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">TLS · Reverse Proxy</div>
+      <div class="card-title">Caddy</div>
+      <div class="card-body">
+        TLS automático via Let's Encrypt. HSTS, CSP, headers de segurança
+        gerenciados centralmente.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Orquestração</div>
+      <div class="card-title">Docker · Docker Compose</div>
+      <div class="card-body">
+        Dev e prod via compose. Overlay <code>docker-compose.prod.yml</code>
+        adiciona observabilidade completa.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="chapter" id="contato">
+  <div class="chapter-num">Capítulo 20 · Próximos passos</div>
+  <h2>Para quem quer levar adiante</h2>
+  <p class="lede">
+    Este documento descreve um produto pronto para implantação em qualquer Secretaria
+    Municipal de Saúde brasileira. Implantação típica leva 1 a 3 dias úteis,
+    do servidor cru ao primeiro encaminhamento em produção.
+  </p>
+
+  <h3>Para um cliente que quer implantar</h3>
+  <ol>
+    <li><strong>Descoberta</strong> — mapear escopo (UBSs, usuários, TFD ativo?), confirmar estrutura legal (município / consórcio / fundação), definir contato técnico e DPO.</li>
+    <li><strong>Provisionamento de infra</strong> — servidor (sugestão: Hetzner CCX23 ou AWS t3.large), DNS, S3, SMTP, FCM, cert ICP opcional.</li>
+    <li><strong>Branding</strong> — logo, cor primária, termos de uso, política de privacidade, splash mobile.</li>
+    <li><strong>Provisionamento do tenant</strong> — Prefeitura, primeiro ADMIN, UBSs, atendentes, reguladores, gestor TFD.</li>
+    <li><strong>Treinamento</strong> — ADMIN do cliente, atendentes UBS, reguladores, gestor TFD, motoristas.</li>
+    <li><strong>Go-live + suporte</strong> — comunicação aos cidadãos, monitoramento próximo na 1ª semana, suporte L1 designado.</li>
+  </ol>
+
+  <h3>Para um parceiro que quer revender</h3>
+  <p>
+    O produto é projetado para revenda. Documentação técnica completa em
+    <code>.specs/</code>, instruções de white-label em
+    <code>.specs/16-multitenancy-whitelabel.md</code>, checklist de implantação
+    em <code>.specs/18-checklist-revenda.md</code>. Modelo comercial sugerido
+    no Capítulo 18 deste documento.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Para entrar em contato</div>
+    Este produto está disponível para licenciamento, customização e revenda.
+    Cada implantação é uma conversa — escopo, infraestrutura, cronograma e
+    modelo comercial se definem em conjunto.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════ -->
+<footer class="site-foot">
+  <div class="foot-brand">UNISISM</div>
+  <p style="color:var(--slate-300);max-width:680px;line-height:1.55;font-size:14px">
+    Plataforma integrada de gestão para Secretarias Municipais de Saúde —
+    regulação ambulatorial, prontuário eletrônico do cidadão, app do paciente
+    e gestão de Tratamento Fora do Domicílio. Multi-tenant. White-label.
+    Conforme LGPD, CFM Res. 1.821/2007 e requisitos de prestação de contas TJ/TCM.
+  </p>
+  <div class="foot-meta">
+    DOCUMENTAÇÃO DE PRODUTO · v2026.05 · 4 FACES · 8 PERFIS · 50+ ENTIDADES<br>
+    PLATAFORMA WHITE-LABEL · MULTI-TENANT · NEUTRO PARA REVENDA
+  </div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

@@ -3,6 +3,7 @@ import type { AuthController } from '../controllers/AuthController';
 import type { PerfilController } from '../controllers/PerfilController';
 import type { DashboardController } from '../controllers/DashboardController';
 import type { EncaminhamentoController } from '../controllers/EncaminhamentoController';
+import type { AnexosController } from '../controllers/AnexosController';
 import type { PacienteController } from '../controllers/PacienteController';
 import type { RelatoriosController as RelatorioController } from '../../modules/relatorios/presentation/RelatoriosController';
 import type { AdminController } from '../controllers/AdminController';
@@ -11,7 +12,11 @@ import type { SmsBannersAdminController } from '../controllers/SmsBannersAdminCo
 import type { RegulacaoController } from '../../modules/gestao/presentation/controllers/RegulacaoController';
 import { buildRegulacaoRoutes } from '../../modules/gestao/presentation/routes/regulacao.routes';
 import type { PacienteAppController } from '../../modules/paciente-app/presentation/controllers/PacienteAppController';
-import { buildPacienteAppRoutes } from '../../modules/paciente-app/presentation/routes/paciente-app.routes';
+import {
+  buildPacienteAppRoutes,
+  buildPacienteAuthRoutes,
+  buildPacienteResourcesRoutes,
+} from '../../modules/paciente-app/presentation/routes/paciente-app.routes';
 import type { PasswordRecoveryRateLimiter } from '../../modules/paciente-app/infrastructure/PasswordRecoveryRateLimiter';
 import type { DownloadAnexoRateLimiter } from '../../modules/paciente-app/infrastructure/DownloadAnexoRateLimiter';
 import type { DossieRateLimiter } from '../../modules/paciente-app/infrastructure/DossieRateLimiter';
@@ -41,6 +46,7 @@ interface Deps {
   perfil: PerfilController;
   dashboard: DashboardController;
   encaminhamentos: EncaminhamentoController;
+  anexos: AnexosController;
   pacientes: PacienteController;
   relatorios: RelatorioController;
   admin: AdminController;
@@ -126,6 +132,9 @@ export function buildRoutes(deps: Deps): Router {
     memoryUpload.array('anexo', 10),
     deps.encaminhamentos.postResolverPendencia,
   );
+
+  // ----- Anexos -----
+  router.get('/anexos/:id/download', authenticate, deps.anexos.getDownload);
 
   // ----- Pacientes -----
   router.get('/pacientes', authenticate, deps.pacientes.getList);
@@ -322,11 +331,30 @@ export function buildRoutes(deps: Deps): Router {
   );
 
   // ----- Face 3 · App do Paciente -----
+  //
+  // 3 prefixos montados pra mesmo controller:
+  //   /paciente-app/*    → legado v0.17.x (compat retro · será deprecado)
+  //   /auth/paciente/*   → auth + perfil (CONTRATO_BACKEND.md §4)
+  //   /paciente/*        → recursos (CONTRATO_BACKEND.md §5-10)
+  //
   router.use(
     '/paciente-app',
     buildPacienteAppRoutes(
       deps.pacienteApp,
       deps.passwordRecoveryRateLimiter,
+      deps.downloadAnexoRateLimiter,
+      deps.dossieRateLimiter,
+      deps.bannersRateLimiter,
+    ),
+  );
+  router.use(
+    '/auth/paciente',
+    buildPacienteAuthRoutes(deps.pacienteApp, deps.passwordRecoveryRateLimiter),
+  );
+  router.use(
+    '/paciente',
+    buildPacienteResourcesRoutes(
+      deps.pacienteApp,
       deps.downloadAnexoRateLimiter,
       deps.dossieRateLimiter,
       deps.bannersRateLimiter,

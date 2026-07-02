@@ -83,6 +83,7 @@ class _TabCell extends StatelessWidget {
           curve: _curve,
           color: active ? Colors.white : Tokens.slate50,
           child: Stack(
+            alignment: Alignment.center,
             children: [
               AnimatedPositioned(
                 duration: _duration,

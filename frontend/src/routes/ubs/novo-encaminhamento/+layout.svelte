@@ -118,6 +118,7 @@
 	}
 
 	async function consolidar(): Promise<string | null> {
+		if (state.consolidando) return null;
 		state.consolidando = true;
 		state.erroConsolidar = '';
 		try {

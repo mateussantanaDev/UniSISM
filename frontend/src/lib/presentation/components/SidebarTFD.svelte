@@ -62,6 +62,12 @@
 					quando: () => !!auth.podeGerenciarTFD
 				},
 				{
+					label: 'Pedidos do App',
+					href: '/tfd/solicitacoes-paciente',
+					shortcut: 'A',
+					quando: () => !!auth.podeGerenciarTFD
+				},
+				{
 					label: 'Viagens',
 					href: '/tfd/viagens',
 					shortcut: 'V',

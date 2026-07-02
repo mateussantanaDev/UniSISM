@@ -53,6 +53,8 @@ import { DashboardController } from '../presentation/controllers/DashboardContro
 import { EncaminhamentoController } from '../presentation/controllers/EncaminhamentoController';
 import { PacienteController } from '../presentation/controllers/PacienteController';
 import { AdminController } from '../presentation/controllers/AdminController';
+import { GetDownloadAnexoUseCase } from '../application/anexos/GetDownloadAnexoUseCase';
+import { AnexosController } from '../presentation/controllers/AnexosController';
 import { RecomendacoesController } from '../presentation/controllers/RecomendacoesController';
 import { SmsBannersAdminController } from '../presentation/controllers/SmsBannersAdminController';
 import {
@@ -168,6 +170,9 @@ import {
   DossieAtendimentosUseCase,
   DossieVacinacoesUseCase,
   DossieExamesUseCase,
+  ObterAtendimentoUseCase,
+  ObterVacinacaoUseCase,
+  ObterExameUseCase,
 } from '../modules/paciente-app/application/use-cases/DossieUseCases';
 import {
   ListarBannersAtivosUseCase,
@@ -266,7 +271,7 @@ export function buildContainer() {
   const deleteUbsUC = new DeleteUbsUseCase(audit);
   const updateEncUC = new UpdateEncaminhamentoUseCase(audit);
   const deleteEncUC = new DeleteEncaminhamentoUseCase(audit);
-  const updatePacienteUC = new UpdatePacienteUseCase(audit);
+  const updatePacienteUC = new UpdatePacienteUseCase(pacientesRepo, audit);
   const deletePacienteUC = new DeletePacienteUseCase(audit);
   const buscarPacientePorCpfUC = new BuscarPacientePorCpfUseCase();
 
@@ -283,6 +288,8 @@ export function buildContainer() {
     deleteEncUC,
     atendentes,
   );
+  const downloadAnexoUC = new GetDownloadAnexoUseCase(storage);
+  const anexosController = new AnexosController(downloadAnexoUC);
   const pacController = new PacienteController(
     listPacUC,
     getPacUC,
@@ -443,6 +450,9 @@ export function buildContainer() {
     dossieAtendimentos: new DossieAtendimentosUseCase(audit),
     dossieVacinacoes: new DossieVacinacoesUseCase(audit),
     dossieExames: new DossieExamesUseCase(audit),
+    dossieObterAtendimento: new ObterAtendimentoUseCase(audit),
+    dossieObterVacinacao: new ObterVacinacaoUseCase(audit),
+    dossieObterExame: new ObterExameUseCase(audit),
     listarBanners: new ListarBannersAtivosUseCase(),
     obterBanner: new ObterBannerUseCase(),
     marcarBannerVisto: new MarcarBannerVistoUseCase(),
@@ -466,6 +476,7 @@ export function buildContainer() {
     perfil: perfilController,
     dashboard: dashboardController,
     encaminhamentos: encController,
+    anexos: anexosController,
     pacientes: pacController,
     relatorios: relController,
     admin: adminController,

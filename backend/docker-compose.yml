@@ -49,6 +49,7 @@ services:
 
   clamav:
     # Opcional — ClamAV demora ~2-5min no primeiro start (baixa assinaturas).
+    platform: linux/amd64
     image: clamav/clamav:latest
     container_name: unisism-clamav
     ports:
@@ -62,13 +63,46 @@ services:
       retries: 10
       start_period: 300s
 
+  ntfy:
+    # Push notifications self-hosted (open-source, MIT)
+    # Console web: http://localhost:8080
+    # API publish: POST http://localhost:8080/<topic>
+    # Subscribe:   wss://localhost:8080/<topic>/ws  (no app)
+    image: binwiederhier/ntfy:latest
+    container_name: unisism-ntfy
+    command:
+      - serve
+    environment:
+      TZ: America/Recife
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8080}
+      NTFY_LISTEN_HTTP: ":80"
+      NTFY_BEHIND_PROXY: "false"
+      NTFY_ATTACHMENT_CACHE_DIR: /var/cache/ntfy/attachments
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
+      NTFY_AUTH_DEFAULT_ACCESS: ${NTFY_AUTH_DEFAULT_ACCESS:-read-write}
+      NTFY_ENABLE_SIGNUP: "false"
+      NTFY_ENABLE_LOGIN: "true"
+      NTFY_WEB_PUSH_PUBLIC_KEY: ""
+      NTFY_WEB_PUSH_PRIVATE_KEY: ""
+    ports:
+      - "${NTFY_PORT:-8080}:80"
+    volumes:
+      - ntfy_cache:/var/cache/ntfy
+      - ntfy_data:/var/lib/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost/v1/health | grep -q healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: unisism-backend
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 3333
       DATABASE_URL: postgresql://${POSTGRES_USER:-unisism}:${POSTGRES_PASSWORD:-unisism}@postgres:5432/${POSTGRES_DB:-unisism_ubs}?schema=public
       REDIS_URL: redis://redis:6379
@@ -89,6 +123,11 @@ services:
       METRICS_ENABLED: "true"
       OUTBOX_ENABLED: "true"
       UPLOAD_DIR: /app/uploads
+      # Push notifications (ntfy.sh self-hosted)
+      PUSH_PROVIDER: ${PUSH_PROVIDER:-ntfy}
+      NTFY_BASE_URL: ${NTFY_BASE_URL_INTERNAL:-http://ntfy}
+      NTFY_AUTH_TOKEN: ${NTFY_AUTH_TOKEN:-}
+      NTFY_PUBLIC_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8080}
     ports:
       - "${BACKEND_PORT:-3333}:3333"
     depends_on:
@@ -99,7 +138,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - uploads_data:/app/uploads
+      - ./uploads:/app/uploads
     command: ["sh", "-c", "npx prisma migrate deploy && node dist/main/server.js"]
 
 volumes:
@@ -107,4 +146,5 @@ volumes:
   redis_data:
   minio_data:
   clamav_data:
-  uploads_data:
+  ntfy_cache:
+  ntfy_data:

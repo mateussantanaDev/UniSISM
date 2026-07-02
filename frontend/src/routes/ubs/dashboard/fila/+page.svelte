@@ -4,22 +4,25 @@
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import { api } from '$lib/api';
-	import type { Encaminhamento } from '$lib/domain/models/Encaminhamento';
+	import type { Encaminhamento, MetricasDashboard } from '$lib/api/types';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
 	let aguardando = $state<Encaminhamento[]>([]);
 	let pendencias = $state<Encaminhamento[]>([]);
+	let metricas = $state<MetricasDashboard | null>(null);
 	let carregando = $state(true);
 
 	onMount(async () => {
 		try {
-			const [aguardandoList, pendenciasList] = await Promise.all([
+			const [aguardandoList, pendenciasList, metricsData] = await Promise.all([
 				api.encaminhamentos.list({ status: 'AGUARDANDO_REGULACAO' }),
-				api.encaminhamentos.list({ status: 'PENDENCIA_DOCUMENTO' })
+				api.encaminhamentos.list({ status: 'PENDENCIA_DOCUMENTO' }),
+				api.dashboard.metrics()
 			]);
 			aguardando = aguardandoList;
 			pendencias = pendenciasList;
+			metricas = metricsData;
 		} finally {
 			carregando = false;
 		}
@@ -32,6 +35,15 @@
 		if (horas < 1) return 'há instantes';
 		if (horas < 24) return `há ${horas}h`;
 		return `há ${Math.floor(horas / 24)}d`;
+	}
+
+	function formatarTempoMedio(segundos: number): string {
+		const horas = Math.floor(segundos / 3600);
+		const minutos = Math.floor((segundos % 3600) / 60);
+		if (horas > 0) {
+			return `${horas}h ${minutos}m`;
+		}
+		return `${minutos}m`;
 	}
 </script>
 
@@ -49,8 +61,17 @@
 			sublabel="Requerem ação"
 			accent="critical"
 		/>
-		<MetricCard label="Tempo Médio Fila" value="4h 12m" sublabel="Desde o envio" />
-		<MetricCard label="SLA Regulação" value="92%" sublabel="Dentro do prazo" accent="success" />
+		<MetricCard
+			label="Tempo Médio Fila"
+			value={metricas ? formatarTempoMedio(metricas.tempoMedioConsolidacaoSegundos) : '—'}
+			sublabel="Desde o envio"
+		/>
+		<MetricCard
+			label="SLA Regulação"
+			value={metricas ? `${metricas.slaRegulacaoPorcento}%` : '—'}
+			sublabel="Dentro do prazo"
+			accent="success"
+		/>
 	</section>
 
 	<!-- Pendências de documento (prioridade máxima) -->

@@ -4,6 +4,7 @@
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import FormField from '$lib/presentation/components/FormField.svelte';
 	import SeatPicker from '$lib/presentation/components/SeatPicker.svelte';
+	import EditarViagem from '$lib/presentation/components/EditarViagem.svelte';
 	import { api } from '$lib/api';
 	import { ApiError } from '$lib/api/client';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
@@ -64,12 +65,13 @@
 	onMount(carregar);
 
 	// Modal iniciar
+	let editarAberto = $state(false);
 	let iniciarAberto = $state(false);
-	let kmInicial = $state<number | undefined>(undefined);
+	let kmInicial = $state('');
 
 	// Modal concluir
 	let concluirAberto = $state(false);
-	let kmFinal = $state<number | undefined>(undefined);
+	let kmFinal = $state('');
 	let observacoesConclusao = $state('');
 
 	// Modal cancelar
@@ -84,7 +86,7 @@
 		try {
 			await api.tfd.viagens.iniciar(v.id, { kmInicialHodometro: Number(kmInicial) });
 			iniciarAberto = false;
-			kmInicial = undefined;
+			kmInicial = '';
 			await recarregar();
 			notificar('ok', 'Viagem iniciada · auditoria registrada.');
 		} catch (e) {
@@ -103,7 +105,7 @@
 				observacoes: observacoesConclusao.trim() || undefined
 			});
 			concluirAberto = false;
-			kmFinal = undefined;
+			kmFinal = '';
 			observacoesConclusao = '';
 			await recarregar();
 			notificar('ok', 'Viagem concluída.');
@@ -259,6 +261,11 @@
 				<div class="flex flex-wrap gap-2">
 					{#if v.status === 'AGENDADA'}
 						<PrimaryButton label="Iniciar Viagem" onclick={() => (iniciarAberto = true)} />
+						<PrimaryButton
+							label="Editar"
+							variant="secondary"
+							onclick={() => (editarAberto = true)}
+						/>
 						<PrimaryButton
 							label="Cancelar"
 							variant="danger"
@@ -550,7 +557,7 @@
 			type="number"
 			span={12}
 			mono
-			bind:value={kmInicial as unknown as string}
+			bind:value={kmInicial}
 		/>
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
 			<PrimaryButton
@@ -583,7 +590,7 @@
 			type="number"
 			span={12}
 			mono
-			bind:value={kmFinal as unknown as string}
+			bind:value={kmFinal}
 		/>
 		<div class="flex flex-col">
 			<label
@@ -757,5 +764,25 @@
 				/>
 			</div>
 		</div>
+	</Modal>
+{/if}
+
+<!-- ─── Modal: Editar viagem ──────────────────────────────────── -->
+{#if editarAberto && v}
+	<Modal
+		isOpen={editarAberto}
+		title="Editar viagem"
+		subtitle={`${v.destino} · ${formatarData(v.data)}`}
+		maxWidth="lg"
+		onClose={() => (editarAberto = false)}
+	>
+		<EditarViagem
+			viagem={v}
+			onCancel={() => (editarAberto = false)}
+			onSaved={(novo) => {
+				v = novo;
+				editarAberto = false;
+			}}
+		/>
 	</Modal>
 {/if}

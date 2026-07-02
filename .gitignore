@@ -63,3 +63,12 @@ frontend/.vite/
 backend/.claude/settings.local.json
 frontend/.claude/settings.local.json
 **/.claude/settings.local.json
+.env.*
+**/.env.*
+
+# Extra excludes for temp/local files
+*.pdf
+backend/data/
+**/.playwright-mcp/
+UNISISM-motorista/.claude/
+

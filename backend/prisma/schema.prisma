@@ -27,6 +27,7 @@ enum RoleAtendente {
   GESTOR_TFD        // gestor de Tratamento Fora do Domicílio (Face 4) — frota, motoristas, viagens, ajuda de custo
   ATENDENTE_TFD     // atendente TFD (terminal rodoviário) — apenas cadastra solicitações de viagem
   MOTORISTA_TFD     // motorista TFD com app mobile próprio (UNISISM-motorista) — vê só suas viagens
+  REGULADOR_TFD     // regulador TFD — cadastro de passageiros e solicitações
 }
 
 enum Sexo {

@@ -161,13 +161,28 @@ export class EncaminhamentoController {
   getList = async (req: Request, res: Response): Promise<void> => {
     const q = listarQuerySchema.parse(req.query);
     const scope = scopeFromRequest(req);
+
+    let desde: Date | undefined;
+    if (q.desde) {
+      desde = new Date(q.desde);
+    }
+    let ate: Date | undefined;
+    if (q.ate) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(q.ate)) {
+        ate = new Date(`${q.ate}T23:59:59.999Z`);
+      } else {
+        ate = new Date(q.ate);
+      }
+    }
+
     const lista = await this.list.exec({
       scope,
       ...(q.status ? { status: q.status } : {}),
       ...(q.pacienteId ? { pacienteId: q.pacienteId } : {}),
-      ...(q.desde ? { desde: new Date(q.desde) } : {}),
-      ...(q.ate ? { ate: new Date(q.ate) } : {}),
+      ...(desde ? { desde } : {}),
+      ...(ate ? { ate } : {}),
       ...(q.limit ? { limit: q.limit } : {}),
+      ...(q.respostaSUS !== undefined ? { respostaSUS: q.respostaSUS } : {}),
     });
     res.json(lista);
   };

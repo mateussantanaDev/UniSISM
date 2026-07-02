@@ -8,7 +8,7 @@ import type { RoleAtendente } from '../../../generated/prisma';
 export interface CreateUsuarioInput {
   nome: string;
   email: string;
-  matricula: string;
+  matricula?: string;
   cpf: string;
   senha: string;
   role: RoleAtendente;
@@ -64,7 +64,8 @@ export class CreateUsuarioUseCase {
       case 'ADMIN':
       case 'REGULADOR_SMS':
       case 'GESTOR_TFD':
-      case 'ATENDENTE_TFD': {
+      case 'ATENDENTE_TFD':
+      case 'REGULADOR_TFD': {
         if (!input.prefeituraId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
@@ -93,7 +94,31 @@ export class CreateUsuarioUseCase {
         );
     }
 
-    const matricula = input.matricula.toUpperCase();
+    let matricula = input.matricula?.trim().toUpperCase();
+    if (!matricula) {
+      const prefixMap: Record<RoleAtendente, string> = {
+        DESENVOLVEDOR: 'DEV-',
+        ADMIN: 'ADM-',
+        COORDENADOR_UBS: 'COO-',
+        ATENDENTE_UBS: 'ATE-',
+        REGULADOR_SMS: 'REG-',
+        GESTOR_TFD: 'GST-',
+        ATENDENTE_TFD: 'ATF-',
+        REGULADOR_TFD: 'RTF-',
+        MOTORISTA_TFD: 'MOT-',
+      };
+      const prefix = prefixMap[input.role] || 'USR-';
+      const cleanedCpf = input.cpf.replace(/\D/g, '');
+      const suffix = cleanedCpf.length >= 6 ? cleanedCpf.slice(-6) : cleanedCpf.padStart(6, '0');
+
+      let generated = `${prefix}${suffix}`;
+      const collision = await prisma.atendente.findUnique({ where: { matricula: generated }, select: { id: true } });
+      if (collision) {
+        generated = `${generated}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+      }
+      matricula = generated;
+    }
+
     const email = input.email.toLowerCase();
 
     const dup = await prisma.atendente.findFirst({

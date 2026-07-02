@@ -156,7 +156,12 @@
 	let novaAberto = $state(false);
 	let novaViagemId = $state('');
 	let novaPacienteId = $state('');
-	let novosItens = $state<ItemAjudaCusto[]>([]);
+	/**
+	 * Tipo local com `valorBRL: string` pra ligar direto no `FormField`
+	 * (que tem fallback ''). O `Number()` acontece no submit.
+	 */
+	type NovoItemForm = { categoria: CategoriaAjuda; descricao: string; valorBRL: string };
+	let novosItens = $state<NovoItemForm[]>([]);
 	let processandoNova = $state(false);
 	let erroNova = $state('');
 
@@ -180,7 +185,7 @@
 		novaViagemId = '';
 		novaPacienteId = '';
 		novosItens = [
-			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: 0 }
+			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }
 		];
 		erroNova = '';
 		novaAberto = true;
@@ -189,7 +194,7 @@
 	function adicionarItem() {
 		novosItens = [
 			...novosItens,
-			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: 0 }
+			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }
 		];
 	}
 
@@ -216,7 +221,7 @@
 				erroNova = 'Cada item precisa de descrição.';
 				return;
 			}
-			if (!it.valorBRL || Number(it.valorBRL) <= 0) {
+			if (!it.valorBRL.trim() || Number(it.valorBRL) <= 0) {
 				erroNova = 'Cada item precisa de valor maior que zero.';
 				return;
 			}
@@ -347,8 +352,8 @@
 					{:else}
 						{#each lista as a (a.id)}
 							<tr class="border-b border-slate-100 hover:bg-slate-50">
-								<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900">
-									{a.protocolo}
+								<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900 underline decoration-blue-900/30 underline-offset-2">
+									<a href={`/tfd/ajuda-custo/${a.id}`}>{a.protocolo}</a>
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">
 									{a.pacienteNome ?? '—'}
@@ -538,7 +543,7 @@
 								type="number"
 								min="0"
 								step="0.01"
-								bind:value={item.valorBRL as unknown as string}
+								bind:value={item.valorBRL}
 								class="w-full border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 							/>
 						</div>

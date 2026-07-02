@@ -140,10 +140,72 @@ export function mapPassageiro(p: any): PassageiroDto {
   };
 }
 
+/**
+ * Mapper para passageiro vindo de `TfdPacienteSolicitacao` (app paciente).
+ * Diferente de `ViagemPassageiro` (UBS), o paciente aqui solicitou via app —
+ * a alocação no contexto da viagem é a própria `TfdPacienteSolicitacao` aprovada.
+ *
+ * Recebe `paciente` (Paciente clínico) buscado em batch pelo CPF da conta,
+ * porque `PacienteConta` (app) só tem dados resumidos e o motorista quer
+ * ver dados completos do paciente.
+ */
+export function mapPassageiroFromSolicPaciente(
+  s: any,
+  pacienteClinico: any | null,
+): PassageiroDto {
+  // Map TfdPacientePrioridade → DTO (PassageiroDto) prioridade
+  // TfdPacientePrioridade: NORMAL | PRIORITARIA | URGENTE
+  // DTO:                   ELETIVA | PRIORITARIA | URGENTE
+  const prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' =
+    s.prioridade === 'PRIORITARIA' ? 'PRIORITARIA' :
+    s.prioridade === 'URGENTE' ? 'URGENTE' : 'ELETIVA';
+
+  const nasc = pacienteClinico?.dataNascimento
+    ? pacienteClinico.dataNascimento.toISOString().slice(0, 10)
+    : '1970-01-01';
+
+  return {
+    // prefixo `sol-` para distinguir da chave de `ViagemPassageiro`
+    id: `sol-${s.id}`,
+    paciente: {
+      id: pacienteClinico?.id ?? `conta-${s.conta.id}`,
+      nome: pacienteClinico?.nome ?? s.conta.nome,
+      cpf: pacienteClinico?.cpf ?? s.conta.cpf,
+      dataNascimento: nasc,
+      telefone: pacienteClinico?.telefone ?? s.conta.telefone ?? null,
+      fotoUrl: null,
+      ubs: pacienteClinico?.ubs
+        ? {
+            id: pacienteClinico.ubs.id,
+            nome: pacienteClinico.ubs.nome,
+            bairro: pacienteClinico.ubs.municipio ?? '',
+            coord: null,
+            endereco: pacienteClinico.ubs.endereco ?? null,
+          }
+        : null,
+      observacoesMobilidade: null,
+    },
+    solicitacao: {
+      id: s.id,
+      protocolo: s.encaminhamentoProtocolo ?? `TFD-${s.id.slice(0, 8)}`,
+      prioridade,
+      destino: s.viagem?.destino ?? '',
+      unidadeDestino: s.viagem?.unidadeDestino ?? null,
+    },
+    acompanhante: !!s.acompanhante,
+    presenca: s.status === 'EMBARCADA' ? 'EMBARCADO' : 'AGUARDANDO',
+    observacao: s.justificativaPaciente ?? null,
+    marcadoEm: s.aprovadaEm?.toISOString() ?? null,
+    marcadoPor: s.operadorId ?? null,
+  };
+}
+
 export function mapViagemMotorista(
   r: any,
   motoristaNome: string,
   motoristaMatricula: string,
+  /** Mapa CPF → Paciente (clínico) das solicitações app — opcional. */
+  pacientesPorCpf?: Map<string, any>,
 ): ViagemMotoristaDto {
   return {
     id: r.id,
@@ -178,7 +240,15 @@ export function mapViagemMotorista(
       matricula: motoristaMatricula,
       status: 'ATIVO',
     },
-    passageiros: (r.passageiros ?? []).map(mapPassageiro),
+    passageiros: [
+      ...(r.passageiros ?? []).map(mapPassageiro),
+      ...(r.solicitacoesPaciente ?? []).map((s: any) =>
+        mapPassageiroFromSolicPaciente(
+          { ...s, viagem: { destino: r.destino, unidadeDestino: r.unidadeDestino } },
+          pacientesPorCpf?.get(s.conta?.cpf) ?? null,
+        ),
+      ),
+    ],
     atualizadoEm: (r.atualizadoEm ?? r.iniciadaEm ?? r.criadaEm)?.toISOString() ?? null,
   };
 }

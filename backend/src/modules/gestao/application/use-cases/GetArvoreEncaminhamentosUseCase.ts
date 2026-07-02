@@ -13,6 +13,7 @@
  *   - (prefeitura_id, ubsId, EXTRACT(YEAR FROM criado_em), EXTRACT(MONTH FROM criado_em))
  */
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { Prisma } from '../../../../../generated/prisma';
 import { BadRequest, Forbidden, NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 import { CACHE_TTL, getCache } from '../../../../infrastructure/cache/Cache';
@@ -60,6 +61,8 @@ export interface GetArvoreInput {
   ubsId?: string;
   ano?: number;
   mes?: number;
+  respostaSUS?: boolean;
+  excluirRascunho?: boolean;
 }
 
 // ---- Helpers ----
@@ -122,16 +125,18 @@ export class GetArvoreEncaminhamentosUseCase {
     }
 
     // chave de cache inclui todos os parâmetros do escopo + filtros
-    const cacheKey = `arvore:${prefeituraFilter ?? 'GLOBAL'}:${input.ubsId ?? '*'}:${input.ano ?? '*'}:${input.mes ?? '*'}`;
+    const rKey = typeof input.respostaSUS === 'boolean' ? String(input.respostaSUS) : '*';
+    const eKey = typeof input.excluirRascunho === 'boolean' ? String(input.excluirRascunho) : '*';
+    const cacheKey = `arvore:${prefeituraFilter ?? 'GLOBAL'}:${input.ubsId ?? '*'}:${input.ano ?? '*'}:${input.mes ?? '*'}:${rKey}:${eKey}`;
 
     return this.cache.remember(cacheKey, CACHE_TTL.ARVORE, () => this.compute(prefeituraFilter, input));
   }
 
   private compute(prefeituraFilter: string | null, input: GetArvoreInput): Promise<ArvoreNode[]> {
-    if (!input.ubsId) return this.nivelUbs(prefeituraFilter);
-    if (input.ano === undefined) return this.nivelAno(input.ubsId);
-    if (input.mes === undefined) return this.nivelMes(input.ubsId, input.ano);
-    return this.nivelDia(input.ubsId, input.ano, input.mes);
+    if (!input.ubsId) return this.nivelUbs(prefeituraFilter, input.respostaSUS, input.excluirRascunho);
+    if (input.ano === undefined) return this.nivelAno(input.ubsId, input.respostaSUS, input.excluirRascunho);
+    if (input.mes === undefined) return this.nivelMes(input.ubsId, input.ano, input.respostaSUS, input.excluirRascunho);
+    return this.nivelDia(input.ubsId, input.ano, input.mes, input.respostaSUS, input.excluirRascunho);
   }
 
   /**
@@ -145,7 +150,11 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 1: UBSs ----
-  private async nivelUbs(prefeituraFilter: string | null): Promise<ArvoreUbsNode[]> {
+  private async nivelUbs(
+    prefeituraFilter: string | null,
+    respostaSUS?: boolean,
+    excluirRascunho?: boolean,
+  ): Promise<ArvoreUbsNode[]> {
     const ubsList = await prisma.ubs.findMany({
       where: prefeituraFilter ? { prefeituraId: prefeituraFilter } : {},
       select: { id: true, nome: true },
@@ -157,12 +166,30 @@ export class GetArvoreEncaminhamentosUseCase {
     const ids = ubsList.map((u) => u.id);
 
     type Row = { ubsId: string; status: string; qtd: bigint; max_ano: number | null };
+    
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`"ubsId" = ANY(${ids})`
+    ];
+
+    if (respostaSUS === true) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NOT NULL`);
+    } else if (respostaSUS === false) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NULL`);
+    }
+
+    if (excluirRascunho) {
+      conditions.push(Prisma.sql`status <> 'RASCUNHO'`);
+    }
+
+    const whereClause = Prisma.join(conditions, ' AND ');
+    const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
+
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT "ubsId", status,
              COUNT(*)::bigint AS qtd,
-             MAX(EXTRACT(YEAR FROM "criadoEm"))::int AS max_ano
+             MAX(EXTRACT(YEAR FROM ${Prisma.raw(dateField)}))::int AS max_ano
       FROM encaminhamentos
-      WHERE "ubsId" = ANY(${ids})
+      WHERE ${whereClause}
       GROUP BY "ubsId", status
     `;
 
@@ -194,12 +221,34 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 2: anos ----
-  private async nivelAno(ubsId: string): Promise<ArvoreAnoNode[]> {
+  private async nivelAno(
+    ubsId: string,
+    respostaSUS?: boolean,
+    excluirRascunho?: boolean,
+  ): Promise<ArvoreAnoNode[]> {
     type Row = { ano: number; status: string; qtd: bigint };
+    
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`"ubsId" = ${ubsId}`
+    ];
+
+    if (respostaSUS === true) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NOT NULL`);
+    } else if (respostaSUS === false) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NULL`);
+    }
+
+    if (excluirRascunho) {
+      conditions.push(Prisma.sql`status <> 'RASCUNHO'`);
+    }
+
+    const whereClause = Prisma.join(conditions, ' AND ');
+    const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
+
     const rows = await prisma.$queryRaw<Row[]>`
-      SELECT EXTRACT(YEAR FROM "criadoEm")::int AS ano, status, COUNT(*)::bigint AS qtd
+      SELECT EXTRACT(YEAR FROM ${Prisma.raw(dateField)})::int AS ano, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
-      WHERE "ubsId" = ${ubsId}
+      WHERE ${whereClause}
       GROUP BY ano, status
       ORDER BY ano DESC
     `;
@@ -211,13 +260,36 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 3: meses ----
-  private async nivelMes(ubsId: string, ano: number): Promise<ArvoreMesNode[]> {
+  private async nivelMes(
+    ubsId: string,
+    ano: number,
+    respostaSUS?: boolean,
+    excluirRascunho?: boolean,
+  ): Promise<ArvoreMesNode[]> {
     type Row = { mes: number; status: string; qtd: bigint };
+    
+    const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`"ubsId" = ${ubsId}`,
+      Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`
+    ];
+
+    if (respostaSUS === true) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NOT NULL`);
+    } else if (respostaSUS === false) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NULL`);
+    }
+
+    if (excluirRascunho) {
+      conditions.push(Prisma.sql`status <> 'RASCUNHO'`);
+    }
+
+    const whereClause = Prisma.join(conditions, ' AND ');
+
     const rows = await prisma.$queryRaw<Row[]>`
-      SELECT EXTRACT(MONTH FROM "criadoEm")::int AS mes, status, COUNT(*)::bigint AS qtd
+      SELECT EXTRACT(MONTH FROM ${Prisma.raw(dateField)})::int AS mes, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
-      WHERE "ubsId" = ${ubsId}
-        AND EXTRACT(YEAR FROM "criadoEm") = ${ano}::int
+      WHERE ${whereClause}
       GROUP BY mes, status
       ORDER BY mes DESC
     `;
@@ -229,14 +301,38 @@ export class GetArvoreEncaminhamentosUseCase {
   }
 
   // ---- Nível 4: dias ----
-  private async nivelDia(ubsId: string, ano: number, mes: number): Promise<ArvoreDiaNode[]> {
+  private async nivelDia(
+    ubsId: string,
+    ano: number,
+    mes: number,
+    respostaSUS?: boolean,
+    excluirRascunho?: boolean,
+  ): Promise<ArvoreDiaNode[]> {
     type Row = { dia: number; status: string; qtd: bigint };
+    
+    const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`"ubsId" = ${ubsId}`,
+      Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`,
+      Prisma.sql`EXTRACT(MONTH FROM ${Prisma.raw(dateField)}) = ${mes}::int`
+    ];
+
+    if (respostaSUS === true) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NOT NULL`);
+    } else if (respostaSUS === false) {
+      conditions.push(Prisma.sql`"respostaSusAnexoId" IS NULL`);
+    }
+
+    if (excluirRascunho) {
+      conditions.push(Prisma.sql`status <> 'RASCUNHO'`);
+    }
+
+    const whereClause = Prisma.join(conditions, ' AND ');
+
     const rows = await prisma.$queryRaw<Row[]>`
-      SELECT EXTRACT(DAY FROM "criadoEm")::int AS dia, status, COUNT(*)::bigint AS qtd
+      SELECT EXTRACT(DAY FROM ${Prisma.raw(dateField)})::int AS dia, status, COUNT(*)::bigint AS qtd
       FROM encaminhamentos
-      WHERE "ubsId" = ${ubsId}
-        AND EXTRACT(YEAR FROM "criadoEm") = ${ano}::int
-        AND EXTRACT(MONTH FROM "criadoEm") = ${mes}::int
+      WHERE ${whereClause}
       GROUP BY dia, status
       ORDER BY dia DESC
     `;

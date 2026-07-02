@@ -24,6 +24,19 @@
 	let carregando = $state(true);
 	let erro = $state<string | null>(null);
 
+	// Anexar PDF tardio: UBS pode complementar até a solicitação ser realizada/cancelada.
+	let podeAnexar = $derived(
+		!!sol &&
+			(sol.status === 'PENDENTE' ||
+				sol.status === 'APROVADA' ||
+				sol.status === 'ALOCADA'),
+	);
+
+	let anexarAberto = $state(false);
+	let anexoFile = $state<File | null>(null);
+	let anexoTipo = $state<import('$lib/api/tfd-types').TipoAnexoSolicitacaoTFD>('EXAME');
+	let anexando = $state(false);
+
 	let viagensCandidatas = $state<ViagemFrota[]>([]);
 	let viagemAlvo = $state<ViagemFrota | null>(null);
 	let viagemAlvoId = $state<string | null>(null);
@@ -41,6 +54,31 @@
 	function notificar(tipo: 'ok' | 'erro', texto: string) {
 		mensagem = { tipo, texto };
 		setTimeout(() => (mensagem = null), 4000);
+	}
+
+	function onAnexoFile(e: Event) {
+		const t = e.target as HTMLInputElement;
+		anexoFile = t.files?.[0] ?? null;
+	}
+
+	async function anexar() {
+		if (!sol || !anexoFile) {
+			notificar('erro', 'Selecione um arquivo.');
+			return;
+		}
+		anexando = true;
+		try {
+			await api.tfd.solicitacoes.anexar(sol.id, anexoFile, anexoTipo);
+			anexarAberto = false;
+			anexoFile = null;
+			anexoTipo = 'EXAME';
+			notificar('ok', 'Anexo enviado · scanner antivírus em andamento.');
+			await carregar();
+		} catch (e) {
+			notificar('erro', mensagemErroTfd(e));
+		} finally {
+			anexando = false;
+		}
 	}
 
 	async function carregar() {
@@ -326,6 +364,15 @@
 					>
 						{sol.anexos.length} ARQUIVOS
 					</span>
+					{#if podeAnexar}
+						<button
+							type="button"
+							onclick={() => (anexarAberto = true)}
+							class="border border-blue-900 bg-blue-50 px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase hover:bg-blue-100"
+						>
+							+ Anexar
+						</button>
+					{/if}
 				</PanelHeader>
 
 				{#if sol.anexos.length === 0}
@@ -688,6 +735,60 @@
 					onclick={negar}
 					loading={processando}
 					disabled={motivoNegacao.trim().length < 10}
+				/>
+			</div>
+		</div>
+	</Modal>
+{/if}
+
+<!-- ─── Modal: Anexar PDF tardio ───────────────────────────────── -->
+{#if anexarAberto && sol}
+	<Modal
+		isOpen={anexarAberto}
+		title="Anexar documento"
+		subtitle="Complementa a solicitação após criada"
+		onClose={() => (anexarAberto = false)}
+	>
+		<div class="flex flex-col gap-3 py-1">
+			<label class="flex flex-col gap-1">
+				<span class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+					Tipo do documento
+				</span>
+				<select
+					bind:value={anexoTipo}
+					class="border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+				>
+					<option value="COMPROVANTE_ENCAMINHAMENTO">Comprovante de encaminhamento</option>
+					<option value="EXAME">Exame</option>
+					<option value="LAUDO">Laudo</option>
+					<option value="OUTRO">Outro</option>
+				</select>
+			</label>
+			<label class="flex flex-col gap-1">
+				<span class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+					Arquivo <span class="text-red-700">*</span>
+				</span>
+				<input
+					type="file"
+					accept="application/pdf,image/jpeg,image/png,image/webp"
+					onchange={onAnexoFile}
+					class="border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900"
+				/>
+				<span class="text-[11px] text-slate-500">
+					PDF, JPG, PNG ou WebP · até 10 MB · será verificado pelo antivírus.
+				</span>
+			</label>
+			<div class="mt-3 flex justify-end gap-2">
+				<PrimaryButton
+					label="Cancelar"
+					variant="secondary"
+					onclick={() => (anexarAberto = false)}
+					disabled={anexando}
+				/>
+				<PrimaryButton
+					label={anexando ? 'Enviando...' : 'Enviar anexo'}
+					onclick={anexar}
+					disabled={anexando || !anexoFile}
 				/>
 			</div>
 		</div>

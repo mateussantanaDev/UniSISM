@@ -87,9 +87,12 @@
 	let veiculoId = $state('');
 	let motoristaId = $state('');
 	let posto = $state('');
-	let valorEstimado = $state<number | undefined>(undefined);
+	// Strings pra ligar direto no FormField (que tem fallback ''). Convertidas
+	// pra Number só no submit. Svelte 5 rejeita bind:value={undefined} em
+	// bindable com fallback.
+	let valorEstimado = $state('');
 	let combustivel = $state<Combustivel>('DIESEL');
-	let hodometroKmSolicitar = $state<number | undefined>(undefined);
+	let hodometroKmSolicitar = $state('');
 	let processando = $state(false);
 	let erro = $state('');
 
@@ -104,8 +107,8 @@
 		if (!veiculoSelecionado) return;
 		const v = veiculoSelecionado;
 		combustivel = v.combustivel === 'FLEX' ? 'GASOLINA' : v.combustivel;
-		if (hodometroKmSolicitar === undefined) {
-			hodometroKmSolicitar = v.hodometroAtualKm;
+		if (hodometroKmSolicitar === '') {
+			hodometroKmSolicitar = String(v.hodometroAtualKm);
 		}
 	});
 
@@ -133,14 +136,14 @@
 		veiculoId = '';
 		motoristaId = '';
 		posto = '';
-		valorEstimado = undefined;
-		hodometroKmSolicitar = undefined;
+		valorEstimado = '';
+		hodometroKmSolicitar = '';
 		erro = '';
 	}
 
 	async function solicitar() {
 		erro = '';
-		if (!veiculoId || !posto.trim() || !valorEstimado || !hodometroKmSolicitar) {
+		if (!veiculoId || !posto.trim() || !valorEstimado.trim() || !hodometroKmSolicitar.trim()) {
 			erro = 'Placa, posto, valor estimado e hodômetro são obrigatórios.';
 			return;
 		}
@@ -166,6 +169,22 @@
 	}
 
 	// Liberar
+	async function baixarComprovante(id: string) {
+		try {
+			const { blob, filename } = await api.tfd.abastecimentos.downloadComprovante(id);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = filename;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+		} catch (e) {
+			notificar('erro', mensagemErroTfd(e));
+		}
+	}
+
 	async function liberar(id: string) {
 		try {
 			await api.tfd.abastecimentos.liberar(id);
@@ -194,19 +213,19 @@
 
 	// Registrar realizado (com upload de comprovante)
 	let realizadoId = $state<string | null>(null);
-	let litros = $state<number | undefined>(undefined);
-	let valorPorLitro = $state<number | undefined>(undefined);
-	let valorTotal = $state<number | undefined>(undefined);
-	let hodometroKm = $state<number | undefined>(undefined);
+	let litros = $state('');
+	let valorPorLitro = $state('');
+	let valorTotal = $state('');
+	let hodometroKm = $state('');
 	let comprovanteFile = $state<File | null>(null);
 	let comprovanteIdemKey = $state<string>('');
 
 	function abrirRegistrar(a: Abastecimento) {
 		realizadoId = a.id;
-		litros = undefined;
-		valorPorLitro = undefined;
-		valorTotal = a.valorEstimado || undefined;
-		hodometroKm = a.hodometroKm;
+		litros = '';
+		valorPorLitro = '';
+		valorTotal = a.valorEstimado ? String(a.valorEstimado) : '';
+		hodometroKm = String(a.hodometroKm ?? '');
 		comprovanteFile = null;
 		// Mesma chave durante toda a sessão do modal — se o usuário clicar
 		// "Registrar" duas vezes, o backend devolve o mesmo resultado.
@@ -221,10 +240,10 @@
 	async function registrar() {
 		if (
 			!realizadoId ||
-			!litros ||
-			!valorPorLitro ||
-			!valorTotal ||
-			!hodometroKm ||
+			!litros.trim() ||
+			!valorPorLitro.trim() ||
+			!valorTotal.trim() ||
+			!hodometroKm.trim() ||
 			!comprovanteFile
 		)
 			return;
@@ -242,10 +261,10 @@
 				{ idempotencyKey: comprovanteIdemKey }
 			);
 			realizadoId = null;
-			litros = undefined;
-			valorPorLitro = undefined;
-			valorTotal = undefined;
-			hodometroKm = undefined;
+			litros = '';
+			valorPorLitro = '';
+			valorTotal = '';
+			hodometroKm = '';
 			comprovanteFile = null;
 			notificar('ok', 'Comprovante registrado · saldo atualizado.');
 			await carregar();
@@ -418,6 +437,14 @@
 												>
 													Registrar Comprovante
 												</button>
+											{:else if a.status === 'REALIZADO' && a.temComprovante}
+												<button
+													type="button"
+													onclick={() => baixarComprovante(a.id)}
+													class="border border-slate-400 bg-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
+												>
+													Baixar Comprovante
+												</button>
 											{/if}
 										</div>
 									{/if}
@@ -492,7 +519,7 @@
 					type="number"
 					min="0"
 					step="0.01"
-					bind:value={valorEstimado as unknown as string}
+					bind:value={valorEstimado}
 					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 				/>
 			</div>
@@ -538,7 +565,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={hodometroKmSolicitar as unknown as string}
+				bind:value={hodometroKmSolicitar}
 			/>
 		</div>
 
@@ -618,7 +645,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={litros as unknown as string}
+				bind:value={litros}
 			/>
 			<FormField
 				label="R$ por Litro"
@@ -626,7 +653,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={valorPorLitro as unknown as string}
+				bind:value={valorPorLitro}
 			/>
 			<FormField
 				label="Valor Total (R$)"
@@ -634,7 +661,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={valorTotal as unknown as string}
+				bind:value={valorTotal}
 			/>
 			<FormField
 				label="Hodômetro (km)"
@@ -642,7 +669,7 @@
 				type="number"
 				span={6}
 				mono
-				bind:value={hodometroKm as unknown as string}
+				bind:value={hodometroKm}
 			/>
 			<div class="col-span-6 flex flex-col">
 				<label

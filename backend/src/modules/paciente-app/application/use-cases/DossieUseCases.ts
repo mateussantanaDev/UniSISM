@@ -28,6 +28,7 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { logger } from '../../../../infrastructure/logger';
 import { sanitizeText } from '../../../../shared/sanitizeText';
+import { NotFound } from '../../../../shared/errors';
 import type { IAuditLogger } from '../../../../infrastructure/audit/PrismaAuditLogger';
 
 export interface DossieResumoDto {
@@ -392,6 +393,159 @@ export class DossieExamesUseCase {
       items,
       nextCursor: hasNext && pageRows.length > 0 ? pageRows[pageRows.length - 1]!.id : null,
     };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Detalhe (item único) — v0.18.2+
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Cada `Obter*` segue o mesmo padrão:
+//   1. Resolve pacienteId via CPF (anti-enum: sem PEC → 404)
+//   2. findUnique({ id })
+//   3. Se item de outro paciente → 404 (anti-enum, audit registra _FORA_DO_ESCOPO)
+//   4. Audit dual (LGPD 5 anos + CFM 20 anos, ação `LEITURA_DOSSIE_*_DETALHE`)
+//   5. Retorna DTO **idêntico** ao item da lista (Flutter reusa o mesmo model)
+
+export class ObterAtendimentoUseCase {
+  constructor(private readonly audit: IAuditLogger) {}
+
+  async exec(id: string, ctx: DossieAuditContext): Promise<AtendimentoDto> {
+    const pacienteId = await _pacienteIdPorCpf(ctx.cpfDigits);
+    if (!pacienteId) {
+      await _auditLeitura(this.audit, 'DOSSIE_ATENDIMENTO_DETALHE_NAO_EXISTE', null, ctx, {
+        id,
+        motivo: 'sem PEC vinculado',
+      });
+      throw NotFound('ATENDIMENTO_NAO_ENCONTRADO', 'Atendimento não encontrado.');
+    }
+
+    const r = await prisma.atendimento.findUnique({ where: { id } });
+    if (!r) {
+      await _auditLeitura(this.audit, 'DOSSIE_ATENDIMENTO_DETALHE_NAO_EXISTE', pacienteId, ctx, { id });
+      throw NotFound('ATENDIMENTO_NAO_ENCONTRADO', 'Atendimento não encontrado.');
+    }
+    if (r.pacienteId !== pacienteId) {
+      // Anti-enumeration cross-paciente — CRÍTICO pra LGPD
+      await _auditLeitura(this.audit, 'DOSSIE_ATENDIMENTO_DETALHE_FORA_DO_ESCOPO', pacienteId, ctx, {
+        id,
+        donoPacienteId: r.pacienteId,
+      });
+      throw NotFound('ATENDIMENTO_NAO_ENCONTRADO', 'Atendimento não encontrado.');
+    }
+
+    const dto: AtendimentoDto = {
+      id: r.id,
+      data: r.data.toISOString(),
+      tipo: _mapTipoAtendimento(r.tipo),
+      localNome: sanitizeText(r.unidade, 200) ?? '',
+      profissionalNome: sanitizeText(r.profissional, 200) ?? '',
+      profissionalEspecialidade: sanitizeText(r.especialidade, 200),
+      queixaPrincipal: sanitizeText(r.queixaPrincipal, 2000),
+      cid10: r.cid10,
+      cid10Descricao: null,
+      condutaResumida: sanitizeText(r.conduta, 4000),
+    };
+
+    await _auditLeitura(this.audit, 'DOSSIE_ATENDIMENTO_DETALHE_LIDO', pacienteId, ctx, {
+      atendimentoId: r.id,
+      tipo: r.tipo,
+    });
+    return dto;
+  }
+}
+
+export class ObterVacinacaoUseCase {
+  constructor(private readonly audit: IAuditLogger) {}
+
+  async exec(id: string, ctx: DossieAuditContext): Promise<VacinacaoDto> {
+    const pacienteId = await _pacienteIdPorCpf(ctx.cpfDigits);
+    if (!pacienteId) {
+      await _auditLeitura(this.audit, 'DOSSIE_VACINACAO_DETALHE_NAO_EXISTE', null, ctx, {
+        id,
+        motivo: 'sem PEC vinculado',
+      });
+      throw NotFound('VACINACAO_NAO_ENCONTRADA', 'Vacinação não encontrada.');
+    }
+
+    const r = await prisma.vacinaAplicada.findUnique({ where: { id } });
+    if (!r) {
+      await _auditLeitura(this.audit, 'DOSSIE_VACINACAO_DETALHE_NAO_EXISTE', pacienteId, ctx, { id });
+      throw NotFound('VACINACAO_NAO_ENCONTRADA', 'Vacinação não encontrada.');
+    }
+    if (r.pacienteId !== pacienteId) {
+      await _auditLeitura(this.audit, 'DOSSIE_VACINACAO_DETALHE_FORA_DO_ESCOPO', pacienteId, ctx, {
+        id,
+        donoPacienteId: r.pacienteId,
+      });
+      throw NotFound('VACINACAO_NAO_ENCONTRADA', 'Vacinação não encontrada.');
+    }
+
+    const dto: VacinacaoDto = {
+      id: r.id,
+      vacina: sanitizeText(r.vacina, 120) ?? '',
+      dose: sanitizeText(r.dose, 40) ?? '',
+      aplicadaEm: r.data.toISOString(),
+      localAplicacao: sanitizeText(r.unidade, 200) ?? '',
+      lote: sanitizeText(r.lote, 60),
+      fabricante: null,
+      via: r.via,
+      aplicadorNome: sanitizeText(r.aplicador, 200),
+    };
+
+    await _auditLeitura(this.audit, 'DOSSIE_VACINACAO_DETALHE_LIDO', pacienteId, ctx, {
+      vacinacaoId: r.id,
+      vacina: r.vacina,
+    });
+    return dto;
+  }
+}
+
+export class ObterExameUseCase {
+  constructor(private readonly audit: IAuditLogger) {}
+
+  async exec(id: string, ctx: DossieAuditContext): Promise<ExameDto> {
+    const pacienteId = await _pacienteIdPorCpf(ctx.cpfDigits);
+    if (!pacienteId) {
+      await _auditLeitura(this.audit, 'DOSSIE_EXAME_DETALHE_NAO_EXISTE', null, ctx, {
+        id,
+        motivo: 'sem PEC vinculado',
+      });
+      throw NotFound('EXAME_NAO_ENCONTRADO', 'Exame não encontrado.');
+    }
+
+    const r = await prisma.exameRealizado.findUnique({ where: { id } });
+    if (!r) {
+      await _auditLeitura(this.audit, 'DOSSIE_EXAME_DETALHE_NAO_EXISTE', pacienteId, ctx, { id });
+      throw NotFound('EXAME_NAO_ENCONTRADO', 'Exame não encontrado.');
+    }
+    if (r.pacienteId !== pacienteId) {
+      await _auditLeitura(this.audit, 'DOSSIE_EXAME_DETALHE_FORA_DO_ESCOPO', pacienteId, ctx, {
+        id,
+        donoPacienteId: r.pacienteId,
+      });
+      throw NotFound('EXAME_NAO_ENCONTRADO', 'Exame não encontrado.');
+    }
+
+    const dto: ExameDto = {
+      id: r.id,
+      nome: sanitizeText(r.tipo, 200) ?? '',
+      realizadoEm: r.data.toISOString(),
+      solicitanteNome: sanitizeText(r.solicitante, 200) ?? '',
+      unidadeExecutora: sanitizeText(r.unidadeExecutora, 200),
+      categoria: r.categoria,
+      alterado: r.resultado === 'ALTERADO' || r.resultado === 'CRITICO',
+      resultadoStatus: r.resultado,
+      resultadoResumo: sanitizeText(r.observacao, 4000),
+      observacoes: null,
+    };
+
+    await _auditLeitura(this.audit, 'DOSSIE_EXAME_DETALHE_LIDO', pacienteId, ctx, {
+      exameId: r.id,
+      tipo: r.tipo,
+      resultado: r.resultado,
+    });
+    return dto;
   }
 }
 

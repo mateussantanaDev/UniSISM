@@ -24,7 +24,22 @@
 	let carregando = $state(true);
 	let erro = $state<string | null>(null);
 
+	/**
+	 * Aba inicial baseada em `?aba=` na URL.
+	 *
+	 * Importante para o fluxo de Respostas SUS: o regulador chega aqui pelo
+	 * explorador `/sms/respostas`, que adiciona `?aba=anexos` para abrir
+	 * direto no PDF oficial em vez de na ficha do paciente.
+	 */
+	const abaInicial = $derived.by<'paciente' | 'clinico' | 'anexos'>(() => {
+		const q = page.url.searchParams.get('aba');
+		if (q === 'anexos' || q === 'clinico') return q;
+		return 'paciente';
+	});
 	let aba = $state<'paciente' | 'clinico' | 'anexos'>('paciente');
+	$effect(() => {
+		aba = abaInicial;
+	});
 
 	let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 	function notificar(t: 'ok' | 'erro', texto: string) {

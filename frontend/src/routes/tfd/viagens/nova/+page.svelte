@@ -25,7 +25,10 @@
 	let destino = $state('');
 	let unidadeDestino = $state('');
 	let rotaResumo = $state('');
-	let kmEstimados = $state<number | undefined>(undefined);
+	// String pra ligar direto no FormField (que tem fallback ''). Convertido
+	// pra Number só no submit. Antes era number|undefined com cast inseguro,
+	// e o Svelte 5 rejeita bind:value={undefined} quando o bindable tem fallback.
+	let kmEstimados = $state('');
 	let observacoes = $state('');
 
 	const veiculosAtivos = $derived(veiculos.filter((v) => v.status === 'ATIVO'));
@@ -86,7 +89,7 @@
 				destino: destino.trim(),
 				unidadeDestino: unidadeDestino.trim() || undefined,
 				rotaResumo: rotaResumo.trim() || undefined,
-				kmEstimados: kmEstimados ? Number(kmEstimados) : undefined,
+				kmEstimados: kmEstimados.trim() ? Number(kmEstimados) : undefined,
 				observacoes: observacoes.trim() || undefined
 			});
 			// Se viemos de uma solicitação aprovada, tenta alocar imediatamente
@@ -159,7 +162,7 @@
 					type="number"
 					span={3}
 					mono
-					bind:value={kmEstimados as unknown as string}
+					bind:value={kmEstimados}
 				/>
 
 				<FormField

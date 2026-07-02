@@ -99,6 +99,7 @@ class _NavCell extends StatelessWidget {
           curve: _curve,
           color: active ? Colors.white : Tokens.slate50,
           child: Stack(
+            alignment: Alignment.center,
             children: [
               // Indicador topo animado (cresce de 0→3px sem teleporte)
               AnimatedPositioned(

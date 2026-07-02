@@ -13,7 +13,8 @@
       "Bash(awk '/^<\\\\/Modal>$/{c++} END{print c}' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/viagens/[id]/+page.svelte\")",
       "Bash(head -n 1056 /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
       "Bash(mv /tmp/types-clean.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
-      "Bash(pnpm svelte-check *)"
+      "Bash(pnpm svelte-check *)",
+      "Bash(ls -la /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/)"
     ]
   }
 }

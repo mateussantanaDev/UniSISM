@@ -53,11 +53,13 @@
 	let placa = $state('');
 	let modelo = $state('');
 	let tipo = $state<TipoVeiculo>('VAN');
-	let capacidade = $state(15);
-	let ano = $state(new Date().getFullYear());
+	// Strings pra ligar direto no FormField (fallback ''). Convertidas pra
+	// Number no submit. Svelte 5 rejeita bind:value de tipo diferente.
+	let capacidade = $state('15');
+	let ano = $state(String(new Date().getFullYear()));
 	let combustivel = $state<Combustivel>('DIESEL');
-	let consumoMedioKml = $state(8);
-	let hodometroAtualKm = $state(0);
+	let consumoMedioKml = $state('8');
+	let hodometroAtualKm = $state('0');
 
 	let processando = $state(false);
 	let erro = $state('');
@@ -72,11 +74,11 @@
 		placa = '';
 		modelo = '';
 		tipo = 'VAN';
-		capacidade = 15;
-		ano = new Date().getFullYear();
+		capacidade = '15';
+		ano = String(new Date().getFullYear());
 		combustivel = 'DIESEL';
-		consumoMedioKml = 8;
-		hodometroAtualKm = 0;
+		consumoMedioKml = '8';
+		hodometroAtualKm = '0';
 		erro = '';
 	}
 
@@ -327,7 +329,7 @@
 				type="number"
 				span={2}
 				mono
-				bind:value={capacidade as unknown as string}
+				bind:value={capacidade}
 			/>
 			<FormField
 				label="Ano"
@@ -335,7 +337,7 @@
 				type="number"
 				span={2}
 				mono
-				bind:value={ano as unknown as string}
+				bind:value={ano}
 			/>
 			<div class="col-span-3 flex flex-col">
 				<label
@@ -363,7 +365,7 @@
 				type="number"
 				span={2}
 				mono
-				bind:value={consumoMedioKml as unknown as string}
+				bind:value={consumoMedioKml}
 			/>
 			<FormField
 				label="Hodômetro Atual (km)"
@@ -371,7 +373,7 @@
 				type="number"
 				span={4}
 				mono
-				bind:value={hodometroAtualKm as unknown as string}
+				bind:value={hodometroAtualKm}
 			/>
 		</div>
 

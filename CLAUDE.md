@@ -116,17 +116,32 @@ Dev stack: `docker compose up -d postgres redis minio` (ClamAV opcional — leva
 | `npm run lint` | Prettier + ESLint |
 | `npm run test` | Vitest (browser via Playwright) |
 
-### Credenciais seed (DEV) — senha sempre `12345678`
+### Credenciais seed (DEV)
+
+> A senha do seed é definida em `prisma/seed.ts` (hoje hash de uma senha
+> customizada do dono do banco). Em ambientes novos, rode `npm run db:seed`
+> ou reseed manual. Se a senha foi alterada/perdida, gere bcrypt via
+> `node -e "console.log(require('bcryptjs').hashSync('<senha>',10))"` e dê
+> `UPDATE atendentes SET "senhaHash"='...' WHERE matricula='DEV-001';`.
 
 | Matrícula | Role | Escopo |
 |---|---|---|
 | `DEV-001` | DESENVOLVEDOR | GLOBAL |
-| `ADM-001` | ADMIN | Prefeitura Águas Belas |
-| `SMS-099101` | REGULADOR_SMS | Prefeitura Feira (Face 2) |
-| `SMS-047291` | ATENDENTE_UBS | UBS CENTRAL |
+| `MOT-000001` | MOTORISTA_TFD | sua frota |
 
-Paciente do app Face 3: CPF `123.456.789-00` / senha `12345678` (MARIA APARECIDA).
-Encaminhamento em pendência para testar: protocolo `UBS-2026-100137`.
+Paciente do app Face 3: seedado conforme `prisma/seed.ts`. Quando há um
+único paciente em DEV, sua senha inicial é o CPF dígitos (auto-cadastro).
+
+> Para smoke tests com escopo PREFEITURA (DEV é GLOBAL e exige
+> `?prefeituraId=...` em rotas TFD), crie um ADMIN ad-hoc:
+> ```sql
+> INSERT INTO atendentes (id, matricula, nome, email, "senhaHash", cpf,
+>   cargo, funcao, role, ativo, "prefeituraId", "senhaAlteradaEm",
+>   "criadoEm", "atualizadoEm")
+> VALUES (gen_random_uuid(), 'ADM-SMOKE', 'Admin Smoke',
+>   'adm-smoke@<dominio>', '<bcrypt-hash>', '99988877700', 'Admin',
+>   'Smoke', 'ADMIN', true, '<prefeituraId>', NOW(), NOW(), NOW());
+> ```
 
 ## Convenções
 

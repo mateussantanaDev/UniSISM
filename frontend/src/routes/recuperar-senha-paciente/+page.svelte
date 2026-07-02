@@ -10,7 +10,13 @@
 	 */
 	import { api, ApiError } from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { dev } from '$app/environment';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
+
+	/** Em DEV o Vite injeta scripts inline para HMR — script-src estrito quebra. */
+	const cspContent = dev
+		? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' http://localhost:3333 ws://localhost:5173; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+		: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
 
 	let cpf = $state('');
 	let processando = $state(false);
@@ -59,10 +65,7 @@
 		CSP defesa em profundidade — vide /redefinir/+page.svelte.
 		`referrer: no-referrer` evita vazamento do CPF (em query? não, é POST) via header.
 	-->
-	<meta
-		http-equiv="content-security-policy"
-		content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3333 https://*.aguasbelas.pe.gov.br; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
-	/>
+	<meta http-equiv="content-security-policy" content={cspContent} />
 	<meta name="referrer" content="no-referrer" />
 </svelte:head>
 

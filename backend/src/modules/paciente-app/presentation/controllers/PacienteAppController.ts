@@ -28,6 +28,9 @@ import type {
   DossieAtendimentosUseCase,
   DossieVacinacoesUseCase,
   DossieExamesUseCase,
+  ObterAtendimentoUseCase,
+  ObterVacinacaoUseCase,
+  ObterExameUseCase,
 } from '../../application/use-cases/DossieUseCases';
 import type {
   ListarBannersAtivosUseCase,
@@ -42,6 +45,11 @@ import type {
   CriarSolicitacaoTfdPacienteUseCase,
   CancelarSolicitacaoTfdPacienteUseCase,
 } from '../../application/use-cases/TfdPacienteUseCases';
+import {
+  mapEncaminhamentoApp,
+  type EncaminhamentoApp,
+} from '../../application/adapters/encaminhamentoAppAdapter';
+import { mapNotificacaoApp } from '../../application/adapters/notificacaoAppAdapter';
 
 const loginSchema = z.object({
   cpf: z.string().min(11),
@@ -107,6 +115,59 @@ const criarTfdSolicSchema = z.object({
   acompanhante: z.string().optional(),
 });
 
+/**
+ * Payload canônico do paciente — usado em `login`, `refresh` e `me`.
+ * Shape único pra garantir que o app não precise tratar 3 estruturas diferentes.
+ *
+ * Campos `null` quando o CPF ainda não tem PEC clínico (conta nova sem
+ * encaminhamento) ou quando o operador UBS não preencheu na consolidação.
+ */
+export interface PacientePayload {
+  // Identificação
+  id: string;
+  nome: string;
+  nomeSocial: string | null;
+  cpf: string;
+  cpfFormatado: string;
+  cartaoSus: string | null;
+  dataNascimento: string | null;
+  sexo: string | null;
+  fotoUrl: string | null;
+
+  // Filiação
+  nomeMae: string | null;
+  nomePai: string | null;
+
+  // Perfil sócio-demográfico
+  estadoCivil: string | null;
+  escolaridade: string | null;
+  profissao: string | null;
+  racaCor: string | null;
+  grupoSanguineo: string | null;
+
+  // Contato
+  email: string | null;
+  telefone: string | null;
+  telefoneSecundario: string | null;
+
+  // Endereço
+  endereco: string | null;
+  bairro: string | null;
+  municipio: string | null;
+  uf: string | null;
+  cep: string | null;
+
+  // Atenção primária
+  ubsVinculadaId: string | null;
+  ubsVinculadaNome: string | null;
+  agenteComunitario: string | null;
+  microarea: string | null;
+  equipeSaudeFamilia: string | null;
+
+  // Sessão
+  senhaProvisoria: boolean;
+}
+
 export interface PacienteAppDeps {
   login: LoginPacienteUseCase;
   refresh: RefreshTokenPacienteUseCase;
@@ -125,6 +186,9 @@ export interface PacienteAppDeps {
   dossieAtendimentos: DossieAtendimentosUseCase;
   dossieVacinacoes: DossieVacinacoesUseCase;
   dossieExames: DossieExamesUseCase;
+  dossieObterAtendimento: ObterAtendimentoUseCase;
+  dossieObterVacinacao: ObterVacinacaoUseCase;
+  dossieObterExame: ObterExameUseCase;
   listarBanners: ListarBannersAtivosUseCase;
   obterBanner: ObterBannerUseCase;
   marcarBannerVisto: MarcarBannerVistoUseCase;
@@ -222,30 +286,192 @@ export class PacienteAppController {
   };
 
   // ───────── me / perfil ─────────
+  //
+  // Shape do payload `paciente` é **canônico** — usado em login, refresh e me.
+  // CONTRATO_BACKEND.md §4.4 exige que /me retorne shape idêntico ao do login.
+  // Campos extras vs versão antiga: dataNascimento, cartaoSus, fotoUrl,
+  // ubsVinculadaId, ubsVinculadaNome.
+  //
 
   getMe = async (req: Request, res: Response): Promise<void> => {
     const a = req.pacienteAuth!;
-    const conta = await prisma.pacienteConta.findUnique({
-      where: { id: a.contaId },
-      select: { senhaProvisoria: true, email: true, telefone: true },
-    });
-    res.json({
-      id: a.contaId,
-      nome: a.nome,
-      cpf: a.cpfDigits,
-      cpfFormatado: a.cpfFormatado,
-      senhaProvisoria: conta?.senhaProvisoria ?? false,
+    const payload = await this.buildPacientePayload(a.contaId, a.cpfDigits, a.cpfFormatado, a.nome);
+    res.json(payload);
+  };
+
+  /**
+   * Constrói o payload canônico de `paciente` (usado em login, refresh e me).
+   *
+   * v0.18.3+: payload **completo** — agora inclui filiação, perfil sócio-
+   * demográfico, endereço estruturado, agente comunitário (ACS), microárea
+   * e equipe Saúde da Família. O app renderiza tela de perfil rica sem
+   * precisar de outros endpoints.
+   *
+   * Estratégia:
+   *   - `PacienteConta` → contato (email, telefone), UBS vinculada, flag de senha
+   *   - `Paciente` (PEC clínico, match por CPF) → tudo mais
+   *
+   * Quando o CPF não tem PEC ainda (conta nova sem encaminhamento), os
+   * campos clínicos ficam `null`/default — o app trata com `??`.
+   */
+  private async buildPacientePayload(
+    contaId: string,
+    cpfDigits: string,
+    cpfFormatado: string,
+    nome: string,
+  ): Promise<PacientePayload> {
+    const [conta, pac] = await Promise.all([
+      prisma.pacienteConta.findUnique({
+        where: { id: contaId },
+        select: {
+          senhaProvisoria: true,
+          email: true,
+          telefone: true,
+          ubsVinculadaId: true,
+          ubsVinculada: { select: { nome: true } },
+        },
+      }),
+      prisma.paciente.findUnique({
+        where: { cpf: cpfDigits },
+        select: {
+          nomeSocial: true,
+          dataNascimento: true,
+          cartaoSus: true,
+          sexo: true,
+          telefoneSecundario: true,
+          nomeMae: true,
+          nomePai: true,
+          estadoCivil: true,
+          escolaridade: true,
+          profissao: true,
+          racaCor: true,
+          grupoSanguineo: true,
+          endereco: true,
+          bairro: true,
+          municipio: true,
+          uf: true,
+          cep: true,
+          agenteComunitario: true,
+          microarea: true,
+          equipeSaudeFamilia: true,
+        },
+      }),
+    ]);
+
+    return {
+      // ─── Identificação ─────────────────────────────────────────
+      id: contaId,
+      nome,
+      nomeSocial: pac?.nomeSocial ?? null,
+      cpf: cpfDigits,
+      cpfFormatado,
+      cartaoSus: pac?.cartaoSus ?? null,
+      dataNascimento: pac?.dataNascimento
+        ? pac.dataNascimento.toISOString().slice(0, 10)
+        : null,
+      sexo: pac?.sexo ?? null,
+      fotoUrl: null, // reservado v0.19+ (upload de foto pelo paciente)
+
+      // ─── Filiação ─────────────────────────────────────────────
+      nomeMae: pac?.nomeMae ?? null,
+      nomePai: pac?.nomePai ?? null,
+
+      // ─── Perfil sócio-demográfico ─────────────────────────────
+      estadoCivil: pac?.estadoCivil ?? null,
+      escolaridade: pac?.escolaridade ?? null,
+      profissao: pac?.profissao ?? null,
+      racaCor: pac?.racaCor ?? null,
+      grupoSanguineo:
+        pac?.grupoSanguineo && pac.grupoSanguineo !== 'NAO_INFORMADO'
+          ? pac.grupoSanguineo
+          : null,
+
+      // ─── Contato ──────────────────────────────────────────────
       email: conta?.email ?? null,
       telefone: conta?.telefone ?? null,
-    });
-  };
+      telefoneSecundario: pac?.telefoneSecundario ?? null,
+
+      // ─── Endereço ─────────────────────────────────────────────
+      endereco: pac?.endereco ?? null,
+      bairro: pac?.bairro ?? null,
+      municipio: pac?.municipio ?? null,
+      uf: pac?.uf ?? null,
+      cep: pac?.cep ?? null,
+
+      // ─── Atenção primária (UBS / ACS / eSF) ───────────────────
+      ubsVinculadaId: conta?.ubsVinculadaId ?? null,
+      ubsVinculadaNome: conta?.ubsVinculada?.nome ?? null,
+      agenteComunitario: pac?.agenteComunitario ?? null,
+      microarea: pac?.microarea ?? null,
+      equipeSaudeFamilia: pac?.equipeSaudeFamilia ?? null,
+
+      // ─── Sessão ───────────────────────────────────────────────
+      senhaProvisoria: conta?.senhaProvisoria ?? false,
+    };
+  }
 
   // ───────── encaminhamentos ─────────
 
+  /**
+   * Helper: lista internamente + aplica adapter de app (shape FLAT mandado).
+   */
+  private async listEncsApp(cpfDigits: string, cpfFormatado: string): Promise<EncaminhamentoApp[]> {
+    const lista = await this.d.listEncs.exec(cpfDigits, cpfFormatado);
+    return lista.map(mapEncaminhamentoApp);
+  }
+
   getMeusEncaminhamentos = async (req: Request, res: Response): Promise<void> => {
     const a = req.pacienteAuth!;
-    const lista = await this.d.listEncs.exec(a.cpfDigits, a.cpfFormatado);
+    const lista = await this.listEncsApp(a.cpfDigits, a.cpfFormatado);
     res.json(lista);
+  };
+
+  /**
+   * GET /encaminhamentos/ativo
+   * MANDATO §5.2: retorna encaminhamento ativo (não terminal) OU `null` literal.
+   */
+  getEncaminhamentoAtivo = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const lista = await this.listEncsApp(a.cpfDigits, a.cpfFormatado);
+    const STATUS_TERMINAIS = new Set(['CONCLUIDO', 'REJEITADO', 'CANCELADO']);
+    const ativo = lista.find((e) => !STATUS_TERMINAIS.has(e.status)) ?? null;
+    res.json(ativo);
+  };
+
+  /** GET /encaminhamentos/:id — 1 obj ou 404. */
+  getEncaminhamentoById = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const id = paramString(req, 'id');
+    const lista = await this.listEncsApp(a.cpfDigits, a.cpfFormatado);
+    const item = lista.find((e) => e.id === id);
+    if (!item) {
+      throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
+    }
+    res.json(item);
+  };
+
+  /** GET /encaminhamentos/:id/anexos — array shape app (tamanhoBytes + PDF/IMG/DOC). */
+  getEncaminhamentoAnexos = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const id = paramString(req, 'id');
+    const lista = await this.listEncsApp(a.cpfDigits, a.cpfFormatado);
+    const item = lista.find((e) => e.id === id);
+    if (!item) {
+      throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
+    }
+    res.json(item.anexos ?? []);
+  };
+
+  /** GET /encaminhamentos/:id/timeline — array ordenado em ASC, tipos do app. */
+  getEncaminhamentoTimeline = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const id = paramString(req, 'id');
+    const lista = await this.listEncsApp(a.cpfDigits, a.cpfFormatado);
+    const item = lista.find((e) => e.id === id);
+    if (!item) {
+      throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
+    }
+    res.json(item.timeline ?? []);
   };
 
   // ───────── notificações ─────────
@@ -254,13 +480,15 @@ export class PacienteAppController {
     const a = req.pacienteAuth!;
     const apenasNaoLidas = req.query['apenasNaoLidas'] === 'true';
     const lista = await this.d.notifs.exec(a.contaId, apenasNaoLidas);
-    res.json(lista);
+    // MANDATO §6.1: shape app — em, lida bool, tone, deepLink
+    res.json(lista.map(mapNotificacaoApp));
   };
 
   getNotificacoesCount = async (req: Request, res: Response): Promise<void> => {
     const a = req.pacienteAuth!;
     const naoLidas = await this.d.notifs.countNaoLidas(a.contaId);
-    res.json({ naoLidas });
+    // MANDATO §6.2: campo "count" obrigatório. Mantém "naoLidas" como compat retro.
+    res.json({ count: naoLidas, naoLidas });
   };
 
   postMarcarLida = async (req: Request, res: Response): Promise<void> => {
@@ -284,6 +512,43 @@ export class PacienteAppController {
   };
 
   // ───────── PUSH (genérico v0.16+) ─────────
+
+  /**
+   * POST /auth/paciente/registrar-dispositivo (CONTRATO_BACKEND.md §4.8)
+   *
+   * Shape do contrato: `{ fcmToken, plataforma }` — apesar do nome legado
+   * "fcmToken", o backend trata como endpoint genérico (NTFY por default).
+   *
+   * Aceita também o shape v0.16+ `{ endpoint, provider, plataforma, appVersion }`
+   * pra compat com clientes ntfy nativos.
+   */
+  postRegistrarDispositivo = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const body = (req.body ?? {}) as {
+      fcmToken?: string;
+      endpoint?: string;
+      provider?: 'NTFY' | 'FCM' | 'WEB_PUSH';
+      plataforma?: 'android' | 'ios';
+      appVersion?: string;
+    };
+    // Normaliza shape do contrato (fcmToken) pro shape interno
+    const plataforma = body.plataforma ?? 'android';
+    const provider = body.provider ?? (body.fcmToken ? 'FCM' : 'NTFY');
+    const endpoint = body.endpoint ?? body.fcmToken;
+
+    const input: Parameters<typeof this.d.pushRegistrar.exec>[1] = {
+      provider,
+      plataforma,
+      appVersion: body.appVersion ?? null,
+    };
+    if (endpoint !== undefined) input.endpoint = endpoint;
+
+    const out = await this.d.pushRegistrar.exec(a.contaId, input, {
+      ip: req.ip ?? null,
+      userAgent: req.header('user-agent') ?? null,
+    });
+    res.status(201).json(out);
+  };
 
   postPushToken = async (req: Request, res: Response): Promise<void> => {
     const a = req.pacienteAuth!;
@@ -376,6 +641,41 @@ export class PacienteAppController {
     };
     const pag = _parsePaginacao(req);
     res.json(await this.d.dossieExames.exec(ctx, pag));
+  };
+
+  // ───────── dossiê (detalhe — v0.18.2+) ─────────
+
+  getDossieAtendimento = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const ctx = {
+      contaId: a.contaId,
+      cpfDigits: a.cpfDigits,
+      ip: req.ip ?? null,
+      userAgent: req.header('user-agent') ?? null,
+    };
+    res.json(await this.d.dossieObterAtendimento.exec(paramString(req, 'id'), ctx));
+  };
+
+  getDossieVacinacao = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const ctx = {
+      contaId: a.contaId,
+      cpfDigits: a.cpfDigits,
+      ip: req.ip ?? null,
+      userAgent: req.header('user-agent') ?? null,
+    };
+    res.json(await this.d.dossieObterVacinacao.exec(paramString(req, 'id'), ctx));
+  };
+
+  getDossieExame = async (req: Request, res: Response): Promise<void> => {
+    const a = req.pacienteAuth!;
+    const ctx = {
+      contaId: a.contaId,
+      cpfDigits: a.cpfDigits,
+      ip: req.ip ?? null,
+      userAgent: req.header('user-agent') ?? null,
+    };
+    res.json(await this.d.dossieObterExame.exec(paramString(req, 'id'), ctx));
   };
 
   // ───────── banners ─────────

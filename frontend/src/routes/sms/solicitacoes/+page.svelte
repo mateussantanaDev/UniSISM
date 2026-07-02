@@ -17,5 +17,6 @@
 	emojiVazio="📥"
 	mensagemVazio="Nenhuma solicitação recebida ainda."
 	excluirRascunho
+	detalheBasePath="/sms/encaminhamento"
 	dica="Clique em uma UBS para abrir os anos com solicitações. No último nível você consulta cada caso."
 />

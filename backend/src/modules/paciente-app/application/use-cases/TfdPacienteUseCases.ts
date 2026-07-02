@@ -61,7 +61,10 @@ async function _prefeituraIdDoPaciente(contaId: string): Promise<string | null> 
 }
 
 function _viagemDto(v: any): TfdViagemPacienteDto {
-  const ocupadas = v.passageiros?.length ?? v._count?.passageiros ?? 0;
+  // Vagas ocupadas = UBS (ViagemPassageiro) + app paciente (TfdPacienteSolicitacao APROVADA/EMBARCADA)
+  const ocupadasUbs = v.passageiros?.length ?? v._count?.passageiros ?? 0;
+  const ocupadasApp = v._count?.solicitacoesPaciente ?? 0;
+  const ocupadas = ocupadasUbs + ocupadasApp;
   return {
     id: v.id,
     destinoCidade: v.destino ?? '',
@@ -104,7 +107,14 @@ function _solicitacaoDto(s: any): TfdSolicitacaoPacienteDto {
 const INCLUDE_VIAGEM = {
   veiculo: { select: { placa: true, modelo: true, capacidade: true } },
   motorista: { select: { nome: true } },
-  _count: { select: { passageiros: true } },
+  _count: {
+    select: {
+      passageiros: true,
+      solicitacoesPaciente: {
+        where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+      },
+    },
+  },
 };
 
 const INCLUDE_SOLIC = {

@@ -11,6 +11,8 @@ import { prisma } from '../../infrastructure/database/prisma';
 import { whereByScopeViaUbs } from '../../infrastructure/database/scopeWhere';
 import type { AccessScope } from '../../shared/scope';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
+import { invalidarCacheArvorePorUbs } from '../../infrastructure/cache/arvoreCacheInvalidator';
+
 
 export class DeleteEncaminhamentoUseCase {
   constructor(private readonly audit?: IAuditLogger) {}
@@ -64,5 +66,7 @@ export class DeleteEncaminhamentoUseCase {
         motivo: motivo.slice(0, 500),
       },
     });
+
+    void invalidarCacheArvorePorUbs(alvo.ubsId);
   }
 }

@@ -7,14 +7,38 @@
 > Spec "ideal" antiga (`UNISISM-Paciente/BACKEND_API.md`) descreve 31 endpoints
 > que **NÃO existem** no backend — ignore. Esta doc é a verdade.
 
-**Versão**: v0.10.0 · **Última atualização**: 2026-05-27 · **Validado contra**: `unisism-ubs-backend@0.1.0`
+**Versão**: v0.18.1 · **Última atualização**: 2026-06-03 · **Validado contra**: `unisism-ubs-backend@0.18.1+`
 
-> **v0.10.0 (27/05/2026)** — implementou TODOS os pendentes do
-> `UNISISM-Paciente/BACKEND_PENDENTES.md`: Recuperação de senha (esqueci/redefinir),
-> 4 campos novos em `Encaminhamento`, UBS vinculada, Push FCM (registrar/revogar),
-> Dossiê médico (4 endpoints), Banners SMS (3 endpoints), TFD do paciente (6 endpoints),
-> Download de anexos no app Flutter. Total: **23 endpoints** sob `/v1/paciente-app/*`.
-> Refresh token foi pulado propositalmente — sessão de 24h é aceitável.
+> **v0.18.3 (03/06/2026)** — `/me` (e `paciente` no login/refresh) agora
+> retorna **27 campos**: identificação completa (nome social, sexo, foto),
+> filiação (mãe/pai), perfil sócio-demográfico (estado civil, escolaridade,
+> profissão, raça/cor, grupo sanguíneo), contato (email + 2 telefones),
+> endereço estruturado (logradouro/bairro/município/UF/CEP) e atenção
+> primária (UBS, agente comunitário, microárea, equipe Saúde da Família).
+> O app renderiza perfil rico sem chamar outros endpoints.
+>
+> **v0.18.2 (03/06/2026)** — endpoints de **detalhe do dossiê** (atendimento,
+> vacinação, exame). Audit dual + anti-enum 404 cross-paciente +
+> sanitização. Permite que o app abra cada item em tela própria sem cache.
+> Total atual: **30 endpoints** sob `/v1/paciente-app/*`.
+>
+> **v0.18.1 (03/06/2026)** — sincronização final com o app Flutter `UNISISM-Paciente`:
+> Push migrado de Firebase para **ntfy.sh self-hosted** (endpoint `/me/push-token` com
+> `provider: 'NTFY'`). Todos os endpoints do app rodam contra HTTP real (mocks foram
+> removidos da árvore do app). Total: **27 endpoints** sob `/v1/paciente-app/*`.
+>
+> **v0.18.0 (28/05/2026)** — Refresh token rotativo (TTL access 30 min · refresh 30 dias)
+> com detecção de reuse e revogação em cadeia. Logout revoga todos os refresh tokens da
+> conta. Adapter LGPD-aware em todas as listagens.
+>
+> **v0.14.0 (15/05/2026)** — Dossiê com paginação cursor + audit dual (LGPD 5a + CFM 20a).
+>
+> **v0.13.0 (10/05/2026)** — UBS com `horarios` estruturado + auto-bond de `ubsVinculadaId`.
+>
+> **v0.11.0 (29/04/2026)** — `esqueci-senha` + `redefinir-senha` com hardening LGPD.
+>
+> **v0.10.0 (27/05/2026)** — base inicial: 23 endpoints (campos novos em Encaminhamento,
+> UBS vinculada, push FCM, dossiê médico, banners, TFD, download de anexos).
 
 ---
 
@@ -384,22 +408,66 @@ GET /v1/paciente-app/me
 Authorization: Bearer <token>
 ```
 
-**Response 200**:
+**Response 200** (v0.18.3+ — shape canônico idêntico ao de `login`/`refresh`):
 ```json
 {
   "id": "94f3156f-271e-4281-9c0b-f32286bc63d2",
   "nome": "MARIA APARECIDA SOUZA",
+  "nomeSocial": null,
   "cpf": "12345678909",
   "cpfFormatado": "123.456.789-09",
-  "senhaProvisoria": true,
+  "cartaoSus": "702 8004 5391 0023",
+  "dataNascimento": "1968-03-14",
+  "sexo": "F",
+  "fotoUrl": null,
+
+  "nomeMae": "ANA SOUZA",
+  "nomePai": "JOÃO APARECIDO",
+
+  "estadoCivil": "CASADO",
+  "escolaridade": "FUNDAMENTAL_COMPLETO",
+  "profissao": "Aposentada",
+  "racaCor": "PARDA",
+  "grupoSanguineo": "O_POSITIVO",
+
   "email": "maria.souza@example.com",
-  "telefone": "75999998877"
+  "telefone": "75999998877",
+  "telefoneSecundario": "7532010000",
+
+  "endereco": "Rua das Flores, 100",
+  "bairro": "Centro",
+  "municipio": "Águas Belas",
+  "uf": "PE",
+  "cep": "55310-000",
+
+  "ubsVinculadaId": "uuid",
+  "ubsVinculadaNome": "UBS Águas Belas Centro",
+  "agenteComunitario": "DAIANA RODRIGUES",
+  "microarea": "07",
+  "equipeSaudeFamilia": "ESF 03 · Equipe Verde",
+
+  "senhaProvisoria": true
 }
 ```
 
-> **Diferente da spec ideal**: backend **não envia** `dataNascimento`,
-> `cartaoSus`, `fotoUrl`, `ubsVinculadaId/Nome`. Esses campos ficam `null`
-> no model do app.
+> **Campos opcionais (vêm `null` quando não preenchidos)**:
+> - **Sem PEC clínico** (conta nova sem encaminhamento ainda): TODOS os campos
+>   clínicos (`nomeSocial`, `cartaoSus`, `dataNascimento`, `sexo`, filiação,
+>   perfil socio, endereço, agente, microárea, eSF) vêm `null`.
+> - **Com PEC mas não preenchido**: cada campo pode estar `null` independente.
+> - `email` / `telefone`: gerenciados pela `PacienteConta` — preenchidos no
+>   onboarding ou via app paciente (futuro endpoint de update).
+> - `telefoneSecundario`: vive no `Paciente` clínico (preenchido pela UBS).
+> - `fotoUrl`: reservado v0.19+ (upload de foto pelo paciente).
+> - `grupoSanguineo`: `null` quando schema marca `NAO_INFORMADO` (interno).
+> - `ubsVinculadaId` / `ubsVinculadaNome`: só após o paciente receber a primeira
+>   notificação (auto-bond v0.13.0+).
+
+**Enums esperados**:
+- `sexo`: `M` · `F` · `OUTRO`
+- `estadoCivil`: `SOLTEIRO` · `CASADO` · `DIVORCIADO` · `VIUVO` · `UNIAO_ESTAVEL` · `OUTRO`
+- `racaCor`: `BRANCA` · `PRETA` · `PARDA` · `AMARELA` · `INDIGENA` · `NAO_INFORMADA`
+- `grupoSanguineo`: `A_POSITIVO` · `A_NEGATIVO` · `B_POSITIVO` · `B_NEGATIVO` · `AB_POSITIVO` · `AB_NEGATIVO` · `O_POSITIVO` · `O_NEGATIVO`
 
 **Uso recomendado**: chamar no boot (splash) pra:
 1. Validar que o token salvo ainda é válido (401 → vai pra login)
@@ -787,18 +855,25 @@ interface PostLoginRequest {
 }
 
 interface PostLoginResponse {
-  token: string;        // opaco, salvar no SecureStorage
-  expiresIn: number;    // segundos (86400 = 24h)
+  token: string;              // access opaco — TTL 30 min
+  refreshToken: string;       // refresh opaco — TTL 30 dias (v0.18.0+)
+  expiresIn: number;          // 1800 (30 min)
+  refreshExpiresIn: number;   // 2592000 (30 dias)
   paciente: PacienteMe;
 }
 
 interface PacienteMe {
   id: string;
   nome: string;
-  cpf: string;           // sempre dígitos
+  cpf: string;                       // sempre dígitos
   cpfFormatado: string;
+  dataNascimento: string | null;     // YYYY-MM-DD; null se sem PEC clínico
+  cartaoSus: string | null;
   email: string | null;
   telefone: string | null;
+  fotoUrl: string | null;            // reservado v0.19+
+  ubsVinculadaId: string | null;
+  ubsVinculadaNome: string | null;
   senhaProvisoria: boolean;
 }
 
@@ -1264,6 +1339,23 @@ Limite 100 itens, ordenado `data DESC`.
 ]
 ```
 
+#### `GET /v1/paciente-app/dossie/atendimentos/:id` (v0.18.2+)
+
+**Autenticada** + **rate-limited** (mesmo limit do dossiê).
+
+Retorna 1 atendimento com o **mesmo shape** do item da lista.
+
+**Erros**:
+
+| HTTP | code | Quando |
+|---|---|---|
+| 404 | `ATENDIMENTO_NAO_ENCONTRADO` | id inexistente OU atendimento de outro paciente (anti-enum) |
+
+**Audit dual** (LGPD + CFM):
+- LGPD: `DOSSIE_ATENDIMENTO_DETALHE_LIDO`
+- CFM (imutável): `LEITURA_DOSSIE` com `endpoint: DOSSIE_ATENDIMENTO_DETALHE_LIDO`
+- Tentativa cross-paciente: `DOSSIE_ATENDIMENTO_DETALHE_FORA_DO_ESCOPO` (LGPD crítico)
+
 #### `GET /v1/paciente-app/dossie/exames`
 
 ```json
@@ -1281,6 +1373,24 @@ Limite 100 itens, ordenado `data DESC`.
 ```
 
 `alterado = (resultado === 'ALTERADO' || 'CRITICO')` no PEC.
+
+#### `GET /v1/paciente-app/dossie/vacinacoes/:id` (v0.18.2+)
+
+Detalhe de 1 vacina aplicada. Mesmo shape do item da lista.
+
+**Erros**: `404 VACINACAO_NAO_ENCONTRADA` (inexistente OU outro paciente).
+
+**Audit**: `DOSSIE_VACINACAO_DETALHE_LIDO` (LGPD+CFM) ·
+`DOSSIE_VACINACAO_DETALHE_FORA_DO_ESCOPO` em tentativa cross-paciente.
+
+#### `GET /v1/paciente-app/dossie/exames/:id` (v0.18.2+)
+
+Detalhe de 1 exame. Mesmo shape do item da lista.
+
+**Erros**: `404 EXAME_NAO_ENCONTRADO` (inexistente OU outro paciente).
+
+**Audit**: `DOSSIE_EXAME_DETALHE_LIDO` (LGPD+CFM) ·
+`DOSSIE_EXAME_DETALHE_FORA_DO_ESCOPO` em tentativa cross-paciente.
 
 ### 11.6 Banners SMS
 
@@ -1458,7 +1568,7 @@ curl -X POST http://localhost:3333/v1/paciente-app/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"cpf":"12345678909","senha":"12345678909"}'
 
-# Response: { token, expiresIn: 86400, paciente: { senhaProvisoria: true, ... } }
+# Response: { token, refreshToken, expiresIn: 1800, refreshExpiresIn: 2592000, paciente: { senhaProvisoria: true, ... } }
 
 TOKEN="<token-da-response>"
 
@@ -1526,13 +1636,17 @@ cd /Users/mateus/Documents/Prefeitura/UNISISM-Paciente
 flutter pub get
 
 # Mac dev (iOS Simulator ou Web)
-flutter run --dart-define=USE_MOCK=false \
-            --dart-define=API_BASE_URL=http://localhost:3333/v1
+flutter run --dart-define=API_BASE_URL=http://localhost:3333/v1 \
+            --dart-define=NTFY_BASE_URL=http://localhost:8080
 
 # Android emulator
-flutter run --dart-define=USE_MOCK=false \
-            --dart-define=API_BASE_URL=http://10.0.2.2:3333/v1
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3333/v1 \
+            --dart-define=NTFY_BASE_URL=http://10.0.2.2:8080
 ```
+
+> **v0.18.1+**: mocks foram removidos da árvore do app — `USE_MOCK` não existe
+> mais. O app sempre consome HTTP real. Para preview offline use o seed do
+> backend (script `scripts/seed-paciente-app.ts`).
 
 Login no app:
 - **CPF**: `123.456.789-09` (ou `12345678909`)
@@ -1560,7 +1674,9 @@ bloqueante. Após a troca, a home libera.
 | Download de anexo | `GET /v1/paciente-app/anexos/:id/download` | Bearer (responseType: bytes) |
 | Logout | `POST /v1/paciente-app/auth/logout` | Bearer |
 
-**Total: 11 endpoints**. Tudo sob `/v1/paciente-app/*`.
+**Total: 27 endpoints** (Face 3 v0.18.1+). Tudo sob `/v1/paciente-app/*` —
+endpoints adicionais cobrem refresh, esqueci/redefinir senha, push genérico,
+dossiê (4), banners (3), TFD (6), UBS vinculada e download de anexos.
 
 ---
 

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniSISM — Documentação Funcional e Impactos</title>
+<style>
+  /* ============================================================
+     B2G BRUTALISTA — Paleta e Tipografia do Design System UNISISM
+     ============================================================ */
+  :root {
+    --slate-50:  #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+    --slate-300: #CBD5E1;
+    --slate-400: #94A3B8;
+    --slate-500: #64748B;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1E293B;
+    --slate-900: #0F172A;
+    
+    /* Ação institucional */
+    --brand-primary:       #1E3A8A;  /* blue-900 */
+    --brand-primary-hover: #1E40AF;  /* blue-800 */
+    --brand-bg-soft:       #EFF6FF;  /* blue-50 */
+    --brand-border:        #1D4ED8;  /* blue-700 */
+
+    /* Semânticos (apenas para status/estados) */
+    --success:    #047857;  --success-bg: #ECFDF5;  --success-border: #047857;  /* emerald */
+    --warning:    #D97706;  --warning-bg: #FFFBEB;  --warning-border: #D97706;  /* amber */
+    --critical:   #B91C1C;  --critical-bg: #FEF2F2; --critical-border: #B91C1C;  /* red */
+    --info:       #0E7490;  --info-bg:    #ECFEFF;  --info-border:    #0E7490;  /* cyan */
+    --neutral:    #64748B;  --neutral-bg: #F8FAFC;  --neutral-border: #64748B;  /* slate */
+
+    --sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--slate-50);
+    color: var(--slate-900);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea, select { border-radius: 0; }
+  a { color: var(--brand-primary); text-decoration-color: rgba(30,58,138,.3); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--brand-primary); }
+
+  /* Layout Shell */
+  .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  
+  /* Sidebar Navigation */
+  aside.toc {
+    background: white;
+    border-right: 1px solid var(--slate-200);
+    padding: 24px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  main.content {
+    padding: 40px 60px 80px;
+    max-width: 1200px;
+  }
+
+  /* Brand styling */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--slate-200);
+    margin-bottom: 24px;
+  }
+  .brand-mark {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--brand-primary);
+    color: white;
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .brand-name {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    line-height: 1.2;
+  }
+  .brand-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--slate-500);
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  nav.toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  nav.toc-nav a {
+    display: block;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--slate-700);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  nav.toc-nav a:hover {
+    background: var(--slate-100);
+    color: var(--brand-primary);
+    border-left-color: var(--brand-primary);
+  }
+  nav.toc-nav a .n {
+    color: var(--slate-400);
+    margin-right: 8px;
+  }
+
+  /* Headings & Typography */
+  h1.doc-title {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 32px;
+    letter-spacing: -1px;
+    margin: 0 0 8px;
+    line-height: 1.1;
+    color: var(--slate-900);
+  }
+  .doc-sub {
+    font-family: var(--mono);
+    color: var(--slate-500);
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 11px;
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 56px 0 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--slate-900);
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .badge {
+    background: var(--brand-primary);
+    color: white;
+    font-size: 10px;
+    padding: 3px 6px;
+    letter-spacing: 1px;
+  }
+  h3 {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 32px 0 12px;
+    color: var(--slate-800);
+  }
+  p { margin: 0 0 16px; }
+  p.lead {
+    font-size: 16px;
+    color: var(--slate-700);
+    max-width: 800px;
+    line-height: 1.6;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid;
+    transition: all 0.15s ease;
+  }
+  .badge.success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+  .badge.warn { background: var(--warning-bg); color: var(--warning); border-color: var(--warning); }
+  .badge.crit { background: var(--critical-bg); color: var(--critical); border-color: var(--critical); }
+  .badge.info { background: var(--info-bg); color: var(--info); border-color: var(--info); }
+  .badge.neutral { background: var(--neutral-bg); color: var(--neutral); border-color: var(--neutral); }
+  .badge.brand { background: var(--brand-bg-soft); color: var(--brand-primary); border-color: var(--brand-primary); }
+
+  /* Callout Panel */
+  .callout {
+    border-left: 4px solid var(--brand-primary);
+    background: var(--brand-bg-soft);
+    padding: 16px 20px;
+    margin: 24px 0;
+  }
+  .callout.warn { border-color: var(--warning); background: var(--warning-bg); }
+  .callout.crit { border-color: var(--critical); background: var(--critical-bg); }
+  .callout.success { border-color: var(--success); background: var(--success-bg); }
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .callout.warn .callout-label { color: var(--warning); }
+  .callout.crit .callout-label { color: var(--critical); }
+  .callout.success .callout-label { color: var(--success); }
+  .callout-body { font-size: 13.5px; color: var(--slate-800); }
+  .callout-body p:last-child { margin-bottom: 0; }
+
+  /* Metrics Grid */
+  .grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 24px 0;
+  }
+  .metric {
+    background: white;
+    border: 1px solid var(--slate-200);
+    display: flex;
+    align-items: stretch;
+    transition: all 0.2s ease;
+  }
+  .metric:hover {
+    border-color: var(--slate-400);
+  }
+  .metric-bar {
+    width: 5px;
+    background: var(--brand-primary);
+  }
+  .metric.success .metric-bar { background: var(--success); }
+  .metric.warn .metric-bar { background: var(--warning); }
+  .metric.crit .metric-bar { background: var(--critical); }
+  .metric-body { padding: 16px 20px; flex: 1; }
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--slate-500);
+    text-transform: uppercase;
+  }
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-top: 4px;
+    line-height: 1.1;
+    color: var(--slate-900);
+  }
+  .metric-sub {
+    font-size: 12px;
+    color: var(--slate-600);
+    margin-top: 6px;
+  }
+
+  /* Table style */
+  .table-container {
+    overflow-x: auto;
+    border: 1px solid var(--slate-200);
+    margin: 20px 0 32px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: white;
+  }
+  thead tr {
+    background: var(--slate-50);
+    border-bottom: 2px solid var(--slate-200);
+  }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--slate-700);
+    text-transform: uppercase;
+    border-right: 1px solid var(--slate-200);
+  }
+  th:last-child { border-right: 0; }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--slate-200);
+    border-right: 1px solid var(--slate-150);
+    vertical-align: top;
+    color: var(--slate-700);
+  }
+  td:last-child { border-right: 0; }
+  tr:hover {
+    background: var(--slate-50);
+  }
+  td strong {
+    color: var(--slate-900);
+  }
+  .col-mod { width: 15%; font-family: var(--mono); font-weight: 700; color: var(--brand-primary); }
+  .col-func { width: 25%; font-family: var(--mono); font-weight: 700; color: var(--slate-900); }
+  .col-help { width: 30%; }
+  .col-impact { width: 30%; }
+
+  /* Timeline Visual Control */
+  .timeline {
+    position: relative;
+    padding: 20px 0 20px 24px;
+    margin: 24px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 7px;
+    width: 2px;
+    background: var(--slate-200);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .timeline-item:last-child {
+    margin-bottom: 0;
+  }
+  .timeline-badge {
+    position: absolute;
+    left: -24px;
+    top: 4px;
+    width: 16px; height: 16px;
+    background: white;
+    border: 2px solid var(--slate-400);
+    display: flex;
+    align-items: center; justify-content: center;
+  }
+  .timeline-item.active .timeline-badge {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+  }
+  .timeline-item.success .timeline-badge {
+    background: var(--success);
+    border-color: var(--success);
+  }
+  .timeline-item.warn .timeline-badge {
+    background: var(--warning);
+    border-color: var(--warning);
+  }
+  .timeline-item.crit .timeline-badge {
+    background: var(--critical);
+    border-color: var(--critical);
+  }
+  .timeline-content {
+    background: white;
+    border: 1px solid var(--slate-200);
+    padding: 16px 20px;
+    transition: all 0.2s ease;
+  }
+  .timeline-content:hover {
+    border-color: var(--slate-300);
+  }
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .timeline-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--slate-900);
+  }
+  .timeline-desc {
+    font-size: 13.5px;
+    color: var(--slate-700);
+    margin-bottom: 12px;
+  }
+  .timeline-impact-badge {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--slate-50);
+    border-left: 3px solid var(--slate-400);
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .timeline-item.success .timeline-impact-badge { border-left-color: var(--success); }
+  .timeline-item.warn .timeline-impact-badge { border-left-color: var(--warning); }
+  .timeline-item.crit .timeline-impact-badge { border-left-color: var(--critical); }
+  .timeline-item.active .timeline-impact-badge { border-left-color: var(--brand-primary); }
+
+  .timeline-impact-title {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--slate-500);
+    margin-bottom: 2px;
+  }
+
+  /* Two Column Layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 24px 0;
+  }
+
+  /* Plain Card styling */
+  .card {
+    background: white;
+    border: 1px solid var(--slate-200);
+    padding: 20px;
+    transition: all 0.2s ease-in-out;
+  }
+  .card:hover {
+    border-color: var(--brand-primary);
+  }
+  .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .card-body {
+    font-size: 13.5px;
+    color: var(--slate-700);
+  }
+
+  /* Footer */
+  footer {
+    padding: 24px 20px;
+    background: var(--slate-100);
+    border-top: 1px solid var(--slate-200);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--slate-500);
+    margin-top: 64px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 820px) {
+    .shell { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--slate-200); }
+    main.content { padding: 24px 20px; }
+    .two-col { grid-template-columns: 1fr; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead tr { position: absolute; top: -9999px; left: -9999px; }
+    tr { border: 1px solid var(--slate-200); margin-bottom: 16px; }
+    td { border: none; border-bottom: 1px solid var(--slate-100); position: relative; padding-left: 35%; text-align: right; }
+    td:last-child { border-bottom: none; }
+    td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 12px;
+      width: 30%;
+      text-align: left;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--slate-500);
+    }
+    .col-mod, .col-func { font-family: var(--sans); text-align: right; width: 100% !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============================================================
+       SIDEBAR / TOC
+       ============================================================ -->
+  <aside class="toc">
+    <div class="brand">
+      <div class="brand-mark">U</div>
+      <div>
+        <div class="brand-name">UNISISM</div>
+        <div class="brand-sub">MANUAL DE IMPACTO</div>
+      </div>
+    </div>
+    <nav class="toc-nav">
+      <a href="#introducao"><span class="n">01</span>Introdução</a>
+      <a href="#metricas-chave"><span class="n">02</span>Indicadores</a>
+      <a href="#matriz-funcionalidades"><span class="n">03</span>Funcionalidades</a>
+      <a href="#controle-status"><span class="n">04</span>Rastreio de Status</a>
+      <a href="#detalhe-modulo"><span class="n">05</span>Detalhe por Módulo</a>
+      <a href="#auditoria"><span class="n">06</span>Cadeia e Compliance</a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       CONTEÚDO PRINCIPAL
+       ============================================================ -->
+  <main class="content">
+
+    <h1 class="doc-title">FUNCIONALIDADES E IMPACTOS DO UNISISM</h1>
+    <div class="doc-sub">DOCUMENTAÇÃO FUNCIONAL · TECNOLOGIA E CIDADANIA · 2026</div>
+
+    <p class="lead" id="introducao">
+      O <strong>UniSISM</strong> é uma plataforma integrada de saúde pública municipal concebida sob o modelo
+      <strong>B2G (Business-to-Government) Brutalista</strong>. O sistema elimina as barreiras entre a recepção da UBS,
+      a Regulação Municipal, o Transporte Sanitário (TFD) e o cidadão, transformando fluxos analógicos e opacos
+      em processos ágeis, transparentes e auditáveis.
+    </p>
+
+    <!-- ============================================================
+         INDICADORES
+         ============================================================ -->
+    <h2 id="metricas-chave"><span class="badge">01</span>INDICADORES DE IMPACTO</h2>
+    
+    <div class="grid">
+      <div class="metric success">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Consolidação na UBS</div>
+          <div class="metric-value">90 Segundos</div>
+          <div class="metric-sub">Reduzido de 15 minutos por guia médica via OCR inteligente.</div>
+        </div>
+      </div>
+      
+      <div class="metric">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Opacidade da Fila</div>
+          <div class="metric-value">Zero</div>
+          <div class="metric-sub">O cidadão acompanha cada status e recebe push no celular.</div>
+        </div>
+      </div>
+
+      <div class="metric success">
+        <div class="metric-bar"></div>
+        <div class="metric-body">
+          <div class="metric-label">Auditoria TFD</div>
+          <div class="metric-value">100% Cripto</div>
+          <div class="metric-sub">Chamada digital e hodômetro integrados em cadeia hash.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MATRIZ DE FUNCIONALIDADES
+         ============================================================ -->
+    <h2 id="matriz-funcionalidades"><span class="badge">02</span>MATRIZ DE FUNCIONALIDADES, SUPORTE E IMPACTO</h2>
+    
+    <p>Abaixo, detalhamos como cada recurso da plataforma apoia a operação diária e gera benefícios concretos para a gestão e para os pacientes:</p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 15%;">Módulo</th>
+            <th style="width: 25%;">Funcionalidade</th>
+            <th style="width: 30%;">Como Ajuda / O que Resolve</th>
+            <th style="width: 30%;">Impacto e Benefício Real</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Paciente</td>
+            <td class="col-func" data-label="Funcionalidade">Controle de Status do Encaminhamento</td>
+            <td data-label="Como Ajuda">Disponibiliza ao cidadão a situação em tempo real de suas solicitações médicas enviadas para a Regulação.</td>
+            <td data-label="Impacto e Benefício"><strong>Rastreamento facilitado</strong> da situação do paciente. Deixa o paciente informado e calmo, poupando deslocamentos desnecessários até a UBS apenas para obter informações.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Paciente</td>
+            <td class="col-func" data-label="Funcionalidade">Notificações Push Automáticas</td>
+            <td data-label="Como Ajuda">Notifica o paciente imediatamente em seu celular a cada mudança de estado da solicitação (ex: aprovado, pendente).</td>
+            <td data-label="Impacto e Benefício">Elimina a opacidade histórica das filas de regulação. O cidadão é protagonista do seu agendamento e responde rápido a pendências.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face UBS</td>
+            <td class="col-func" data-label="Funcionalidade">Digitalização e OCR de Guias</td>
+            <td data-label="Como Ajuda">Capta dados textuais de guias de papel emitidas por médicos via OCR de alta performance, eliminando digitação manual.</td>
+            <td data-label="Impacto e Benefício">Otimiza o trabalho do atendente (atendimento cai para 90s). Reduz o tempo de fila na UBS e evita erros de grafia ou digitação.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Regulação</td>
+            <td class="col-func" data-label="Funcionalidade">Fila Inteligente de Triagem</td>
+            <td data-label="Como Ajuda">Agrupa solicitações de consultas e exames por gravidade clínica (Manchester/Risco) e tempo, e não por ordem de chegada simples.</td>
+            <td data-label="Impacto e Benefício">Garante prioridade para quem mais precisa, diminuindo taxas de morbidade e reduzindo a judicialização na saúde do município.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Motorista</td>
+            <td class="col-func" data-label="Funcionalidade">Chamada Digital Offline-first</td>
+            <td data-label="Como Ajuda">Substitui a lista de chamada física do TFD por controle digital no celular, salvando dados localmente se não houver internet.</td>
+            <td data-label="Impacto e Benefício">Embarque ágil. Registra presença/falta sem perda de dados e combate o "overbooking" fraudulento de assentos e ajuda de custo.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Motorista</td>
+            <td class="col-func" data-label="Funcionalidade">Registro Obrigatório de Hodômetro</td>
+            <td data-label="Como Ajuda">Exige que o motorista registre a quilometragem do veículo ao iniciar e ao finalizar as viagens de transporte sanitário.</td>
+            <td data-label="Impacto e Benefício">Garante controle absoluto sobre o consumo de combustível e a rota programada, mitigando desvios e uso irregular de bens públicos.</td>
+          </tr>
+          <tr>
+            <td class="col-mod" data-label="Módulo">Face Motorista</td>
+            <td class="col-func" data-label="Funcionalidade">Mapas Offline Integrados</td>
+            <td data-label="Como Ajuda">Exibe no mapa (OpenStreetMap local) as coordenadas de partida, UBS de origem e destino sem demandar pacote de internet.</td>
+            <td data-label="Impacto e Benefício">Permite que o motorista navegue com segurança em trechos sem sinal (estradas rurais), evitando atrasos e perdas de consultas.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================
+         FOCO EM STATUS DE ENCAMINHAMENTO
+         ============================================================ -->
+    <h2 id="controle-status"><span class="badge">03</span>FOCO DE RASTREABILIDADE: STATUS DO ENCAMINHAMENTO</h2>
+    
+    <p>
+      O maior gargalo na relação entre a Secretaria de Saúde e o cidadão é a <strong>falta de informação</strong>. 
+      Historicamente, o paciente saía do consultório com uma guia de papel, entregava na UBS e entrava em um limbo. 
+      Sem saber a situação, o paciente retornava periodicamente à UBS apenas para perguntar: <em>"Minha consulta já saiu?"</em>, gerando filas e atritos.
+    </p>
+
+    <div class="callout success">
+      <div class="callout-label">O Impacto da Informação Concedida ao Cidadão</div>
+      <div class="callout-body">
+        Ao prover a <strong>rastreabilidade de ponta a ponta</strong>, o UniSISM empodera o paciente. O rastreio facilitado 
+        reduz a ansiedade, traz transparência e confere dignidade ao tratamento. O paciente sabe exatamente onde sua 
+        guia está na fila e o que falta para ela ser aprovada.
+      </div>
+    </div>
+
+    <h3>A Timeline de Estados Visível ao Paciente</h3>
+    <p>No aplicativo do cidadão, o controle de status é representado por uma timeline clara com as seguintes etapas:</p>
+
+    <div class="timeline">
+      
+      <!-- Rascunho -->
+      <div class="timeline-item">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-title">1. Rascunho (Aguardando Consolidação)</span>
+            <span class="badge neutral">RASCUNHO</span>
+          </div>
+          <div class="timeline-desc">
+            A UBS digitalizou a guia médica do paciente. O atendente está revisando os dados estruturados extraídos pelo OCR antes de enviar à central de regulação.
+          </div>
+          <div class="timeline-impact-badge">
+            <div>
+              <div class="timeline-impact-title">Impacto no Rastreio</div>
+              O paciente visualiza no app que a prefeitura já está ciente e processando a guia física recebida.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aguardando Regulação -->
+      <div class="timeline-item active">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-title">2. Aguardando Regulação (Fila Médica)</span>
+            <span class="badge info">AGUARDANDO_REGULACAO</span>
+          </div>
+          <div class="timeline-desc">
+            A guia foi devidamente consolidada e está oficialmente na fila inteligente da Regulação Municipal. Médicos reguladores avaliarão a gravidade do caso.
+          </div>
+          <div class="timeline-impact-badge">
+            <div>
+              <div class="timeline-impact-title">Impacto no Rastreio</div>
+              O paciente acompanha em tempo real a posição médica da sua guia, sabendo que ela não está perdida em gavetas.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pendência -->
+      <div class="timeline-item warn">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-title">3. Aguardando Resolução de Pendência</span>
+            <span class="badge warning">PENDÊNCIA</span>
+          </div>
+          <div class="timeline-desc">
+            O médico regulador identificou que falta um documento obrigatório (ex: comprovante de residência atualizado ou cartão do SUS) e suspendeu temporariamente a análise.
+          </div>
+          <div class="timeline-impact-badge">
+            <div>
+              <div class="timeline-impact-title">Impacto no Rastreio</div>
+              <strong>Ação imediata:</strong> O paciente recebe um alerta no celular e pode anexar o documento em falta diretamente pelo app, evitando que a guia seja cancelada por falta de resposta.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aprovado -->
+      <div class="timeline-item success">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-title">4. Solicitação Aprovada / Agendada</span>
+            <span class="badge success">APROVADO</span>
+          </div>
+          <div class="timeline-desc">
+            O exame ou consulta foi autorizado pelo médico regulador e agendado. A data, hora, local e nome do profissional de saúde estão disponíveis no celular do paciente.
+          </div>
+          <div class="timeline-impact-badge">
+            <div>
+              <div class="timeline-impact-title">Impacto no Rastreio</div>
+              O paciente faz o download da guia oficial com código de barras no próprio aplicativo. Não há necessidade de ir buscar o documento físico na UBS.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejeitado -->
+      <div class="timeline-item crit">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-title">X. Solicitação Não Autorizada</span>
+            <span class="badge critical">REJEITADO</span>
+          </div>
+          <div class="timeline-desc">
+            A solicitação foi negada pela regulação médica. A justificativa técnica do médico regulador é exibida na íntegra para o paciente.
+          </div>
+          <div class="timeline-impact-badge">
+            <div>
+              <div class="timeline-impact-title">Impacto no Rastreio</div>
+              O paciente e seu clínico geral na UBS sabem exatamente a justificativa para que possam adequar o tratamento ou recorrer da decisão.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         DETALHE POR MÓDULO
+         ============================================================ -->
+    <h2 id="detalhe-modulo"><span class="badge">04</span>DETALHAMENTO DOS COMPONENTES E MÓDULOS</h2>
+    
+    <div class="two-col">
+      
+      <div class="card">
+        <div class="card-label">Módulo Operacional</div>
+        <div class="card-title">Face UBS & Regulação</div>
+        <div class="card-body">
+          <p>
+            Desenvolvido para uso interno dos operadores de saúde nas unidades e na central. 
+            Prioriza <strong>densidade de dados</strong> e agilidade de teclado (B2G Bloomberg style).
+          </p>
+          <ul>
+            <li><strong>Recepção sem papel:</strong> Captura e catalogação ágil de guias.</li>
+            <li><strong>Fila de Regulação:</strong> Painel condensado de triagem clínica.</li>
+            <li><strong>Gestão de Viagens:</strong> Alocação de veículos e escalas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Módulo do Motorista</div>
+        <div class="card-title">Face TFD (Motorista App)</div>
+        <div class="card-body">
+          <p>
+            Aplicativo desenvolvido em Flutter e focado em **acessibilidade móvel**. 
+            Botões de tamanho aumentado (56dp+) e linguagem simplificada.
+          </p>
+          <ul>
+            <li><strong>Offline-First:</strong> Drift SQLite local para viagens e passageiros.</li>
+            <li><strong>Chamada Digital:</strong> Sem swipes ocultos, focada em botões claros.</li>
+            <li><strong>Auditoria Ativa:</strong> Odometer lock (bloqueio do início e fim de viagem).</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         CADEIA E COMPLIANCE
+         ============================================================ -->
+    <h2 id="auditoria"><span class="badge">05</span>CADEIA DE AUDITORIA E COMPLIANCE (TCE / TJ)</h2>
+    
+    <p>
+      Toda ação que altera status de atendimento, registra presença de transporte sanitário 
+      ou autoriza pagamento de ajuda de custo entra na <strong>cadeia de auditoria</strong> da plataforma. 
+      O motorista, regulador e atendente geram registros criptografados que alimentam a tabela 
+      <code>tfd_audit_log</code> no backend.
+    </p>
+
+    <div class="callout warn">
+      <div class="callout-label">Segurança e LGPD (Princípios de Projeto)</div>
+      <div class="callout-body">
+        <p><strong>Fontes Empacotadas:</strong> Nenhuma dependência externa de CDNs em runtime (garante funcionamento em ambiente air-gap e conformidade rígida com a LGPD).</p>
+        <p><strong>Logs Imutáveis:</strong> Uma vez registrada a presença ou o hodômetro, a informação não pode ser alterada retrospectivamente sem deixar rastro de auditoria.</p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer>
+      <div>UNISISM · MANUAL DE IMPACTO FUNCIONAL · v1.0</div>
+      <div>TECNOLOGIA A SERVIÇO DA SAÚDE PÚBLICA MUNICIPAL</div>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>

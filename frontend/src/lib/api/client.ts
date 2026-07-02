@@ -14,6 +14,7 @@
  */
 
 import type {
+  AdminBanner,
   AlterarAtivoRequest,
   AlterarAtivoResponse,
   ApiErrorBody,
@@ -22,7 +23,9 @@ import type {
   ArvoreQuery,
   AtendentePerfil,
   AtivarContaPacienteRequest,
+  AtualizarBannerRequest,
   AtualizarEncaminhamentoRequest,
+  AtualizarRecomendacaoRequest,
   AtualizarPrefeituraRequest,
   AtualizarCondicaoCronicaRequest,
   AtualizarHistoricoFamiliarRequest,
@@ -34,9 +37,11 @@ import type {
   BuscarPacientePorCpfResponse,
   CriarAlergiaRequest,
   CriarAtendimentoRequest,
+  CriarBannerRequest,
   CriarCondicaoCronicaRequest,
   CriarExameRequest,
   CriarMedicamentoRequest,
+  CriarRecomendacaoRequest,
   CriarVacinaRequest,
   CriarViagemTfdRequest,
   ChangePasswordRequest,
@@ -52,6 +57,8 @@ import type {
   ExtracaoPdfResultado,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
+  ListarBannersQuery,
+  ListarRecomendacoesQuery,
   ListEncaminhamentosQuery,
   ListPacientesQuery,
   ListUbsQuery,
@@ -68,6 +75,7 @@ import type {
   PacienteMeResponse,
   PacienteResumo,
   Prefeitura,
+  Recomendacao,
   RegistrarPendenciaRequest,
   RejeitarRequest,
   Relatorio,
@@ -783,6 +791,89 @@ class AdminApi {
       { novaSenha } satisfies ResetarSenhaRequest,
     );
   }
+
+  // ════════════════════════════════════════════════════════════
+  // Banners SMS — CMS do carrossel "Avisos da Secretaria" do app paciente.
+  //
+  // Backend: `/v1/admin/sms-banners/*` (5 endpoints).
+  // RBAC: DEV (qualquer prefeituraId, inclusive null = global) ·
+  //       ADMIN / REGULADOR_SMS (apenas própria prefeitura).
+  // ════════════════════════════════════════════════════════════
+
+  listBanners(query?: ListarBannersQuery): Promise<AdminBanner[]> {
+    return this.api.get<AdminBanner[]>(
+      '/admin/sms-banners',
+      query as Record<string, unknown> | undefined,
+    );
+  }
+
+  getBanner(id: string): Promise<AdminBanner> {
+    return this.api.get<AdminBanner>(
+      `/admin/sms-banners/${encodeURIComponent(id)}`,
+    );
+  }
+
+  createBanner(req: CriarBannerRequest): Promise<AdminBanner> {
+    return this.api.post<AdminBanner>('/admin/sms-banners', req);
+  }
+
+  updateBanner(id: string, req: AtualizarBannerRequest): Promise<AdminBanner> {
+    return this.api.patch<AdminBanner>(
+      `/admin/sms-banners/${encodeURIComponent(id)}`,
+      req,
+    );
+  }
+
+  deleteBanner(id: string): Promise<void> {
+    return this.api.delete<void>(
+      `/admin/sms-banners/${encodeURIComponent(id)}`,
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // Recomendações por especialidade — "o que levar no dia" exibido
+  // no detalhe do encaminhamento no app paciente.
+  //
+  // Backend: `/v1/admin/recomendacoes-especialidade/*` (5 endpoints).
+  // RBAC: DEV, ADMIN, REGULADOR_SMS.
+  // Globais (sem escopo por prefeitura).
+  // ════════════════════════════════════════════════════════════
+
+  listRecomendacoes(query?: ListarRecomendacoesQuery): Promise<Recomendacao[]> {
+    return this.api.get<Recomendacao[]>(
+      '/admin/recomendacoes-especialidade',
+      query as Record<string, unknown> | undefined,
+    );
+  }
+
+  getRecomendacao(id: string): Promise<Recomendacao> {
+    return this.api.get<Recomendacao>(
+      `/admin/recomendacoes-especialidade/${encodeURIComponent(id)}`,
+    );
+  }
+
+  createRecomendacao(req: CriarRecomendacaoRequest): Promise<Recomendacao> {
+    return this.api.post<Recomendacao>(
+      '/admin/recomendacoes-especialidade',
+      req,
+    );
+  }
+
+  updateRecomendacao(
+    id: string,
+    req: AtualizarRecomendacaoRequest,
+  ): Promise<Recomendacao> {
+    return this.api.patch<Recomendacao>(
+      `/admin/recomendacoes-especialidade/${encodeURIComponent(id)}`,
+      req,
+    );
+  }
+
+  deleteRecomendacao(id: string): Promise<void> {
+    return this.api.delete<void>(
+      `/admin/recomendacoes-especialidade/${encodeURIComponent(id)}`,
+    );
+  }
 }
 
 // ============================================================
@@ -865,6 +956,36 @@ class PacienteAppApi {
     return this.req<void>('POST', '/auth/trocar-senha', req);
   }
 
+  /**
+   * Inicia fluxo de recuperação de senha via web.
+   * Backend sempre responde 204 (anti-enumeration — não confirma se o CPF
+   * tem conta nem se há email cadastrado). Quando há, envia email com link
+   * `https://app.<dominio-cliente>/redefinir?t=<token>` (TTL 30 min).
+   *
+   * Rate limit: 3/h por CPF + 5/15min por IP + 100/h por IP.
+   *
+   * @param cpf — apenas dígitos (11 chars); backend aceita formatado também.
+   */
+  esqueciSenhaPaciente(cpf: string): Promise<void> {
+    return this.req<void>('POST', '/auth/esqueci-senha', { cpf });
+  }
+
+  /**
+   * Conclui recuperação consumindo o token do email.
+   *
+   * Erros relevantes:
+   *   - 404 TOKEN_INVALIDO — token não existe (link adulterado ou copiado errado)
+   *   - 401 TOKEN_EXPIRADO — > 30 min após envio do email
+   *   - 409 TOKEN_JA_USADO — link já consumido (uso único)
+   *   - 422 SENHA_FRACA — < 8 chars ou padrão fraco
+   *   - 422 SENHA_IGUAL_ATUAL — bate com a senha atual
+   *
+   * Rate limit: 10/15min por IP + 30/h por IP.
+   */
+  redefinirSenhaPaciente(token: string, novaSenha: string): Promise<void> {
+    return this.req<void>('POST', '/auth/redefinir-senha', { token, novaSenha });
+  }
+
   me(): Promise<PacienteMeResponse> {
     return this.req<PacienteMeResponse>('GET', '/me');
   }
@@ -923,6 +1044,7 @@ import type {
   AporteSaldoFrota,
   AporteSaldoFrotaRequest,
   AprovarSolicitacaoRequest,
+  AprovarTfdPacienteSolicRequest,
   AtualizarMotoristaRequest,
   AtualizarVeiculoRequest,
   AtualizarViagemRequest,
@@ -936,10 +1058,12 @@ import type {
   ListAjudasCustoQuery,
   ListAuditoriaQuery,
   ListSolicitacoesQuery,
+  ListTfdPacienteSolicQuery,
   ListViagensQuery,
   MarcarPresencaRequest,
   MetodoPagamento,
   Motorista,
+  RecusarTfdPacienteSolicRequest,
   RegistrarComprovanteAbastecimentoRequest,
   RegistroAuditoriaTFD,
   RelatorioEspecialidadeQuery,
@@ -949,6 +1073,7 @@ import type {
   SolicitacaoTFD,
   SolicitarAbastecimentoRequest,
   SolicitarAjudaCustoRequest,
+  TfdPacienteSolicAdmin,
   TipoAnexoSolicitacaoTFD,
   Veiculo,
   ViagemFrota,
@@ -959,7 +1084,16 @@ class TfdApi {
 
   // ───── Veículos ─────
   veiculos = {
-    list: (): Promise<Veiculo[]> => this.api.get('/tfd/veiculos'),
+    /**
+     * Lista veículos da prefeitura do escopo.
+     *
+     * **Importante**: DESENVOLVEDOR (escopo GLOBAL) recebe 403
+     * `PREFEITURA_REQUERIDA` se chamar sem `prefeituraId` — o backend
+     * exige escopo concreto para listagens de TFD. Use o filtro do
+     * dropdown de prefeitura para passar o id selecionado.
+     */
+    list: (q?: { prefeituraId?: string }): Promise<Veiculo[]> =>
+      this.api.get('/tfd/veiculos', q as Record<string, unknown> | undefined),
     create: (req: CriarVeiculoRequest): Promise<Veiculo> => this.api.post('/tfd/veiculos', req),
     byId: (id: string): Promise<Veiculo> =>
       this.api.get(`/tfd/veiculos/${encodeURIComponent(id)}`),
@@ -975,7 +1109,9 @@ class TfdApi {
 
   // ───── Motoristas ─────
   motoristas = {
-    list: (): Promise<Motorista[]> => this.api.get('/tfd/motoristas'),
+    /** Veja nota de `veiculos.list` sobre `prefeituraId` para escopo GLOBAL. */
+    list: (q?: { prefeituraId?: string }): Promise<Motorista[]> =>
+      this.api.get('/tfd/motoristas', q as Record<string, unknown> | undefined),
     create: (req: CriarMotoristaRequest): Promise<Motorista> =>
       this.api.post('/tfd/motoristas', req),
     byId: (id: string): Promise<Motorista> =>
@@ -1190,5 +1326,38 @@ class TfdApi {
      */
     exportarTJ: (mes: string): Promise<{ blob: Blob; filename: string }> =>
       this.api.getBlob(`/tfd/auditoria/exportar-tj?mes=${encodeURIComponent(mes)}`),
+  };
+
+  // ───── Solicitações TFD vindas do APP PACIENTE (Face 3 → Face 4) ─────
+  // Backend: `/v1/tfd/solicitacoes-paciente/*` (6 endpoints).
+  // Toda transição é única e gravada na hash chain. Concorrência tratada
+  // por SELECT FOR UPDATE no backend.
+  solicitacoesPaciente = {
+    list: (q?: ListTfdPacienteSolicQuery): Promise<TfdPacienteSolicAdmin[]> =>
+      this.api.get('/tfd/solicitacoes-paciente', q as Record<string, unknown> | undefined),
+    byId: (id: string): Promise<TfdPacienteSolicAdmin> =>
+      this.api.get(`/tfd/solicitacoes-paciente/${encodeURIComponent(id)}`),
+    aprovar: (
+      id: string,
+      req: AprovarTfdPacienteSolicRequest = {},
+    ): Promise<TfdPacienteSolicAdmin> =>
+      this.api.post(
+        `/tfd/solicitacoes-paciente/${encodeURIComponent(id)}/aprovar`,
+        req,
+      ),
+    recusar: (
+      id: string,
+      motivo: string,
+    ): Promise<TfdPacienteSolicAdmin> =>
+      this.api.post(
+        `/tfd/solicitacoes-paciente/${encodeURIComponent(id)}/recusar`,
+        { motivo } satisfies RecusarTfdPacienteSolicRequest,
+      ),
+    /** Marca embarque — APROVADA → EMBARCADA. */
+    embarque: (id: string): Promise<TfdPacienteSolicAdmin> =>
+      this.api.post(`/tfd/solicitacoes-paciente/${encodeURIComponent(id)}/embarque`),
+    /** Marca conclusão — EMBARCADA → CONCLUIDA. */
+    concluir: (id: string): Promise<TfdPacienteSolicAdmin> =>
+      this.api.post(`/tfd/solicitacoes-paciente/${encodeURIComponent(id)}/concluir`),
   };
 }

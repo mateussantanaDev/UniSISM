@@ -18,40 +18,59 @@ import {
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 /**
- * Política de TTL (v0.18.0 — refresh rotativo):
+ * Política de TTL (v0.18.1 — refresh rotativo + contrato app):
  *   - Access token: 30 min (era 24h)
  *   - Refresh token: 30 dias rotativo (uso único, detecção de reuse)
  *
- * O app continua compatível com a v0.17.x:
- *   - Campos `token` + `expiresIn` continuam presentes.
- *   - `refreshToken` + `refreshExpiresIn` são NOVOS — clientes antigos os ignoram.
+ * Compat retro:
+ *   - Campos `token` + `expiresIn` continuam presentes (v0.17.x).
+ *   - Campos `accessToken` + `expiresAt` (v0.18.1) — exigidos pelo CONTRATO_BACKEND.md
+ *     do app Flutter.
  *
  * Apps que querem aproveitar refresh devem:
  *   1. Persistir `refreshToken` no secure storage.
- *   2. Quando access retornar 401, chamar `POST /auth/refresh` com o refresh
- *      atual antes de redirecionar pra /login.
+ *   2. Quando access retornar 401, chamar `POST /auth/paciente/refresh` com o
+ *      refresh atual antes de redirecionar pra /login.
  */
 const ACCESS_TTL_MS = 30 * 60 * 1000;            // 30 min
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
 const ACCESS_EXPIRES_IN_S = 30 * 60;
 
+/**
+ * Shape canônico do paciente nas respostas de auth (login/refresh/me).
+ * Espelha CONTRATO_BACKEND.md §4.1.
+ */
+export interface PacienteAuthPayload {
+  id: string;
+  nome: string;
+  cpf: string;
+  cpfFormatado: string;
+  /** YYYY-MM-DD ou null se conta não tem Paciente associado ainda. */
+  dataNascimento: string | null;
+  cartaoSus: string | null;
+  email: string | null;
+  telefone: string | null;
+  fotoUrl: string | null;
+  ubsVinculadaId: string | null;
+  ubsVinculadaNome: string | null;
+  /** true quando a senha ainda é o CPF — app deve forçar troca. */
+  senhaProvisoria: boolean;
+}
+
 export interface LoginPacienteOutput {
+  /** v0.18.1+ · nome canônico do contrato. */
+  accessToken: string;
+  /** Alias legado v0.17.x — mesmo valor de `accessToken`. */
   token: string;
-  /** Refresh rotativo (v0.18.0+). Apps antigos ignoram. */
+  /** Refresh rotativo (v0.18.0+). */
   refreshToken: string;
+  /** Segundos até access expirar (legado v0.17.x). */
   expiresIn: number;
+  /** ISO 8601 quando access expira (v0.18.1+, contrato). */
+  expiresAt: string;
   /** Segundos até refresh expirar (v0.18.0+). */
   refreshExpiresIn: number;
-  paciente: {
-    id: string;
-    cpf: string;
-    cpfFormatado: string;
-    nome: string;
-    email: string | null;
-    telefone: string | null;
-    /** true quando a senha ainda é o CPF — app deve forçar troca. */
-    senhaProvisoria: boolean;
-  };
+  paciente: PacienteAuthPayload;
 }
 
 export class LoginPacienteUseCase {
@@ -66,7 +85,7 @@ export class LoginPacienteUseCase {
     const cpfDigits = normalizarCpf(cpf);
     const conta = await prisma.pacienteConta.findUnique({ where: { cpf: cpfDigits } });
     if (!conta) {
-      throw Unauthorized('CREDENCIAIS_INVALIDAS', 'CPF ou senha inválidos');
+      throw Unauthorized('AUTH_INVALID_CREDENTIALS', 'CPF ou senha inválidos');
     }
     // Contas criadas automaticamente no primeiro encaminhamento já nascem
     // ATIVAS com senha = CPF (senhaProvisoria=true). O app do paciente deve
@@ -78,7 +97,7 @@ export class LoginPacienteUseCase {
       );
     }
     const ok = await this.hasher.compare(senha, conta.senhaHash);
-    if (!ok) throw Unauthorized('CREDENCIAIS_INVALIDAS', 'CPF ou senha inválidos');
+    if (!ok) throw Unauthorized('AUTH_INVALID_CREDENTIALS', 'CPF ou senha inválidos');
 
     // Gera par (access opaco + refresh opaco) atomicamente
     const accessToken = crypto.randomBytes(48).toString('base64url');
@@ -112,20 +131,39 @@ export class LoginPacienteUseCase {
       });
     });
 
+    // Resolve UBS vinculada (LEFT JOIN) + paciente clínico (LEFT JOIN por CPF)
+    const contaWithUbs = await prisma.pacienteConta.findUnique({
+      where: { id: conta.id },
+      select: { ubsVinculadaId: true, ubsVinculada: { select: { nome: true } } },
+    });
+    const pac = await prisma.paciente.findUnique({
+      where: { cpf: cpfDigits },
+      select: { dataNascimento: true, cartaoSus: true },
+    });
+
+    const paciente: PacienteAuthPayload = {
+      id: conta.id,
+      nome: conta.nome,
+      cpf: cpfDigits,
+      cpfFormatado: conta.cpfFormatado || formatarCpf(cpfDigits),
+      dataNascimento: pac?.dataNascimento ? pac.dataNascimento.toISOString().slice(0, 10) : null,
+      cartaoSus: pac?.cartaoSus ?? null,
+      email: conta.email,
+      telefone: conta.telefone,
+      fotoUrl: null,
+      ubsVinculadaId: contaWithUbs?.ubsVinculadaId ?? null,
+      ubsVinculadaNome: contaWithUbs?.ubsVinculada?.nome ?? null,
+      senhaProvisoria: conta.senhaProvisoria,
+    };
+
     return {
-      token: accessToken,
+      accessToken,
+      token: accessToken, // alias legado
       refreshToken,
       expiresIn: ACCESS_EXPIRES_IN_S,
+      expiresAt: accessExpira.toISOString(),
       refreshExpiresIn: Math.floor(REFRESH_TTL_MS / 1000),
-      paciente: {
-        id: conta.id,
-        cpf: cpfDigits,
-        cpfFormatado: conta.cpfFormatado || formatarCpf(cpfDigits),
-        nome: conta.nome,
-        email: conta.email,
-        telefone: conta.telefone,
-        senhaProvisoria: conta.senhaProvisoria,
-      },
+      paciente,
     };
   }
 }

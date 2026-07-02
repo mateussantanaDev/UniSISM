@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNISISM — Face 2: Regulação & Moderação (SMS)</title>
+  
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['ui-monospace', 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              900: '#1e3a8a', // blue-900 (Ação principal)
+            },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonte Inter via CDN -->
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+  <style>
+    /* B2G Brutalist Styles */
+    *, *::before, *::after {
+      border-radius: 0px !important; /* Reset global de cantos arredondados */
+    }
+    
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      -webkit-font-smoothing: antialiased;
+      background-color: rgb(248 250 252); /* bg-slate-50 */
+      color: rgb(15 23 42); /* text-slate-900 */
+    }
+
+    /* Sombras brutalistas sólidas e secas */
+    .brutalist-border {
+      border: 1px solid rgb(15 23 42);
+    }
+    
+    .brutalist-shadow {
+      box-shadow: 4px 4px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-sm {
+      box-shadow: 2px 2px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-lg {
+      box-shadow: 8px 8px 0px rgba(15, 23, 42, 0.12);
+    }
+
+    /* Scrollbars quadradas e densas */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgb(241 245 249);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(203 213 225);
+      border: 1px solid rgb(15 23 42);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgb(15 23 42);
+    }
+
+    /* Inputs focados brutalistas */
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgb(30 58 138) !important;
+      box-shadow: 2px 2px 0px rgb(30 58 138) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header Superior -->
+  <header class="h-14 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="h-8 w-8 bg-blue-900 text-white flex items-center justify-center font-mono font-bold text-lg select-none">
+        S
+      </div>
+      <div>
+        <div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase leading-none">UNISISM / DOCUMENTAÇÃO / FACE 2</div>
+        <h1 class="font-mono text-sm font-bold tracking-widest text-slate-900 uppercase">Secretaria Municipal de Saúde (SMS)</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="hidden md:flex gap-2">
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">FACETA: SMS</span>
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">VERSÃO: v0.9.1</span>
+      </div>
+      <div class="font-mono text-[11px] text-slate-600" id="current-clock">02/07/2026 09:52</div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- Sidebar de Navegação -->
+    <aside class="w-64 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
+      <div class="p-4 border-b border-slate-200 bg-slate-50">
+        <div class="font-mono text-[10px] text-slate-500 font-bold uppercase tracking-widest">Painel Regulador</div>
+        <div class="font-sans text-xs font-semibold text-slate-800">Moderação de Encaminhamentos</div>
+      </div>
+      
+      <nav class="p-3 flex-1 space-y-1">
+        <a href="#fluxo-visao" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors bg-blue-50 text-blue-900 border-l-2 border-blue-900">
+          <span>01. Visão & Escopo</span>
+        </a>
+
+        <a href="#funcionalidades" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>02. Funcionalidades</span>
+        </a>
+
+        <a href="#especialidades-sms" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>03. Decisão de Contratação</span>
+        </a>
+
+        <a href="#contratos-endpoints" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>04. Endpoints & Regras</span>
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50">
+        <div class="font-mono text-[9px] text-slate-500 uppercase tracking-widest leading-normal">
+          UNISISM v0.9.1 <br>
+          SMS REGULATION MODULE
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo Principal -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-6">
+      <div class="max-w-[1400px] mx-auto space-y-6">
+
+        <!-- SEÇÃO 1: VISÃO & ESCOPO -->
+        <section id="fluxo-visao" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">Módulo de Regulação e Triagem</div>
+            <h2 class="font-mono text-xl font-bold tracking-tight text-slate-900 mt-1 uppercase">Propósito da Face 2 (SMS)</h2>
+            <p class="mt-4 text-sm text-slate-700 leading-relaxed font-sans">
+              Enquanto a Face 1 (UBS) atua na ponta de captação e cadastro, a <strong>Face 2 (SMS)</strong> é a ferramenta da Secretaria Municipal de Saúde para regular a fila de consultas especializadas. O objetivo deste módulo é permitir que os médicos auditores e enfermeiros reguladores analisem as solicitações vindas das UBSs, garantindo o preenchimento correto dos dados e decidindo de forma célere e justa o destino clínico de cada cidadão.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-blue-900">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">PERSONA PRINCIPAL</span>
+                <span class="font-mono text-sm font-bold text-slate-900 mt-1 block">Regulador / Auditor Clínico</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Profissional de saúde lotado na Secretaria de Saúde, responsável por moderar a fila, analisar a documentação médica anexada pelas UBSs e decidir se o encaminhamento é aprovado, devolvido para correções ou rejeitado definitivamente.
+                </p>
+              </div>
+
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-emerald-700">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">ISOLAMENTO DE PREFEITURA</span>
+                <span class="font-mono text-sm font-bold text-slate-900 mt-1 block">Multi-tenancy Restrito</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Garantia jurídica de privacidade e jurisdição. O regulador da Prefeitura A não possui visibilidade de prontuários ou encaminhamentos da Prefeitura B. O escopo é injetado pelo JWT do operador.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 2: FUNCIONALIDADES -->
+        <section id="funcionalidades" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <h2 class="font-mono text-lg font-bold text-slate-900 uppercase border-b border-slate-200 pb-3 mb-4">Funcionalidades e Impacto Municipal</h2>
+
+            <div class="space-y-6">
+              <!-- Funcionalidade 1 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 2.1</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Fila Centralizada de Análise e Triagem de Gravidade</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Moderação</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Apresenta em tempo real a lista de todos os encaminhamentos que aguardam avaliação na prefeitura. Os processos são organizados por grau de prioridade clínica do paciente (Eletiva, Prioritária, Urgente, Emergência) e tempo de espera, permitindo uma busca avançada por UBS emissora, paciente e profissional de saúde.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Gestão justa e otimização do tempo de resposta (SLA):</strong> impede a triagem por favoritismo político ou ordem puramente burocrática. Casos de maior gravidade (como suspeitas de neoplasias ou cardiopatias agudas) sobem automaticamente para o topo da fila de regulação, permitindo alocar as cotas escassas do SUS para quem corre maior risco de vida, reduzindo custos de internações de urgência no município.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 2 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 2.2</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Gestão de Pendências Documentais com Retorno Imediato</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Eficiência Administrativa</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Se uma solicitação de encaminhamento possui documentação incompleta ou exames desatualizados, o regulador registra uma pendência. O sistema envia a solicitação de volta para a UBS de origem com o status <code>PENDENCIA_DOCUMENTO</code> e a justificativa clara. O atendente da UBS realiza o upload da correção solicitada, devolvendo o processo imediatamente para a fila de regulação.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Queda drástica no cancelamento e perda de vagas:</strong> elimina a necessidade de indeferir a solicitação e fazer o paciente passar por nova consulta de reavaliação clínica apenas para anexar um papel que faltou. O paciente não perde o seu lugar na fila cronológica de atendimento, reduzindo o tráfego presencial de papel e economizando o tempo de trabalho de atendentes e médicos reguladores em até 40%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 3 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 2.3</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Aprovação com Previsão de Agendamento</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Comunicação e Planejamento</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Ao aprovar um encaminhamento na Face 2, o regulador médico pode inserir a data estimada em que a consulta do paciente no prestador parceiro do SUS ocorrerá. Esse agendamento previsto fica anexado de forma imediata à timeline do encaminhamento e pode ser consultado pela UBS ou na consulta de prontuário do paciente.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Redução da ansiedade e cobranças administrativas:</strong> a transparência no processo reduz o número de ligações e visitas físicas dos cidadãos aos postos de saúde de bairro para perguntar sobre "como está o andamento da minha vaga". Também permite ao município programar previamente sua logística de viagens (TFD - Face 4) para as datas agendadas, economizando em passagens urgentes de última hora.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 4 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE 2.4</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Rejeição Clínica Fundamentada (Gatekeeper do SUS)</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Filtro de Demanda</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">O Que Faz e Como Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Permite que o médico regulador rejeite de forma definitiva encaminhamentos que não preenchem critérios clínicos objetivos para a especialidade solicitada (ex: paciente sem indicação de cirurgia orçada para Cardiologia de alta complexidade). Exige uma justificativa clínica detalhada que é anexada à timeline do paciente.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Proteção de recursos e cumprimento de diretrizes:</strong> impede o congestionamento de filas com pacientes que deveriam ser tratados por clínica geral na Atenção Básica municipal. Garante que o orçamento gasto com exames e consultas especializadas do SUS seja otimizado para casos indicados e de alto impacto de saúde, reduzindo gastos desnecessários de exames especializados redundantes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 3: TOMADA DE DECISÃO E CONTRATAÇÃO DE MÉDICO LOCAL -->
+        <section id="especialidades-sms" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow-lg border-t-4 border-blue-900">
+            <div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">Decisão de Gestão Baseada na Fila SMS</div>
+            <h2 class="font-mono text-lg font-bold text-slate-900 uppercase mt-1">O Impacto do Controle de Especialidades Requisitadas</h2>
+            <p class="mt-4 text-sm text-slate-700 leading-relaxed font-sans">
+              Um dos maiores gargalos administrativos de uma Secretaria de Saúde reside na falta de visibilidade consolidada de sua fila de regulação clínica. Pacientes aguardam meses em fila para Oftalmologia ou Ortopedia e a prefeitura gasta milhares de reais enviando-os semanalmente para tratamento fora (TFD).
+            </p>
+            <p class="mt-2 text-sm text-slate-700 leading-relaxed font-sans">
+              A unificação da <strong>Face 2 (SMS)</strong> com a <strong>Face 4 (TFD)</strong> no UNISISM permite agregar as demandas de fila clínica e compará-las diretamente com o gasto real de transporte e ajuda de custo das viagens realizadas. Isso subsidia a decisão estratégica de <strong>contratar um profissional local para atender na cidade</strong> em vez de manter o envio contínuo para fora do município.
+            </p>
+
+            <!-- SIMULADOR INTEGRADO SMS -->
+            <div class="border border-slate-200 bg-slate-50 p-5 mt-6 brutalist-shadow">
+              <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-mono">SIMULADOR ESTRATÉGICO SMS</span>
+              <h3 class="font-mono text-sm font-bold text-slate-900 uppercase mt-1">Análise Clínico-Financeira de Viabilidade Local</h3>
+              <p class="text-xs text-slate-600 mt-1 font-sans">
+                Insira as métricas reais da fila de regulação para simular se a contratação de um especialista no município é mais econômica.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Pacientes Aguardando Fila / Mês</label>
+                  <input type="number" id="sms-fila" value="120" oninput="calcularSMS()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Custo Logístico de TFD / Paciente (R$)</label>
+                  <input type="number" id="sms-custotfd" value="110" oninput="calcularSMS()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white bg-white">
+                  <span class="text-[9px] text-slate-500 font-sans mt-0.5 block">Soma de combustível rateado + ajuda de custo + diária motorista</span>
+                </div>
+                <div>
+                  <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Custo Estimado Especialista Local / Mês (R$)</label>
+                  <input type="number" id="sms-customedico" value="10000" oninput="calcularSMS()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  <span class="text-[9px] text-slate-500 font-sans mt-0.5 block">Valor de contrato para mutirões locais na UBS do município</span>
+                </div>
+              </div>
+
+              <!-- Resultados -->
+              <div class="mt-6 border-t border-slate-200 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-mono text-xs font-bold uppercase text-slate-800">DETALHAMENTO DO CÁLCULO</h4>
+                  <table class="w-full border-collapse text-xs mt-3">
+                    <tbody>
+                      <tr class="border-b border-slate-200">
+                        <td class="py-2 text-slate-600 font-sans">Gasto estimado mensal enviando pacientes (TFD):</td>
+                        <td id="sms-calc-tfd" class="py-2 text-right font-mono font-bold text-slate-900">R$ 0,00</td>
+                      </tr>
+                      <tr class="border-b border-slate-200">
+                        <td class="py-2 text-slate-600 font-sans">Gasto estimado para atendimento no município (Sala + Médico):</td>
+                        <td id="sms-calc-medico" class="py-2 text-right font-mono font-bold text-slate-900">R$ 0,00</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="p-4 border" id="sms-status-box">
+                  <span id="sms-badge" class="font-mono text-[10px] font-bold tracking-widest uppercase block mb-1">ECONOMIA PROJETADA</span>
+                  <span id="sms-economia" class="font-mono text-xl font-bold block">R$ 0,00</span>
+                  <p id="sms-texto-resultado" class="text-xs mt-2 font-sans font-medium leading-tight"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 4: ENDPOINTS E REGRAS TÉCNICAS -->
+        <section id="contratos-endpoints" class="space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <h2 class="font-mono text-lg font-bold text-slate-900 uppercase border-b border-slate-200 pb-3 mb-4">Endpoints de Decisão & Regras Técnicas</h2>
+            <p class="text-sm text-slate-700 font-sans mb-4 leading-relaxed">
+              O backend implementa três endpoints atômicos para mutação do status do encaminhamento que são consumidos exclusivamente pelos botões de ação do detalhe na Face 2:
+            </p>
+
+            <div class="space-y-4">
+              <!-- Endpoint 1 -->
+              <div class="border border-slate-200 p-4">
+                <span class="font-mono text-[9px] bg-emerald-50 text-emerald-800 font-bold px-1.5 py-0.5 uppercase tracking-wide">POST</span>
+                <code class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-1 py-0.5 border border-slate-200 select-all">/v1/encaminhamentos/{id}/aprovar</code>
+                <p class="text-xs text-slate-600 font-sans mt-2">
+                  Aprova a solicitação clínica e preenche opcionalmente a data do <code>agendamentoPrevisto</code>. O status avança para <code>APROVADO</code> e o evento correspondente é registrado na timeline do prontuário do paciente, gerando notificação para a UBS emissora.
+                </p>
+              </div>
+
+              <!-- Endpoint 2 -->
+              <div class="border border-slate-200 p-4">
+                <span class="font-mono text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 uppercase tracking-wide">POST</span>
+                <code class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-1 py-0.5 border border-slate-200 select-all">/v1/encaminhamentos/{id}/registrar-pendencia</code>
+                <p class="text-xs text-slate-600 font-sans mt-2">
+                  Devolve a solicitação com o status de <code>PENDENCIA_DOCUMENTO</code> e adiciona o campo <code>observacoesRegulacao</code> com a justificativa técnica. Isso reabre a edição para a UBS na Face 1 para saneamento das pendências de exames ou laudos.
+                </p>
+              </div>
+
+              <!-- Endpoint 3 -->
+              <div class="border border-slate-200 p-4">
+                <span class="font-mono text-[9px] bg-red-50 text-red-800 font-bold px-1.5 py-0.5 uppercase tracking-wide">POST</span>
+                <code class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-1 py-0.5 border border-slate-200 select-all">/v1/encaminhamentos/{id}/rejeitar</code>
+                <p class="text-xs text-slate-600 font-sans mt-2">
+                  Muda o status do encaminhamento para <code>REJEITADO</code>. Ação terminal que exige preenchimento do campo <code>motivo</code> (mínimo de 10 caracteres) e grava a auditoria criptográfica do operador da moderação.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="h-10 border-t border-slate-200 bg-white px-6 flex items-center justify-between text-[10px] font-mono text-slate-500 shrink-0">
+    <div>UNISISM v0.9.1 — FACE 2 DOCUMENTAÇÃO SMS</div>
+    <div class="hidden sm:block">SISTEMA INTEGRADO DE SAÚDE MUNICIPAL</div>
+  </footer>
+
+  <script>
+    // Live Clock Update
+    function updateClock() {
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const str = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById('current-clock').innerText = str;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    // Calculadora SMS
+    function calcularSMS() {
+      const fila = parseFloat(document.getElementById('sms-fila').value) || 0;
+      const custoTFD = parseFloat(document.getElementById('sms-custotfd').value) || 0;
+      const custoMedico = parseFloat(document.getElementById('sms-customedico').value) || 0;
+
+      const custoTFDTotal = fila * custoTFD;
+      const custoMedicoTotal = custoMedico; // Fixo no mês
+      const economia = custoTFDTotal - custoMedicoTotal;
+
+      document.getElementById('sms-calc-tfd').innerText = formatterBRL(custoTFDTotal);
+      document.getElementById('sms-calc-medico').innerText = formatterBRL(custoMedicoTotal);
+
+      const statusBox = document.getElementById('sms-status-box');
+      const badge = document.getElementById('sms-badge');
+      const valor = document.getElementById('sms-economia');
+      const texto = document.getElementById('sms-texto-resultado');
+
+      if (economia > 0) {
+        statusBox.className = "p-4 border-2 border-emerald-700 bg-emerald-50 text-emerald-800 brutalist-shadow-sm";
+        badge.innerText = "✓ RECOMENDAÇÃO: CONTRATAR ESPECIALISTA LOCAL";
+        valor.innerText = `Economia de ${formatterBRL(economia)} /mês`;
+        texto.innerText = `O volume de ${fila} pacientes na fila gera custos logísticos de TFD que superam o salário do especialista médico local. É viável economicamente manter o atendimento no município.`;
+      } else {
+        const diferenca = Math.abs(economia);
+        statusBox.className = "p-4 border-2 border-amber-600 bg-amber-50 text-amber-800 brutalist-shadow-sm";
+        badge.innerText = "⚠ RECOMENDAÇÃO: MANTER TFD";
+        valor.innerText = `Diferença de ${formatterBRL(diferenca)} /mês`;
+        texto.innerText = `Com este volume de pacientes, o repasse logístico via TFD é financeiramente mais em conta que a contratação direta. Avalie fatores sociais e o desgaste físico da viagem dos cidadãos antes de decidir.`;
+      }
+    }
+
+    function formatterBRL(value) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Run on init
+    calcularSMS();
+  </script>
+</body>
+</html>

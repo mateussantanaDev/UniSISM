@@ -37,20 +37,36 @@ const ACCESS_TTL_MS = 30 * 60 * 1000;          // 30 min
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
 const ACCESS_EXPIRES_IN_S = 30 * 60;
 
+/**
+ * Shape canônico do paciente nas respostas auth — v0.18.1+
+ * Espelha CONTRATO_BACKEND.md §4.1 (idêntico ao do login).
+ */
+export interface RefreshPacientePayload {
+  id: string;
+  nome: string;
+  cpf: string;
+  cpfFormatado: string;
+  dataNascimento: string | null;
+  cartaoSus: string | null;
+  email: string | null;
+  telefone: string | null;
+  fotoUrl: string | null;
+  ubsVinculadaId: string | null;
+  ubsVinculadaNome: string | null;
+  senhaProvisoria: boolean;
+}
+
 export interface RefreshOutput {
-  token: string;            // novo access (opaco base64url)
-  refreshToken: string;     // novo refresh (opaco base64url)
-  expiresIn: number;        // segundos até access expirar (1800)
-  refreshExpiresIn: number; // segundos até refresh expirar (2592000)
-  paciente: {
-    id: string;
-    cpf: string;
-    cpfFormatado: string;
-    nome: string;
-    email: string | null;
-    telefone: string | null;
-    senhaProvisoria: boolean;
-  };
+  /** v0.18.1+ · nome canônico do contrato */
+  accessToken: string;
+  /** Alias legado v0.18.0 */
+  token: string;
+  refreshToken: string;
+  expiresIn: number;          // segundos até access expirar (1800)
+  /** ISO 8601 v0.18.1+ */
+  expiresAt: string;
+  refreshExpiresIn: number;   // segundos até refresh expirar (2592000)
+  paciente: RefreshPacientePayload;
 }
 
 export interface RefreshInput {
@@ -202,20 +218,39 @@ export class RefreshTokenPacienteUseCase {
       },
     });
 
+    // LEFT JOIN com UBS + Paciente pra shape completo do contrato (v0.18.1+)
+    const contaWithUbs = await prisma.pacienteConta.findUnique({
+      where: { id: found.conta.id },
+      select: { ubsVinculadaId: true, ubsVinculada: { select: { nome: true } } },
+    });
+    const pac = await prisma.paciente.findUnique({
+      where: { cpf: found.conta.cpf },
+      select: { dataNascimento: true, cartaoSus: true },
+    });
+
+    const paciente: RefreshPacientePayload = {
+      id: found.conta.id,
+      nome: found.conta.nome,
+      cpf: found.conta.cpf,
+      cpfFormatado: found.conta.cpfFormatado || formatarCpf(found.conta.cpf),
+      dataNascimento: pac?.dataNascimento ? pac.dataNascimento.toISOString().slice(0, 10) : null,
+      cartaoSus: pac?.cartaoSus ?? null,
+      email: found.conta.email,
+      telefone: found.conta.telefone,
+      fotoUrl: null,
+      ubsVinculadaId: contaWithUbs?.ubsVinculadaId ?? null,
+      ubsVinculadaNome: contaWithUbs?.ubsVinculada?.nome ?? null,
+      senhaProvisoria: found.conta.senhaProvisoria,
+    };
+
     return {
-      token: novoAccess,
+      accessToken: novoAccess,
+      token: novoAccess, // alias legado
       refreshToken: novoRefresh,
       expiresIn: ACCESS_EXPIRES_IN_S,
+      expiresAt: accessExpira.toISOString(),
       refreshExpiresIn: Math.floor(REFRESH_TTL_MS / 1000),
-      paciente: {
-        id: found.conta.id,
-        cpf: found.conta.cpf,
-        cpfFormatado: found.conta.cpfFormatado || formatarCpf(found.conta.cpf),
-        nome: found.conta.nome,
-        email: found.conta.email,
-        telefone: found.conta.telefone,
-        senhaProvisoria: found.conta.senhaProvisoria,
-      },
+      paciente,
     };
   }
 }

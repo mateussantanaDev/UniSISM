@@ -156,16 +156,16 @@
 					>
 						GRUPO {paciente.grupoSanguineo}
 					</span>
-					{#if paciente.alergias.length > 0}
+					{#if (paciente.alergias?.length ?? 0) > 0}
 						<span
 							class="border border-red-700 bg-red-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-red-800 uppercase"
 						>
-							⚠ {paciente.alergias.length} ALERGIA{paciente.alergias.length === 1
+							⚠ {paciente.alergias?.length} ALERGIA{paciente.alergias?.length === 1
 								? ''
 								: 'S'}
 						</span>
 					{/if}
-					{#if paciente.condicoesCronicasAtivas > 0}
+					{#if (paciente.condicoesCronicasAtivas ?? 0) > 0}
 						<span
 							class="border border-amber-600 bg-amber-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-amber-800 uppercase"
 						>

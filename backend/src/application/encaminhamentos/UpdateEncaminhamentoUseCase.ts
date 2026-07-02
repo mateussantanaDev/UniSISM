@@ -18,6 +18,8 @@ import {
   INCLUDE_ENCAMINHAMENTO_FULL,
   rowParaEncaminhamento,
 } from '../../infrastructure/database/encaminhamentoMapper';
+import { invalidarCacheArvorePorUbs } from '../../infrastructure/cache/arvoreCacheInvalidator';
+
 import { whereByScopeViaUbs } from '../../infrastructure/database/scopeWhere';
 import { Conflict, NotFound, Unprocessable } from '../../shared/errors';
 import type { Encaminhamento, PrioridadeClinica } from '../../domain/entities/Encaminhamento';
@@ -138,6 +140,8 @@ export class UpdateEncaminhamentoUseCase {
       atendenteId: editorId,
       payload: { protocolo: atualizado.protocolo, camposAlterados },
     });
+
+    void invalidarCacheArvorePorUbs(atualizado.ubsId);
 
     return rowParaEncaminhamento(atualizado);
   }

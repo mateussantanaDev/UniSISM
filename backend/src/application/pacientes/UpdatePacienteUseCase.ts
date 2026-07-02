@@ -17,9 +17,11 @@ import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger'
 import type {
   EstadoCivil,
   GrupoSanguineo as GrupoDominio,
+  PacienteCompleto,
   RacaCor,
   Sexo,
 } from '../../domain/entities/Paciente';
+import type { IPacienteRepository } from '../../domain/repositories/IPacienteRepository';
 import { grupoSanguineoToPrisma } from '../../infrastructure/database/mappers';
 
 export interface UpdatePacienteInput {
@@ -61,14 +63,17 @@ function assertScopePodeEditarPaciente(
 }
 
 export class UpdatePacienteUseCase {
-  constructor(private readonly audit?: IAuditLogger) {}
+  constructor(
+    private readonly pacienteRepo: IPacienteRepository,
+    private readonly audit?: IAuditLogger,
+  ) {}
 
   async exec(
     scope: AccessScope,
     editorId: string,
     pacienteId: string,
     input: UpdatePacienteInput,
-  ): Promise<{ id: string; nome: string }> {
+  ): Promise<PacienteCompleto> {
     const alvo = await prisma.paciente.findUnique({
       where: { id: pacienteId },
       include: { ubs: { select: { prefeituraId: true } } },
@@ -118,7 +123,7 @@ export class UpdatePacienteUseCase {
     if (input.microarea !== undefined) data.microarea = input.microarea;
     if (input.equipeSaudeFamilia !== undefined) data.equipeSaudeFamilia = input.equipeSaudeFamilia;
 
-    const atualizado = await prisma.paciente.update({ where: { id: pacienteId }, data });
+    await prisma.paciente.update({ where: { id: pacienteId }, data });
 
     await this.audit?.registrar({
       acao: 'EDITAR_PACIENTE',
@@ -132,6 +137,15 @@ export class UpdatePacienteUseCase {
       },
     });
 
-    return { id: atualizado.id, nome: atualizado.nome };
+    // Contract: PATCH /pacientes/:id devolve o PacienteCompleto íntegro
+    // (mesmo shape do GET /pacientes/:id). O frontend faz
+    // `pacienteContext.atualizar(r)` com a resposta — qualquer shape parcial
+    // quebra o layout (`paciente.alergias.length` etc.).
+    const completo = await this.pacienteRepo.buscarPorId(pacienteId, scope);
+    if (!completo) {
+      // Não deveria acontecer — acabamos de garantir scope no início.
+      throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado após atualização');
+    }
+    return completo;
   }
 }

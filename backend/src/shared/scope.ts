@@ -29,6 +29,7 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'GESTOR_TFD':
     case 'ATENDENTE_TFD':
     case 'MOTORISTA_TFD':
+    case 'REGULADOR_TFD':
       if (!ctx.prefeituraId) {
         throw Forbidden('USUARIO_SEM_PREFEITURA', 'Usuário sem prefeitura vinculada');
       }

@@ -86,7 +86,17 @@ const INCLUDE_ADMIN = {
       horaSaida: true,
       vagasTotais: true,
       prefeituraId: true,
-      _count: { select: { passageiros: true } },
+      _count: {
+        select: {
+          // UBS — `ViagemPassageiro` alocações
+          passageiros: true,
+          // App paciente — `TfdPacienteSolicitacao` em estado ocupando assento.
+          // Filtra por status; cada pedido APROVADA/EMBARCADA consome 1 vaga.
+          solicitacoesPaciente: {
+            where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+          },
+        },
+      },
     },
   },
 } satisfies Prisma.TfdPacienteSolicitacaoInclude;
@@ -108,7 +118,11 @@ function _toAdminDto(s: Prisma.TfdPacienteSolicitacaoGetPayload<{ include: typeo
       data: s.viagem.data.toISOString(),
       horaSaida: s.viagem.horaSaida,
       vagasTotais: s.viagem.vagasTotais,
-      vagasOcupadas: s.viagem._count.passageiros,
+      // Soma as duas origens — UBS + pedidos do app já alocados.
+      // Sem somar, o painel TFD mostra "0/12" mesmo com pedidos do app
+      // já aprovados, e o gestor pode tentar superalocar.
+      vagasOcupadas:
+        s.viagem._count.passageiros + s.viagem._count.solicitacoesPaciente,
     },
     justificativaPaciente: s.justificativaPaciente,
     acompanhante: s.acompanhante,

@@ -32,6 +32,7 @@ import {
   MENSAGENS,
   NotificacaoPacienteService,
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
+import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arvoreCacheInvalidator';
 
 export interface AutorRegulacao {
   nome: string;
@@ -233,6 +234,9 @@ export class AprovarEncaminhamentoUseCase {
         })
         .catch((err) => logger.warn({ err }, 'notificar AGENDADO falhou'));
     }
+
+    // Invalida cache da árvore para esta UBS e globalmente
+    void invalidarCacheArvorePorUbs(atualizado.ubsId);
 
     return rowParaEncaminhamento(atualizado);
   }

@@ -1,6 +1,6 @@
 {
   "name": "unisism-ubs-backend",
-  "version": "0.1.0",
+  "version": "0.18.3",
   "description": "Backend da Face 1 (UBS) do sistema UNISISM — atendimento, encaminhamentos e PEC.",
   "main": "dist/main/server.js",
   "type": "commonjs",
@@ -67,6 +67,7 @@
     "@types/nodemailer": "^8.0.0",
     "@types/pdfkit": "^0.17.6",
     "@types/uuid": "^10.0.0",
+    "playwright": "^1.60.0",
     "prisma": "^6.4.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"

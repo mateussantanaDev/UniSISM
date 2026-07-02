@@ -30,7 +30,7 @@ const UF_POR_NOME: Record<string, string> = {
 	Alagoas: 'AL',
 	Amapá: 'AP',
 	Amazonas: 'AM',
-	Pernambuco: 'BA',
+	Bahia: 'BA',
 	Ceará: 'CE',
 	'Distrito Federal': 'DF',
 	'Espírito Santo': 'ES',

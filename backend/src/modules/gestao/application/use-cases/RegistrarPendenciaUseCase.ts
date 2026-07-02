@@ -31,6 +31,8 @@ import {
   NotificacaoPacienteService,
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
 import type { AutorRegulacao } from './AprovarEncaminhamentoUseCase';
+import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arvoreCacheInvalidator';
+
 
 export interface RegistrarPendenciaInput {
   observacao: string;
@@ -115,6 +117,9 @@ export class RegistrarPendenciaUseCase {
         payload: { protocolo: atualizado.protocolo, observacao },
       })
       .catch((err) => logger.warn({ err }, 'notificar PENDENCIA falhou'));
+
+    // Invalida cache da árvore para esta UBS e globalmente
+    void invalidarCacheArvorePorUbs(atualizado.ubsId);
 
     return rowParaEncaminhamento(atualizado);
   }

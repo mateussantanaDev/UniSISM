@@ -65,9 +65,78 @@ const INCLUDE_FULL = {
       solicitacao: { select: { protocolo: true, especialidade: true, prioridade: true } },
     },
   },
+  // Pacientes que solicitaram vaga via app (Face 3) — segunda fonte de passageiros.
+  // Sem isso, o painel da regulação mostra "12 vagas livres" mesmo com paciente
+  // aprovado, e a validação de alocar passageiro permite overbooking.
+  solicitacoesPaciente: {
+    where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+    include: {
+      conta: { select: { id: true, cpf: true, nome: true } },
+      encaminhamento: { select: { id: true, protocolo: true, especialidadeSolicitada: true } },
+    },
+  },
 };
 
+// TfdPacientePrioridade ('NORMAL'|'PRIORITARIA'|'URGENTE') → DTO prioridade.
+function _mapPrioPaciente(p: string): string {
+  return p === 'PRIORITARIA' ? 'PRIORITARIA' : p === 'URGENTE' ? 'URGENTE' : 'ELETIVA';
+}
+
+/**
+ * Pedidos do app paciente guardam `numeroAssento` como string ("A1", "A12")
+ * para compatibilizar com o auto-gen do backend (`A${n}`). A UI da Face 4
+ * espera `number | null` em `PassageiroViagem.numeroAssento` (mesmo shape
+ * que `ViagemPassageiro` UBS). Convertemos aqui para que o SeatPicker possa
+ * comparar `p.numeroAssento === numero` sem falsos negativos.
+ */
+function _parseAssento(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const n = parseInt(String(raw).replace(/^A/i, ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function rowParaViagem(r: any) {
+  // Passageiros de duas fontes: UBS (ViagemPassageiro) + App (TfdPacienteSolicitacao APROVADA/EMBARCADA)
+  const passageirosUbs = (r.passageiros ?? []).map((p: any) => ({
+    id: p.id,
+    origem: 'UBS' as const,
+    solicitacaoId: p.solicitacaoId,
+    protocolo: p.solicitacao?.protocolo ?? null,
+    pacienteId: p.pacienteId,
+    pacienteNome: p.paciente?.nome ?? null,
+    pacienteCpf: p.paciente?.cpf ?? null,
+    especialidade: p.solicitacao?.especialidade ?? null,
+    prioridade: p.solicitacao?.prioridade ?? null,
+    numeroAssento: p.numeroAssento,
+    acompanhante: p.acompanhante,
+    presenca: p.presenca,
+    observacao: p.observacao,
+    marcadoEm: p.marcadoEm?.toISOString() ?? null,
+  }));
+
+  const passageirosApp = (r.solicitacoesPaciente ?? []).map((s: any) => ({
+    id: `sol-${s.id}`,
+    origem: 'APP' as const,
+    solicitacaoId: s.id,
+    protocolo: s.encaminhamento?.protocolo ?? s.encaminhamentoProtocolo ?? null,
+    pacienteId: null,
+    pacienteNome: s.conta?.nome ?? null,
+    pacienteCpf: s.conta?.cpf ?? null,
+    especialidade: s.encaminhamento?.especialidadeSolicitada ?? null,
+    prioridade: _mapPrioPaciente(s.prioridade),
+    // String "A12" → 12 — mesmo shape do `ViagemPassageiro` UBS.
+    numeroAssento: _parseAssento(s.numeroAssento),
+    acompanhante: !!s.acompanhante,
+    presenca: s.status === 'EMBARCADA' ? 'EMBARCADO' : 'AGUARDANDO',
+    observacao: s.justificativaPaciente ?? null,
+    marcadoEm: s.aprovadaEm?.toISOString() ?? null,
+  }));
+
+  const passageiros = [...passageirosUbs, ...passageirosApp];
+  const assentosOcupados = passageiros
+    .map((p: any) => p.numeroAssento)
+    .filter((n: any): n is number => typeof n === 'number');
+
   return {
     id: r.id,
     data: r.data.toISOString().slice(0, 10),
@@ -86,32 +155,16 @@ function rowParaViagem(r: any) {
     kmInicialHodometro: r.kmInicialHodometro ? Number(r.kmInicialHodometro) : null,
     kmFinalHodometro: r.kmFinalHodometro ? Number(r.kmFinalHodometro) : null,
     vagasTotais: r.vagasTotais,
-    vagasOcupadas: r.passageiros?.length ?? 0,
+    vagasOcupadas: passageiros.length,
     observacoes: r.observacoes,
     status: r.status,
     motivoCancelamento: r.motivoCancelamento,
     criadaEm: r.criadaEm.toISOString(),
     iniciadaEm: r.iniciadaEm?.toISOString() ?? null,
     concluidaEm: r.concluidaEm?.toISOString() ?? null,
-    passageiros: (r.passageiros ?? []).map((p: any) => ({
-      id: p.id,
-      solicitacaoId: p.solicitacaoId,
-      protocolo: p.solicitacao?.protocolo ?? null,
-      pacienteId: p.pacienteId,
-      pacienteNome: p.paciente?.nome ?? null,
-      pacienteCpf: p.paciente?.cpf ?? null,
-      especialidade: p.solicitacao?.especialidade ?? null,
-      prioridade: p.solicitacao?.prioridade ?? null,
-      numeroAssento: p.numeroAssento,
-      acompanhante: p.acompanhante,
-      presenca: p.presenca,
-      observacao: p.observacao,
-      marcadoEm: p.marcadoEm?.toISOString() ?? null,
-    })),
+    passageiros,
     /// Lista de assentos ocupados (para o frontend renderizar mapa de assentos).
-    assentosOcupados: (r.passageiros ?? [])
-      .map((p: any) => p.numeroAssento)
-      .filter((n: number | null): n is number => n !== null),
+    assentosOcupados,
     prefeituraId: r.prefeituraId,
   };
 }
@@ -464,8 +517,17 @@ export class ViagensTfdUseCases {
       where: { id: viagemId },
       include: {
         veiculo: true,
-        _count: { select: { passageiros: true } },
+        _count: {
+          select: {
+            passageiros: true,
+            solicitacoesPaciente: { where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } } },
+          },
+        },
         passageiros: { select: { numeroAssento: true } },
+        solicitacoesPaciente: {
+          where: { status: { in: ['APROVADA' as const, 'EMBARCADA' as const] } },
+          select: { numeroAssento: true },
+        },
       },
     });
     if (!viagem) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
@@ -473,7 +535,10 @@ export class ViagensTfdUseCases {
     if (viagem.status !== 'AGENDADA') {
       throw Conflict('STATUS_INVALIDO', `Só pode alocar em viagem AGENDADA (atual: ${viagem.status})`);
     }
-    if (viagem._count.passageiros >= viagem.vagasTotais) {
+    // Vagas ocupadas = UBS (passageiros) + App (solicitacoesPaciente APROVADA/EMBARCADA)
+    const totalOcupadas =
+      viagem._count.passageiros + viagem._count.solicitacoesPaciente;
+    if (totalOcupadas >= viagem.vagasTotais) {
       throw Conflict('CAPACIDADE_EXCEDIDA', `Viagem cheia (${viagem.vagasTotais} vagas)`);
     }
     if (numeroAssento !== undefined) {
@@ -483,8 +548,14 @@ export class ViagensTfdUseCases {
           `Assento ${numeroAssento} fora do intervalo [1..${viagem.vagasTotais}]`,
         );
       }
-      const ocupado = viagem.passageiros.some((p) => p.numeroAssento === numeroAssento);
-      if (ocupado) {
+      // Coleta assentos ocupados de AMBAS as fontes (numeroAssento UBS é number,
+      // app envia string como "A1"). Compara como string pra cobrir os dois.
+      const assentoStr = String(numeroAssento);
+      const ocupadoUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === assentoStr);
+      const ocupadoApp = viagem.solicitacoesPaciente.some(
+        (s: any) => String(s.numeroAssento) === assentoStr,
+      );
+      if (ocupadoUbs || ocupadoApp) {
         throw Conflict('ASSENTO_OCUPADO', `Assento ${numeroAssento} já está ocupado`);
       }
     }

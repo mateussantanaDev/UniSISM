@@ -56,6 +56,7 @@ export interface ListarEncaminhamentosFiltro {
   desde?: Date;
   ate?: Date;
   limit?: number;
+  respostaSUS?: boolean;
 }
 
 export interface AdicionarEventoInput {

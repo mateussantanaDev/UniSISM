@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNISISM — Documentação do Sistema & Impacto Municipal</title>
+  
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['ui-monospace', 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              900: '#1e3a8a', // blue-900 (Ação principal)
+            },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonte Inter via CDN -->
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+  <style>
+    /* B2G Brutalist Styles */
+    *, *::before, *::after {
+      border-radius: 0px !important; /* Reset global de cantos arredondados */
+    }
+    
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      -webkit-font-smoothing: antialiased;
+      background-color: rgb(248 250 252); /* bg-slate-50 */
+      color: rgb(15 23 42); /* text-slate-900 */
+    }
+
+    /* Sombras brutalistas sólidas e secas */
+    .brutalist-border {
+      border: 1px solid rgb(15 23 42);
+    }
+    
+    .brutalist-shadow {
+      box-shadow: 4px 4px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-sm {
+      box-shadow: 2px 2px 0px rgba(15, 23, 42, 1);
+    }
+
+    .brutalist-shadow-lg {
+      box-shadow: 8px 8px 0px rgba(15, 23, 42, 0.12);
+    }
+
+    .active-tab-border {
+      border-left: 2px solid rgb(30 58 138); /* border-blue-900 */
+    }
+
+    /* Scrollbars quadradas e densas */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgb(241 245 249);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(203 213 225);
+      border: 1px solid rgb(15 23 42);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgb(15 23 42);
+    }
+
+    /* Inputs focados brutalistas */
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgb(30 58 138) !important;
+      box-shadow: 2px 2px 0px rgb(30 58 138) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header Superior -->
+  <header class="h-14 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="h-8 w-8 bg-blue-900 text-white flex items-center justify-center font-mono font-bold text-lg select-none">
+        U
+      </div>
+      <div>
+        <div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase leading-none">UNISISM / DOCUMENTAÇÃO / GERAL</div>
+        <h1 class="font-mono text-sm font-bold tracking-widest text-slate-900 uppercase">Centro de Impacto Municipal</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="hidden md:flex gap-2">
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">ESCOPO: GLOBAL</span>
+        <span class="border border-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 bg-slate-50">VERSÃO: v0.10.0</span>
+      </div>
+      <div class="font-mono text-[11px] text-slate-600" id="current-clock">02/07/2026 09:49</div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- Sidebar de Navegação -->
+    <aside class="w-64 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
+      <div class="p-4 border-b border-slate-200 bg-slate-50">
+        <div class="font-mono text-[10px] text-slate-500 font-bold uppercase tracking-widest">Prefeitura Municipal</div>
+        <div class="font-sans text-xs font-semibold text-slate-800">Secretaria Municipal de Saúde</div>
+      </div>
+      
+      <nav class="p-3 flex-1 space-y-1">
+        <button onclick="switchTab('visao-geral')" id="btn-visao-geral" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors bg-blue-50 text-blue-900 border-l-2 border-blue-900">
+          <span>00. Visão Geral</span>
+          <kbd class="text-[9px] border border-blue-900/30 px-1 bg-white">0</kbd>
+        </button>
+
+        <button onclick="switchTab('face-1')" id="btn-face-1" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>01. Face 1 — UBS</span>
+          <kbd class="text-[9px] border border-slate-300 px-1 bg-slate-50">1</kbd>
+        </button>
+
+        <button onclick="switchTab('face-2')" id="btn-face-2" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>02. Face 2 — SMS</span>
+          <kbd class="text-[9px] border border-slate-300 px-1 bg-slate-50">2</kbd>
+        </button>
+
+        <button onclick="switchTab('face-4')" id="btn-face-4" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>03. Face 4 — TFD</span>
+          <kbd class="text-[9px] border border-slate-300 px-1 bg-slate-50">3</kbd>
+        </button>
+
+        <button onclick="switchTab('especialidades')" id="btn-especialidades" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>04. Decisão Estratégica</span>
+          <kbd class="text-[9px] border border-slate-300 px-1 bg-slate-50">4</kbd>
+        </button>
+
+        <button onclick="switchTab('auditoria')" id="btn-auditoria" class="w-full text-left px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors text-slate-600 hover:bg-slate-50 border-l-2 border-transparent">
+          <span>05. Trilha & Compliance</span>
+          <kbd class="text-[9px] border border-slate-300 px-1 bg-slate-50">5</kbd>
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50">
+        <div class="font-mono text-[9px] text-slate-500 uppercase tracking-widest leading-normal">
+          UNISISM v0.10.0 <br>
+          B2G BRUTALIST UI
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo Principal -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-6">
+      <div class="max-w-[1400px] mx-auto space-y-6">
+
+        <!-- TAB: VISÃO GERAL -->
+        <section id="tab-visao-geral" class="tab-content space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">Apresentação da Plataforma</div>
+            <h2 class="font-mono text-xl font-bold tracking-tight text-slate-900 mt-1 uppercase">A Filosofia do UNISISM</h2>
+            <p class="mt-4 text-sm text-slate-700 leading-relaxed font-sans">
+              O <strong>UNISISM</strong> é um sistema <strong>B2G (Business-to-Government)</strong> brutalista projetado especificamente para prefeituras de pequeno e médio porte. Ao contrário de softwares comerciais genéricos, ele é moldado sob o conceito de <strong>alta densidade informacional</strong>, visando o ganho extremo de eficiência por operadores treinados que realizam jornadas diárias longas. 
+            </p>
+            <p class="mt-2 text-sm text-slate-700 leading-relaxed font-sans">
+              Seu principal diferencial está na integração vertical e instantânea das pontas de saúde: desde a Unidade Básica de Saúde (Face 1 - UBS) até a Secretaria (Face 2 - SMS) e a logística complexa de locomoção de pacientes (Face 4 - TFD), gerando uma trilha de prestação de contas inviolável.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <!-- Card Informativo 1 -->
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-blue-900">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">INTEGRAÇÃO HORIZONTAL</span>
+                <span class="font-mono text-base font-bold text-slate-900 mt-1 block">Fim do Retrabalho</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  A informação de saúde e tráfego de documentos flui sem atrito. O dado extraído na UBS é o mesmo lido na Regulação e na Gestão do TFD, consolidando uma única fonte da verdade.
+                </p>
+              </div>
+
+              <!-- Card Informativo 2 -->
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-emerald-700">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">EFICIÊNCIA TÉCNICA</span>
+                <span class="font-mono text-base font-bold text-slate-900 mt-1 block">Foco em Resultados</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Redução drástica nas filas de encaminhamentos através de processos automatizados, OCR estruturado de solicitações e transições de estado claras e ágeis.
+                </p>
+              </div>
+
+              <!-- Card Informativo 3 -->
+              <div class="border border-slate-200 bg-slate-50 p-4 border-l-4 border-amber-600">
+                <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">DECISÕES BASEADAS EM DADOS</span>
+                <span class="font-mono text-base font-bold text-slate-900 mt-1 block">Gestão Estratégica</span>
+                <p class="text-xs text-slate-600 mt-2 font-sans">
+                  Ferramentas integradas para analisar o custo municipal real de tratamentos fora da cidade, permitindo avaliar a contratação direta de médicos para o município.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Índice Rápido de Faces -->
+          <div class="border border-slate-200 bg-white">
+            <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+              <span class="font-mono text-xs font-bold tracking-widest text-slate-900 uppercase">Arquitetura de Operação Municipal</span>
+              <span class="font-mono text-[10px] text-slate-500">MÓDULOS ATIVOS</span>
+            </div>
+            
+            <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Módulo UBS -->
+              <div class="border border-slate-100 p-4 hover:bg-slate-50 transition-colors cursor-pointer" onclick="switchTab('face-1')">
+                <div class="flex items-center justify-between">
+                  <span class="bg-blue-900 text-white font-mono text-[10px] font-bold px-2 py-0.5 uppercase">Face 1</span>
+                  <span class="font-mono text-xs font-bold text-blue-900 underline">Acessar</span>
+                </div>
+                <h3 class="font-mono text-sm font-bold uppercase mt-3">Unidade Básica de Saúde</h3>
+                <p class="text-xs text-slate-600 mt-2 font-sans">Ingestão via OCR estruturado, prontuário eletrônico completo com saúde longitudinal e solicitações imediatas.</p>
+              </div>
+
+              <!-- Módulo SMS -->
+              <div class="border border-slate-100 p-4 hover:bg-slate-50 transition-colors cursor-pointer" onclick="switchTab('face-2')">
+                <div class="flex items-center justify-between">
+                  <span class="bg-blue-900 text-white font-mono text-[10px] font-bold px-2 py-0.5 uppercase">Face 2</span>
+                  <span class="font-mono text-xs font-bold text-blue-900 underline">Acessar</span>
+                </div>
+                <h3 class="font-mono text-sm font-bold uppercase mt-3">Secretaria Municipal</h3>
+                <p class="text-xs text-slate-600 mt-2 font-sans">Fila unificada de regulação clínica, gestão de pendências documentais e aprovações transparentes para o SUS.</p>
+              </div>
+
+              <!-- Módulo TFD -->
+              <div class="border border-slate-100 p-4 hover:bg-slate-50 transition-colors cursor-pointer" onclick="switchTab('face-4')">
+                <div class="flex items-center justify-between">
+                  <span class="bg-blue-900 text-white font-mono text-[10px] font-bold px-2 py-0.5 uppercase">Face 4</span>
+                  <span class="font-mono text-xs font-bold text-blue-900 underline">Acessar</span>
+                </div>
+                <h3 class="font-mono text-sm font-bold uppercase mt-3">Tratamento Fora de Domicílio</h3>
+                <p class="text-xs text-slate-600 mt-2 font-sans">Logística de frotas e motoristas, viagens com UXBlaBlaCar, controle rígido de combustíveis e ajuda de custo.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: FACE 1 - UBS -->
+        <section id="tab-face-1" class="tab-content hidden space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-blue-900 uppercase tracking-widest block">MÓDULO DE ENTRADA</span>
+                <h2 class="font-mono text-lg font-bold text-slate-900 uppercase">Face 1 — Unidade Básica de Saúde (UBS)</h2>
+              </div>
+              <span class="font-mono text-xs border border-slate-300 px-2 py-0.5 bg-slate-50 font-bold">OPERADORES: ATENDENTE_UBS / MÉDICO</span>
+            </div>
+            
+            <p class="text-sm text-slate-700 leading-relaxed font-sans mb-6">
+              A Face 1 (UBS) é a porta de entrada da informação no UNISISM. Ela serve para o cadastramento inicial dos cidadãos, acompanhamento clínico nas UBSs e, principalmente, para a <strong>ingestão e consolidação das solicitações médicas</strong> que necessitam de atendimento especializado.
+            </p>
+
+            <div class="space-y-6">
+              <!-- Funcionalidade 1 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">01. Ingestão Inteligente com OCR e Extração Estruturada</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Automação de Entrada</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      O atendente da UBS recebe a guia de encaminhamento físico escrita pelo clínico geral. Ele faz o upload do PDF (ou escaneia em imagem) diretamente na plataforma. O motor de OCR integrado analisa o documento e, em segundos, extrai e preenche automaticamente o formulário digital com o nome do paciente, CPF, CRM do médico emissor, especialidade recomendada e código CID-10.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Eliminação de filas administrativas:</strong> reduz o tempo de digitação manual de 8 minutos para apenas 45 segundos por paciente. Além disso, a extração estruturada de dados elimina em 99% os erros de grafia de CPF/CRM e nomes incorretos, o que anteriormente causava o travamento e a rejeição posterior de processos na Secretaria de Saúde.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 2 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">02. Prontuário Eletrônico Incremental Longitudinal</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Segurança Clínica</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Organiza em uma tela densa todas as informações de saúde do cidadão. Divide-se em identificação social, quadro clínico persistente (alergias ativas, doenças crônicas, medicamentos vigentes), histórico cirúrgico/familiar e o histórico operacional (atendimentos médicos via SOAP, vacinas registradas e viagens TFD realizadas). 
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Centralização de dados e segurança do paciente:</strong> impede a ocorrência de erros graves de prescrição (ex: alertando automaticamente se o médico tentar receitar uma substância a um paciente alérgico). Além disso, <strong>evita a duplicação de pedidos de exames básicos</strong> (como hemogramas ou urina) pois o histórico de exames fica centralizado no cadastro unificado, gerando economia direta na rede municipal.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 3 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">03. Wizard Multi-step de Novo Encaminhamento</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Validação na Origem</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Guia o operador da UBS através de um fluxo lógico em passos bem definidos: identificação do paciente, dados clínicos da solicitação (como exames prévios e urgência) e anexação dos comprovantes médicos escaneados com validação automática de dados obrigatórios.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Redução do lixo processual:</strong> impede que solicitações cheguem à regulação sem os anexos mínimos obrigatórios (ex: laudo médico legível ou exames comprobatórios exigidos para cada especialidade). Isso diminui de imediato o retrabalho dos reguladores municipais de ter que checar processos vazios ou incompletos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: FACE 2 - SMS -->
+        <section id="tab-face-2" class="tab-content hidden space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-blue-900 uppercase tracking-widest block">MÓDULO DE TRIAGEM & DECISÃO</span>
+                <h2 class="font-mono text-lg font-bold text-slate-900 uppercase">Face 2 — Secretaria Municipal de Saúde (SMS)</h2>
+              </div>
+              <span class="font-mono text-xs border border-slate-300 px-2 py-0.5 bg-slate-50 font-bold">OPERADORES: REGULADOR_SMS / ADMIN</span>
+            </div>
+            
+            <p class="text-sm text-slate-700 leading-relaxed font-sans mb-6">
+              A Face 2 (SMS) é a central de moderação. Nela, a equipe de reguladores médicos e auditores da Secretaria Municipal de Saúde recebe a fila consolidada de encaminhamentos provenientes das UBSs para tomar a decisão definitiva de autorizar, apontar pendências ou negar solicitações.
+            </p>
+
+            <div class="space-y-6">
+              <!-- Funcionalidade 1 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">01. Fila de Regulação e Triagem por Gravidade</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Moderação Clínica</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Os encaminhamentos que chegam em estado `AGUARDANDO_REGULACAO` entram em uma fila centralizada de análise da prefeitura. Os reguladores clínicos visualizam a lista unificada e realizam filtros e ordenação por prioridades clínicas (Eletiva, Prioritária, Urgente e Emergência).
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Fila organizada por urgência clínica real:</strong> acaba com o favorecimento ou ordenação estritamente por ordem de chegada para casos graves. Permite que o município regule suas vagas contratadas do SUS direcionando-as para os pacientes de maior risco clínico de forma prioritária, reduzindo a incidência de agravamento de quadros de saúde e subsequentes internações de urgência que oneram o erário público.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 2 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">02. Gestão de Pendências Documentais Incrementais</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Retorno à UBS</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Quando uma solicitação médica possui dados incompletos ou falta algum anexo, o regulador, em vez de rejeitar de imediato, clica em "Registrar Pendência". Ele insere uma nota explicativa indicando o que falta (ex: "Necessário laudo com data inferior a 90 dias"). O status muda para `PENDENCIA_DOCUMENTO` e a UBS de origem é imediatamente notificada via sistema para subir a correção.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Preservação da fila e redução do retrabalho:</strong> elimina o processo ineficiente de cancelar uma solicitação e ter que recriá-la do zero na UBS para corrigir pequenos detalhes. O processo permanece ativo na fila original da SMS e, após a UBS subir o anexo correto, retorna de onde parou. Reduz o estresse do paciente, diminui o tráfego de papéis e otimiza a comunicação interna das equipes em cerca de 40%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 3 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">03. Modo Simplificado para Atendentes SMS (Explorador de Pastas)</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Produtividade Pessoal</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Usuários do grupo administrative (`REGULADOR_SMS` simples) têm acesso a uma interface minimalista parecida com o Windows Explorer (pastas organizadas por UBS -> Ano -> Mês -> Dia). O atendente administrativo pode localizar pastas de arquivos clínicos pendentes de envio ao SUS Federal e registrar as respostas oficiais com rapidez.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Operação ágil com menor custo de treinamento:</strong> funcionários administrativos que não possuem formação clínica de regulação podem apoiar o faturamento e a baixa de guias federais com facilidade. Isso libera os enfermeiros e médicos reguladores de tarefas manuais de arquivamento para focarem exclusivamente na triagem clínica.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: FACE 4 - TFD -->
+        <section id="tab-face-4" class="tab-content hidden space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-blue-900 uppercase tracking-widest block">MÓDULO LOGÍSTICO & FINANCEIRO</span>
+                <h2 class="font-mono text-lg font-bold text-slate-900 uppercase">Face 4 — Tratamento Fora do Domicílio (TFD)</h2>
+              </div>
+              <span class="font-mono text-xs border border-slate-300 px-2 py-0.5 bg-slate-50 font-bold">OPERADORES: GESTOR_TFD / OPERADOR_TFD</span>
+            </div>
+            
+            <p class="text-sm text-slate-700 leading-relaxed font-sans mb-6">
+              A Face 4 é o centro nervoso da logística da prefeitura. Ela é responsável por agendar o transporte dos pacientes elegíveis para hospitais distantes, alocar veículos e motoristas, gerenciar saldos de combustíveis e repassar as ajudas de custo com controle financeiro rígido exigido pelos tribunais de contas.
+            </p>
+
+            <div class="space-y-6">
+              <!-- Funcionalidade 1 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">01. Cadastro Operacional de Frotas e Motoristas</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Segurança e Manutenção</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Cadastra toda a frota municipal ativa (vans, ônibus, ambulâncias, carros pequenos), acompanhando modelo, placa, tipo de combustível, média de consumo estimado e o hodômetro atualizado. Também cadastra os motoristas vinculados com dados de CNH, categorias permitidas e data de validade dos exames regulamentares.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Prevenção de sinistros e segurança de trânsito:</strong> o sistema bloqueia automaticamente a escalação de um motorista cuja CNH esteja vencida ou com categoria divergente do veículo da rota. Além disso, envia alertas de revisão mecânica periódica preventiva por quilometragem de rodagem (KM), mitigando acidentes com veículos da saúde em estradas e reduzindo custos com manutenção corretiva emergencial.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 2 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">02. Planejamento de Viagens e Alocação de Passageiros (BlaBlaCar UX)</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Otimização de Recursos</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Exibe um layout visual da capacidade do veículo (ex: 15 vagas de uma Van). O operador aloca graficamente os pacientes com solicitações TFD aprovadas e seus acompanhantes, definindo o assento ocupado. O sistema emite automaticamente a lista de passageiros obrigatória (manifesto) para fiscalizações policiais de trânsito e registra o embarque/desembarque real de passageiros na rota.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Economia de escala no transporte:</strong> evita a saída desnecessária de múltiplos veículos municipais subocupados com o mesmo destino. Ao otimizar a ocupação dos ônibus e vans, a prefeitura reduz diretamente o custo logístico de viagens repetitivas, poupando pneus, pedágios, diárias de motoristas e reduzindo a pegada de despesas extras da prefeitura.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 3 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">03. Limites de Combustível por Veículo e Controle de Abastecimento</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Gestão Orçamentária</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Define tetos mensais de cotas de combustível (saldo) individuais para cada veículo da frota da saúde, aceitando aportes e ajustes auditados. Os motoristas lançam no sistema as requisições de abastecimento e são obrigados a anexar a foto legível do cupom fiscal do posto com registro do hodômetro e litros inseridos na bomba de combustível.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Combate a fraudes e economia de combustível:</strong> o sistema faz a validação automática (KM final do abastecimento anterior vs KM inicial do atual) e calcula de forma contínua a média de consumo real do carro (KM/litro). Eventuais discrepâncias inexplicáveis de consumo geram alertas de anomalia, bloqueando desvios e resultando em uma redução média de 15% a 25% nas despesas de combustíveis de frotas municipais.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Funcionalidade 4 -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">FUNCIONALIDADE</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">04. Gestão de Ajuda de Custo e Orçamento Global</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Assistência Social e Saúde</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona e Ajuda a Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Centraliza o controle e a destinação de ajudas de custo necessárias para os cidadãos financiarem sua estada fora (dividido em três tetos orçamentários: Alimentação, Hospedagem e Deslocamento local). O gestor autoriza o repasse, vincula o comprovante de pagamento externo (como PIX ou recibo) e controla os tetos globais de saldo.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Financeiro</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Dignidade ao cidadão e limite orçamentário rígido:</strong> garante que pacientes de baixa renda tenham fundos para se alimentar ou dormir em outras cidades durante tratamentos críticos (como oncologia). Ao mesmo tempo, previne estouros de orçamento da prefeitura ao bloquear solicitações que ultrapassem os tetos de ajuda mensais pré-alocados.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: DECISÃO ESTRATÉGICA (RELATÓRIO DE ESPECIALIDADES TFD) -->
+        <section id="tab-especialidades" class="tab-content hidden space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-blue-900 uppercase tracking-widest block">RELATÓRIO ESTRATÉGICO & TOMADA DE DECISÃO</span>
+                <h2 class="font-mono text-lg font-bold text-slate-900 uppercase">Relatório por Especialidade (Contratar vs. Enviar)</h2>
+              </div>
+              <span class="font-mono text-xs border border-slate-300 px-2 py-0.5 bg-slate-50 font-bold font-mono">ENDPOINT: GET /v1/tfd/relatorios/especialidades</span>
+            </div>
+            
+            <p class="text-sm text-slate-700 leading-relaxed font-sans mb-6">
+              O principal gargalo financeiro de pequenos municípios em saúde pública é o <strong>custo invisível do Tratamento Fora do Domicílio (TFD)</strong>. Enviar pacientes continuamente para a capital ou municípios vizinhos consome combustível, diárias de motoristas, deprecia a frota, exige repasses de ajudas de custo e, acima de tudo, desgasta fisicamente cidadãos debilitados em viagens exaustivas.
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Descrição Técnica -->
+              <div class="border border-slate-200 p-5 bg-white space-y-4">
+                <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona a Agregação de Custos</span>
+                <p class="text-xs text-slate-700 leading-relaxed font-sans">
+                  O endpoint <code>GET /v1/tfd/relatorios/especialidades</code> faz um cálculo atômico no banco agregando todas as despesas vinculadas a cada especialidade médica ao longo de uma janela temporal (ex: 12 meses):
+                </p>
+                <ul class="list-disc pl-5 text-xs text-slate-600 space-y-2 font-sans">
+                  <li><strong>Rateio de Abastecimento:</strong> Calcula os litros gerais gastos em cada viagem TFD de forma proporcional ao número de assentos ocupados por pacientes daquela especialidade.</li>
+                  <li><strong>Total de Ajudas de Custo:</strong> Soma todos os repasses de alimentação, hospedagem e deslocamento com status <code>PAGA</code> vinculados a viagens daquela especialidade.</li>
+                  <li><strong>Indicadores Clínicos:</strong> Consolida a quantidade de solicitações abertas, realizadas, pendentes e o número exato de pacientes únicos que necessitaram do deslocamento.</li>
+                </ul>
+                <div class="bg-blue-50/50 p-4 border border-slate-200">
+                  <span class="font-mono text-[10px] text-blue-900 font-bold uppercase tracking-widest block">★ O Impacto Estratégico na Prefeitura</span>
+                  <p class="text-xs text-slate-700 mt-2 leading-relaxed font-sans">
+                    <strong>Fundamentação de Tomada de Decisão:</strong> Em vez de estimativas no escuro, o Secretário Municipal de Saúde e o Prefeito visualizam uma tabela precisa. Se o custo consolidado de combustível, diárias e ajudas de custo para enviar pacientes de <em>Oftalmologia</em> para outra cidade atinge R$ 15.000,00 por mês, fica matematicamente provado que <strong>é financeiramente mais barato e humanamente melhor contratar um Oftalmologista local</strong> para realizar atendimentos e pequenos procedimentos 2 ou 3 vezes por semana no município, reduzindo os custos logísticos a zero para esta especialidade.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Exemplo de Dados de Resposta (JSON-like Brutalist Card) -->
+              <div class="border border-slate-200 bg-slate-900 text-slate-100 p-5 font-mono text-xs flex flex-col justify-between brutalist-shadow">
+                <div>
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                    <span class="text-blue-400 text-[10px] uppercase font-bold tracking-widest">DADOS CONSOLIDADOS (EXEMPLO REAL)</span>
+                    <span class="text-[10px] text-slate-500">RESPOSTA JSON</span>
+                  </div>
+                  <pre class="overflow-x-auto text-[11px] leading-tight text-emerald-400">
+{
+  "periodo": { "desde": "2025-07-02", "ate": "2026-07-02" },
+  "totalGeralSolicitacoes": 437,
+  "totalGeralCustoBRL": 184250.72,
+  "itens": [
+    {
+      "especialidade": "OFTALMOLOGIA",
+      "totalSolicitacoes": 132,
+      "totalRealizadas": 121,
+      "totalPendentes": 6,
+      "totalNegadas": 5,
+      "pacientesUnicos": 98,
+      "destinosMaisFrequentes": ["Recife/PE", "Caruaru/PE"],
+      "custoEstimadoBRL": 67200.00,
+      "custoMedioPorViagemBRL": 509.09
+    },
+    {
+      "especialidade": "ORTOPEDIA",
+      "totalSolicitacoes": 94,
+      "totalRealizadas": 88,
+      "totalPendentes": 3,
+      "totalNegadas": 3,
+      "pacientesUnicos": 70,
+      "destinosMaisFrequentes": ["Caruaru/PE"],
+      "custoEstimadoBRL": 44880.00,
+      "custoMedioPorViagemBRL": 510.00
+    }
+  ]
+}</pre>
+                </div>
+                <div class="border-t border-slate-800 pt-3 mt-4 text-[10px] text-slate-400 font-sans">
+                  A partir destes números, o município identifica qual especialidade médica representa a maior drenagem de recursos da saúde, direcionando o edital de concurso ou credenciamento local para as áreas corretas.
+                </div>
+              </div>
+            </div>
+
+            <!-- SIMULADOR INTERATIVO ROI (WOW FACTOR ELEMENT) -->
+            <div class="border border-slate-200 bg-white p-5 mt-6 border-t-4 border-blue-900 brutalist-shadow-lg">
+              <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest block">SIMULADOR OPERACIONAL E FINANCEIRO</span>
+              <h3 class="font-mono text-base font-bold text-slate-900 uppercase mt-1">Simulador de Viagens TFD vs. Especialista Local</h3>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed font-sans">
+                Insira os dados estimados da operação de TFD da sua prefeitura para calcular se vale a pena contratar um médico para atender no município.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <!-- Coluna de Inputs 1 -->
+                <div class="space-y-3">
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Especialidade Médica</label>
+                    <select id="sim-especialidade" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                      <option value="OFTALMOLOGIA">Oftalmologia</option>
+                      <option value="CARDIOLOGIA">Cardiologia</option>
+                      <option value="ORTOPEDIA">Ortopedia</option>
+                      <option value="PEDIATRIA">Pediatria Especializada</option>
+                      <option value="OUTRA">Outra Especialidade</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Pacientes por Mês (TFD)</label>
+                    <input type="number" id="sim-pacientes" value="80" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                </div>
+
+                <!-- Coluna de Inputs 2 -->
+                <div class="space-y-3">
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Distância Ida/Volta (KM)</label>
+                    <input type="number" id="sim-distancia" value="250" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Capacidade do Veículo</label>
+                    <input type="number" id="sim-capacidade" value="15" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                </div>
+
+                <!-- Coluna de Inputs 3 -->
+                <div class="space-y-3">
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Consumo Veículo (KM/L)</label>
+                    <input type="number" id="sim-consumo" value="8" step="0.1" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Preço Combustível (R$/L)</label>
+                    <input type="number" id="sim-preco-comb" value="5.85" step="0.01" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                </div>
+
+                <!-- Coluna de Inputs 4 -->
+                <div class="space-y-3">
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Ajuda de Custo / Paciente (R$)</label>
+                    <input type="number" id="sim-ajuda-custo" value="50" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                  <div>
+                    <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Diária Motorista + Pedágios (R$)</label>
+                    <input type="number" id="sim-diaria-mot" value="180" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Input de Salário de Médico e Comparativo -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t border-slate-200 pt-6">
+                <div>
+                  <h4 class="font-mono text-xs font-bold uppercase text-slate-900">PROPOSTA DE CONTRATAÇÃO LOCAL</h4>
+                  <p class="text-xs text-slate-500 mt-1 leading-normal font-sans">Estimativa de custos para manter o médico credenciado ou concursado no município.</p>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Salário/Valor Mensal Médico (R$)</label>
+                      <input type="number" id="sim-salario-medico" value="12000" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                    </div>
+                    <div>
+                      <label class="font-mono text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Custo de Operação da Sala/Insumos (R$)</label>
+                      <input type="number" id="sim-custo-sala" value="1500" oninput="calcularROI()" class="w-full mt-1 border border-slate-300 p-2 font-mono text-xs focus:ring-1 focus:ring-blue-900 focus:border-blue-900 bg-white">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Painel de Resultados do Simulador -->
+                <div class="border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between brutalist-shadow">
+                  <div class="grid grid-cols-2 gap-2 text-center">
+                    <div class="border-r border-slate-200 px-2">
+                      <span class="font-mono text-[9px] text-slate-500 uppercase block font-bold">CUSTO LOGÍSTICO (TFD)</span>
+                      <span id="res-custo-tfd" class="font-mono text-lg font-bold text-slate-900">R$ 0,00</span>
+                    </div>
+                    <div class="px-2">
+                      <span class="font-mono text-[9px] text-slate-500 uppercase block font-bold">CUSTO LOCAL ESTIMADO</span>
+                      <span id="res-custo-local" class="font-mono text-lg font-bold text-slate-900">R$ 0,00</span>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 p-3 text-center border" id="res-alert-box">
+                    <span id="res-badge-economia" class="font-mono text-[10px] font-bold tracking-widest uppercase block mb-1">ECONOMIA PREVISTA</span>
+                    <span id="res-valor-economia" class="font-mono text-xl font-bold block">R$ 0,00</span>
+                    <span id="res-decisao-texto" class="font-sans text-xs mt-2 block font-medium leading-tight"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: TRILHA DE AUDITORIA & COMPLIANCE -->
+        <section id="tab-auditoria" class="tab-content hidden space-y-6">
+          <div class="border border-slate-200 bg-white p-6 brutalist-shadow">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-blue-900 uppercase tracking-widest block">SEGURANÇA JURÍDICA E AUDITORIA</span>
+                <h2 class="font-mono text-lg font-bold text-slate-900 uppercase">Trilha de Auditoria Hash-Chained & Compliance LGPD/TCM</h2>
+              </div>
+              <span class="font-mono text-xs border border-slate-300 px-2 py-0.5 bg-slate-50 font-bold">REQUISITO LEGAL OBRIGATÓRIO</span>
+            </div>
+            
+            <p class="text-sm text-slate-700 leading-relaxed font-sans mb-6">
+              A prestação de contas de dinheiros públicos com diárias e combustível é um dos itens mais fiscalizados pelo <strong>Tribunal de Contas dos Municípios (TCM)</strong>. Além disso, a gestão de dados de saúde envolve dados altamente sensíveis de acordo com a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
+            </p>
+
+            <div class="space-y-6">
+              <!-- Auditoria Criptográfica -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">TECNOLOGIA</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Trilha com Encadeamento de Hashes (Hash-Chain)</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Imutabilidade de Logs</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona na Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Cada alteração crítica no sistema (como autorizações financeiras de ajuda de custo, liberação de combustível, cadastro de veículos ou alteração de prontuários) não apenas grava no banco de dados, mas gera um registro criptográfico contendo o estado anterior do dado, o novo estado, o ID do operador, o IP e o timestamp. Cada registro calcula um hash SHA-256 que engloba o hash do registro imediatamente anterior, criando uma cadeia sequencial imutável de eventos.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Fiscal</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Proteção total contra fraudes e adulterações de dados:</strong> garante ao gestor e prefeito blindagem jurídica em auditorias do TCM ou investigações. Qualquer tentativa de alteração direta ou exclusão de logs no banco de dados quebra imediatamente a cadeia criptográfica, tornando a fraude explícita e visível de forma instantânea. O sistema conta com botão de exportação mensal unificada em arquivo ZIP autenticado pronto para envio ao Tribunal de Contas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sanitização e Antimalware -->
+              <div class="border border-slate-200 p-5 bg-white hover:bg-slate-50/50 hover-lift">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <span class="font-mono text-[9px] bg-blue-50 text-blue-900 font-bold px-1.5 py-0.5 uppercase tracking-wide">SEGURANÇA DA INFORMAÇÃO</span>
+                    <h3 class="font-mono text-sm font-bold text-slate-900 uppercase">Sanitização e Scan Antimalware de Anexos Médicos</h3>
+                  </div>
+                  <span class="border border-slate-300 px-2 py-0.5 font-mono text-[10px] bg-slate-50 uppercase text-slate-700 font-bold">Defesa de Infraestrutura</span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">Como Funciona na Operação</span>
+                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed font-sans">
+                      Todo documento ou comprovante que sobe pelas UBSs (comprovante de endereço, laudos em PDF, fotos de cupons fiscais) passa por um gateway antimalware em segundo plano antes de se tornar disponível para visualização ou download pela equipe reguladora ou gestores. O status do anexo é acompanhado como `PENDENTE`, `LIMPO` ou `INFECTADO`.
+                    </p>
+                  </div>
+                  <div class="bg-blue-50/50 p-4 border border-slate-200">
+                    <span class="font-mono text-[10px] text-blue-900 uppercase tracking-widest font-bold block">★ Impacto Municipal e Fiscal</span>
+                    <p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-sans">
+                      <strong>Proteção de computadores e dados municipais:</strong> impede a propagação de vírus digitais (como ransomware) originados de computadores domésticos de pacientes ou de máquinas antigas e desatualizadas de UBSs. Isso previne o sequestro de sistemas municipais inteiros e garante que a infraestrutura tecnológica da prefeitura opere de forma ininterrupta e segura.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="h-10 border-t border-slate-200 bg-white px-6 flex items-center justify-between text-[10px] font-mono text-slate-500 shrink-0">
+    <div>UNISISM v0.10.0 — SISTEMA INTEGRADO DE SAÚDE MUNICIPAL</div>
+    <div class="hidden sm:block">SUITE GERAL DE DOCUMENTAÇÃO E METAS OPERACIONAIS</div>
+  </footer>
+
+  <!-- Script de Operação do Menu Lateral e Simulador -->
+  <script>
+    // Tab switching functionality
+    function switchTab(tabId) {
+      // Hide all tab contents
+      const contents = document.querySelectorAll('.tab-content');
+      contents.forEach(content => {
+        content.classList.add('hidden');
+      });
+
+      // Show active tab
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+      // Update button styling
+      const buttons = document.querySelectorAll('aside nav button');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-blue-50', 'text-blue-900', 'border-blue-900');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-50', 'border-transparent');
+      });
+
+      const activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-50', 'border-transparent');
+      activeBtn.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-900');
+    }
+
+    // Keyboard navigation shortcuts
+    document.addEventListener('keydown', function(event) {
+      if (event.key === '0') {
+        switchTab('visao-geral');
+      } else if (event.key === '1') {
+        switchTab('face-1');
+      } else if (event.key === '2') {
+        switchTab('face-2');
+      } else if (event.key === '3') {
+        switchTab('face-4');
+      } else if (event.key === '4') {
+        switchTab('especialidades');
+      } else if (event.key === '5') {
+        switchTab('auditoria');
+      }
+    });
+
+    // ROI Simulator Logic
+    function calcularROI() {
+      // Inputs
+      const pacientesMes = parseFloat(document.getElementById('sim-pacientes').value) || 0;
+      const distanciaKM = parseFloat(document.getElementById('sim-distancia').value) || 0;
+      const capacidade = parseFloat(document.getElementById('sim-capacidade').value) || 1;
+      const consumo = parseFloat(document.getElementById('sim-consumo').value) || 1;
+      const precoComb = parseFloat(document.getElementById('sim-preco-comb').value) || 0;
+      const ajudaCusto = parseFloat(document.getElementById('sim-ajuda-custo').value) || 0;
+      const diariaMot = parseFloat(document.getElementById('sim-diaria-mot').value) || 0;
+      
+      const salarioMedico = parseFloat(document.getElementById('sim-salario-medico').value) || 0;
+      const custoSala = parseFloat(document.getElementById('sim-custo-sala').value) || 0;
+
+      // Custo TFD logic
+      // Viagens necessárias no mês (arredondado para cima)
+      const viagensMes = Math.ceil(pacientesMes / (capacidade || 1));
+      
+      // Combustível gasto por viagem
+      const litrosViagem = distanciaKM / (consumo || 1);
+      const custoCombustivelViagem = litrosViagem * precoComb;
+
+      // Custo de logística total de viagens no mês
+      const custoViagensMes = viagensMes * (custoCombustivelViagem + diariaMot);
+
+      // Custo total de ajuda de custo no mês
+      const custoAjudaCustoMes = pacientesMes * ajudaCusto;
+
+      // Custo total final do TFD
+      const custoTFDTotal = custoViagensMes + custoAjudaCustoMes;
+
+      // Custo contratação local
+      const custoLocalTotal = salarioMedico + custoSala;
+
+      // Economia
+      const economia = custoTFDTotal - custoLocalTotal;
+
+      // Render Outputs
+      document.getElementById('res-custo-tfd').innerText = formatterBRL(custoTFDTotal);
+      document.getElementById('res-custo-local').innerText = formatterBRL(custoLocalTotal);
+      
+      const alertBox = document.getElementById('res-alert-box');
+      const badgeEconomia = document.getElementById('res-badge-economia');
+      const valorEconomia = document.getElementById('res-valor-economia');
+      const decisaoTexto = document.getElementById('res-decisao-texto');
+
+      if (economia > 0) {
+        // Contratar local é economicamente melhor
+        alertBox.className = "mt-4 p-3 text-center border-2 border-emerald-700 bg-emerald-50 text-emerald-800";
+        badgeEconomia.innerText = "✓ RECOMENDAÇÃO: CONTRATAR MÉDICO LOCAL";
+        valorEconomia.innerText = `Economia de ${formatterBRL(economia)} /mês`;
+        decisaoTexto.innerText = "Financeiramente viável trazer o especialista para a cidade. Elimina viagens cansativas, reduz riscos logísticos e aumenta o conforto dos pacientes.";
+      } else {
+        // TFD financeiramente melhor (ou empate)
+        const diferenca = Math.abs(economia);
+        alertBox.className = "mt-4 p-3 text-center border-2 border-amber-600 bg-amber-50 text-amber-800";
+        badgeEconomia.innerText = "⚠ RECOMENDAÇÃO: AVALIAR LOGÍSTICA";
+        valorEconomia.innerText = `Diferença de R$ ${formatterBRL(diferenca)} /mês`;
+        decisaoTexto.innerText = "Sob a ótica puramente financeira, o TFD ainda é ligeiramente menos oneroso. No entanto, avalie a dignidade humana e o cansaço dos cidadãos antes de decidir.";
+      }
+    }
+
+    // Helper to format currency
+    function formatterBRL(value) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Live Clock Update
+    function updateClock() {
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const str = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById('current-clock').innerText = str;
+    }
+
+    // Initializations
+    calcularROI();
+    updateClock();
+    setInterval(updateClock, 30000);
+  </script>
+</body>
+</html>

@@ -6,6 +6,76 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Foco no qu
 
 ---
 
+## [0.18.3] — 2026-06-03 · Perfil completo do paciente em `/me`
+
+Expande o payload canônico de `paciente` (usado em `login`, `refresh` e `me`)
+de 11 → **27 campos**. O app paciente renderiza tela de perfil completa sem
+chamar outros endpoints.
+
+### Adicionado em `/v1/paciente-app/me`
+
+| Categoria | Campos novos |
+|---|---|
+| **Identificação** | `nomeSocial`, `sexo` (M/F/OUTRO) |
+| **Filiação** | `nomeMae`, `nomePai` |
+| **Perfil sócio** | `estadoCivil`, `escolaridade`, `profissao`, `racaCor`, `grupoSanguineo` |
+| **Contato** | `telefoneSecundario` (telefone fixo da casa) |
+| **Endereço** | `endereco`, `bairro`, `municipio`, `uf`, `cep` |
+| **Atenção primária** | `agenteComunitario` (ACS), `microarea`, `equipeSaudeFamilia` |
+
+Todos os campos `null` quando não preenchidos (conta nova sem PEC, ou UBS
+ainda não cadastrou). App trata com fallback. **Zero breaking change** — apps
+v0.18.2 ignoram campos novos.
+
+### Mudanças
+
+- Use case `buildPacientePayload` carrega `PacienteConta` + `Paciente` (PEC)
+  em paralelo (`Promise.all`) — mesmo tempo de resposta do payload anterior.
+- `grupoSanguineo` normaliza `NAO_INFORMADO` → `null` (frontend não precisa
+  conhecer o sentinela interno).
+
+---
+
+## [0.18.2] — 2026-06-03 · Detalhe do dossiê médico (Face 3)
+
+Endpoints granulares pra abrir 1 atendimento, vacina ou exame em tela própria
+no app paciente — sem depender do cache da lista. App Flutter atualiza
+`AtendimentoDetailPage` / `VacinacaoDetailPage` / `ExameDetailPage` pra usar
+direto.
+
+### Adicionado
+
+- **`GET /v1/paciente-app/dossie/atendimentos/:id`** — retorna 1 `AtendimentoDto`.
+- **`GET /v1/paciente-app/dossie/vacinacoes/:id`** — retorna 1 `VacinacaoDto`.
+- **`GET /v1/paciente-app/dossie/exames/:id`** — retorna 1 `ExameDto`.
+
+Todos usam o **mesmo shape** dos itens das listas (`/dossie/atendimentos|vacinacoes|exames`) —
+zero diff de model no Flutter.
+
+### Hardening LGPD/CFM
+
+- **Anti-enumeration** — recurso de outro paciente retorna `404` (`ATENDIMENTO_NAO_ENCONTRADO` /
+  `VACINACAO_NAO_ENCONTRADA` / `EXAME_NAO_ENCONTRADO`), sem vazar existência.
+- **Audit dual** em TODA leitura:
+  - LGPD (5 anos): `DOSSIE_*_DETALHE_LIDO` em `auditoria_logs`.
+  - CFM (20 anos, imutável via trigger SQL): `LEITURA_DOSSIE` em `paciente_prontuario_audit`
+    com `autorPapel: "PACIENTE · App"`, IP, UA.
+- **Tentativas cross-paciente** geram audit `DOSSIE_*_DETALHE_FORA_DO_ESCOPO` (LGPD crítico).
+- **Sanitização** anti-XSS em todos os campos free-form (HTML strip + control chars +
+  zero-width Unicode + cap 4000 chars).
+- **Rate limit** compartilhado com o resto do dossiê: 120 req/15min/conta + 600 req/1h/conta +
+  1000 req/15min/IP.
+
+### Códigos de erro novos
+
+| HTTP | code |
+|---|---|
+| 404 | `ATENDIMENTO_NAO_ENCONTRADO` |
+| 404 | `VACINACAO_NAO_ENCONTRADA` |
+| 404 | `EXAME_NAO_ENCONTRADO` |
+
+---
+
 ## [0.18.0] — 2026-05-28 · Etapa 9 · Refresh token rotativo paciente (Face 3)
 
 Fecha o **último gap** entre o que o `UNISISM-Paciente/BACKEND_API.md` espera e o

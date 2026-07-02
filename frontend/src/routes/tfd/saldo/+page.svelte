@@ -75,12 +75,12 @@
 
 	// ─── Ajustar Saldo (substitui o valor) ───
 	let ajustarVeiculoId = $state<string | null>(null);
-	let novoSaldo = $state<number | undefined>(undefined);
+	let novoSaldo = $state('');
 	let justificativaAjuste = $state('');
 	let processandoAjuste = $state(false);
 
 	async function ajustar() {
-		if (!ajustarVeiculoId || novoSaldo === undefined || justificativaAjuste.trim().length < 10)
+		if (!ajustarVeiculoId || !novoSaldo.trim() || justificativaAjuste.trim().length < 10)
 			return;
 		processandoAjuste = true;
 		try {
@@ -91,7 +91,7 @@
 				justificativa: justificativaAjuste.trim()
 			});
 			ajustarVeiculoId = null;
-			novoSaldo = undefined;
+			novoSaldo = '';
 			justificativaAjuste = '';
 			notificar('ok', 'Saldo ajustado · auditado.');
 			await carregar();
@@ -106,7 +106,7 @@
 	let aportarAberto = $state(false);
 	let modoAporte = $state<'VEICULO' | 'RATEIO'>('VEICULO');
 	let aporteVeiculoId = $state('');
-	let aporteValor = $state<number | undefined>(undefined);
+	let aporteValor = $state('');
 	let aporteFonte = $state<FonteRecurso>('EMPENHO');
 	let aporteDoc = $state('');
 	let aporteDescricao = $state('');
@@ -118,7 +118,7 @@
 	function resetAporte() {
 		modoAporte = 'VEICULO';
 		aporteVeiculoId = '';
-		aporteValor = undefined;
+		aporteValor = '';
 		aporteFonte = 'EMPENHO';
 		aporteDoc = '';
 		aporteDescricao = '';
@@ -130,7 +130,7 @@
 
 	async function aportar() {
 		erroAporte = '';
-		if (!aporteValor || aporteValor <= 0) {
+		if (!aporteValor.trim() || Number(aporteValor) <= 0) {
 			erroAporte = 'Informe um valor maior que zero.';
 			return;
 		}
@@ -354,7 +354,7 @@
 												type="button"
 												onclick={() => {
 													ajustarVeiculoId = s.veiculoId;
-													novoSaldo = s.saldoMensal;
+													novoSaldo = String(s.saldoMensal);
 													justificativaAjuste = '';
 												}}
 												class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
@@ -511,7 +511,7 @@
 				type="number"
 				span={6}
 				mono
-				bind:value={aporteValor as unknown as string}
+				bind:value={aporteValor}
 			/>
 			<div class="col-span-6 flex flex-col">
 				<label
@@ -628,7 +628,7 @@
 			type="number"
 			span={12}
 			mono
-			bind:value={novoSaldo as unknown as string}
+			bind:value={novoSaldo}
 		/>
 		<div class="flex flex-col">
 			<label
@@ -655,7 +655,7 @@
 				label="Confirmar Ajuste"
 				onclick={ajustar}
 				loading={processandoAjuste}
-				disabled={novoSaldo === undefined || justificativaAjuste.trim().length < 10}
+				disabled={!novoSaldo.trim() || justificativaAjuste.trim().length < 10}
 			/>
 		</div>
 	</div>

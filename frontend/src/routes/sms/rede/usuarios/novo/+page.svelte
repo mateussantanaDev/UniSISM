@@ -73,8 +73,8 @@
 
 	async function enviar() {
 		erro = '';
-		if (!nome.trim() || !email.trim() || !matricula.trim() || !cpf.trim() || !senha) {
-			erro = 'Preencha nome, email, matrícula, CPF e senha.';
+		if (!nome.trim() || !email.trim() || !cpf.trim() || !senha) {
+			erro = 'Preencha nome, email, CPF e senha.';
 			return;
 		}
 		if (senha.length < 8) {
@@ -93,13 +93,13 @@
 			erro = 'Selecione a UBS para esta role.';
 			return;
 		}
-
+ 
 		enviando = true;
 		try {
 			await api.admin.createUsuario({
 				nome: nome.trim(),
 				email: email.trim(),
-				matricula: matricula.trim(),
+				matricula: matricula.trim() || undefined,
 				cpf: cpf.trim(),
 				senha,
 				role,
@@ -181,7 +181,7 @@
 			</div>
 			<div class="grid grid-cols-12 gap-3">
 				<FormField label="Nome Completo" name="nome" span={8} bind:value={nome} />
-				<FormField label="Matrícula" name="matricula" span={4} mono bind:value={matricula} />
+				<FormField label="Matrícula (opcional)" name="matricula" span={4} mono bind:value={matricula} />
 				<FormField label="CPF" name="cpf" span={4} mono bind:value={cpf} />
 				<FormField label="Email Corporativo" name="email" type="email" span={5} mono bind:value={email} />
 				<FormField label="Telefone (opcional)" name="telefone" span={3} mono bind:value={telefone} />

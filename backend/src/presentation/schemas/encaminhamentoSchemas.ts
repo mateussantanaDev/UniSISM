@@ -76,6 +76,11 @@ export const listarQuerySchema = z.object({
   desde: z.string().optional(),
   ate: z.string().optional(),
   limit: z.coerce.number().int().positive().max(500).optional(),
+  respostaSUS: z.preprocess((val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  }, z.boolean().optional()),
 });
 
 export { tipoAnexoSchema, statusEncaminhamentoSchema };

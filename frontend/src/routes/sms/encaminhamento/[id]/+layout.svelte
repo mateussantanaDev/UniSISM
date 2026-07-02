@@ -108,6 +108,14 @@
 			encaminhamento.status === 'APROVADO' &&
 			!encaminhamento.respostaSUS
 	);
+
+	function voltar() {
+		if (history.length > 1) {
+			history.back();
+		} else {
+			goto('/sms/solicitacoes');
+		}
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -117,7 +125,7 @@
 			<div class="flex items-center gap-3">
 				<button
 					type="button"
-					onclick={() => goto('/sms/dashboard')}
+					onclick={voltar}
 					class="flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
 				>
 					<svg

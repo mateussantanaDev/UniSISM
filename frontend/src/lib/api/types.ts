@@ -236,10 +236,11 @@ export interface MetricasDashboard {
    */
   enviadosAguardandoResposta: number;
   /**
-   * v0.9.1 — APROVADOS já com `respostaSUS` registrada.
+   * v0.9.1 — Aprovados com resposta do SUS registrada.
    * Alimenta o card "Respondidos" do dashboard simplificado.
    */
   respondidosTotal: number;
+  slaRegulacaoPorcento: number;
 }
 
 // ============================================================
@@ -769,7 +770,7 @@ export interface UsuarioListado {
 export interface CriarUsuarioRequest {
   nome: string;
   email: string;
-  matricula: string;
+  matricula?: string;
   cpf: string;
   senha: string;
   role: Role;
@@ -1071,3 +1072,136 @@ export interface NotificacaoPacienteDTO {
 }
 
 export interface ContadorNotificacoes { naoLidas: number; }
+
+// ============================================================
+// ADMIN · BANNERS SMS (CMS do app paciente)
+// ============================================================
+// Alimentam o carrossel "Avisos da Secretaria" no app paciente (Face 3).
+//
+// RBAC:
+//   - DESENVOLVEDOR (GLOBAL): qualquer banner; pode setar `prefeituraId: null`
+//     para criar banner GLOBAL (visto por todos os pacientes).
+//   - ADMIN/REGULADOR_SMS (PREFEITURA): banners da própria prefeitura apenas.
+//     Tentar `prefeituraId: null` → 403 FORA_DO_ESCOPO.
+//
+// Endpoints: GET/POST `/v1/admin/sms-banners` · GET/PATCH/DELETE `/:id`
+
+/** Tom semântico do banner — usado pelo app para cor/ícone do card. */
+export type BannerTone = 'URGENTE' | 'CAMPANHA' | 'INFO' | 'ATENCAO';
+
+/** DTO retornado pelo backend nas rotas admin de banners. */
+export interface AdminBanner {
+  id: string;
+  titulo: string;
+  corpo: string;
+  tone: BannerTone;
+  publicadoEm: string;           // ISO 8601 UTC
+  expiraEm: string | null;       // ISO 8601 UTC ou null (sem validade)
+  imagemUrl: string | null;      // HTTPS obrigatório
+  ctaLabel: string | null;       // exige ctaUrl pareado
+  ctaUrl: string | null;         // HTTPS obrigatório
+  prioridadeOrdem: number;       // [-100, 1000]; maior = mais alto no carrossel
+  ativo: boolean;
+  /**
+   * `null` = banner GLOBAL (visível para pacientes de qualquer prefeitura).
+   * Setar `null` só é permitido para DESENVOLVEDOR.
+   */
+  prefeituraId: string | null;
+  totalVisualizacoes: number;    // contagem agregada em sms_banner_views
+  criadoPorId: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+/** Filtros aceitos por GET /v1/admin/sms-banners. */
+export interface ListarBannersQuery {
+  /** Filtra por `ativo = true|false`. Omitir = traz todos. */
+  ativo?: boolean;
+  /**
+   * Filtra por expiração:
+   *   `true`  → SÓ expirados (expiraEm < now)
+   *   `false` → exclui expirados (expiraEm null OU > now)
+   *   omitir  → todos
+   */
+  expirados?: boolean;
+}
+
+/** Body do POST /v1/admin/sms-banners. */
+export interface CriarBannerRequest {
+  titulo: string;                // 3-80 chars (sanitizado)
+  corpo: string;                 // 3-400 chars (sanitizado)
+  tone: BannerTone;
+  publicadoEm?: string;          // ISO 8601; default now()
+  expiraEm?: string | null;      // ISO 8601 ou null; deve ser > publicadoEm
+  imagemUrl?: string | null;     // HTTPS, ≤500 chars
+  ctaLabel?: string | null;      // ≤30 chars; exige ctaUrl
+  ctaUrl?: string | null;        // HTTPS, ≤500 chars; exige ctaLabel
+  prioridadeOrdem?: number;      // [-100, 1000]; default 0
+  /**
+   * DEV pode setar `null` para criar banner global.
+   * ADMIN/REGULADOR_SMS: backend deriva do scope; passar valor diferente do
+   * próprio prefeituraId → 403.
+   */
+  prefeituraId?: string | null;
+}
+
+/**
+ * Body do PATCH /v1/admin/sms-banners/:id.
+ *
+ * Nota: `prefeituraId` NÃO é editável (mudaria o escopo do banner — para isso,
+ * exclua e crie um novo). O backend rejeita silenciosamente esse campo.
+ */
+export interface AtualizarBannerRequest {
+  titulo?: string;
+  corpo?: string;
+  tone?: BannerTone;
+  publicadoEm?: string;
+  expiraEm?: string | null;
+  imagemUrl?: string | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  prioridadeOrdem?: number;
+  ativo?: boolean;
+}
+
+// ============================================================
+// ADMIN · RECOMENDAÇÕES POR ESPECIALIDADE
+// ============================================================
+// "O que levar no dia" — exibidas no detalhe do encaminhamento no app paciente
+// (Face 3). Globais (não escopadas por prefeitura) — uma especialidade tem um
+// único conjunto de recomendações compartilhado entre todos os tenants.
+//
+// Endpoints: GET/POST `/v1/admin/recomendacoes-especialidade` ·
+//            GET/PATCH/DELETE `/:id`
+// RBAC: DEV, ADMIN, REGULADOR_SMS.
+
+/** DTO retornado pelo backend nas rotas admin. */
+export interface Recomendacao {
+  id: string;
+  /** Nome da especialidade (ex.: "Cardiologia"). 3-80 chars, único. */
+  especialidade: string;
+  /** Lista de frases curtas (≤200 chars cada). 1-10 itens. */
+  recomendacoes: string[];
+  ativo: boolean;
+  criadoEm: string;   // ISO 8601 UTC
+  atualizadoEm: string;
+}
+
+/** Filtros aceitos por GET /v1/admin/recomendacoes-especialidade. */
+export interface ListarRecomendacoesQuery {
+  /** Quando true, exclui recomendações inativas. Omitir = traz todas. */
+  somenteAtivos?: boolean;
+}
+
+/** Body do POST. Erro 409 `ESPECIALIDADE_DUPLICADA` se já existir. */
+export interface CriarRecomendacaoRequest {
+  especialidade: string;          // 3-80 chars
+  recomendacoes: string[];        // 1-10 itens, ≤200 chars cada
+}
+
+/** Body do PATCH. Todos os campos opcionais. */
+export interface AtualizarRecomendacaoRequest {
+  especialidade?: string;
+  recomendacoes?: string[];
+  ativo?: boolean;
+}
