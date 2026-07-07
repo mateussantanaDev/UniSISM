@@ -202,6 +202,12 @@ export function buildRoutes(deps: Deps): Router {
     requireRole('DESENVOLVEDOR', 'ADMIN'),
     deps.admin.getConfiguracoes,
   );
+  router.get(
+    '/admin/integracoes',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    deps.admin.getIntegracoes,
+  );
 
   // usuários: DESENVOLVEDOR (qualquer) ou ADMIN (própria prefeitura)
   router.post(

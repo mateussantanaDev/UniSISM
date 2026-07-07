@@ -146,6 +146,7 @@ export interface AnexoUpload {
 export class ApiClient {
   readonly baseUrl: string;
   readonly tokens: TokenStorage;
+  readonly apiKey?: string;
 
   readonly auth: AuthApi;
   readonly perfil: PerfilApi;
@@ -159,9 +160,11 @@ export class ApiClient {
 
   private _onUnauthorized?: (code: string) => void;
 
-  constructor(baseUrl: string, tokens: TokenStorage = localStorageTokens) {
+  constructor(baseUrl: string, tokens: TokenStorage = localStorageTokens, apiKey?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.tokens = tokens;
+    this.apiKey = apiKey ?? (import.meta.env ? import.meta.env.VITE_API_KEY : undefined);
+    console.log('[UniSISM] ApiClient initialized. baseUrl:', this.baseUrl, 'apiKey length:', this.apiKey ? this.apiKey.length : 0, 'key starts with:', this.apiKey ? this.apiKey.substring(0, 5) : 'none');
     this.auth = new AuthApi(this);
     this.perfil = new PerfilApi(this);
     this.dashboard = new DashboardApi(this);
@@ -184,6 +187,7 @@ export class ApiClient {
     const h: Record<string, string> = { Accept: 'application/json', ...extra };
     const t = this.tokens.get();
     if (t) h.Authorization = `Bearer ${t}`;
+    if (this.apiKey) h['x-api-key'] = this.apiKey;
     return h;
   }
 
@@ -873,6 +877,19 @@ class AdminApi {
     return this.api.delete<void>(
       `/admin/recomendacoes-especialidade/${encodeURIComponent(id)}`,
     );
+  }
+
+  // Configurações
+  getConfiguracoes(): Promise<any> {
+    return this.api.get<any>('/admin/configuracoes');
+  }
+
+  updateConfiguracoes(req: any): Promise<any> {
+    return this.api.patch<any>('/admin/configuracoes', req);
+  }
+
+  getIntegracoes(): Promise<any> {
+    return this.api.get<any>('/admin/integracoes');
   }
 }
 

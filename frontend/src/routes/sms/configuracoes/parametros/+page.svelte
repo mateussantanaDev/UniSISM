@@ -1,111 +1,418 @@
 <script lang="ts">
+	import FormField from '$lib/presentation/components/FormField.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
-	import { goto } from '$app/navigation';
+	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
 
-	/**
-	 * Parâmetros institucionais (SLA, política de senha, retenção LGPD, uploads).
-	 * Este módulo depende de um endpoint `GET /admin/configuracoes` ainda a ser
-	 * implementado no backend (ver BACKEND_GUIDE.md §19 · Roadmap Sprint 6).
-	 *
-	 * Até lá, a UI exibe apenas um painel indicando o estado e o link para a
-	 * documentação dos valores default em vigor via deploy.
-	 */
+	const auth = useAuth();
+	const podeEditar = $derived(auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN');
+
+	let carregando = $state(true);
+	let enviando = $state(false);
+	let erro = $state('');
+	let sucessoMsg = $state('');
+
+	// 1. SLA por Prioridade (Horas)
+	let slaEmergencia = $state('2');
+	let slaUrgente = $state('12');
+	let slaPrioritaria = $state('72');
+	let slaEletiva = $state('240');
+
+	// 2. Política de Senha
+	let senhaMin = $state('8');
+	let senhaValidade = $state('180');
+	let senhaTentativas = $state('5');
+	let senhaBloqueio = $state('30');
+	let twoFA = $state(false);
+
+	// 3. Uploads
+	let uploadMaxArq = $state('10');
+	let uploadMaxReq = $state('30');
+	let uploadMimes = $state('pdf, jpg, png');
+	let uploadScan = $state(true);
+
+	// 4. Retenção LGPD
+	let retencaoEncaminhamentos = $state('20');
+	let retencaoProntuario = $state('999');
+	let retencaoAudit = $state('5');
+	let retencaoSessoes = $state('90');
+
+	onMount(async () => {
+		try {
+			const res = await api.admin.getConfiguracoes();
+			if (res) {
+				// 1. SLA
+				if (res.sla) {
+					slaEmergencia = String(res.sla.EMERGENCIA ?? res.sla.emergencia ?? slaEmergencia);
+					slaUrgente = String(res.sla.URGENTE ?? res.sla.urgente ?? slaUrgente);
+					slaPrioritaria = String(res.sla.PRIORITARIA ?? res.sla.prioritaria ?? slaPrioritaria);
+					slaEletiva = String(res.sla.ELETIVA ?? res.sla.eletiva ?? slaEletiva);
+				} else {
+					slaEmergencia = String(res.slaEmergenciaHoras ?? res.slaEmergencia ?? slaEmergencia);
+					slaUrgente = String(res.slaUrgenteHoras ?? res.slaUrgente ?? slaUrgente);
+					slaPrioritaria = String(res.slaPrioritariaHoras ?? res.slaPrioritaria ?? slaPrioritaria);
+					slaEletiva = String(res.slaEletivaHoras ?? res.slaEletiva ?? slaEletiva);
+				}
+
+				// 2. Senha
+				if (res.senha) {
+					senhaMin = String(res.senha.minComprimento ?? res.senha.minLen ?? senhaMin);
+					senhaValidade = String(res.senha.validadeDias ?? res.senha.expiryDays ?? senhaValidade);
+					senhaTentativas = String(res.senha.maxTentativas ?? res.senha.maxAttempts ?? senhaTentativas);
+					senhaBloqueio = String(res.senha.bloqueioMinutos ?? res.senha.lockoutMins ?? senhaBloqueio);
+					twoFA = Boolean(res.senha.twoFactorObrigatorio ?? res.senha.twoFa ?? twoFA);
+				} else {
+					senhaMin = String(res.senhaMinComprimento ?? res.senhaMin ?? senhaMin);
+					senhaValidade = String(res.senhaValidadeDias ?? res.senhaValidade ?? senhaValidade);
+					senhaTentativas = String(res.senhaMaxTentativas ?? res.senhaTentativas ?? senhaTentativas);
+					senhaBloqueio = String(res.senhaBloqueioMinutos ?? res.senhaBloqueio ?? senhaBloqueio);
+					twoFA = Boolean(res.twoFactorObrigatorio ?? res.twoFa ?? twoFA);
+				}
+
+				// 3. Uploads
+				if (res.uploads) {
+					uploadMaxArq = String(res.uploads.maxArquivoMb ?? res.uploads.maxFileMb ?? uploadMaxArq);
+					uploadMaxReq = String(res.uploads.maxRequisicaoMb ?? res.uploads.maxRequestMb ?? uploadMaxReq);
+					const mimes = res.uploads.mimesSuportados ?? res.uploads.mimes ?? [];
+					uploadMimes = Array.isArray(mimes) ? mimes.join(', ') : String(mimes);
+					uploadScan = Boolean(res.uploads.scanAtivo ?? res.uploads.scan ?? uploadScan);
+				} else {
+					uploadMaxArq = String(res.uploadMaxArquivoMb ?? res.uploadMaxArq ?? uploadMaxArq);
+					uploadMaxReq = String(res.uploadMaxRequisicaoMb ?? res.uploadMaxReq ?? uploadMaxReq);
+					const mimes = res.uploadMimesSuportados ?? res.uploadMimes ?? [];
+					uploadMimes = Array.isArray(mimes) ? mimes.join(', ') : String(mimes);
+					uploadScan = Boolean(res.uploadScanAtivo ?? res.uploadScan ?? uploadScan);
+				}
+
+				// 4. Retenção
+				if (res.retencao) {
+					retencaoEncaminhamentos = String(res.retencao.encaminhamentosAnos ?? res.retencao.referralsYears ?? retencaoEncaminhamentos);
+					retencaoProntuario = String(res.retencao.prontuarioAnos ?? res.retencao.pecYears ?? retencaoProntuario);
+					retencaoAudit = String(res.retencao.auditLogAnos ?? res.retencao.auditYears ?? retencaoAudit);
+					retencaoSessoes = String(res.retencao.sessoesExpiradasDias ?? res.retencao.sessionsDays ?? retencaoSessoes);
+				} else {
+					retencaoEncaminhamentos = String(res.retencaoEncaminhamentosAnos ?? res.retencaoEncaminhamentos ?? retencaoEncaminhamentos);
+					retencaoProntuario = String(res.retencaoProntuarioAnos ?? res.retencaoProntuario ?? retencaoProntuario);
+					retencaoAudit = String(res.retencaoAuditLogAnos ?? res.retencaoAudit ?? retencaoAudit);
+					retencaoSessoes = String(res.retencaoSessoesExpiradasDias ?? res.retencaoSessoes ?? retencaoSessoes);
+				}
+			}
+		} catch (e: any) {
+			console.error('Erro ao carregar configuracoes:', e);
+			erro = 'Não foi possível carregar as configurações do servidor. Exibindo defaults.';
+		} finally {
+			carregando = false;
+		}
+	});
+
+	async function salvar() {
+		enviando = true;
+		erro = '';
+		sucessoMsg = '';
+		try {
+			const mimesArray = uploadMimes.split(',').map(m => m.trim().toLowerCase()).filter(Boolean);
+
+			// Constrói payload híbrido (plano e aninhado) para compatibilidade garantida com qualquer spec de backend
+			const payload = {
+				// Estrutura aninhada
+				sla: {
+					EMERGENCIA: Number(slaEmergencia),
+					URGENTE: Number(slaUrgente),
+					PRIORITARIA: Number(slaPrioritaria),
+					ELETIVA: Number(slaEletiva)
+				},
+				senha: {
+					minComprimento: Number(senhaMin),
+					validadeDias: Number(senhaValidade),
+					maxTentativas: Number(senhaTentativas),
+					bloqueioMinutos: Number(senhaBloqueio),
+					twoFactorObrigatorio: Boolean(twoFA)
+				},
+				uploads: {
+					maxArquivoMb: Number(uploadMaxArq),
+					maxRequisicaoMb: Number(uploadMaxReq),
+					mimesSuportados: mimesArray,
+					scanAtivo: Boolean(uploadScan)
+				},
+				retencao: {
+					encaminhamentosAnos: Number(retencaoEncaminhamentos),
+					prontuarioAnos: Number(retencaoProntuario),
+					auditLogAnos: Number(retencaoAudit),
+					sessoesExpiradasDias: Number(retencaoSessoes)
+				},
+
+				// Estrutura plana
+				slaEmergenciaHoras: Number(slaEmergencia),
+				slaUrgenteHoras: Number(slaUrgente),
+				slaPrioritariaHoras: Number(slaPrioritaria),
+				slaEletivaHoras: Number(slaEletiva),
+				senhaMinComprimento: Number(senhaMin),
+				senhaValidadeDias: Number(senhaValidade),
+				senhaMaxTentativas: Number(senhaTentativas),
+				senhaBloqueioMinutos: Number(senhaBloqueio),
+				twoFactorObrigatorio: Boolean(twoFA),
+				uploadMaxArquivoMb: Number(uploadMaxArq),
+				uploadMaxRequisicaoMb: Number(uploadMaxReq),
+				uploadMimesSuportados: mimesArray,
+				uploadScanAtivo: Boolean(uploadScan),
+				retencaoEncaminhamentosAnos: Number(retencaoEncaminhamentos),
+				retencaoProntuarioAnos: Number(retencaoProntuario),
+				retencaoAuditLogAnos: Number(retencaoAudit),
+				retencaoSessoesExpiradasDias: Number(retencaoSessoes)
+			};
+
+			await api.admin.updateConfiguracoes(payload);
+			sucessoMsg = 'Parâmetros atualizados com sucesso!';
+			setTimeout(() => { sucessoMsg = ''; }, 4000);
+		} catch (e: any) {
+			erro = e.message || 'Falha ao atualizar parâmetros.';
+		} finally {
+			enviando = false;
+		}
+	}
 </script>
 
 <section class="flex flex-col gap-4">
-	<div class="border-2 border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-		<div
-			class="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-slate-300 bg-slate-50"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke-width="1.5"
-				stroke="currentColor"
-				class="h-6 w-6 text-slate-500"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-				/>
-			</svg>
+	{#if erro}
+		<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-900 uppercase">
+			⚠ {erro}
 		</div>
-		<div class="font-mono text-[11px] font-bold tracking-widest text-slate-700 uppercase">
-			Parâmetros · Aguardando Endpoint
-		</div>
-		<p class="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
-			Este módulo será habilitado quando o endpoint
-			<code class="mx-1 border border-slate-300 bg-slate-100 px-1.5 py-px font-mono">
-				GET /admin/configuracoes
-			</code>
-			estiver disponível. Os valores atualmente em vigor (SLA por prioridade clínica, política
-			de senha, retenção LGPD, limites de upload) são definidos via <strong>deploy</strong>
-			e documentados em <code>BACKEND_GUIDE.md §16</code>.
-		</p>
-		<div class="mt-4 flex justify-center gap-2">
-			<PrimaryButton
-				label="Voltar a Configurações"
-				variant="secondary"
-				onclick={() => goto('/sms/configuracoes')}
-			/>
-		</div>
-	</div>
+	{/if}
 
-	<!-- Resumo dos valores contratuais (referência, não editáveis nesta UI) -->
+	{#if sucessoMsg}
+		<div class="border border-emerald-700 bg-emerald-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-emerald-900 uppercase">
+			✓ {sucessoMsg}
+		</div>
+	{/if}
+
 	<div class="border border-slate-200 bg-white">
 		<PanelHeader
-			title="Valores Institucionais em Vigor"
-			subtitle="Read-only · definidos por deploy até o endpoint existir"
-			index="01"
-		/>
-		<div class="grid grid-cols-1 gap-px bg-slate-200 md:grid-cols-2">
-			<div class="bg-white p-4">
-				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-					SLA por Prioridade
-				</div>
-				<ul class="mt-2 space-y-1 font-mono text-[11px] text-slate-800">
-					<li>EMERGÊNCIA → 2h</li>
-					<li>URGENTE → 12h</li>
-					<li>PRIORITÁRIA → 72h</li>
-					<li>ELETIVA → 240h</li>
-				</ul>
+			title="Parâmetros Institucionais"
+			subtitle="Configure os limites operacionais, SLAs e políticas globais da rede"
+			index="02"
+		>
+			{#if podeEditar}
+				<PrimaryButton
+					label="Salvar Alterações"
+					loading={enviando}
+					onclick={salvar}
+				/>
+			{:else}
+				<span class="border border-slate-300 bg-slate-50 px-2 py-1 font-mono text-[9px] tracking-widest text-slate-500 uppercase">
+					Apenas Leitura
+				</span>
+			{/if}
+		</PanelHeader>
+
+		{#if carregando}
+			<div class="flex items-center justify-center py-16">
+				<div class="h-6 w-6 animate-spin border-2 border-slate-900 border-t-transparent"></div>
 			</div>
-			<div class="bg-white p-4">
-				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-					Política de Senha
+		{:else}
+			<div class="p-6 flex flex-col gap-8">
+				
+				<!-- Seção 1: SLAs -->
+				<div>
+					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+						01. SLAs de Regulação (Horas)
+					</h3>
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+						<FormField
+							label="Emergência"
+							name="emergencia"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={slaEmergencia}
+							hint="horas"
+						/>
+						<FormField
+							label="Urgente"
+							name="urgente"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={slaUrgente}
+							hint="horas"
+						/>
+						<FormField
+							label="Prioritária"
+							name="prioritaria"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={slaPrioritaria}
+							hint="horas"
+						/>
+						<FormField
+							label="Eletiva"
+							name="eletiva"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={slaEletiva}
+							hint="horas"
+						/>
+					</div>
 				</div>
-				<ul class="mt-2 space-y-1 font-mono text-[11px] text-slate-800">
-					<li>Mínimo 8 caracteres</li>
-					<li>Validade 180 dias</li>
-					<li>Bloqueio após 5 falhas em 15 min</li>
-					<li>2FA obrigatório · REGULADOR_SMS · ADMIN</li>
-				</ul>
-			</div>
-			<div class="bg-white p-4">
-				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-					Uploads
+
+				<!-- Seção 2: Políticas de Senha -->
+				<div>
+					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+						02. Segurança e Contas de Usuários
+					</h3>
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+						<FormField
+							label="Comprimento Mínimo"
+							name="senhaMin"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={senhaMin}
+							hint="caracteres"
+						/>
+						<FormField
+							label="Validade da Senha"
+							name="senhaValidade"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={senhaValidade}
+							hint="dias"
+						/>
+						<FormField
+							label="Tentativas de Login"
+							name="senhaTentativas"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={senhaTentativas}
+							hint="máximo falhas"
+						/>
+						<FormField
+							label="Tempo de Bloqueio"
+							name="senhaBloqueio"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={senhaBloqueio}
+							hint="minutos"
+						/>
+						
+						<div class="col-span-12 flex items-center pt-2">
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									disabled={!podeEditar}
+									bind:checked={twoFA}
+									class="h-4 w-4 accent-slate-950"
+								/>
+								<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase">
+									Exigir 2FA obrigatório para ADMIN e REGULADOR_SMS
+								</span>
+							</label>
+						</div>
+					</div>
 				</div>
-				<ul class="mt-2 space-y-1 font-mono text-[11px] text-slate-800">
-					<li>Máx. por arquivo: 10 MB</li>
-					<li>Máx. por requisição: 30 MB</li>
-					<li>MIMEs: PDF · JPG · PNG</li>
-					<li>Antivírus: ClamAV (scan assíncrono)</li>
-				</ul>
-			</div>
-			<div class="bg-white p-4">
-				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-					Retenção LGPD
+
+				<!-- Seção 3: Uploads -->
+				<div>
+					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+						03. Upload e Segurança de Anexos
+					</h3>
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+						<FormField
+							label="Tamanho por Arquivo"
+							name="uploadMaxArq"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={uploadMaxArq}
+							hint="MB"
+						/>
+						<FormField
+							label="Tamanho por Requisição"
+							name="uploadMaxReq"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={uploadMaxReq}
+							hint="MB total"
+						/>
+						<FormField
+							label="MIMEs Permitidos"
+							name="uploadMimes"
+							type="text"
+							readonly={!podeEditar}
+							span={6}
+							bind:value={uploadMimes}
+							hint="separados por vírgula"
+						/>
+
+						<div class="col-span-12 flex items-center pt-2">
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									disabled={!podeEditar}
+									bind:checked={uploadScan}
+									class="h-4 w-4 accent-slate-950"
+								/>
+								<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase">
+									Executar scan assíncrono de antivírus nos anexos (ClamAV)
+								</span>
+							</label>
+						</div>
+					</div>
 				</div>
-				<ul class="mt-2 space-y-1 font-mono text-[11px] text-slate-800">
-					<li>Encaminhamentos: 20 anos</li>
-					<li>Prontuário (PEC): vitalício</li>
-					<li>Audit log: 5 anos</li>
-					<li>Sessões expiradas: 90 dias</li>
-				</ul>
+
+				<!-- Seção 4: Retenção LGPD -->
+				<div>
+					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+						04. Prazos de Retenção (LGPD)
+					</h3>
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+						<FormField
+							label="Encaminhamentos"
+							name="retencaoEncaminhamentos"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={retencaoEncaminhamentos}
+							hint="anos"
+						/>
+						<FormField
+							label="Prontuário (PEC)"
+							name="retencaoProntuario"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={retencaoProntuario}
+							hint="anos (999=vitalício)"
+						/>
+						<FormField
+							label="Logs de Auditoria"
+							name="retencaoAudit"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={retencaoAudit}
+							hint="anos"
+						/>
+						<FormField
+							label="Sessões Expiradas"
+							name="retencaoSessoes"
+							type="number"
+							readonly={!podeEditar}
+							span={3}
+							bind:value={retencaoSessoes}
+							hint="dias"
+						/>
+					</div>
+				</div>
+
 			</div>
-		</div>
+		{/if}
 	</div>
 </section>

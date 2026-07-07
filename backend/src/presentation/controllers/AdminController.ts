@@ -13,6 +13,7 @@ import type { UpdatePrefeituraUseCase } from '../../application/admin/UpdatePref
 import type { DeletePrefeituraUseCase } from '../../application/admin/DeletePrefeituraUseCase';
 import type { UpdateUbsUseCase } from '../../application/admin/UpdateUbsUseCase';
 import type { DeleteUbsUseCase } from '../../application/admin/DeleteUbsUseCase';
+import type { GetIntegracoesUseCase } from '../../application/admin/GetIntegracoesUseCase';
 import { scopeFromRequest } from '../../shared/requestScope';
 import { paramString } from '../../shared/http';
 import { getAdminConfiguracoes } from '../../shared/adminConfig';
@@ -45,6 +46,7 @@ export class AdminController {
     private readonly deletePrefeituraUC: DeletePrefeituraUseCase,
     private readonly updateUbsUC: UpdateUbsUseCase,
     private readonly deleteUbsUC: DeleteUbsUseCase,
+    private readonly getIntegracoesUC: GetIntegracoesUseCase,
   ) {}
 
   // ---- Prefeituras ----
@@ -78,6 +80,11 @@ export class AdminController {
 
   getConfiguracoes = async (_req: Request, res: Response): Promise<void> => {
     res.json(getAdminConfiguracoes());
+  };
+
+  getIntegracoes = async (_req: Request, res: Response): Promise<void> => {
+    const out = await this.getIntegracoesUC.exec();
+    res.json(out);
   };
 
   // ---- Usuários ----

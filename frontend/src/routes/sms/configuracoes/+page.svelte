@@ -9,6 +9,7 @@
 	import type { Prefeitura } from '$lib/api/types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	const auth = useAuth();
 
@@ -36,6 +37,10 @@
 	let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
 	onMount(async () => {
+		if (auth.me && auth.me.role !== 'DESENVOLVEDOR') {
+			goto('/sms/configuracoes/parametros', { replaceState: true });
+			return;
+		}
 		try {
 			lista = await api.admin.listPrefeituras();
 		} finally {
@@ -152,6 +157,7 @@
 	let podeDeletar = $derived(auth.me?.role === 'DESENVOLVEDOR');
 </script>
 
+{#if auth.me?.role === 'DESENVOLVEDOR'}
 <div class="flex flex-col gap-4">
 	{#if mensagem}
 		<div
@@ -397,4 +403,5 @@
 			</div>
 		</div>
 	</Modal>
+{/if}
 {/if}
