@@ -47,6 +47,7 @@ import { ListUbsUseCase } from '../application/admin/ListUbsUseCase';
 import { CreateUsuarioUseCase } from '../application/admin/CreateUsuarioUseCase';
 import { ListUsuariosUseCase } from '../application/admin/ListUsuariosUseCase';
 import { GetIntegracoesUseCase } from '../application/admin/GetIntegracoesUseCase';
+import { SaveIntegracaoUseCase } from '../application/admin/SaveIntegracaoUseCase';
 
 import { AuthController } from '../presentation/controllers/AuthController';
 import { PerfilController } from '../presentation/controllers/PerfilController';
@@ -300,6 +301,7 @@ export function buildContainer() {
   );
   const relController = new RelatoriosControllerV2(criarRelUC, listarRelUC, baixarRelUC, atendentes);
   const getIntegracoesUC = new GetIntegracoesUseCase();
+  const saveIntegracaoUC = new SaveIntegracaoUseCase();
 
   const adminController = new AdminController(
     createPrefeituraUC,
@@ -317,6 +319,7 @@ export function buildContainer() {
     updateUbsUC,
     deleteUbsUC,
     getIntegracoesUC,
+    saveIntegracaoUC,
   );
 
   // ----- Recomendações por especialidade (CRUD admin) -----

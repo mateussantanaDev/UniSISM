@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { PdfParseService } from '../../infrastructure/services/PdfParseService';
+import { prisma } from '../../infrastructure/database/prisma';
 
 export interface IntegracaoStatus {
   nome: string;
@@ -12,10 +13,19 @@ export interface IntegracaoStatus {
   mensagem: string;
 }
 
+export interface IntegracaoConfigResponse {
+  nome: string;
+  url: string;
+  usuario: string | null;
+  token: string | null;
+  temSenha: boolean;
+}
+
 export interface IntegracoesResponse {
   status: 'online' | 'degraded' | 'offline';
   checkedAt: string;
   integracoes: IntegracaoStatus[];
+  configuracoes: IntegracaoConfigResponse[];
 }
 
 const dummyPdfBuffer = Buffer.from(
@@ -25,11 +35,16 @@ const dummyPdfBuffer = Buffer.from(
 export class GetIntegracoesUseCase {
   async exec(): Promise<IntegracoesResponse> {
     const checkedAt = new Date().toISOString();
+
+    // Buscar configurações salvas no banco
+    const dbConfigs = await prisma.configuracaoIntegracao.findMany();
+    const configsMap = new Map(dbConfigs.map((c) => [c.nome, c]));
+
     const promises: Promise<IntegracaoStatus>[] = [
-      this.checkCadsus(),
-      this.checkEsus(),
-      this.checkSisreg(),
-      this.checkWebhookUbs(),
+      this.checkConectorPeloBanco('CADSUS', 'Cadastro Nacional de Usuários do SUS', 'Federal', configsMap),
+      this.checkConectorPeloBanco('e-SUS APS', 'Sincronização do PEC municipal', 'Federal', configsMap),
+      this.checkConectorPeloBanco('SISREG', 'Sistema Nacional de Regulação', 'Federal', configsMap),
+      this.checkConectorPeloBanco('Webhook UBS', 'Notificação de decisões da Regulação', 'Interno', configsMap),
       this.checkStorageS3(),
       this.checkClamav(),
       this.checkOcr(),
@@ -50,16 +65,28 @@ export class GetIntegracoesUseCase {
       status: globalStatus,
       checkedAt,
       integracoes: results,
+      configuracoes: dbConfigs.map((c) => ({
+        nome: c.nome,
+        url: c.url,
+        usuario: c.usuario,
+        token: c.token,
+        temSenha: !!c.senha,
+      })),
     };
   }
 
-  private async pingUrl(url: string, timeoutMs = 2000): Promise<{ status: 'online' | 'offline'; latencyMs: number; msg: string }> {
+  private async pingUrl(
+    url: string,
+    headers: Record<string, string> = {},
+    timeoutMs = 3000
+  ): Promise<{ status: 'online' | 'offline'; latencyMs: number; msg: string }> {
     const start = Date.now();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(url, {
         method: 'GET',
+        headers,
         signal: controller.signal,
       });
       clearTimeout(timer);
@@ -68,13 +95,13 @@ export class GetIntegracoesUseCase {
         return {
           status: 'online',
           latencyMs,
-          msg: `Conectado com sucesso. HTTP ${res.status}`,
+          msg: `Conectado com sucesso (HTTP ${res.status})`,
         };
       } else {
         return {
           status: 'offline',
           latencyMs,
-          msg: `Erro no servidor remoto: HTTP ${res.status}`,
+          msg: `Falha no servidor remoto: HTTP ${res.status}`,
         };
       }
     } catch (err: any) {
@@ -88,95 +115,40 @@ export class GetIntegracoesUseCase {
     }
   }
 
-  private async checkCadsus(): Promise<IntegracaoStatus> {
-    const url = process.env['CADSUS_URL'];
-    if (url) {
-      const check = await this.pingUrl(url);
+  private async checkConectorPeloBanco(
+    nome: string,
+    descricao: string,
+    tipo: 'Federal' | 'Interno',
+    configsMap: Map<string, any>
+  ): Promise<IntegracaoStatus> {
+    const config = configsMap.get(nome);
+    if (!config) {
       return {
-        nome: 'CADSUS',
-        descricao: 'Cadastro Nacional de Usuários do SUS',
-        tipo: 'Federal',
-        status: check.status,
-        latencyMs: check.latencyMs,
-        mensagem: check.msg,
+        nome,
+        descricao,
+        tipo,
+        status: 'offline',
+        latencyMs: 0,
+        mensagem: 'Configuração pendente — configure este conector para ativá-lo',
       };
     }
-    return {
-      nome: 'CADSUS',
-      descricao: 'Cadastro Nacional de Usuários do SUS',
-      tipo: 'Federal',
-      status: 'online',
-      latencyMs: Math.floor(Math.random() * 20) + 15,
-      mensagem: 'Serviço simulado ativo (defina CADSUS_URL para produção)',
-    };
-  }
 
-  private async checkEsus(): Promise<IntegracaoStatus> {
-    const url = process.env['ESUS_URL'];
-    if (url) {
-      const check = await this.pingUrl(url);
-      return {
-        nome: 'e-SUS APS',
-        descricao: 'Sincronização do PEC municipal',
-        tipo: 'Federal',
-        status: check.status,
-        latencyMs: check.latencyMs,
-        mensagem: check.msg,
-      };
+    const headers: Record<string, string> = {};
+    if (config.token) {
+      headers['Authorization'] = `Bearer ${config.token}`;
+    } else if (config.usuario && config.senha) {
+      const creds = Buffer.from(`${config.usuario}:${config.senha}`).toString('base64');
+      headers['Authorization'] = `Basic ${creds}`;
     }
-    return {
-      nome: 'e-SUS APS',
-      descricao: 'Sincronização do PEC municipal',
-      tipo: 'Federal',
-      status: 'online',
-      latencyMs: Math.floor(Math.random() * 25) + 10,
-      mensagem: 'Sincronização simulada ativa (defina ESUS_URL para produção)',
-    };
-  }
 
-  private async checkSisreg(): Promise<IntegracaoStatus> {
-    const url = process.env['SISREG_URL'];
-    if (url) {
-      const check = await this.pingUrl(url);
-      return {
-        nome: 'SISREG',
-        descricao: 'Sistema Nacional de Regulação',
-        tipo: 'Federal',
-        status: check.status,
-        latencyMs: check.latencyMs,
-        mensagem: check.msg,
-      };
-    }
+    const check = await this.pingUrl(config.url, headers);
     return {
-      nome: 'SISREG',
-      descricao: 'Sistema Nacional de Regulação',
-      tipo: 'Federal',
-      status: 'online',
-      latencyMs: Math.floor(Math.random() * 30) + 20,
-      mensagem: 'Conexão simulada estabelecida (defina SISREG_URL para produção)',
-    };
-  }
-
-  private async checkWebhookUbs(): Promise<IntegracaoStatus> {
-    const url = process.env['WEBHOOK_UBS_URL'];
-    if (url) {
-      const check = await this.pingUrl(url);
-      return {
-        nome: 'Webhook UBS',
-        descricao: 'Notificação de decisões da Regulação',
-        tipo: 'Interno',
-        status: check.status,
-        latencyMs: check.latencyMs,
-        mensagem: check.msg,
-      };
-    }
-    return {
-      nome: 'Webhook UBS',
-      descricao: 'Notificação de decisões da Regulação',
-      tipo: 'Interno',
-      status: 'online',
-      latencyMs: Math.floor(Math.random() * 10) + 5,
-      mensagem: 'Webhook simulado ativo (defina WEBHOOK_UBS_URL para produção)',
+      nome,
+      descricao,
+      tipo,
+      status: check.status,
+      latencyMs: check.latencyMs,
+      mensagem: `${check.msg} (Endpoint: ${config.url})`,
     };
   }
 

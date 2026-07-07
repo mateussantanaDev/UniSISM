@@ -891,6 +891,16 @@ class AdminApi {
   getIntegracoes(): Promise<any> {
     return this.api.get<any>('/admin/integracoes');
   }
+
+  salvarIntegracao(req: {
+    nome: 'CADSUS' | 'e-SUS APS' | 'SISREG' | 'Webhook UBS';
+    url: string;
+    usuario?: string | null;
+    senha?: string | null;
+    token?: string | null;
+  }): Promise<any> {
+    return this.api.post<any>('/admin/integracoes', req);
+  }
 }
 
 // ============================================================

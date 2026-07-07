@@ -10,7 +10,9 @@
 			? [{ label: 'Prefeituras', href: '/sms/configuracoes', shortcut: '1' }]
 			: []),
 		{ label: 'Parâmetros', href: '/sms/configuracoes/parametros', shortcut: '2' },
-		{ label: 'Integrações', href: '/sms/configuracoes/integracoes', shortcut: '3' }
+		...(auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN'
+			? [{ label: 'Integrações', href: '/sms/configuracoes/integracoes', shortcut: '3' }]
+			: [])
 	]);
 </script>
 

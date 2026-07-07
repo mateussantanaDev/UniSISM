@@ -135,3 +135,11 @@ export const atualizarUbsSchema = z.object({
   horarios: horariosFuncionamentoSchema.nullable().optional(),
   observacoes: z.string().max(500).nullable().optional(),
 });
+
+export const salvarIntegracaoSchema = z.object({
+  nome: z.enum(['CADSUS', 'e-SUS APS', 'SISREG', 'Webhook UBS']),
+  url: z.string().url('A URL deve ser válida'),
+  usuario: z.string().optional().nullable(),
+  senha: z.string().optional().nullable(),
+  token: z.string().optional().nullable(),
+});

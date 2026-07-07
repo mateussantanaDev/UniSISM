@@ -14,6 +14,7 @@ import type { DeletePrefeituraUseCase } from '../../application/admin/DeletePref
 import type { UpdateUbsUseCase } from '../../application/admin/UpdateUbsUseCase';
 import type { DeleteUbsUseCase } from '../../application/admin/DeleteUbsUseCase';
 import type { GetIntegracoesUseCase } from '../../application/admin/GetIntegracoesUseCase';
+import type { SaveIntegracaoUseCase } from '../../application/admin/SaveIntegracaoUseCase';
 import { scopeFromRequest } from '../../shared/requestScope';
 import { paramString } from '../../shared/http';
 import { getAdminConfiguracoes } from '../../shared/adminConfig';
@@ -28,6 +29,7 @@ import {
   listarUbsQuerySchema,
   listarUsuariosQuerySchema,
   resetarSenhaSchema,
+  salvarIntegracaoSchema,
 } from '../schemas/adminSchemas';
 
 export class AdminController {
@@ -47,6 +49,7 @@ export class AdminController {
     private readonly updateUbsUC: UpdateUbsUseCase,
     private readonly deleteUbsUC: DeleteUbsUseCase,
     private readonly getIntegracoesUC: GetIntegracoesUseCase,
+    private readonly saveIntegracaoUC: SaveIntegracaoUseCase,
   ) {}
 
   // ---- Prefeituras ----
@@ -84,6 +87,12 @@ export class AdminController {
 
   getIntegracoes = async (_req: Request, res: Response): Promise<void> => {
     const out = await this.getIntegracoesUC.exec();
+    res.json(out);
+  };
+
+  postIntegracao = async (req: Request, res: Response): Promise<void> => {
+    const body = salvarIntegracaoSchema.parse(req.body);
+    const out = await this.saveIntegracaoUC.exec(body);
     res.json(out);
   };
 
