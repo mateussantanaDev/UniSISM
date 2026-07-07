@@ -93,6 +93,12 @@ export const env = {
   BCRYPT_ROUNDS: Number(opt('BCRYPT_ROUNDS', '10')),
   UPLOAD_DIR: opt('UPLOAD_DIR', './uploads'),
   MAX_UPLOAD_MB: Number(opt('MAX_UPLOAD_MB', '10')),
+  PASSWORD_MIN_LENGTH: Number(opt('PASSWORD_MIN_LENGTH', '8')),
+  PASSWORD_HISTORY_SIZE: Number(opt('PASSWORD_HISTORY_SIZE', '5')),
+  PASSWORD_VALIDITY_DAYS: Number(opt('PASSWORD_VALIDITY_DAYS', '180')),
+  RETENCAO_PRONTUARIO_ANOS: Number(opt('RETENCAO_PRONTUARIO_ANOS', '20')),
+  RETENCAO_AUDIT_LOG_ANOS: Number(opt('RETENCAO_AUDIT_LOG_ANOS', '5')),
+  RETENCAO_SESSAO_DIAS: Number(opt('RETENCAO_SESSAO_DIAS', '90')),
 
   // ---------- HTTPS / Security headers ----------
   /** App está atrás de proxy reverso TLS? Habilita HSTS + trust proxy. */
@@ -118,6 +124,10 @@ export const env = {
 
   // ---------- Storage (já existia, formalizado aqui) ----------
   STORAGE_PROVIDER: opt('STORAGE_PROVIDER', 'disk') as 'disk' | 's3',
+
+  // ---------- API key para consumo externo ----------
+  API_KEY: opt('API_KEY', ''),
+  API_KEY_HEADER: opt('API_KEY_HEADER', 'x-api-key'),
 
   // ---------- ClamAV ----------
   CLAMAV_HOST: opt('CLAMAV_HOST', ''),

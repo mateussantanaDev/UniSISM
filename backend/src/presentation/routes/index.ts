@@ -196,6 +196,12 @@ export function buildRoutes(deps: Deps): Router {
     ),
     deps.admin.getUbs,
   );
+  router.get(
+    '/admin/configuracoes',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    deps.admin.getConfiguracoes,
+  );
 
   // usuários: DESENVOLVEDOR (qualquer) ou ADMIN (própria prefeitura)
   router.post(

@@ -139,9 +139,17 @@ export async function defensiveSleep(): Promise<void> {
 // ────────────────────────────────────────────────────────────────
 const STATE_FILE = path.join(STATE_DIR, 'storage-state.json');
 
+function getLaunchOptions() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.PLAYWRIGHT_EXECUTABLE_PATH;
+  return {
+    headless: HEADLESS,
+    ...(executablePath ? { executablePath } : {}),
+  };
+}
+
 export async function loginAndSaveState(perfil: 'GESTOR' | { nomeUbs: string }): Promise<void> {
   log('INFO', '🔐 fazendo login fresco', { perfil });
-  const browser = await chromium.launch({ headless: HEADLESS, channel: 'chrome' });
+  const browser = await chromium.launch(getLaunchOptions());
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await context.newPage();
 
@@ -233,7 +241,7 @@ export class ContextPool {
     if (!hasStoredSession()) {
       throw new Error('Sem storage state — rode loginAndSaveState() primeiro');
     }
-    this.browser = await chromium.launch({ headless: HEADLESS, channel: 'chrome' });
+    this.browser = await chromium.launch(getLaunchOptions());
     for (let i = 0; i < size; i++) {
       const context = await this.browser.newContext({
         storageState: STATE_FILE,

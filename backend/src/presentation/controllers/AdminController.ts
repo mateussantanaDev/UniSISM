@@ -15,6 +15,7 @@ import type { UpdateUbsUseCase } from '../../application/admin/UpdateUbsUseCase'
 import type { DeleteUbsUseCase } from '../../application/admin/DeleteUbsUseCase';
 import { scopeFromRequest } from '../../shared/requestScope';
 import { paramString } from '../../shared/http';
+import { getAdminConfiguracoes } from '../../shared/adminConfig';
 import {
   alterarAtivoSchema,
   atualizarPrefeituraSchema,
@@ -73,6 +74,10 @@ export class AdminController {
     const q = listarUbsQuerySchema.parse(req.query);
     const lista = await this.listUbsUC.exec(scopeFromRequest(req), q.prefeituraId);
     res.json(lista);
+  };
+
+  getConfiguracoes = async (_req: Request, res: Response): Promise<void> => {
+    res.json(getAdminConfiguracoes());
   };
 
   // ---- Usuários ----

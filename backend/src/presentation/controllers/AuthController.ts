@@ -17,8 +17,9 @@ export class AuthController {
   ) {}
 
   postLogin = async (req: Request, res: Response): Promise<void> => {
+    const loginValue = (req.body.login ?? req.body.matricula ?? req.body.email ?? '').toString();
     const out = await this.login.exec({
-      login: req.body.login,
+      login: loginValue,
       senha: req.body.senha,
       lembrar: req.body.lembrar,
       ip: req.ip ?? '',

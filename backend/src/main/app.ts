@@ -7,6 +7,7 @@ import { requestId } from '../presentation/middlewares/requestId';
 import { errorHandler } from '../presentation/middlewares/errorHandler';
 import { metricsMiddleware } from '../presentation/middlewares/metrics';
 import { serverTime } from '../presentation/middlewares/serverTime';
+import { apiKeyGuard } from '../presentation/middlewares/apiKey';
 import { buildRoutes } from '../presentation/routes';
 import { buildContainer, type Container } from './container';
 import { metricsRegistry } from '../infrastructure/metrics/prometheus';
@@ -68,7 +69,7 @@ export function buildApp(): BuiltApp {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'X-Request-Id'],
+      allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'X-Request-Id', 'x-api-key', env.API_KEY_HEADER],
     }),
   );
   app.use(express.json({ limit: '5mb' }));
@@ -76,6 +77,7 @@ export function buildApp(): BuiltApp {
   app.use(requestId);
   app.use(serverTime);
   app.use(metricsMiddleware);
+  app.use(apiKeyGuard);
   app.use(
     morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined', {
       skip: (req) => req.path === '/v1/health' || req.path === '/metrics',
