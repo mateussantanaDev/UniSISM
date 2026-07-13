@@ -3,7 +3,12 @@
 	import { api, ApiError } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
+	import Modal from '$lib/presentation/components/Modal.svelte';
+	import FormField from '$lib/presentation/components/FormField.svelte';
 	import { goto } from '$app/navigation';
+	import { useAuth } from '$lib/presentation/contexts/authContext';
+
+	const auth = useAuth();
 
 	interface IntegracaoStatus {
 		nome: string;
@@ -14,34 +19,25 @@
 		mensagem: string;
 	}
 
-	interface IntegracaoConfigResponse {
-		nome: string;
-		url: string;
-		usuario: string | null;
-		token: string | null;
-		temSenha: boolean;
-	}
-
 	interface IntegracoesResponse {
 		status: 'online' | 'degraded' | 'offline';
 		checkedAt: string;
 		integracoes: IntegracaoStatus[];
-		configuracoes: IntegracaoConfigResponse[];
 	}
 
 	let loading = $state(true);
 	let errorMsg = $state<string | null>(null);
 	let response = $state<IntegracoesResponse | null>(null);
 
-	// Estado do formulário de configuração
-	let formNome = $state<'CADSUS' | 'e-SUS APS' | 'SISREG' | 'Webhook UBS' | null>(null);
+	// Estado do formulário de configuração real
+	let modalAberto = $state(false);
+	let formNome = $state('');
 	let formUrl = $state('');
 	let formUsuario = $state('');
 	let formSenha = $state('');
 	let formToken = $state('');
-	let salvando = $state(false);
-	let formSuccess = $state(false);
-	let formError = $state<string | null>(null);
+	let formEnviando = $state(false);
+	let formErro = $state('');
 
 	async function carregarStatus() {
 		loading = true;
@@ -61,54 +57,50 @@
 	}
 
 	onMount(() => {
+		if (auth.me && auth.me.role !== 'DESENVOLVEDOR' && auth.me.role !== 'ADMIN') {
+			goto('/sms/configuracoes/parametros', { replaceState: true });
+			return;
+		}
 		carregarStatus();
 	});
 
-	function iniciarConfiguracao(nome: 'CADSUS' | 'e-SUS APS' | 'SISREG' | 'Webhook UBS') {
-		formNome = nome;
-		formSuccess = false;
-		formError = null;
-
-		const config = response?.configuracoes.find((c) => c.nome === nome);
-		if (config) {
-			formUrl = config.url;
-			formUsuario = config.usuario || '';
-			formToken = config.token || '';
-			formSenha = '';
-		} else {
-			formUrl = '';
-			formUsuario = '';
-			formToken = '';
-			formSenha = '';
-		}
+	function abrirModal() {
+		formErro = '';
+		formNome = '';
+		formUrl = '';
+		formUsuario = '';
+		formSenha = '';
+		formToken = '';
+		modalAberto = true;
 	}
 
-	async function submeterConfiguracao(e: Event) {
-		e.preventDefault();
-		if (!formNome) return;
+	async function salvarConector() {
+		if (!formNome.trim()) {
+			formErro = 'O nome do conector é obrigatório.';
+			return;
+		}
+		if (!formUrl.trim()) {
+			formErro = 'A URL de integração é obrigatória.';
+			return;
+		}
 
-		salvando = true;
-		formSuccess = false;
-		formError = null;
+		formEnviando = true;
+		formErro = '';
 
 		try {
 			await api.admin.salvarIntegracao({
 				nome: formNome,
-				url: formUrl,
-				usuario: formUsuario || null,
-				senha: formSenha || null,
-				token: formToken || null,
+				url: formUrl.trim(),
+				usuario: formUsuario.trim() || null,
+				senha: formSenha.trim() || null,
+				token: formToken.trim() || null
 			});
-			formSuccess = true;
+			modalAberto = false;
 			await carregarStatus();
-			setTimeout(() => {
-				formSuccess = false;
-			}, 3000);
-		} catch (err: any) {
-			console.error(err);
-			formError = err.message || 'Falha ao salvar a configuração do conector.';
+		} catch (e: any) {
+			formErro = e.message || 'Falha ao salvar conector.';
 		} finally {
-			salvando = false;
+			formEnviando = false;
 		}
 	}
 
@@ -117,22 +109,42 @@
 		return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 	}
 
-	let federais = $derived(response?.integracoes.filter((i: IntegracaoStatus) => i.tipo === 'Federal') || []);
-	let internos = $derived(response?.integracoes.filter((i: IntegracaoStatus) => i.tipo === 'Interno') || []);
+	const isReal = (i: IntegracaoStatus) => {
+		const msg = (i.mensagem || '').toLowerCase();
+		return !msg.includes('simulado') && !msg.includes('simulada') && !msg.includes('defina');
+	};
+
+	let federais = $derived(
+		response?.integracoes
+			.filter((i: IntegracaoStatus) => i.tipo && i.tipo.toUpperCase() === 'FEDERAL')
+			.filter(isReal) || []
+	);
+
+	let internos = $derived(
+		response?.integracoes
+			.filter((i: IntegracaoStatus) => i.tipo && i.tipo.toUpperCase() !== 'FEDERAL')
+			.filter(isReal) || []
+	);
 </script>
 
+{#if auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN'}
 <section class="flex flex-col gap-6">
 	<!-- Top Bar / Header -->
-	<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white p-4 shadow-sm">
+	<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white p-4 shadow-sm border-t-2 border-t-slate-800">
 		<div>
 			<h1 class="text-lg font-bold text-slate-900 font-mono tracking-tight">Monitor de Integrações</h1>
-			<p class="text-xs text-slate-500">Configuração e status em tempo real das conexões externas e internas do ecossistema UniSISM</p>
+			<p class="text-xs text-slate-500">Status em tempo real das conexões externas e internas do ecossistema UniSISM</p>
 		</div>
 		<div class="flex gap-2">
 			<PrimaryButton
 				label="Voltar"
 				variant="secondary"
 				onclick={() => goto('/sms/configuracoes')}
+			/>
+			<PrimaryButton
+				label="+ Configurar Conector Real"
+				variant="primary"
+				onclick={abrirModal}
 			/>
 			<button
 				onclick={carregarStatus}
@@ -162,8 +174,8 @@
 	{#if loading && !response}
 		<div class="flex flex-col items-center justify-center border border-slate-200 bg-white py-20 text-center shadow-sm">
 			<div class="h-10 w-10 animate-spin border-4 border-slate-200 border-t-blue-600 rounded-full"></div>
-			<div class="mt-4 font-mono text-xs font-bold text-slate-700 tracking-wider">ACESSANDO CONECTORES</div>
-			<p class="mt-2 text-xs text-slate-500">Testando conectividade de banco de dados, latência e serviços ativos...</p>
+			<div class="mt-4 font-mono text-xs font-bold text-slate-700 tracking-wider">TESTANDO CONECTORES</div>
+			<p class="mt-2 text-xs text-slate-500">Acessando endpoints de saúde, verificando latência de rede e integridade de storage...</p>
 		</div>
 
 	<!-- Error State -->
@@ -196,8 +208,8 @@
 						<span class="relative inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
 					</div>
 					<div class="flex-1">
-						<h3 class="text-xs font-bold uppercase tracking-wider text-emerald-950 font-mono">Todos os Conectores Ativos</h3>
-						<p class="text-xs text-emerald-800">Conectores ativos respondendo normalmente.</p>
+						<h3 class="text-xs font-bold uppercase tracking-wider text-emerald-950 font-mono">Todos os Conectores Saudáveis</h3>
+						<p class="text-xs text-emerald-800">Todas as integrações locais e federais respondendo normalmente.</p>
 					</div>
 					<div class="text-[10px] text-emerald-700 font-mono">
 						Último teste: {formatTime(response.checkedAt)}
@@ -210,8 +222,8 @@
 						<span class="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
 					</div>
 					<div class="flex-1">
-						<h3 class="text-xs font-bold uppercase tracking-wider text-amber-950 font-mono">Conexão Parcial</h3>
-						<p class="text-xs text-amber-800">Alguns conectores estão pendentes de configuração ou offline.</p>
+						<h3 class="text-xs font-bold uppercase tracking-wider text-amber-950 font-mono">Instabilidade Detectada</h3>
+						<p class="text-xs text-amber-800">Um ou mais conectores estão offline ou demorando para responder.</p>
 					</div>
 					<div class="text-[10px] text-amber-700 font-mono">
 						Último teste: {formatTime(response.checkedAt)}
@@ -224,8 +236,8 @@
 						<span class="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
 					</div>
 					<div class="flex-1">
-						<h3 class="text-xs font-bold uppercase tracking-wider text-red-950 font-mono">Todos os Conectores Indisponíveis</h3>
-						<p class="text-xs text-red-800">Nenhum conector respondeu com sucesso.</p>
+						<h3 class="text-xs font-bold uppercase tracking-wider text-red-950 font-mono">Falha Crítica</h3>
+						<p class="text-xs text-red-800">Nenhum conector está respondendo. Verifique os logs do backend.</p>
 					</div>
 					<div class="text-[10px] text-red-700 font-mono">
 						Último teste: {formatTime(response.checkedAt)}
@@ -233,110 +245,6 @@
 				</div>
 			{/if}
 		</div>
-
-		<!-- Form: Editar/Configurar Conector -->
-		{#if formNome}
-			<div class="border border-slate-300 bg-white p-6 shadow-md transition-all">
-				<div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-5">
-					<div class="flex items-center gap-2">
-						<span class="h-2 w-2 rounded-full bg-blue-500"></span>
-						<h3 class="font-mono text-xs font-bold tracking-wider text-slate-900 uppercase">
-							Configurar Conector: {formNome}
-						</h3>
-					</div>
-					<button
-						onclick={() => formNome = null}
-						class="font-mono text-[10px] font-bold text-slate-500 hover:text-slate-800 tracking-wider uppercase border border-slate-200 px-2 py-0.5"
-					>
-						Fechar [x]
-					</button>
-				</div>
-
-				<form onsubmit={submeterConfiguracao} class="flex flex-col gap-4">
-					<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
-						<div class="col-span-12 md:col-span-8 flex flex-col gap-1">
-							<label for="url" class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
-								Endpoint / URL do Conector *
-							</label>
-							<input
-								id="url"
-								type="url"
-								required
-								bind:value={formUrl}
-								placeholder="https://api.cadsus.saude.gov.br/v1"
-								class="border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none bg-slate-50"
-							/>
-						</div>
-
-						<div class="col-span-12 md:col-span-4 flex flex-col gap-1">
-							<label for="usuario" class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
-								Usuário / Login (Opcional)
-							</label>
-							<input
-								id="usuario"
-								type="text"
-								bind:value={formUsuario}
-								placeholder="ex: ubs-municipal"
-								class="border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none bg-slate-50"
-							/>
-						</div>
-
-						<div class="col-span-12 md:col-span-6 flex flex-col gap-1">
-							<label for="senha" class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
-								Senha de Acesso (Opcional)
-							</label>
-							<input
-								id="senha"
-								type="password"
-								bind:value={formSenha}
-								placeholder="••••••••••••"
-								class="border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none bg-slate-50"
-							/>
-							{#if response?.configuracoes.find((c) => c.nome === formNome)?.temSenha}
-								<span class="text-[9px] font-mono text-emerald-700 font-bold">
-									✓ Senha já salva. Deixe em branco para manter a atual.
-								</span>
-							{/if}
-						</div>
-
-						<div class="col-span-12 md:col-span-6 flex flex-col gap-1">
-							<label for="token" class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
-								Token de API / Token Bearer (Opcional)
-							</label>
-							<input
-								id="token"
-								type="text"
-								bind:value={formToken}
-								placeholder="ex: x-api-key ou jwt-bearer-token"
-								class="border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none bg-slate-50"
-							/>
-						</div>
-					</div>
-
-					<!-- Error or Success Alert -->
-					{#if formError}
-						<div class="border border-red-200 bg-red-50 p-3 text-xs text-red-800 font-mono">
-							[ERRO] {formError}
-						</div>
-					{/if}
-					{#if formSuccess}
-						<div class="border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-mono">
-							[SUCESSO] Configuração do conector salva e testada com sucesso!
-						</div>
-					{/if}
-
-					<div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
-						<button
-							type="submit"
-							disabled={salvando}
-							class="bg-slate-950 text-white font-mono text-xs font-bold uppercase tracking-wider px-4 py-2 hover:bg-slate-800 active:bg-slate-900 disabled:opacity-50"
-						>
-							{salvando ? 'Salvando...' : 'Salvar Configuração'}
-						</button>
-					</div>
-				</form>
-			</div>
-		{/if}
 
 		<!-- Grid: Conectores Externos -->
 		<div class="border border-slate-200 bg-white shadow-sm">
@@ -347,7 +255,7 @@
 			/>
 			<div class="grid grid-cols-1 gap-px bg-slate-200 md:grid-cols-3">
 				{#each federais as item}
-					<div class="bg-white p-5 flex flex-col justify-between min-h-[160px] hover:bg-slate-50/50 transition-colors">
+					<div class="bg-white p-5 flex flex-col justify-between min-h-[140px] hover:bg-slate-50/50 transition-colors">
 						<div>
 							<div class="flex items-start justify-between gap-4">
 								<h4 class="font-mono text-sm font-bold text-slate-900">{item.nome}</h4>
@@ -365,25 +273,21 @@
 						</div>
 
 						<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-							<span class="text-[10px] font-mono text-slate-500 truncate max-w-[50%]" title={item.mensagem}>{item.mensagem}</span>
-							<div class="flex items-center gap-2">
-								<button
-									onclick={() => iniciarConfiguracao(item.nome as any)}
-									class="font-mono text-[9px] font-bold tracking-widest text-blue-600 hover:text-blue-800 hover:underline uppercase"
-								>
-									[ Configurar ]
-								</button>
-								{#if item.status === 'online'}
-									<span class="border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-800">
-										{item.latencyMs} ms
-									</span>
-								{:else}
-									<span class="border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-400">
-										—
-									</span>
-								{/if}
-							</div>
+							<span class="text-[10px] font-mono text-slate-500 truncate max-w-[70%]" title={item.mensagem}>{item.mensagem}</span>
+							{#if item.status === 'online'}
+								<span class="border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-800">
+									{item.latencyMs} ms
+								</span>
+							{:else}
+								<span class="border border-red-200 bg-red-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-red-800">
+									—
+								</span>
+							{/if}
 						</div>
+					</div>
+				{:else}
+					<div class="bg-white p-8 text-center text-slate-500 text-xs font-mono col-span-3 border border-slate-100">
+						Nenhum conector federal real configurado ou ativo.
 					</div>
 				{/each}
 			</div>
@@ -398,7 +302,7 @@
 			/>
 			<div class="grid grid-cols-1 gap-px bg-slate-200 md:grid-cols-2 lg:grid-cols-4">
 				{#each internos as item}
-					<div class="bg-white p-5 flex flex-col justify-between min-h-[160px] hover:bg-slate-50/50 transition-colors">
+					<div class="bg-white p-5 flex flex-col justify-between min-h-[140px] hover:bg-slate-50/50 transition-colors">
 						<div>
 							<div class="flex items-start justify-between gap-4">
 								<h4 class="font-mono text-sm font-bold text-slate-900">{item.nome}</h4>
@@ -416,34 +320,107 @@
 						</div>
 
 						<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-							<span class="text-[10px] font-mono text-slate-500 truncate max-w-[50%]" title={item.mensagem}>{item.mensagem}</span>
-							<div class="flex items-center gap-2">
-								{#if item.nome === 'Webhook UBS'}
-									<button
-										onclick={() => iniciarConfiguracao('Webhook UBS')}
-										class="font-mono text-[9px] font-bold tracking-widest text-blue-600 hover:text-blue-800 hover:underline uppercase"
-									>
-										[ Configurar ]
-									</button>
-								{/if}
-								{#if item.status === 'online' && item.latencyMs > 0}
-									<span class="border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-800">
-										{item.latencyMs} ms
-									</span>
-								{:else if item.status === 'online'}
-									<span class="border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
-										ativo
-									</span>
-								{:else}
-									<span class="border border-red-200 bg-red-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-red-800">
-										—
-									</span>
-								{/if}
-							</div>
+							<span class="text-[10px] font-mono text-slate-500 truncate max-w-[70%]" title={item.mensagem}>{item.mensagem}</span>
+							{#if item.status === 'online' && item.latencyMs > 0}
+								<span class="border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-800">
+									{item.latencyMs} ms
+								</span>
+							{:else if item.status === 'online'}
+								<span class="border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+									ativo
+								</span>
+							{:else}
+								<span class="border border-red-200 bg-red-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-red-800">
+									—
+								</span>
+							{/if}
 						</div>
+					</div>
+				{:else}
+					<div class="bg-white p-8 text-center text-slate-500 text-xs font-mono col-span-4 border border-slate-100">
+						Nenhum conector interno real ativo ou respondendo.
 					</div>
 				{/each}
 			</div>
 		</div>
 	{/if}
+
+	<!-- Modal Configurar Conector -->
+	{#if modalAberto}
+		<Modal
+			isOpen={modalAberto}
+			onClose={() => (modalAberto = false)}
+			title="Configurar Conector Real"
+			subtitle="Configure as credenciais de produção para a integração selecionada"
+			maxWidth="md"
+		>
+			<div class="flex flex-col gap-4 p-1">
+				{#if formErro}
+					<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[10px] font-bold text-red-900 uppercase">
+						⚠ {formErro}
+					</div>
+				{/if}
+
+				<FormField
+					label="Nome do Conector"
+					name="formNome"
+					type="text"
+					placeholder="Ex: CADSUS, e-SUS APS, SISREG, Minha Integração"
+					span={12}
+					bind:value={formNome}
+				/>
+
+				<FormField
+					label="URL da Integração"
+					name="formUrl"
+					type="text"
+					placeholder="https://api.exemplo.gov.br/v1"
+					span={12}
+					bind:value={formUrl}
+				/>
+
+				<div class="grid grid-cols-2 gap-4">
+					<FormField
+						label="Usuário / Login (opcional)"
+						name="formUsuario"
+						type="text"
+						placeholder="cadsus_operador"
+						span={6}
+						bind:value={formUsuario}
+					/>
+					<FormField
+						label="Senha (opcional)"
+						name="formSenha"
+						type="password"
+						placeholder="••••••••"
+						span={6}
+						bind:value={formSenha}
+					/>
+				</div>
+
+				<FormField
+					label="Token de Acesso / API Key (opcional)"
+					name="formToken"
+					type="text"
+					placeholder="Bearer eyJhbG..."
+					span={12}
+					bind:value={formToken}
+				/>
+
+				<div class="flex justify-end gap-2 border-t border-slate-200 pt-4 mt-2">
+					<PrimaryButton
+						label="Cancelar"
+						variant="secondary"
+						onclick={() => (modalAberto = false)}
+					/>
+					<PrimaryButton
+						label="Salvar Conector"
+						loading={formEnviando}
+						onclick={salvarConector}
+					/>
+				</div>
+			</div>
+		</Modal>
+	{/if}
 </section>
+{/if}

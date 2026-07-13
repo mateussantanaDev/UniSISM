@@ -887,13 +887,16 @@ class AdminApi {
   updateConfiguracoes(req: any): Promise<any> {
     return this.api.patch<any>('/admin/configuracoes', req);
   }
-
   getIntegracoes(): Promise<any> {
     return this.api.get<any>('/admin/integracoes');
   }
 
+  createIntegracao(req: any): Promise<any> {
+    return this.api.post<any>('/admin/integracoes', req);
+  }
+
   salvarIntegracao(req: {
-    nome: 'CADSUS' | 'e-SUS APS' | 'SISREG' | 'Webhook UBS';
+    nome: string;
     url: string;
     usuario?: string | null;
     senha?: string | null;

@@ -76,23 +76,39 @@ ALTER TABLE "ubs" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
 ALTER TABLE "prefeituras" ALTER COLUMN "uf" SET DEFAULT 'PE';
 ALTER TABLE "ubs" ALTER COLUMN "uf" SET DEFAULT 'PE';
 
--- Safely convert pushStatus in notificacoes_paciente from text to StatusPushNotificacao enum
+-- Safely convert or add pushStatus in notificacoes_paciente
 DO $$
 BEGIN
+    -- If column exists, we check its type and convert if necessary
     IF EXISTS (
         SELECT 1 
         FROM information_schema.columns 
         WHERE table_name = 'notificacoes_paciente' 
-          AND column_name = 'pushStatus' 
-          AND data_type = 'text'
+          AND column_name = 'pushStatus'
     ) THEN
-        -- Cast text to enum, first updating nulls
-        UPDATE "notificacoes_paciente" SET "pushStatus" = 'PENDENTE' WHERE "pushStatus" IS NULL;
-        ALTER TABLE "notificacoes_paciente" 
-          ALTER COLUMN "pushStatus" TYPE "StatusPushNotificacao" USING ("pushStatus"::"StatusPushNotificacao");
+        IF EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'notificacoes_paciente' 
+              AND column_name = 'pushStatus' 
+              AND data_type = 'text'
+        ) THEN
+            UPDATE "notificacoes_paciente" SET "pushStatus" = 'PENDENTE' WHERE "pushStatus" IS NULL;
+            ALTER TABLE "notificacoes_paciente" 
+              ALTER COLUMN "pushStatus" TYPE "StatusPushNotificacao" USING ("pushStatus"::"StatusPushNotificacao");
+        END IF;
+    ELSE
+        -- If the column does not exist at all, we add it with the correct type
+        ALTER TABLE "notificacoes_paciente" ADD COLUMN "pushStatus" "StatusPushNotificacao" NOT NULL DEFAULT 'PENDENTE';
     END IF;
 END
 $$;
+
+-- Ensure other push columns exist
+ALTER TABLE "notificacoes_paciente" ADD COLUMN IF NOT EXISTS "pushTentativas" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "notificacoes_paciente" ADD COLUMN IF NOT EXISTS "pushUltimaTentativaEm" TIMESTAMP(3);
+ALTER TABLE "notificacoes_paciente" ADD COLUMN IF NOT EXISTS "pushEnviadoEm" TIMESTAMP(3);
+ALTER TABLE "notificacoes_paciente" ADD COLUMN IF NOT EXISTS "pushErro" TEXT;
 
 -- Ensure constraints and defaults on notificacoes_paciente pushStatus and pushTentativas
 ALTER TABLE "notificacoes_paciente" ALTER COLUMN "pushStatus" SET DEFAULT 'PENDENTE';
