@@ -42,7 +42,7 @@ final dioProvider = Provider<Dio>((ref) {
         'X-Client': 'unisism-motorista/0.1.0',
         'x-api-key': const String.fromEnvironment(
           'API_KEY',
-          defaultValue: '0fry3zmuJY5kg2YjYdFqvE7H4hRmM4KE6DfzH7gDgY0a6BciR2VKwLzTq5BpU7Qn',
+          defaultValue: 'fLi_lF93PiFM2bvcIZEfE2sif8xr9or8QTlheT2RvIcjus2-j50OQ5nW-eF_Rx5x',
         ),
       },
     ),

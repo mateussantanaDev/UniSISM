@@ -83,12 +83,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Tokens.pageBackground,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _Header(),
-            Expanded(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Header(),
+          Expanded(
+            child: SafeArea(
+              top: false,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
                 child: Column(
@@ -147,8 +148,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -161,56 +162,61 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Tokens.blue900,
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 2.5),
-            ),
-            child: const Text(
-              'U',
-              style: TextStyle(
-                fontFamily: AppTypography.sansFamily,
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 26,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'UNISISM',
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2.5),
+                ),
+                child: const Text(
+                  'U',
                   style: TextStyle(
                     fontFamily: AppTypography.sansFamily,
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
-                    fontSize: 22,
-                    letterSpacing: 3,
+                    fontSize: 26,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Motorista',
-                  style: TextStyle(
-                    fontFamily: AppTypography.sansFamily,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'UNISISM',
+                      style: TextStyle(
+                        fontFamily: AppTypography.sansFamily,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 22,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Motorista',
+                      style: TextStyle(
+                        fontFamily: AppTypography.sansFamily,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

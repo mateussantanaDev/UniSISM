@@ -6,7 +6,7 @@ import '../../core/theme/typography.dart';
 
 /// Input controlado com label uppercase + suporte a mono. Espelha o
 /// `<FormField>` da Face UBS (sem o `grid-span` que não faz sentido em mobile).
-class AppFormField extends StatelessWidget {
+class AppFormField extends StatefulWidget {
   const AppFormField({
     super.key,
     required this.label,
@@ -44,39 +44,62 @@ class AppFormField extends StatelessWidget {
   final ValueChanged<String>? onSubmitted;
 
   @override
+  State<AppFormField> createState() => _AppFormFieldState();
+}
+
+class _AppFormFieldState extends State<AppFormField> {
+  bool _obscureText = true;
+
+  @override
   Widget build(BuildContext context) {
-    final inputStyle = mono ? AppTypography.inputMono : AppTypography.input;
+    final inputStyle = widget.mono ? AppTypography.inputMono : AppTypography.input;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(), style: AppTypography.label),
+        Text(widget.label.toUpperCase(), style: AppTypography.label),
         const SizedBox(height: 5),
         Stack(
           children: [
             TextFormField(
-              controller: controller,
-              initialValue: initialValue,
-              onChanged: onChanged,
-              onFieldSubmitted: onSubmitted,
-              readOnly: readOnly || loading,
-              autofocus: autofocus,
-              textInputAction: textInputAction,
-              maxLength: maxLength,
-              obscureText: type == AppFieldType.password,
+              controller: widget.controller,
+              initialValue: widget.initialValue,
+              onChanged: widget.onChanged,
+              onFieldSubmitted: widget.onSubmitted,
+              readOnly: widget.readOnly || widget.loading,
+              autofocus: widget.autofocus,
+              textInputAction: widget.textInputAction,
+              maxLength: widget.maxLength,
+              obscureText: widget.type == AppFieldType.password ? _obscureText : false,
               keyboardType: _keyboard(),
               inputFormatters: _formatters(),
               style: inputStyle,
               cursorColor: Tokens.blue900,
               decoration: InputDecoration(
-                hintText: hint,
-                errorText: error,
-                fillColor: readOnly ? Tokens.slate50 : Colors.white,
+                hintText: widget.hint,
+                errorText: widget.error,
+                fillColor: widget.readOnly ? Tokens.slate50 : Colors.white,
                 counterText: '',
                 isDense: true,
+                suffixIcon: widget.type == AppFieldType.password
+                    ? IconButton(
+                        icon: Icon(
+                          _obscureText ? Icons.visibility : Icons.visibility_off,
+                          color: Tokens.slate500,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureText = !_obscureText;
+                          });
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      )
+                    : null,
               ),
             ),
-            if (loading)
+            if (widget.loading)
               Positioned.fill(
                 child: ColoredBox(
                   color: Colors.white.withValues(alpha: 0.7),
@@ -95,14 +118,14 @@ class AppFormField extends StatelessWidget {
     );
   }
 
-  TextInputType _keyboard() => switch (type) {
+  TextInputType _keyboard() => switch (widget.type) {
     AppFieldType.email => TextInputType.emailAddress,
     AppFieldType.number => TextInputType.number,
     AppFieldType.date => TextInputType.datetime,
     AppFieldType.password || AppFieldType.text => TextInputType.text,
   };
 
-  List<TextInputFormatter>? _formatters() => switch (type) {
+  List<TextInputFormatter>? _formatters() => switch (widget.type) {
     AppFieldType.number => [FilteringTextInputFormatter.digitsOnly],
     _ => null,
   };
