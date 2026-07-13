@@ -1,23 +1,28 @@
 /**
- * Seed MÍNIMO — banco virgem com 1 único usuário DESENVOLVEDOR.
+ * Seed — banco virgem com usuário DESENVOLVEDOR e PACIENTE de teste.
  *
- *  Usuário:
+ *  Usuário Dev:
  *    - Nome:   MATEUS VIEIRA
  *    - Email:  mateushenrivieira@gmail.com
  *    - Senha:  Aguasbelas#!
  *    - Role:   DESENVOLVEDOR (acesso global)
- *    - Escopo: sem vínculo com prefeitura/UBS (DESENVOLVEDOR é global)
- *
- *  Nenhuma prefeitura, UBS, paciente, encaminhamento, notificação ou relatório
- *  é criado. O DEV cadastra tudo via API a partir daqui.
+ * 
+ *  Usuário Paciente:
+ *    - CPF:    53474131826
+ *    - Senha:  53474131826 (senhaProvisoria = true)
+ *    - Nome:   Mateus Santana
  */
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
+const CPF = '53474131826';
+const CPF_FMT = '534.741.318-26';
+const NOME = 'Mateus Santana';
+
 async function main() {
-  const senhaHash = await bcrypt.hash('Aguasbelas#!', 10);
+  const devSenhaHash = await bcrypt.hash('Aguasbelas#!', 10);
 
   const dev = await prisma.atendente.upsert({
     where: { email: 'mateushenrivieira@gmail.com' },
@@ -27,7 +32,7 @@ async function main() {
       nome: 'MATEUS VIEIRA',
       email: 'mateushenrivieira@gmail.com',
       cpf: '000.000.000-00',
-      senhaHash,
+      senhaHash: devSenhaHash,
       cargo: 'Desenvolvedor',
       funcao: 'Engenharia de Software · UNISISM',
       role: 'DESENVOLVEDOR',
@@ -37,19 +42,81 @@ async function main() {
     },
   });
 
-  console.log('');
-  console.log('✓ Banco virgem. Único usuário criado:');
-  console.log('');
-  console.log(`  id:        ${dev.id}`);
-  console.log(`  nome:      ${dev.nome}`);
-  console.log(`  matricula: ${dev.matricula}`);
-  console.log(`  email:     ${dev.email}`);
-  console.log(`  role:      ${dev.role}`);
-  console.log(`  escopo:    GLOBAL (sem UBS / sem prefeitura)`);
-  console.log('');
-  console.log('  Login:   DEV-MATEUS  OU  mateushenrivieira@gmail.com');
-  console.log('  Senha:   Aguasbelas#!');
-  console.log('');
+  console.log('✓ Usuário desenvolvedor criado/garantido.');
+
+  // 1) Garantir uma Prefeitura + UBS de teste (necessário para escopo do paciente)
+  const prefeitura = await prisma.prefeitura.upsert({
+    where: { cnpj: '00000000000191' },
+    update: {},
+    create: {
+      nome: 'Prefeitura Municipal de Águas Belas',
+      municipio: 'Águas Belas',
+      uf: 'PE',
+      cnpj: '00000000000191',
+      ativa: true,
+    },
+  });
+
+  const ubs = await prisma.ubs.upsert({
+    where: { cnes: '0000001' },
+    update: {},
+    create: {
+      nome: 'UBS Centro Águas Belas',
+      municipio: 'Águas Belas',
+      uf: 'PE',
+      cnes: '0000001',
+      endereco: 'Praça Central, s/n · Centro · Águas Belas/PE',
+      ativa: true,
+      prefeituraId: prefeitura.id,
+    },
+  });
+
+  // 2) Cria/atualiza Paciente
+  await prisma.paciente.upsert({
+    where: { cpf: CPF },
+    update: { nome: NOME, ubsId: ubs.id },
+    create: {
+      nome: NOME,
+      cpf: CPF,
+      cartaoSus: '700000000000000',
+      dataNascimento: new Date('1995-08-12T00:00:00Z'),
+      sexo: 'M',
+      telefone: '87999999999',
+      endereco: 'Rua das Acácias, 123',
+      bairro: 'Centro',
+      municipio: 'Águas Belas',
+      uf: 'PE',
+      cep: '55400000',
+      ubsId: ubs.id,
+    },
+  });
+
+  // 3) Cria/atualiza PacienteConta com senha = CPF (provisória)
+  const senhaHash = await bcrypt.hash(CPF, 10);
+  const conta = await prisma.pacienteConta.upsert({
+    where: { cpf: CPF },
+    update: {
+      nome: NOME,
+      cpfFormatado: CPF_FMT,
+      senhaHash,
+      senhaProvisoria: true,
+      ativo: true,
+      ubsVinculadaId: ubs.id,
+    },
+    create: {
+      cpf: CPF,
+      cpfFormatado: CPF_FMT,
+      nome: NOME,
+      senhaHash,
+      senhaProvisoria: true,
+      ativo: true,
+      ubsVinculadaId: ubs.id,
+    },
+  });
+
+  console.log('✓ Paciente de teste criado/garantido.');
+  console.log(`  CPF       : ${CPF}`);
+  console.log(`  Senha     : ${CPF} (Provisória)`);
 }
 
 main()
