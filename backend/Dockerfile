@@ -10,6 +10,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
 RUN npm run build
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target es2022 --moduleResolution node --esModuleInterop --skipLibCheck
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
