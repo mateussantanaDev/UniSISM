@@ -1,5 +1,6 @@
 services:
   postgres:
+    restart: unless-stopped
     image: postgres:16-alpine
     container_name: unisism-postgres
     environment:
@@ -17,6 +18,7 @@ services:
       retries: 10
 
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     container_name: unisism-redis
     ports:
@@ -30,6 +32,7 @@ services:
       retries: 10
 
   minio:
+    restart: unless-stopped
     image: minio/minio:latest
     container_name: unisism-minio
     command: server /data --console-address ":9001"
@@ -48,6 +51,7 @@ services:
       retries: 5
 
   clamav:
+    restart: unless-stopped
     # Opcional — ClamAV demora ~2-5min no primeiro start (baixa assinaturas).
     platform: linux/amd64
     image: clamav/clamav:latest
@@ -64,6 +68,7 @@ services:
       start_period: 300s
 
   ntfy:
+    restart: unless-stopped
     # Push notifications self-hosted (open-source, MIT)
     # Console web: http://localhost:8080
     # API publish: POST http://localhost:8080/<topic>
@@ -97,6 +102,7 @@ services:
       retries: 5
 
   backend:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -139,7 +145,7 @@ services:
         condition: service_healthy
     volumes:
       - ./uploads:/app/uploads
-    command: ["sh", "-c", "npx prisma migrate deploy && node dist/main/server.js"]
+    command: ["sh", "-c", "until nc -z -w 2 postgres 5432; do echo 'Waiting for database on postgres:5432...'; sleep 1; done && npx prisma migrate deploy && node dist/main/server.js"]
 
 volumes:
   postgres_data:
