@@ -13,6 +13,8 @@ import type { IAtendenteRepository } from '../../../domain/repositories/IAtenden
 import type { IFileStorage } from '../../../domain/services/IFileStorage';
 import type { IAnexoScanner } from '../../../infrastructure/scan/ClamavScanner';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
+import bcrypt from 'bcryptjs';
+import { env } from '../../../shared/env';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
@@ -227,6 +229,36 @@ export class SolicitacoesTfdUseCases {
     if (!pac || pac.ubs.prefeituraId !== prefeituraId) {
       throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado na prefeitura');
     }
+
+    // Garante que o paciente possua uma conta cadastrada para o aplicativo (senha provisória = CPF)
+    const cpfDigits = pac.cpf.replace(/\D+/g, '');
+    const cpfFormatado = cpfDigits.length === 11 
+      ? `${cpfDigits.slice(0, 3)}.${cpfDigits.slice(3, 6)}.${cpfDigits.slice(6, 9)}-${cpfDigits.slice(9)}`
+      : pac.cpf;
+
+    const rounds = env.BCRYPT_ROUNDS ? parseInt(String(env.BCRYPT_ROUNDS)) : 10;
+    const roundsToUse = isNaN(rounds) ? 10 : rounds;
+    const defaultPasswordHash = await bcrypt.hash(cpfDigits, roundsToUse);
+
+    await prisma.pacienteConta.upsert({
+      where: { cpf: cpfDigits },
+      update: {
+        nome: pac.nome.trim(),
+        cpfFormatado,
+        ubsVinculadaId: pac.ubsId,
+        ...(pac.telefone?.trim() ? { telefone: pac.telefone.trim() } : {}),
+      },
+      create: {
+        cpf: cpfDigits,
+        cpfFormatado,
+        nome: pac.nome.trim(),
+        senhaHash: defaultPasswordHash,
+        senhaProvisoria: true,
+        ativo: true,
+        ubsVinculadaId: pac.ubsId,
+        ...(pac.telefone?.trim() ? { telefone: pac.telefone.trim() } : {}),
+      },
+    });
 
     const protocolo = await proximoProtocoloTfd('TFD');
     const novo = await prisma.solicitacaoTFD.create({
