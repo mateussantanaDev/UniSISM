@@ -193,6 +193,7 @@ export function buildRoutes(deps: Deps): Router {
       'REGULADOR_SMS',
       'GESTOR_TFD',
       'ATENDENTE_TFD',
+      'REGULADOR_TFD',
     ),
     deps.admin.getUbs,
   );

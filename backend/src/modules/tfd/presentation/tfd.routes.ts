@@ -19,7 +19,10 @@ const single = memoryUpload.single('file');
 
 export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): Router {
   const router = Router();
-  const rwGestor = [authenticate, requireRole('GESTOR_TFD', 'ADMIN', 'DESENVOLVEDOR')];
+  const rwGestor = [
+    authenticate,
+    requireRole('GESTOR_TFD', 'ADMIN', 'DESENVOLVEDOR', 'REGULADOR_TFD'),
+  ];
   const rwAdmin = [authenticate, requireRole('ADMIN', 'DESENVOLVEDOR')];
   const rwSolic = [
     authenticate,
@@ -30,6 +33,7 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
       'COORDENADOR_UBS',
       'ATENDENTE_UBS',
       'ATENDENTE_TFD',
+      'REGULADOR_TFD',
     ),
   ];
 
