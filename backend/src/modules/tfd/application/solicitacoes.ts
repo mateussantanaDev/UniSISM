@@ -5,7 +5,7 @@
  *                  ↘ NEGADA / CANCELADA
  */
 import type { Request } from 'express';
-import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
+import { BadRequest, Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
 import type { AccessScope } from '../../../shared/scope';
@@ -22,7 +22,22 @@ import {
 } from './_helpers';
 
 export interface CriarSolicitacaoInput {
-  pacienteId: string;
+  pacienteId?: string;
+  paciente?: {
+    nome: string;
+    cpf: string;
+    dataNascimento: string;
+    sexo: 'M' | 'F' | 'OUTRO';
+    telefone: string;
+    endereco: string;
+    bairro: string;
+    municipio: string;
+    uf: string;
+    cartaoSus?: string | null;
+    nomeMae?: string | null;
+    rg?: string | null;
+    cep?: string | null;
+  };
   ubsId: string;
   encaminhamentoOrigemId?: string;
   destino: string;
@@ -143,9 +158,70 @@ export class SolicitacoesTfdUseCases {
     if (!ubs || ubs.prefeituraId !== prefeituraId) {
       throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada na prefeitura');
     }
+
+    let pacienteId = input.pacienteId;
+
+    if (input.paciente) {
+      const pData = input.paciente;
+      // 1) Busca paciente por CPF
+      const existente = await prisma.paciente.findUnique({
+        where: { cpf: pData.cpf },
+      });
+
+      if (existente) {
+        // Atualiza os dados do paciente existente
+        const atualizado = await prisma.paciente.update({
+          where: { id: existente.id },
+          data: {
+            nome: pData.nome.trim(),
+            dataNascimento: new Date(`${pData.dataNascimento}T00:00:00.000Z`),
+            sexo: pData.sexo,
+            telefone: pData.telefone.trim(),
+            endereco: pData.endereco.trim(),
+            bairro: pData.bairro.trim(),
+            municipio: pData.municipio.trim(),
+            uf: pData.uf,
+            cartaoSus: pData.cartaoSus?.trim() || existente.cartaoSus,
+            nomeMae: pData.nomeMae?.trim() || existente.nomeMae,
+            cep: pData.cep?.trim() || existente.cep,
+            ubsId: input.ubsId, // Vincula à UBS da solicitação
+          },
+        });
+        pacienteId = updatedPacienteId(atualizado.id);
+      } else {
+        // Cria novo paciente
+        const novoPac = await prisma.paciente.create({
+          data: {
+            nome: pData.nome.trim(),
+            cpf: pData.cpf,
+            dataNascimento: new Date(`${pData.dataNascimento}T00:00:00.000Z`),
+            sexo: pData.sexo,
+            telefone: pData.telefone.trim(),
+            endereco: pData.endereco.trim(),
+            bairro: pData.bairro.trim(),
+            municipio: pData.municipio.trim(),
+            uf: pData.uf,
+            cartaoSus: pData.cartaoSus?.trim() || 'NAO_INFORMADO',
+            nomeMae: pData.nomeMae?.trim() || null,
+            cep: pData.cep?.trim() || null,
+            ubsId: input.ubsId,
+          },
+        });
+        pacienteId = updatedPacienteId(novoPac.id);
+      }
+    }
+
+    function updatedPacienteId(id: string): string {
+      return id;
+    }
+
+    if (!pacienteId) {
+      throw BadRequest('PACIENTE_REQUERIDO', 'pacienteId ou objeto paciente é obrigatório');
+    }
+
     // Paciente também precisa ser da prefeitura
     const pac = await prisma.paciente.findUnique({
-      where: { id: input.pacienteId },
+      where: { id: pacienteId },
       include: { ubs: { select: { prefeituraId: true } } },
     });
     if (!pac || pac.ubs.prefeituraId !== prefeituraId) {
@@ -157,7 +233,7 @@ export class SolicitacoesTfdUseCases {
       data: {
         protocolo,
         prefeituraId,
-        pacienteId: input.pacienteId,
+        pacienteId,
         ubsId: input.ubsId,
         encaminhamentoOrigemId: input.encaminhamentoOrigemId ?? null,
         destino: input.destino.trim(),

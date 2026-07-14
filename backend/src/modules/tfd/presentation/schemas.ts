@@ -38,7 +38,24 @@ export const atualizarMotoristaSchema = criarMotoristaSchema.partial().extend({
 
 // ----- Solicitações -----
 export const criarSolicitacaoSchema = z.object({
-  pacienteId: z.string().min(1),
+  pacienteId: z.string().min(1).optional(),
+  paciente: z
+    .object({
+      nome: z.string().min(2).max(150),
+      cpf: z.string().length(11),
+      dataNascimento: ymd,
+      sexo: z.enum(['M', 'F', 'OUTRO']),
+      telefone: z.string().min(8).max(20),
+      endereco: z.string().min(2).max(200),
+      bairro: z.string().min(2).max(100),
+      municipio: z.string().min(2).max(100),
+      uf: z.string().length(2),
+      cartaoSus: z.string().max(20).optional().nullable(),
+      nomeMae: z.string().max(150).optional().nullable(),
+      rg: z.string().max(30).optional().nullable(),
+      cep: z.string().max(10).optional().nullable(),
+    })
+    .optional(),
   ubsId: z.string().min(1),
   encaminhamentoOrigemId: z.string().optional(),
   destino: z.string().min(2).max(200),
@@ -50,6 +67,9 @@ export const criarSolicitacaoSchema = z.object({
   prioridade: z.enum(['ELETIVA', 'PRIORITARIA', 'URGENTE']),
   observacoes: z.string().max(1000).optional(),
   prefeituraId: z.string().optional(),
+}).refine(data => data.pacienteId || data.paciente, {
+  message: "Informe o pacienteId ou o objeto paciente completo",
+  path: ["pacienteId"]
 });
 
 export const aprovarSolicitacaoSchema = z.object({
