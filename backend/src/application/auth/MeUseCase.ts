@@ -10,6 +10,12 @@ export interface MeOutput {
   role: string;
   unidade: string | null;
   prefeitura: string | null;
+  prefeituraInfo?: {
+    id: string;
+    nome: string;
+    municipio: string;
+    uf: string;
+  } | null;
   cargo: string;
   escopo: 'GLOBAL' | 'PREFEITURA' | 'UBS';
 }
@@ -28,7 +34,16 @@ export class MeUseCase {
           ? 'UBS'
           : 'PREFEITURA';
 
-    const prefeitura = a.ubs?.prefeitura?.nome ?? a.prefeitura?.nome ?? null;
+    const prefObj = a.ubs?.prefeitura ?? a.prefeitura ?? null;
+    const prefeitura = prefObj?.nome ?? null;
+    const prefeituraInfo = prefObj
+      ? {
+          id: prefObj.id,
+          nome: prefObj.nome,
+          municipio: prefObj.municipio,
+          uf: prefObj.uf,
+        }
+      : null;
 
     return {
       id: a.id,
@@ -38,6 +53,7 @@ export class MeUseCase {
       role: a.role,
       unidade: a.ubs?.nome ?? null,
       prefeitura,
+      prefeituraInfo,
       cargo: a.cargo,
       escopo,
     };

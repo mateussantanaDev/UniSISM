@@ -172,7 +172,7 @@ export function buildRoutes(deps: Deps): Router {
   router.get(
     '/admin/prefeituras',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'GESTOR_TFD', 'REGULADOR_TFD', 'ATENDENTE_TFD'),
     deps.admin.getPrefeituras,
   );
 
