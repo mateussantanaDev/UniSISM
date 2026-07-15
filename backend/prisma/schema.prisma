@@ -50,6 +50,12 @@ enum CanalRoteamento {
   CENTRO_ODONTOLOGICO
 }
 
+enum DestinoRegulacao {
+  SUS
+  CENTRO_ESPECIALIDADES
+  CENTRO_ODONTOLOGICO
+}
+
 enum PrioridadeClinica {
   ELETIVA
   PRIORITARIA
@@ -642,6 +648,8 @@ model Encaminhamento {
   protocolo       String               @unique
   status          StatusEncaminhamento @default(AGUARDANDO_REGULACAO)
   canalRoteamento CanalRoteamento?
+  destinoRegulacao DestinoRegulacao?
+  dataDisponibilidade DateTime?
 
   // Paciente (snapshot + FK quando reconhecido)
   pacienteId String?

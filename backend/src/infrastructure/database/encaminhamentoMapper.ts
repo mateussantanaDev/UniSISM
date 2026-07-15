@@ -93,6 +93,8 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     recomendacoes: Array.isArray(r.recomendacoes) ? (r.recomendacoes as string[]) : [],
     canalRoteamento: r.canalRoteamento ?? null,
     filaDestino: r.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'CEO' : r.canalRoteamento ?? null,
+    destinoRegulacao: r.destinoRegulacao ?? null,
+    dataDisponibilidade: r.dataDisponibilidade ? r.dataDisponibilidade.toISOString() : null,
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 

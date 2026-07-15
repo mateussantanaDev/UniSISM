@@ -65,6 +65,8 @@ export interface AprovarInput {
   ufAgendamento?: string;
   canalRoteamento?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
   filaDestino?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO' | null;
+  destinoRegulacao?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
+  dataDisponibilidade?: string | null; // YYYY-MM-DD
 }
 
 export class AprovarEncaminhamentoUseCase {
@@ -107,6 +109,29 @@ export class AprovarEncaminhamentoUseCase {
       }
     }
 
+    let dataDisp: Date | null | undefined = undefined;
+    if (input.dataDisponibilidade !== undefined) {
+      if (input.dataDisponibilidade === null || input.dataDisponibilidade === '') {
+        dataDisp = null;
+      } else {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dataDisponibilidade)) {
+          throw Unprocessable(
+            'DATA_DISPONIBILIDADE_INVALIDA',
+            'dataDisponibilidade deve ser uma data no formato YYYY-MM-DD',
+          );
+        }
+        dataDisp = new Date(`${input.dataDisponibilidade}T00:00:00.000Z`);
+        if (Number.isNaN(dataDisp.getTime())) {
+          throw Unprocessable('DATA_DISPONIBILIDADE_INVALIDA', 'dataDisponibilidade inválida');
+        }
+        const hojeUtc = new Date();
+        hojeUtc.setUTCHours(0, 0, 0, 0);
+        if (dataDisp < hojeUtc) {
+          throw Unprocessable('DATA_DISPONIBILIDADE_NO_PASSADO', 'dataDisponibilidade deve ser hoje ou no futuro');
+        }
+      }
+    }
+
     const notaLimpa = input.nota?.trim();
     const localAg = input.localAgendamento?.trim();
     const profAg = input.profissionalAgendado?.trim();
@@ -122,6 +147,13 @@ export class AprovarEncaminhamentoUseCase {
       } else {
         resolvedCanal = null;
       }
+    }
+
+    let resolvedDestino = input.destinoRegulacao;
+    if (resolvedDestino !== undefined) {
+      resolvedCanal = resolvedDestino;
+    } else if (resolvedCanal !== undefined) {
+      resolvedDestino = resolvedCanal;
     }
 
     // Validações leves: se profissionalAgendado vier sem CRM, alerta no log mas aceita
@@ -192,6 +224,8 @@ export class AprovarEncaminhamentoUseCase {
           ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),
           ...(ufAg !== undefined ? { ufAgendamento: ufAg || null } : {}),
           ...(resolvedCanal !== undefined ? { canalRoteamento: resolvedCanal } : {}),
+          ...(resolvedDestino !== undefined ? { destinoRegulacao: resolvedDestino } : {}),
+          ...(dataDisp !== undefined ? { dataDisponibilidade: dataDisp } : {}),
           // Aprovação limpa motivoRejeicao residual de tentativa anterior (raro).
           motivoRejeicao: null,
         },

@@ -49,6 +49,8 @@ const aprovarSchema = z.object({
   ufAgendamento: z.string().trim().length(2).optional(),
   canalRoteamento: z.enum(['SUS', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional().nullable(),
   filaDestino: z.enum(['SUS', 'CENTRO_ESPECIALIDADES', 'CEO']).optional().nullable(),
+  destinoRegulacao: z.enum(['SUS', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional().nullable(),
+  dataDisponibilidade: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
 });
 
 const pendenciaSchema = z.object({
@@ -136,6 +138,12 @@ export class RegulacaoController {
         : {}),
       ...(body.filaDestino !== undefined
         ? { filaDestino: body.filaDestino }
+        : {}),
+      ...(body.destinoRegulacao !== undefined
+        ? { destinoRegulacao: body.destinoRegulacao }
+        : {}),
+      ...(body.dataDisponibilidade !== undefined
+        ? { dataDisponibilidade: body.dataDisponibilidade }
         : {}),
     });
     res.status(200).json(enc);
