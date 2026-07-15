@@ -63,6 +63,7 @@ export interface AprovarInput {
   cidadeAgendamento?: string;
   /** UF do agendamento. Default "BA". 2 chars. */
   ufAgendamento?: string;
+  canalRoteamento?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
 }
 
 export class AprovarEncaminhamentoUseCase {
@@ -178,6 +179,7 @@ export class AprovarEncaminhamentoUseCase {
           ...(profAg !== undefined ? { profissionalAgendado: profAg || null } : {}),
           ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),
           ...(ufAg !== undefined ? { ufAgendamento: ufAg || null } : {}),
+          ...(input.canalRoteamento !== undefined ? { canalRoteamento: input.canalRoteamento } : {}),
           // Aprovação limpa motivoRejeicao residual de tentativa anterior (raro).
           motivoRejeicao: null,
         },

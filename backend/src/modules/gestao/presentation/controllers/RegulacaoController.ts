@@ -47,6 +47,7 @@ const aprovarSchema = z.object({
   cidadeAgendamento: z.string().trim().max(100).optional(),
   /** UF do agendamento. 2 chars maiúsculos (ex.: BA, SP). */
   ufAgendamento: z.string().trim().length(2).optional(),
+  canalRoteamento: z.enum(['SUS', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional().nullable(),
 });
 
 const pendenciaSchema = z.object({
@@ -128,6 +129,9 @@ export class RegulacaoController {
         : {}),
       ...(body.ufAgendamento !== undefined
         ? { ufAgendamento: body.ufAgendamento }
+        : {}),
+      ...(body.canalRoteamento !== undefined
+        ? { canalRoteamento: body.canalRoteamento }
         : {}),
     });
     res.status(200).json(enc);

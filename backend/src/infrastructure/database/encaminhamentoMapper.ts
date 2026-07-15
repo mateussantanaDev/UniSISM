@@ -91,6 +91,7 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     ufAgendamento: r.ufAgendamento ?? null,
     motivoRejeicao: r.motivoRejeicao ?? null,
     recomendacoes: Array.isArray(r.recomendacoes) ? (r.recomendacoes as string[]) : [],
+    canalRoteamento: r.canalRoteamento ?? null,
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 

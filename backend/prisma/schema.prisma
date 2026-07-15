@@ -44,6 +44,12 @@ enum StatusEncaminhamento {
   REJEITADO
 }
 
+enum CanalRoteamento {
+  SUS
+  CENTRO_ESPECIALIDADES
+  CENTRO_ODONTOLOGICO
+}
+
 enum PrioridadeClinica {
   ELETIVA
   PRIORITARIA
@@ -632,9 +638,10 @@ model MedicoAtendente {
 // ============================================================
 
 model Encaminhamento {
-  id        String               @id @default(uuid())
-  protocolo String               @unique
-  status    StatusEncaminhamento @default(AGUARDANDO_REGULACAO)
+  id              String               @id @default(uuid())
+  protocolo       String               @unique
+  status          StatusEncaminhamento @default(AGUARDANDO_REGULACAO)
+  canalRoteamento CanalRoteamento?
 
   // Paciente (snapshot + FK quando reconhecido)
   pacienteId String?
