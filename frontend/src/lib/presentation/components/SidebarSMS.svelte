@@ -57,8 +57,8 @@
 				{ label: 'Solicitações', href: '/sms/solicitacoes', shortcut: 'S' },
 				{ label: 'Respostas', href: '/sms/respostas', shortcut: 'R' },
 				{
-					label: 'Ingestões',
-					href: '/sms/ingestoes',
+					label: 'Enviados',
+					href: '/sms/enviados',
 					shortcut: 'G',
 					quando: () => !!auth.podeVerFilaRegulacao
 				},

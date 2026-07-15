@@ -101,6 +101,7 @@ export interface Encaminhamento {
   agendamentoPrevisto?: string | null;
   respostaSUS?: RespostaSUS | null;
   canalRoteamento?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
+  filaDestino?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO' | null;
 
   // ───── Detalhes do agendamento (preenchidos pela Regulação) ─────
   /** Endereço/sala da consulta. App paciente mostra no bloco "Sua consulta". */

@@ -36,6 +36,15 @@
 	let ubsSelecionada = $state<Ubs | null>(null);
 	let encaminhamentos = $state<Encaminhamento[]>([]);
 	let encSelecionado = $state<Encaminhamento | null>(null);
+	let termoBusca = $state('');
+
+	let encaminhamentosFiltrados = $derived.by(() => {
+		const term = termoBusca.trim().toLowerCase();
+		if (!term) return encaminhamentos;
+		return encaminhamentos.filter((e) =>
+			(e.paciente?.nome ?? '').toLowerCase().includes(term)
+		);
+	});
 
 	let arquivo = $state<File | null>(null);
 	let observacao = $state('');
@@ -54,6 +63,7 @@
 		ubsSelecionada = null;
 		encSelecionado = null;
 		encaminhamentos = [];
+		termoBusca = '';
 		arquivo = null;
 		observacao = '';
 		erro = '';
@@ -202,6 +212,7 @@
 			mensagemVazio="Nenhuma resposta oficial recebida ainda."
 			respostaSUS={true}
 			excluirRascunho
+			tipoFiltro="respostas"
 			detalheQuery="?aba=anexos"
 			dica="Cada item leva direto à aba de Anexos com o PDF oficial em destaque."
 		/>
@@ -283,7 +294,17 @@
 						Nenhum encaminhamento APROVADO sem resposta nesta UBS.
 					</div>
 				{:else}
-					<div class="max-h-[400px] overflow-y-auto border border-slate-200">
+					<!-- Barra de pesquisa por nome do paciente -->
+					<div class="relative">
+						<input
+							type="text"
+							bind:value={termoBusca}
+							placeholder="🔍 Digite o nome do paciente para filtrar..."
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-sans"
+						/>
+					</div>
+
+					<div class="max-h-[300px] overflow-y-auto border border-slate-200">
 						<table class="w-full border-collapse text-xs">
 							<thead class="sticky top-0 z-10 bg-slate-100">
 								<tr class="border-b border-slate-200 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
@@ -294,25 +315,33 @@
 								</tr>
 							</thead>
 							<tbody class="font-mono">
-								{#each encaminhamentos as e (e.id)}
-									<tr
-										onclick={() => escolherEnc(e)}
-										class="cursor-pointer border-b border-slate-100 hover:bg-blue-50"
-									>
-										<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900">
-											{e.protocolo}
-										</td>
-										<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">
-											{e.paciente.nome}
-										</td>
-										<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
-											{e.solicitacao.especialidadeSolicitada}
-										</td>
-										<td class="px-3 py-2 text-slate-600">
-											{new Date(e.criadoEm).toLocaleDateString('pt-BR')}
+								{#if encaminhamentosFiltrados.length === 0}
+									<tr>
+										<td colspan="4" class="px-3 py-8 text-center font-sans text-slate-500">
+											Nenhum paciente encontrado com o termo digitado.
 										</td>
 									</tr>
-								{/each}
+								{:else}
+									{#each encaminhamentosFiltrados as e (e.id)}
+										<tr
+											onclick={() => escolherEnc(e)}
+											class="cursor-pointer border-b border-slate-100 hover:bg-blue-50"
+										>
+											<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900">
+												{e.protocolo}
+											</td>
+											<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900 font-semibold">
+												{e.paciente.nome}
+											</td>
+											<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
+												{e.solicitacao.especialidadeSolicitada}
+											</td>
+											<td class="px-3 py-2 text-slate-600">
+												{new Date(e.criadoEm).toLocaleDateString('pt-BR')}
+											</td>
+										</tr>
+									{/each}
+								{/if}
 							</tbody>
 						</table>
 					</div>

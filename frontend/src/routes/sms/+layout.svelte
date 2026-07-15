@@ -133,8 +133,8 @@
 			label: 'RESPOSTAS DO SUS',
 			crumb: 'SMS / RESPOSTAS'
 		},
-		// Ingestões (file-manager)
-		'/sms/ingestoes': { label: 'ARQUIVO DE INGESTÕES', crumb: 'SMS / INGESTÕES' },
+		// Enviados
+		'/sms/enviados': { label: 'ENCAMINHAMENTOS ENVIADOS', crumb: 'SMS / ENVIADOS' },
 		// Pacientes
 		'/sms/pacientes': { label: 'PEC MUNICIPAL', crumb: 'SMS / PACIENTES' },
 		// Analytics
@@ -253,27 +253,27 @@
 		if (usrMatch) {
 			return redeUsuarioSub[usrMatch[1] ?? ''] ?? redeUsuarioSub[''];
 		}
-		// Ingestões (árvore dinâmica): UBS / Ano / Mês / Dia
+		// Enviados (árvore dinâmica): UBS / Ano / Mês / Dia
 		const ingMatch = page.url.pathname.match(
-			/^\/sms\/ingestoes(?:\/([^/]+)(?:\/(\d+)(?:\/(\d+)(?:\/(\d+))?)?)?)?$/
+			/^\/sms\/enviados(?:\/([^/]+)(?:\/(\d+)(?:\/(\d+)(?:\/(\d+))?)?)?)?$/
 		);
 		if (ingMatch) {
 			const [, , ano, mes, dia] = ingMatch;
 			if (dia)
 				return {
-					label: `INGESTÕES · ${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`,
-					crumb: `SMS / INGESTÕES / UBS / ${ano} / ${mes} / ${dia}`
+					label: `ENVIADOS · ${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`,
+					crumb: `SMS / ENVIADOS / UBS / ${ano} / ${mes} / ${dia}`
 				};
 			if (mes)
 				return {
-					label: `INGESTÕES · ${ano}/${String(mes).padStart(2, '0')}`,
-					crumb: `SMS / INGESTÕES / UBS / ${ano} / ${mes}`
+					label: `ENVIADOS · ${ano}/${String(mes).padStart(2, '0')}`,
+					crumb: `SMS / ENVIADOS / UBS / ${ano} / ${mes}`
 				};
 			if (ano)
-				return { label: `INGESTÕES · ${ano}`, crumb: `SMS / INGESTÕES / UBS / ${ano}` };
+				return { label: `ENVIADOS · ${ano}`, crumb: `SMS / ENVIADOS / UBS / ${ano}` };
 			if (ingMatch[1])
-				return { label: 'INGESTÕES · UBS', crumb: 'SMS / INGESTÕES / UBS' };
-			return { label: 'ARQUIVO DE INGESTÕES', crumb: 'SMS / INGESTÕES' };
+				return { label: 'ENVIADOS · UBS', crumb: 'SMS / ENVIADOS / UBS' };
+			return { label: 'ENCAMINHAMENTOS ENVIADOS', crumb: 'SMS / ENVIADOS' };
 		}
 		return pageTitles[page.url.pathname] ?? { label: 'SMS', crumb: 'SMS' };
 	});

@@ -86,6 +86,23 @@
 			</div>
 		{/if}
 
+		{#if enc.filaDestino}
+			<div class="mx-4 mb-3 border-l-4 border-blue-900 bg-blue-50 px-3 py-2">
+				<div class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">
+					Fila de destino
+				</div>
+				<div class="mt-0.5 font-mono text-xs font-bold text-blue-900 uppercase">
+					{#if enc.filaDestino === 'SUS'}
+						Regulação SUS (Estado)
+					{:else if enc.filaDestino === 'CENTRO_ESPECIALIDADES'}
+						Centro de Especialidades Municipal (Fila Direta)
+					{:else if enc.filaDestino === 'CEO'}
+						Centro de Especialidades Odontológicas - CEO (Fila Direta)
+					{/if}
+				</div>
+			</div>
+		{/if}
+
 		{#if enc.observacoesRegulacao}
 			<div class="mx-4 mb-4 border-l-4 border-amber-600 bg-amber-50 px-3 py-2">
 				<div class="font-mono text-[10px] font-bold tracking-widest text-amber-800 uppercase">

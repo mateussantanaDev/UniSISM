@@ -64,6 +64,7 @@ export interface AprovarInput {
   /** UF do agendamento. Default "BA". 2 chars. */
   ufAgendamento?: string;
   canalRoteamento?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
+  filaDestino?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO' | null;
 }
 
 export class AprovarEncaminhamentoUseCase {
@@ -111,6 +112,17 @@ export class AprovarEncaminhamentoUseCase {
     const profAg = input.profissionalAgendado?.trim();
     const cidadeAg = input.cidadeAgendamento?.trim();
     const ufAg = input.ufAgendamento?.trim().toUpperCase();
+
+    let resolvedCanal = input.canalRoteamento;
+    if (input.filaDestino !== undefined) {
+      if (input.filaDestino === 'CEO') {
+        resolvedCanal = 'CENTRO_ODONTOLOGICO';
+      } else if (input.filaDestino === 'CENTRO_ESPECIALIDADES' || input.filaDestino === 'SUS') {
+        resolvedCanal = input.filaDestino;
+      } else {
+        resolvedCanal = null;
+      }
+    }
 
     // Validações leves: se profissionalAgendado vier sem CRM, alerta no log mas aceita
     // (não vamos quebrar UX por causa de formato — a UI sugere o padrão).
@@ -179,7 +191,7 @@ export class AprovarEncaminhamentoUseCase {
           ...(profAg !== undefined ? { profissionalAgendado: profAg || null } : {}),
           ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),
           ...(ufAg !== undefined ? { ufAgendamento: ufAg || null } : {}),
-          ...(input.canalRoteamento !== undefined ? { canalRoteamento: input.canalRoteamento } : {}),
+          ...(resolvedCanal !== undefined ? { canalRoteamento: resolvedCanal } : {}),
           // Aprovação limpa motivoRejeicao residual de tentativa anterior (raro).
           motivoRejeicao: null,
         },

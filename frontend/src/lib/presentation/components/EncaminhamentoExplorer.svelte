@@ -50,6 +50,8 @@
 		 */
 		detalheQuery?: string;
 		dica?: string;
+		/** Custom view routing filter for SMS Command Center */
+		tipoFiltro?: 'solicitacoes' | 'enviados' | 'respostas';
 	}
 
 	let {
@@ -62,7 +64,8 @@
 		excluirRascunho = true,
 		detalheBasePath = '/sms/encaminhamentos',
 		detalheQuery = '',
-		dica = 'Navegação: UBS → Ano → Mês → Dia → Encaminhamentos.'
+		dica = 'Navegação: UBS → Ano → Mês → Dia → Encaminhamentos.',
+		tipoFiltro
 	}: Props = $props();
 
 	// ────────── Leitura da query atual ──────────
@@ -110,28 +113,89 @@
 		carregando = true;
 		erro = null;
 		try {
+			const getQuery = (extra: any) => {
+				const q = { ...flagsArvore(), ...extra };
+				if (tipoFiltro === 'enviados') q.respostaSUS = false;
+				if (tipoFiltro === 'respostas') q.respostaSUS = true;
+				return q;
+			};
+
 			if (nivel === 'ubs') {
-				ubsNodes = (await api.encaminhamentos.arvore({
-					...flagsArvore()
-				})) as ArvoreUbsNode[];
+				const nodes = (await api.encaminhamentos.arvore(getQuery({}))) as ArvoreUbsNode[];
+				if (tipoFiltro === 'solicitacoes') {
+					ubsNodes = nodes
+						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aguardando + u.statusContagem.pendencia
+						}));
+				} else if (tipoFiltro === 'enviados' || tipoFiltro === 'respostas') {
+					ubsNodes = nodes
+						.filter((u) => u.statusContagem.aprovado > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aprovado
+						}));
+				} else {
+					ubsNodes = nodes;
+				}
 			} else if (nivel === 'ano') {
-				anoNodes = (await api.encaminhamentos.arvore({
-					ubsId: ubsId!,
-					...flagsArvore()
-				})) as ArvoreAnoNode[];
+				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId! }))) as ArvoreAnoNode[];
+				if (tipoFiltro === 'solicitacoes') {
+					anoNodes = nodes
+						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aguardando + u.statusContagem.pendencia
+						}));
+				} else if (tipoFiltro === 'enviados' || tipoFiltro === 'respostas') {
+					anoNodes = nodes
+						.filter((u) => u.statusContagem.aprovado > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aprovado
+						}));
+				} else {
+					anoNodes = nodes;
+				}
 			} else if (nivel === 'mes') {
-				mesNodes = (await api.encaminhamentos.arvore({
-					ubsId: ubsId!,
-					ano: ano!,
-					...flagsArvore()
-				})) as ArvoreMesNode[];
+				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId!, ano: ano! }))) as ArvoreMesNode[];
+				if (tipoFiltro === 'solicitacoes') {
+					mesNodes = nodes
+						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aguardando + u.statusContagem.pendencia
+						}));
+				} else if (tipoFiltro === 'enviados' || tipoFiltro === 'respostas') {
+					mesNodes = nodes
+						.filter((u) => u.statusContagem.aprovado > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aprovado
+						}));
+				} else {
+					mesNodes = nodes;
+				}
 			} else if (nivel === 'dia') {
-				diaNodes = (await api.encaminhamentos.arvore({
-					ubsId: ubsId!,
-					ano: ano!,
-					mes: mes!,
-					...flagsArvore()
-				})) as ArvoreDiaNode[];
+				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId!, ano: ano!, mes: mes! }))) as ArvoreDiaNode[];
+				if (tipoFiltro === 'solicitacoes') {
+					diaNodes = nodes
+						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aguardando + u.statusContagem.pendencia
+						}));
+				} else if (tipoFiltro === 'enviados' || tipoFiltro === 'respostas') {
+					diaNodes = nodes
+						.filter((u) => u.statusContagem.aprovado > 0)
+						.map((u) => ({
+							...u,
+							totalEncaminhamentos: u.statusContagem.aprovado
+						}));
+				} else {
+					diaNodes = nodes;
+				}
 			} else {
 				// lista do dia
 				const desde = new Date(ano!, mes! - 1, dia!).toISOString().slice(0, 10);
@@ -141,15 +205,32 @@
 					ate,
 					limit: 500
 				};
+				if (tipoFiltro === 'enviados') q.respostaSUS = false;
+				if (tipoFiltro === 'respostas') q.respostaSUS = true;
 				if (typeof respostaSUS === 'boolean') q.respostaSUS = respostaSUS;
+
 				const lista = await api.encaminhamentos.list(q);
-				// Filtragem fina: o endpoint não filtra por UBS — é trivial cliente.
 				encsDoDia = lista.filter((e) =>
 					excluirRascunho ? e.status !== 'RASCUNHO' : true
 				);
 				if (ubsId) {
 					encsDoDia = encsDoDia.filter((e) =>
-						e.unidadeOrigem?.length ? true : true // fallback se o nome não casar
+						e.unidadeOrigem?.length ? true : true
+					);
+				}
+
+				// Apply client-side filters based on tipoFiltro
+				if (tipoFiltro === 'solicitacoes') {
+					encsDoDia = encsDoDia.filter(
+						(e) => e.status === 'AGUARDANDO_REGULACAO' || e.status === 'PENDENCIA_DOCUMENTO'
+					);
+				} else if (tipoFiltro === 'enviados') {
+					encsDoDia = encsDoDia.filter(
+						(e) => e.status === 'APROVADO' && !e.respostaSUS
+					);
+				} else if (tipoFiltro === 'respostas') {
+					encsDoDia = encsDoDia.filter(
+						(e) => e.status === 'APROVADO' && !!e.respostaSUS
 					);
 				}
 			}

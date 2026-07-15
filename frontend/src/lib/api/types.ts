@@ -317,6 +317,8 @@ export interface RespostaSUS {
   registradoPor: { id: string; nome: string; matricula: string };
 }
 
+export type FilaDestino = 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO';
+
 export interface Encaminhamento {
   id: string;
   protocolo: string;        // "UBS-2026-100137"
@@ -330,6 +332,7 @@ export interface Encaminhamento {
   observacoesRegulacao?: string;
   agendamentoPrevisto?: string | null;
   respostaSUS?: RespostaSUS | null;
+  filaDestino?: FilaDestino | null;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -339,6 +342,7 @@ export interface Encaminhamento {
 export interface AprovarRequest {
   nota?: string;
   agendamentoPrevisto?: string; // YYYY-MM-DD
+  filaDestino?: FilaDestino;
 }
 
 export interface RegistrarPendenciaRequest {
