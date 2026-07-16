@@ -65,7 +65,9 @@ export class CreateUsuarioUseCase {
       case 'REGULADOR_SMS':
       case 'GESTOR_TFD':
       case 'ATENDENTE_TFD':
-      case 'REGULADOR_TFD': {
+      case 'REGULADOR_TFD':
+      case 'MEDICO_ESPECIALISTA':
+      case 'ATENDENTE_CENTRO': {
         if (!input.prefeituraId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
@@ -106,6 +108,8 @@ export class CreateUsuarioUseCase {
         ATENDENTE_TFD: 'ATF-',
         REGULADOR_TFD: 'RTF-',
         MOTORISTA_TFD: 'MOT-',
+        MEDICO_ESPECIALISTA: 'ESP-',
+        ATENDENTE_CENTRO: 'ATC-',
       };
       const prefix = prefixMap[input.role] || 'USR-';
       const cleanedCpf = input.cpf.replace(/\D/g, '');

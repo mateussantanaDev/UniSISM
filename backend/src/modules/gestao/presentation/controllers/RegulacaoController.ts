@@ -26,6 +26,8 @@ import type {
   ReguladorContext,
 } from '../../application/use-cases/RegistrarRespostaSusUseCase';
 import type { GetArvoreEncaminhamentosUseCase } from '../../application/use-cases/GetArvoreEncaminhamentosUseCase';
+import type { ListarFilaEsperaCentroUseCase } from '../../application/use-cases/ListarFilaEsperaCentroUseCase';
+import type { AgendarEncaminhamentoUseCase } from '../../application/use-cases/AgendarEncaminhamentoUseCase';
 
 const aprovarSchema = z.object({
   nota: z.string().optional(),
@@ -87,6 +89,8 @@ export class RegulacaoController {
     private readonly rejeitarUC: RejeitarEncaminhamentoUseCase,
     private readonly respostaSusUC: RegistrarRespostaSusUseCase,
     private readonly arvoreUC: GetArvoreEncaminhamentosUseCase,
+    private readonly filaCentroUC: ListarFilaEsperaCentroUseCase,
+    private readonly agendarUC: AgendarEncaminhamentoUseCase,
   ) {}
 
   private async resolverAutor(req: Request): Promise<AutorRegulacao> {
@@ -206,5 +210,33 @@ export class RegulacaoController {
       ...(q.excluirRascunho !== undefined ? { excluirRascunho: q.excluirRascunho } : {}),
     });
     res.json(lista);
+  };
+
+  getFilaEsperaCentro = async (req: Request, res: Response): Promise<void> => {
+    const centroParam = paramString(req, 'centro');
+    if (centroParam !== 'CENTRO_ESPECIALIDADES' && centroParam !== 'CENTRO_ODONTOLOGICO') {
+      throw Unprocessable('CENTRO_INVALIDO', 'Centro deve ser CENTRO_ESPECIALIDADES ou CENTRO_ODONTOLOGICO');
+    }
+    const scope = scopeFromRequest(req);
+    const fila = await this.filaCentroUC.exec(centroParam, scope);
+    res.json(fila);
+  };
+
+  agendar = async (req: Request, res: Response): Promise<void> => {
+    const agendarSchema = z.object({
+      agendamentoPrevisto: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      localAgendamento: z.string().trim().max(300).optional(),
+      profissionalAgendado: z.string().trim().max(200).optional(),
+      cidadeAgendamento: z.string().trim().max(100).optional(),
+      ufAgendamento: z.string().trim().length(2).optional(),
+    });
+
+    const body = agendarSchema.parse(req.body ?? {});
+    const id = paramString(req, 'id');
+    const scope = scopeFromRequest(req);
+    const autor = await this.resolverAutor(req);
+
+    const enc = await this.agendarUC.exec(id, scope, autor, body);
+    res.status(200).json(enc);
   };
 }

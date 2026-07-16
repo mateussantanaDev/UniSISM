@@ -28,6 +28,8 @@ enum RoleAtendente {
   ATENDENTE_TFD     // atendente TFD (terminal rodoviário) — apenas cadastra solicitações de viagem
   MOTORISTA_TFD     // motorista TFD com app mobile próprio (UNISISM-motorista) — vê só suas viagens
   REGULADOR_TFD     // regulador TFD — cadastro de passageiros e solicitações
+  MEDICO_ESPECIALISTA // médico especialista do Centro de Especialidades / CEO
+  ATENDENTE_CENTRO    // atendente/recepcionista do Centro de Especialidades / CEO
 }
 
 enum Sexo {

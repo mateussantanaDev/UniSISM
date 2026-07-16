@@ -11,6 +11,8 @@ import type { RecomendacoesController } from '../controllers/RecomendacoesContro
 import type { SmsBannersAdminController } from '../controllers/SmsBannersAdminController';
 import type { RegulacaoController } from '../../modules/gestao/presentation/controllers/RegulacaoController';
 import { buildRegulacaoRoutes } from '../../modules/gestao/presentation/routes/regulacao.routes';
+import type { EspecialistaController } from '../../modules/gestao/presentation/controllers/EspecialistaController';
+import { buildEspecialistaRoutes } from '../../modules/gestao/presentation/routes/especialista.routes';
 import type { PacienteAppController } from '../../modules/paciente-app/presentation/controllers/PacienteAppController';
 import {
   buildPacienteAppRoutes,
@@ -53,6 +55,7 @@ interface Deps {
   recomendacoes: RecomendacoesController;
   smsBannersAdmin: SmsBannersAdminController;
   regulacao: RegulacaoController;
+  especialista: EspecialistaController;
   pacienteApp: PacienteAppController;
   passwordRecoveryRateLimiter: PasswordRecoveryRateLimiter;
   downloadAnexoRateLimiter: DownloadAnexoRateLimiter;
@@ -92,6 +95,7 @@ export function buildRoutes(deps: Deps): Router {
   // IMPORTANTE: registrar antes das rotas /encaminhamentos/:id pra evitar
   // que Express trate "/encaminhamentos/arvore" como :id="arvore".
   router.use(buildRegulacaoRoutes(deps.tokens, deps.regulacao));
+  router.use(buildEspecialistaRoutes(deps.tokens, deps.especialista));
 
   // ----- Encaminhamentos -----
   // consolidar/resolver requer UBS — DESENVOLVEDOR e ADMIN não podem (eles não são de uma UBS)

@@ -80,7 +80,13 @@ import { RegistrarPendenciaUseCase } from '../modules/gestao/application/use-cas
 import { RejeitarEncaminhamentoUseCase } from '../modules/gestao/application/use-cases/RejeitarEncaminhamentoUseCase';
 import { RegistrarRespostaSusUseCase } from '../modules/gestao/application/use-cases/RegistrarRespostaSusUseCase';
 import { GetArvoreEncaminhamentosUseCase } from '../modules/gestao/application/use-cases/GetArvoreEncaminhamentosUseCase';
+import { ListarFilaEsperaCentroUseCase } from '../modules/gestao/application/use-cases/ListarFilaEsperaCentroUseCase';
+import { AgendarEncaminhamentoUseCase } from '../modules/gestao/application/use-cases/AgendarEncaminhamentoUseCase';
+import { ListarAgendaEspecialistaUseCase } from '../modules/gestao/application/use-cases/ListarAgendaEspecialistaUseCase';
+import { RegistrarAtendimentoEspecialistaUseCase } from '../modules/gestao/application/use-cases/RegistrarAtendimentoEspecialistaUseCase';
 import { RegulacaoController } from '../modules/gestao/presentation/controllers/RegulacaoController';
+import { EspecialistaController } from '../modules/gestao/presentation/controllers/EspecialistaController';
+import { buildEspecialistaRoutes } from '../modules/gestao/presentation/routes/especialista.routes';
 
 import { UpdateUsuarioUseCase } from '../application/admin/UpdateUsuarioUseCase';
 import { DeleteUsuarioUseCase } from '../application/admin/DeleteUsuarioUseCase';
@@ -348,6 +354,8 @@ export function buildContainer() {
   const rejeitarUC = new RejeitarEncaminhamentoUseCase();
   const respostaSusUC = new RegistrarRespostaSusUseCase(storage, scanner);
   const arvoreUC = new GetArvoreEncaminhamentosUseCase();
+  const filaCentroUC = new ListarFilaEsperaCentroUseCase();
+  const agendarUC = new AgendarEncaminhamentoUseCase();
   const regulacaoController = new RegulacaoController(
     atendentes,
     aprovarUC,
@@ -355,6 +363,16 @@ export function buildContainer() {
     rejeitarUC,
     respostaSusUC,
     arvoreUC,
+    filaCentroUC,
+    agendarUC,
+  );
+
+  const agendaEspecialistaUC = new ListarAgendaEspecialistaUseCase();
+  const registrarAtendimentoEspecialistaUC = new RegistrarAtendimentoEspecialistaUseCase();
+  const especialistaController = new EspecialistaController(
+    atendentes,
+    agendaEspecialistaUC,
+    registrarAtendimentoEspecialistaUC,
   );
 
   // ----- Módulo Prontuário (CRUD de sub-documentos) -----
@@ -490,6 +508,7 @@ export function buildContainer() {
     recomendacoes: recomendacoesController,
     smsBannersAdmin: smsBannersAdminController,
     regulacao: regulacaoController,
+    especialista: especialistaController,
     pacienteApp: pacienteAppController,
     passwordRecoveryRateLimiter,
     downloadAnexoRateLimiter,

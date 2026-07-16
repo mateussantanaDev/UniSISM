@@ -21,6 +21,7 @@ export function buildRegulacaoRoutes(
   const authenticate = makeAuthenticate(tokens);
   const onlyRegulador = requireRole('REGULADOR_SMS', 'DESENVOLVEDOR');
   const reguladorOuAdmin = requireRole('REGULADOR_SMS', 'ADMIN', 'DESENVOLVEDOR');
+  const reguladorOuAdminOuCentro = requireRole('REGULADOR_SMS', 'ADMIN', 'DESENVOLVEDOR', 'ATENDENTE_CENTRO');
 
   // árvore (file-manager) — antes de :id pra não conflitar
   router.get(
@@ -30,11 +31,25 @@ export function buildRegulacaoRoutes(
     controller.getArvore,
   );
 
+  router.get(
+    '/centros/:centro/fila-espera',
+    authenticate,
+    reguladorOuAdminOuCentro,
+    controller.getFilaEsperaCentro,
+  );
+
   router.post(
     '/encaminhamentos/:id/aprovar',
     authenticate,
     onlyRegulador,
     controller.aprovar,
+  );
+
+  router.post(
+    '/encaminhamentos/:id/agendar',
+    authenticate,
+    reguladorOuAdminOuCentro,
+    controller.agendar,
   );
 
   router.post(
