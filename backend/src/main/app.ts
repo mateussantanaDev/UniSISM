@@ -11,6 +11,7 @@ import { apiKeyGuard } from '../presentation/middlewares/apiKey';
 import { buildRoutes } from '../presentation/routes';
 import { buildContainer, type Container } from './container';
 import { metricsRegistry } from '../infrastructure/metrics/prometheus';
+import { logger } from '../infrastructure/logger';
 
 export interface BuiltApp {
   app: Express;
@@ -65,7 +66,8 @@ export function buildApp(): BuiltApp {
         ) {
           return cb(null, true);
         }
-        cb(new Error(`CORS: origin não permitida: ${origin}`));
+        logger.warn({ origin }, 'CORS: origin não permitida');
+        cb(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
