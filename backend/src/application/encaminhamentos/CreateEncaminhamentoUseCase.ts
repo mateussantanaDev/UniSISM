@@ -19,6 +19,8 @@ import {
   MENSAGENS,
   NotificacaoPacienteService,
 } from '../../infrastructure/services/NotificacaoPacienteService';
+import { calcularOtimizacaoAgendamento } from '../../modules/gestao/application/use-cases/OtimizadorVagas';
+import { rowParaEncaminhamento } from '../../infrastructure/database/encaminhamentoMapper';
 
 export interface AnexoUpload {
   nomeOriginal: string;
@@ -31,9 +33,9 @@ export interface CreateEncaminhamentoInput {
   paciente: Paciente;
   pacienteComplemento?: PacienteComplemento;
   solicitacao: SolicitacaoMedica;
-  ubsId: string;
+  ubsId?: string;
   atendenteId: string;
-  unidadeOrigem: string;
+  unidadeOrigem?: string;
   atendenteResponsavel: string;
   solicitacaoPdf?: AnexoUpload;
   anexos: AnexoUpload[];
@@ -70,6 +72,30 @@ export class CreateEncaminhamentoUseCase {
         'DADOS_OBRIGATORIOS_AUSENTES',
         'Faltam campos obrigatórios (CPF, nome ou especialidade)',
       );
+    }
+
+    const atendente = await prisma.atendente.findUnique({
+      where: { id: input.atendenteId },
+    });
+    if (!atendente) {
+      throw Unprocessable('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
+    }
+
+    let resolvedUbsId = input.ubsId;
+    let resolvedUnidadeOrigem = input.unidadeOrigem;
+
+    if (!resolvedUbsId) {
+      const fallbackUbs = await prisma.ubs.findFirst({
+        where: atendente.prefeituraId ? { prefeituraId: atendente.prefeituraId } : undefined,
+      });
+      if (!fallbackUbs) {
+        throw Unprocessable(
+          'UBS_AUSENTE',
+          'Não foi possível encontrar uma UBS vinculada à prefeitura do atendente.',
+        );
+      }
+      resolvedUbsId = fallbackUbs.id;
+      resolvedUnidadeOrigem = `${fallbackUbs.nome} - ${fallbackUbs.municipio}`;
     }
 
     const pasta = `encaminhamentos/${new Date().toISOString().slice(0, 7)}`;
@@ -118,33 +144,118 @@ export class CreateEncaminhamentoUseCase {
       paciente: input.paciente,
       ...(input.pacienteComplemento ? { pacienteComplemento: input.pacienteComplemento } : {}),
       solicitacao: input.solicitacao,
-      ubsId: input.ubsId,
+      ubsId: resolvedUbsId!,
       atendenteId: input.atendenteId,
-      unidadeOrigem: input.unidadeOrigem,
+      unidadeOrigem: resolvedUnidadeOrigem!,
       atendenteResponsavel: input.atendenteResponsavel,
       anexos: anexosPersistidos,
     });
+
+    let finalEnc = criado;
+
+    // Se o criador for do Centro ou Regulador SMS, faz o agendamento/aprovação direta (Balcão)
+    if (atendente.role === 'ATENDENTE_CENTRO' || atendente.role === 'REGULADOR_SMS') {
+      const otimizado = await calcularOtimizacaoAgendamento({
+        especialidade: input.solicitacao.especialidadeSolicitada,
+        prioridade: input.solicitacao.prioridade,
+      });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.eventoTimeline.createMany({
+          data: [
+            {
+              encaminhamentoId: criado.id,
+              tipo: 'APROVADO',
+              titulo: 'Encaminhamento aprovado',
+              descricao: `Aprovado automaticamente via agendamento direto de balcão.`,
+              autor: atendente.nome,
+              autorPapel: atendente.role === 'REGULADOR_SMS' ? 'Regulação · SMS' : 'Recepção · Centro de Especialidades',
+            },
+            {
+              encaminhamentoId: criado.id,
+              tipo: 'AGENDADO',
+              titulo: 'Consulta agendada',
+              descricao: `Atendimento agendado para ${otimizado.dateStr} no local Centro Municipal de Especialidades. Profissional: ${otimizado.doctor.nome} às ${otimizado.timeStr}.`,
+              autor: atendente.nome,
+              autorPapel: atendente.role === 'REGULADOR_SMS' ? 'Regulação · SMS' : 'Recepção · Centro de Especialidades',
+            }
+          ]
+        });
+
+        await tx.encaminhamento.update({
+          where: { id: criado.id },
+          data: {
+            status: 'APROVADO',
+            agendamentoPrevisto: otimizado.dateTime,
+            localAgendamento: 'Centro Municipal de Especialidades',
+            profissionalAgendado: otimizado.doctor.nome,
+            cidadeAgendamento: criado.cidadeAgendamento || 'Município Sede',
+            ufAgendamento: 'PE',
+            canalRoteamento: 'CENTRO_ESPECIALIDADES',
+            destinoRegulacao: 'CENTRO_ESPECIALIDADES',
+            observacoesRegulacao: `Médico: ${otimizado.doctor.nome} às ${otimizado.timeStr} | Agendamento direto de Balcão`,
+          }
+        });
+      });
+
+      // Busca o registro atualizado
+      const updated = await prisma.encaminhamento.findUnique({
+        where: { id: criado.id },
+        include: {
+          anexos: true,
+          timeline: true,
+        }
+      });
+      if (updated) {
+        finalEnc = rowParaEncaminhamento(updated);
+      }
+
+      // Notificações de aprovação e agendamento para o paciente
+      void this.notificacoes
+        .notificar({
+          cpfPaciente: finalEnc.pacienteCpf,
+          pacienteNome: finalEnc.pacienteNome,
+          encaminhamentoId: finalEnc.id,
+          tipo: 'APROVADO',
+          ...MENSAGENS.aprovado(finalEnc.protocolo),
+          payload: { protocolo: finalEnc.protocolo },
+        })
+        .catch((err) => logger.warn({ err }, 'notificar APROVADO falhou'));
+
+      void this.notificacoes
+        .notificar({
+          cpfPaciente: finalEnc.pacienteCpf,
+          pacienteNome: finalEnc.pacienteNome,
+          encaminhamentoId: finalEnc.id,
+          tipo: 'AGENDADO',
+          ...MENSAGENS.agendado(finalEnc.protocolo, otimizado.dateTime.toISOString()),
+          payload: {
+            protocolo: finalEnc.protocolo,
+            agendamentoPrevisto: otimizado.dateTime.toISOString(),
+          },
+        })
+        .catch((err) => logger.warn({ err }, 'notificar AGENDADO falhou'));
+    } else {
+      // Notificação comum de criação para o app do paciente
+      void this.notificacoes
+        .notificar({
+          cpfPaciente: input.paciente.cpf,
+          pacienteNome: input.paciente.nome,
+          ...(input.paciente.telefone ? { pacienteTelefone: input.paciente.telefone } : {}),
+          encaminhamentoId: criado.id,
+          tipo: 'ENCAMINHAMENTO_CRIADO',
+          ...MENSAGENS.encaminhamentoCriado(criado.protocolo, resolvedUnidadeOrigem!),
+          payload: { protocolo: criado.protocolo, unidadeOrigem: resolvedUnidadeOrigem! },
+        })
+        .catch((err) => logger.warn({ err }, 'falha ao notificar paciente'));
+    }
 
     // Scan AV dos anexos (fire-and-forget).
     if (this.scanner) {
       void this.escanearAnexosAsync(criado.id);
     }
 
-    // Notificação pro app do paciente (fire-and-forget) — passa telefone/email
-    // pra enriquecer/criar a PacienteConta automaticamente.
-    void this.notificacoes
-      .notificar({
-        cpfPaciente: input.paciente.cpf,
-        pacienteNome: input.paciente.nome,
-        ...(input.paciente.telefone ? { pacienteTelefone: input.paciente.telefone } : {}),
-        encaminhamentoId: criado.id,
-        tipo: 'ENCAMINHAMENTO_CRIADO',
-        ...MENSAGENS.encaminhamentoCriado(criado.protocolo, input.unidadeOrigem),
-        payload: { protocolo: criado.protocolo, unidadeOrigem: input.unidadeOrigem },
-      })
-      .catch((err) => logger.warn({ err }, 'falha ao notificar paciente'));
-
-    return criado;
+    return finalEnc;
   }
 
   private async escanearAnexosAsync(encaminhamentoId: string): Promise<void> {

@@ -1,3 +1,23 @@
 - criar tela para agendamento de exames de sangue no adolfo lutz para a regulacao
 - formulario de exame de sangue da UBS deve ser online, com os campos de nome, dados completo do paciente e campos para dados do tipo de exame, como glicose, urina, etc
 - cadastro para controle de motoristas e frota de veiculos
+
+
+
+** REGULACAO **
+- filtro de especilidade no recebimento dos encaminhamentos da UBS respeitando a prioridade do paciente
+- criar tela de filtro global para filtrar a especialidade , junta todos os encaminhamentos recebidos em uma unica tela e filtra a especialidade, nessa tela deve aparecer todos os ecaminhamentos sem separacao de posto, por ordem de chegada por dia e prioridade, deve ser possivel filtrar a data que chegou, a especilidade, local/ubs e a prioridade, mas deve ter a informacao de qual posto de saude enviou, mas sem a separacao por pasta, apenas para questao de informacao, separar informacoes de forma de tabela para melhor visualizacao
+- nessa tela de envio para tela de pode ter uma tela de selecionar tudo e aprovar em lote e escolher o local para onde enviar o encaminhamento
+
+
+
+
+** CENTRO DE ESPECIALIDADE **
+- Agenda/ lista de espera pela sequencia que vai chegando com prioridade e urgencia
+- lsita de agendamento por dia
+- formulario de agendamento
+- logica de viagem de documentos: UBS --> Secretaria de Saúde --> Centro de Especialidade --> Paciente
+- possibilidade de passar pacientes na frente dos outros com base na urgencia sem alterar restante da sequencia da fila
+- cadastro de agendamentos no balcao do centro
+ 
+** 

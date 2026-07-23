@@ -43,6 +43,7 @@
 			titulo: 'OPERAÇÃO',
 			items: [
 				{ label: 'Dashboard', href: '/sms/dashboard', shortcut: 'D' },
+				{ label: 'Regulação', href: '/sms/regulacao', shortcut: 'F' },
 				{ label: 'Solicitações', href: '/sms/solicitacoes', shortcut: 'S' },
 				{ label: 'Respostas', href: '/sms/respostas', shortcut: 'R' }
 			]
@@ -54,6 +55,7 @@
 			titulo: 'OPERAÇÃO',
 			items: [
 				{ label: 'Dashboard', href: '/sms/dashboard', shortcut: 'D' },
+				{ label: 'Regulação', href: '/sms/regulacao', shortcut: 'F' },
 				{ label: 'Solicitações', href: '/sms/solicitacoes', shortcut: 'S' },
 				{ label: 'Respostas', href: '/sms/respostas', shortcut: 'R' },
 				{

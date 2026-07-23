@@ -33,6 +33,7 @@ import {
   NotificacaoPacienteService,
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
 import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arvoreCacheInvalidator';
+import { calcularOtimizacaoAgendamento } from './OtimizadorVagas';
 
 export interface AutorRegulacao {
   nome: string;
@@ -132,12 +133,6 @@ export class AprovarEncaminhamentoUseCase {
       }
     }
 
-    const notaLimpa = input.nota?.trim();
-    const localAg = input.localAgendamento?.trim();
-    const profAg = input.profissionalAgendado?.trim();
-    const cidadeAg = input.cidadeAgendamento?.trim();
-    const ufAg = input.ufAgendamento?.trim().toUpperCase();
-
     let resolvedCanal = input.canalRoteamento;
     if (input.filaDestino !== undefined) {
       if (input.filaDestino === 'CEO') {
@@ -155,6 +150,30 @@ export class AprovarEncaminhamentoUseCase {
     } else if (resolvedCanal !== undefined) {
       resolvedDestino = resolvedCanal;
     }
+
+    let localAg = input.localAgendamento?.trim();
+    let profAg = input.profissionalAgendado?.trim();
+    let cidadeAg = input.cidadeAgendamento?.trim();
+    let ufAg = input.ufAgendamento?.trim().toUpperCase();
+    let notaTexto = input.nota;
+
+    if (!agendamento && (resolvedCanal === 'CENTRO_ESPECIALIDADES' || resolvedDestino === 'CENTRO_ESPECIALIDADES')) {
+      const otimizado = await calcularOtimizacaoAgendamento({
+        profissional: profAg,
+        nota: notaTexto,
+        especialidade: atual.especialidadeSolicitada,
+        prioridade: atual.prioridade,
+      });
+      agendamento = otimizado.dateTime;
+      profAg = otimizado.doctor.nome;
+      localAg = localAg || 'Centro Municipal de Especialidades';
+      cidadeAg = cidadeAg || atual.cidadeAgendamento || 'Município Sede';
+      ufAg = ufAg || 'PE';
+      const timeInfo = `Médico: ${otimizado.doctor.nome} às ${otimizado.timeStr}`;
+      notaTexto = notaTexto ? `${timeInfo} | ${notaTexto}` : timeInfo;
+    }
+
+    const notaLimpa = notaTexto?.trim();
 
     // Validações leves: se profissionalAgendado vier sem CRM, alerta no log mas aceita
     // (não vamos quebrar UX por causa de formato — a UI sugere o padrão).
@@ -240,7 +259,7 @@ export class AprovarEncaminhamentoUseCase {
         payload: {
           protocolo: upd.protocolo,
           ubsId: upd.ubsId,
-          agendamentoPrevisto: input.agendamentoPrevisto ?? null,
+          agendamentoPrevisto: agendamento ? agendamento.toISOString().substring(0, 10) : null,
           aprovadoPor: autor.nome,
         },
       });

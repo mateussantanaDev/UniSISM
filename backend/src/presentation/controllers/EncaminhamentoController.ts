@@ -87,7 +87,7 @@ export class EncaminhamentoController {
     const anexoFiles = getFiles(req, 'anexo');
     const tipoAnexoRaw = req.body?.tipoAnexo;
     const tiposAnexo: string[] = Array.isArray(tipoAnexoRaw)
-      ? tipoAnexoRaw.map(String)
+      ? tiposAnexoRaw.map(String)
       : tipoAnexoRaw
         ? [String(tipoAnexoRaw)]
         : [];
@@ -107,12 +107,6 @@ export class EncaminhamentoController {
 
     const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
     if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
-    if (!atendente.ubs || !atendente.ubsId) {
-      throw Forbidden(
-        'USUARIO_SEM_UBS',
-        'Apenas usuários vinculados a uma UBS podem consolidar encaminhamentos',
-      );
-    }
 
     // Separa campos essenciais (Paciente domínio) dos complementares.
     // Os complementares são opcionais e só entram quando presentes — assim
@@ -132,9 +126,9 @@ export class EncaminhamentoController {
       paciente: { nome, cpf, cartaoSus, dataNascimento, sexo, telefone, endereco },
       ...(pacienteComplemento ? { pacienteComplemento } : {}),
       solicitacao: payload.solicitacao,
-      ubsId: atendente.ubsId,
+      ubsId: atendente.ubsId || '',
       atendenteId: req.auth!.sub,
-      unidadeOrigem: `${atendente.ubs.nome} - ${atendente.ubs.municipio}`,
+      unidadeOrigem: atendente.ubs ? `${atendente.ubs.nome} - ${atendente.ubs.municipio}` : '',
       atendenteResponsavel: atendente.nome,
       ...(solicFile
         ? {

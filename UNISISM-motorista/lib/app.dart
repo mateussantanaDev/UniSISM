@@ -16,8 +16,13 @@ class UnisismMotoristaApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: router,
-      builder: (context, child) =>
-          ToastOverlay(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: ToastOverlay(child: child ?? const SizedBox.shrink()),
+        );
+      },
     );
   }
 }

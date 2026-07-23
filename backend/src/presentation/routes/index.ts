@@ -108,7 +108,7 @@ export function buildRoutes(deps: Deps): Router {
   router.post(
     '/encaminhamentos',
     authenticate,
-    requireRole('ATENDENTE_UBS', 'COORDENADOR_UBS', 'DESENVOLVEDOR'),
+    requireRole('ATENDENTE_UBS', 'COORDENADOR_UBS', 'DESENVOLVEDOR', 'ATENDENTE_CENTRO', 'REGULADOR_SMS'),
     memoryUpload.fields([
       { name: 'solicitacao', maxCount: 1 },
       { name: 'anexo', maxCount: 10 },

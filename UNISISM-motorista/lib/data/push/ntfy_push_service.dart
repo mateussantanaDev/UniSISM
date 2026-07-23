@@ -54,7 +54,7 @@ class NtfyPushService implements PushService {
     // ─── 1. Local notifications ────────────────────────────────
     await _local.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNISISM - Guia de Integração do Centro Municipal de Especialidades</title>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --primary-light: #f0fdfa;
+            --primary-dark: #115e59;
+            --success: #059669;
+            --success-light: #ecfdf5;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #334155;
+            --text-dark: #0f172a;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0d1117 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+
+        header p {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #99f6e4;
+            font-family: var(--font-mono);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .badge {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0;
+            text-transform: uppercase;
+        }
+
+        .badge-post { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge-get { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-alg { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+        h3 {
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 0.15rem 0.35rem;
+            border-radius: 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        pre {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 1.25rem;
+            border-radius: 0;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            border: 1px solid #334155;
+        }
+
+        .alert {
+            border-left: 4px solid var(--warning);
+            background-color: #fffbeb;
+            padding: 1rem;
+            border-radius: 0;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: #78350f;
+        }
+
+        .alert-success {
+            border-left-color: var(--success);
+            background-color: var(--success-light);
+            color: #065f46;
+        }
+
+        /* Interactive Simulator Styles */
+        .sim-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .sim-input:focus {
+            border-color: var(--primary);
+        }
+
+        .sim-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .sim-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        footer {
+            background-color: #0d1117;
+            color: #64748b;
+            text-align: center;
+            padding: 2rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            border-top: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <h1>UNISISM · Centro de Especialidades (Fase 1: Recepção)</h1>
+            <p>Guia de Integração e Regras do Algoritmo Backend - v1.1.0</p>
+        </div>
+    </header>
+
+    <main>
+        <!-- 1. Visão Geral -->
+        <div class="card">
+            <h2 class="card-title">1. Visão Geral do Módulo</h2>
+            <p>
+                O módulo <strong>Centro de Especialidades Municipal</strong> gerencia a jornada secundária do paciente após a regulação da Secretaria Municipal de Saúde (SMS). A <strong>Fase 1: Recepção</strong> gerencia os agendamentos das consultas e exames especializados.
+            </p>
+            <div class="alert alert-success font-mono">
+                Fluxo de Estados: [UBS: RASCUNHO] &rarr; [SMS: AGUARDANDO_REGULACAO] &rarr; [SMS: APROVADO com filaDestino: CENTRO_ESPECIALIDADES] &rarr; [CENTRO: agendamentoPrevisto setado].
+            </div>
+        </div>
+
+        <!-- 2. Requisito Novo: Algoritmo de Otimização -->
+        <div class="card">
+            <h2 class="card-title">
+                2. Algoritmo de Otimização de Vagas (Backend)
+                <span class="badge badge-alg">REQUISITO</span>
+            </h2>
+            <p>
+                A recepção do Centro <strong>não escolhe a data ou hora da consulta manualmente</strong>. Esse controle foi removido do frontend para evitar favorecimentos e otimizar a fila clínica de forma impessoal.
+            </p>
+            <p><strong>Regras para desenvolvimento do algoritmo no Backend:</strong></p>
+            <ol>
+                <li>
+                    <strong>Classificação Clínico-Temporal (Prioridade)</strong>: Pacientes em estados mais críticos (<code>EMERGENCIA</code> e <code>URGENTE</code>) devem ter preferência absoluta na fila, recebendo as vagas mais próximas possíveis da escala de trabalho do médico.
+                </li>
+                <li>
+                    <strong>Escala de Trabalho dos Médicos</strong>: O algoritmo deve mapear os dias e turnos de trabalho de cada especialista solicitado (ex: segundas e quartas, das 08h às 12h) e preencher sequencialmente as vagas vagas/slots livres.
+                </li>
+                <li>
+                    <strong>Tratamento na API</strong>: Ao receber o agendamento (tanto via Fila da Regulação quanto via Balcão), o backend roda o algoritmo de otimização de vagas, agenda o paciente e retorna a data calculada (<code>agendamentoPrevisto</code>) e o horário nos detalhes do agendamento.
+                </li>
+            </ol>
+        </div>
+
+        <!-- 3. Endpoints e Contratos -->
+        <div class="card">
+            <h2 class="card-title">3. Endpoints Requeridos / Consumidos</h2>
+
+            <!-- GET /encaminhamentos -->
+            <div>
+                <h3>
+                    <span class="badge badge-get">GET</span>
+                    <code>/encaminhamentos?status=APROVADO&limit=1000</code>
+                </h3>
+                <p>Retorna os encaminhamentos aprovados pela regulação. O frontend filtra no cliente por <code>filaDestino === 'CENTRO_ESPECIALIDADES'</code>.</p>
+                <pre>{
+  "encaminhamentos": [
+    {
+      "id": "uuid-1234",
+      "protocolo": "ENC20260721-001",
+      "status": "APROVADO",
+      "filaDestino": "CENTRO_ESPECIALIDADES",
+      "agendamentoPrevisto": null,
+      "paciente": {
+        "nome": "Mateus Silva",
+        "cpf": "12345678909"
+      },
+      "solicitacao": {
+        "especialidadeSolicitada": "Cardiologia",
+        "cid10": "I10",
+        "prioridade": "URGENTE"
+      }
+    }
+  ]
+}</pre>
+            </div>
+
+            <!-- POST /encaminhamentos/:id/aprovar -->
+            <div>
+                <h3>
+                    <span class="badge badge-post">POST</span>
+                    <code>/encaminhamentos/:id/aprovar</code>
+                </h3>
+                <p>Aciona o algoritmo de agendamento automático. O atendente passa apenas o médico selecionado e a observação de balcão.</p>
+                <pre>{
+  "filaDestino": "CENTRO_ESPECIALIDADES",
+  "nota": "Médico: Dr. Roberto Medeiros | Obs: Trazer exames antigos."
+}</pre>
+            </div>
+
+            <!-- GET /pacientes/por-cpf/:cpf -->
+            <div>
+                <h3>
+                    <span class="badge badge-get">GET</span>
+                    <code>/pacientes/por-cpf/:cpf</code>
+                </h3>
+                <p>Consulta se o paciente já possui cadastro no PEC municipal para preenchimento automático no Balcão.</p>
+                <pre>{
+  "existe": true,
+  "paciente": {
+    "nome": "João dos Santos",
+    "cartaoSus": "898000123456789",
+    "dataNascimento": "1985-04-12",
+    "sexo": "M",
+    "telefone": "51999998888",
+    "endereco": "Av. Central, 100"
+  }
+}</pre>
+            </div>
+
+            <!-- POST /encaminhamentos -->
+            <div>
+                <h3>
+                    <span class="badge badge-post">POST</span>
+                    <code>/encaminhamentos</code>
+                </h3>
+                <p>Usado no agendamento direto de Balcão quando o paciente não vem da regulação digital da SMS (ex: encaminhamento de papel antigo).</p>
+                <pre>{
+  "paciente": {
+    "nome": "Lucia Souza",
+    "cpf": "98765432100",
+    "cartaoSus": "898000222233334",
+    "dataNascimento": "1972-09-25",
+    "sexo": "F",
+    "telefone": "51988887777",
+    "endereco": "Rua das Flores, 45"
+  },
+  "solicitacao": {
+    "medicoSolicitante": "Médico do Balcão",
+    "crm": "000000",
+    "especialidadeSolicitada": "Oftalmologia",
+    "cid10": "H52",
+    "cidDescricao": "Erros de refração",
+    "justificativaClinica": "Agendamento direto efetuado no balcão do Centro.",
+    "prioridade": "ELETIVA",
+    "dataSolicitacao": "2026-07-21"
+  }
+}</pre>
+            </div>
+        </div>
+
+        <!-- 4. Modelagem de Dados no Backend -->
+        <div class="card">
+            <h2 class="card-title">4. Modelagem de Dados no Backend</h2>
+            <p>Os seguintes campos na tabela de <code>encaminhamentos</code> dão suporte à feature:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>filaDestino</code></td>
+                        <td><code>ENUM('SUS', 'CENTRO_ESPECIALIDADES', 'CEO')</code></td>
+                        <td>Define a triagem/fila final para onde o encaminhamento aprovado foi destinado.</td>
+                    </tr>
+                    <tr>
+                        <td><code>agendamentoPrevisto</code></td>
+                        <td><code>DATE</code> (Nullable)</td>
+                        <td>A data reservada para a consulta (calculada pelo algoritmo backend no momento da aprovação/agendamento).</td>
+                    </tr>
+                    <tr>
+                        <td><code>observacoesRegulacao</code></td>
+                        <td><code>TEXT</code> (Nullable)</td>
+                        <td>Armazena as instruções do agendamento (nome do especialista, horário calculado, recomendações).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 5. Simulador Interativo -->
+        <div class="card">
+            <h2 class="card-title">5. Simulador de Payload da Recepção (Com Otimização)</h2>
+            <p>Selecione um médico e gere o JSON enviado ao backend no clique de agendar:</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div>
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Médico Especialista:</label>
+                    <select id="sim-medico" class="sim-input" style="height: 35px; width: 100%;">
+                        <option value="Dr. Roberto Medeiros (Cardiologia)">Dr. Roberto Medeiros (Cardiologia)</option>
+                        <option value="Dra. Sandra Regina (Cardiologia)">Dra. Sandra Regina (Cardiologia)</option>
+                        <option value="Dr. Fábio Alencar (Oftalmologia)">Dr. Fábio Alencar (Oftalmologia)</option>
+                        <option value="Dra. Patrícia Silveira (Oftalmologia)">Dra. Patrícia Silveira (Oftalmologia)</option>
+                    </select>
+
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Prioridade Clínica:</label>
+                    <select id="sim-prioridade" class="sim-input" style="height: 35px; width: 100%;">
+                        <option value="ELETIVA">ELETIVA (Mock: +15 dias)</option>
+                        <option value="PRIORITARIA">PRIORITÁRIA (Mock: +7 dias)</option>
+                        <option value="URGENTE">URGENTE (Mock: +3 dias)</option>
+                        <option value="EMERGENCIA">EMERGÊNCIA (Mock: +1 dia)</option>
+                    </select>
+
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Recomendações:</label>
+                    <textarea id="sim-obs" class="sim-input" style="height: 60px;">Trazer exames anteriores.</textarea>
+
+                    <button type="button" class="sim-btn" onclick="gerarPayload()">Gerar JSON</button>
+                </div>
+                <div>
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Payload Produzido (POST /aprovar):</label>
+                    <pre id="sim-output" style="margin-top: 0; height: 215px; overflow-y: auto;">Clique em "Gerar" para ver o JSON.</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        UNISISM · Coordenação de Integrações de Sistemas e Tecnologia Municipal · 2026
+    </footer>
+
+    <script>
+        function gerarPayload() {
+            const medico = document.getElementById('sim-medico').value;
+            const prio = document.getElementById('sim-prioridade').value;
+            const obs = document.getElementById('sim-obs').value;
+
+            // Simula a data calculada que o backend gerará
+            const hoje = new Date();
+            let dias = 15;
+            if (prio === 'EMERGENCIA') dias = 1;
+            else if (prio === 'URGENTE') dias = 3;
+            else if (prio === 'PRIORITARIA') dias = 7;
+            hoje.setDate(hoje.getDate() + dias);
+            const dataStr = hoje.toISOString().substring(0, 10);
+
+            const payload = {
+                filaDestino: "CENTRO_ESPECIALIDADES",
+                nota: "Médico: " + medico + " às 14:15 | Obs: " + (obs || "Nenhuma")
+            };
+
+            document.getElementById('sim-output').textContent = JSON.stringify(payload, null, 2);
+        }
+        gerarPayload();
+    </script>
+</body>
+</html>

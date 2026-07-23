@@ -8,9 +8,10 @@ import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arv
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 import { logger } from '../../../../infrastructure/logger';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
+import { calcularOtimizacaoAgendamento } from './OtimizadorVagas';
 
 export interface AgendarInput {
-  agendamentoPrevisto: string; // YYYY-MM-DD
+  agendamentoPrevisto?: string; // YYYY-MM-DD (opcional)
   localAgendamento?: string;
   profissionalAgendado?: string;
   cidadeAgendamento?: string;
@@ -39,26 +40,42 @@ export class AgendarEncaminhamentoUseCase {
       );
     }
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.agendamentoPrevisto)) {
-      throw Unprocessable(
-        'AGENDAMENTO_INVALIDO',
-        'agendamentoPrevisto deve ser uma data no formato YYYY-MM-DD'
-      );
-    }
-    const agendamento = new Date(`${input.agendamentoPrevisto}T00:00:00.000Z`);
-    if (Number.isNaN(agendamento.getTime())) {
-      throw Unprocessable('AGENDAMENTO_INVALIDO', 'agendamentoPrevisto inválido');
-    }
-    const hojeUtc = new Date();
-    hojeUtc.setUTCHours(0, 0, 0, 0);
-    if (agendamento < hojeUtc) {
-      throw Unprocessable('AGENDAMENTO_NO_PASSADO', 'agendamentoPrevisto deve ser hoje ou no futuro');
-    }
+    let agendamento: Date;
+    let localAg = input.localAgendamento?.trim();
+    let profAg = input.profissionalAgendado?.trim();
+    let cidadeAg = input.cidadeAgendamento?.trim();
+    let ufAg = input.ufAgendamento?.trim().toUpperCase();
 
-    const localAg = input.localAgendamento?.trim();
-    const profAg = input.profissionalAgendado?.trim();
-    const cidadeAg = input.cidadeAgendamento?.trim();
-    const ufAg = input.ufAgendamento?.trim().toUpperCase();
+    if (!input.agendamentoPrevisto) {
+      // Automatic slot calculation
+      const otimizado = await calcularOtimizacaoAgendamento({
+        profissional: profAg,
+        nota: '',
+        especialidade: atual.especialidadeSolicitada,
+        prioridade: atual.prioridade,
+      });
+      agendamento = otimizado.dateTime;
+      profAg = otimizado.doctor.nome;
+      localAg = localAg || 'Centro Municipal de Especialidades';
+      cidadeAg = cidadeAg || atual.cidadeAgendamento || 'Município Sede';
+      ufAg = ufAg || 'PE';
+    } else {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.agendamentoPrevisto)) {
+        throw Unprocessable(
+          'AGENDAMENTO_INVALIDO',
+          'agendamentoPrevisto deve ser uma data no formato YYYY-MM-DD'
+        );
+      }
+      agendamento = new Date(`${input.agendamentoPrevisto}T00:00:00.000Z`);
+      if (Number.isNaN(agendamento.getTime())) {
+        throw Unprocessable('AGENDAMENTO_INVALIDO', 'agendamentoPrevisto inválido');
+      }
+      const hojeUtc = new Date();
+      hojeUtc.setUTCHours(0, 0, 0, 0);
+      if (agendamento < hojeUtc) {
+        throw Unprocessable('AGENDAMENTO_NO_PASSADO', 'agendamentoPrevisto deve ser hoje ou no futuro');
+      }
+    }
 
     if (ufAg && !/^[A-Z]{2}$/.test(ufAg)) {
       throw Unprocessable(
@@ -74,7 +91,7 @@ export class AgendarEncaminhamentoUseCase {
           encaminhamentoId: id,
           tipo: 'AGENDADO',
           titulo: 'Consulta agendada',
-          descricao: `Atendimento agendado para ${input.agendamentoPrevisto} no local ${localAg || 'não informado'}. Profissional: ${profAg || 'não informado'}.`,
+          descricao: `Atendimento agendado para ${agendamento.toISOString().substring(0, 10)} no local ${localAg || 'não informado'}. Profissional: ${profAg || 'não informado'}.`,
           autor: autor.nome,
           autorPapel: autor.papel,
         },

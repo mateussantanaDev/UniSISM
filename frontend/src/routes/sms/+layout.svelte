@@ -97,6 +97,11 @@
 
 	// ─────────── Breadcrumbs (§8.4) ───────────
 	const pageTitles: Record<string, { label: string; crumb: string }> = {
+		// Regulação
+		'/sms/regulacao': {
+			label: 'REGULAÇÃO DE ENCAMINHAMENTOS',
+			crumb: 'SMS / REGULAÇÃO / FILTRO GLOBAL'
+		},
 		// Dashboard
 		'/sms/dashboard': {
 			label: 'DASHBOARD · VISÃO GERAL',
