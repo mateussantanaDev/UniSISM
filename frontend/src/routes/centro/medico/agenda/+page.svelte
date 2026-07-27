@@ -185,7 +185,7 @@
 			}
 
 			// Fallback para API de encaminhamentos
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 100 });
+			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 
 			// If API returns real appointments for this date, map them; otherwise provide rich demo schedule

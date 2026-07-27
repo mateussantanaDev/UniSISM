@@ -45,8 +45,8 @@
 		erro = '';
 		selecionados = {};
 		try {
-			// Carrega até 1000 encaminhamentos para permitir filtragem local densa de alta performance
-			encaminhamentos = await api.encaminhamentos.list({ limit: 1000 });
+			// Carrega até 100 encaminhamentos para permitir filtragem local densa de alta performance
+			encaminhamentos = await api.encaminhamentos.list({ limit: 100 });
 		} catch (e) {
 			console.error(e);
 			erro = 'Falha ao carregar fila de regulação. Verifique sua conexão.';

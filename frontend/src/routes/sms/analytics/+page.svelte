@@ -18,7 +18,7 @@
 	onMount(async () => {
 		try {
 			const [encs, ubs] = await Promise.all([
-				api.encaminhamentos.list({ limit: 1000 }),
+				api.encaminhamentos.list({ limit: 100 }),
 				api.admin.listUbs()
 			]);
 			encaminhamentos = encs;

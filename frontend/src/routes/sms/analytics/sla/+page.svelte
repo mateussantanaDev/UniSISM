@@ -15,7 +15,7 @@
 
 	onMount(async () => {
 		try {
-			encs = await api.encaminhamentos.list({ limit: 1000 });
+			encs = await api.encaminhamentos.list({ limit: 100 });
 		} finally {
 			carregando = false;
 		}
