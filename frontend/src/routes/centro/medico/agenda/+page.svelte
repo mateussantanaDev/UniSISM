@@ -185,7 +185,7 @@
 			}
 
 			// Fallback para API de encaminhamentos
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
+			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 100 });
 			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 
 			// If API returns real appointments for this date, map them; otherwise provide rich demo schedule
@@ -378,7 +378,104 @@
 			}
 		} catch (e) {
 			console.error(e);
-			erroGlobal = 'Falha ao conectar ao servidor. Exibindo dados locais da agenda.';
+			erroGlobal = 'Modo de simulação ativado (servidor backend offline ou em manutenção).';
+			if (consultas.length === 0) {
+				consultas = [
+					{
+						id: 'cons-101',
+						protocolo: 'ENC20260727-001',
+						horario: '08:00',
+						status: 'CONCLUIDO',
+						pacienteId: 'pac-1',
+						paciente: {
+							nome: 'Maria Eduarda Silva',
+							cpf: '123.456.789-00',
+							cartaoSus: '898000123456789',
+							dataNascimento: '1982-03-14',
+							sexo: 'F',
+							telefone: '(51) 99887-1122',
+							endereco: 'Rua das Flores, 120 - Centro'
+						},
+						solicitacao: {
+							medicoSolicitante: 'Dr. Carlos Eduardo',
+							crm: 'CRM 45892',
+							especialidadeSolicitada: 'Cardiologia',
+							cid10: 'I10',
+							cidDescricao: 'Hipertensão essencial (primária)',
+							justificativaClinica: 'Paciente com picos hipertensivos recorrentes e palpitações esporádicas. Solícito avaliação especializada.',
+							prioridade: 'URGENTE',
+							dataSolicitacao: '2026-07-25'
+						},
+						unidadeOrigem: 'UBS Central - Bairro Novo',
+						observacoesRegulacao: 'Instruir paciente a chegar 15 minutos antes com exames anteriores.',
+						atendimentoSOAP: {
+							queixaPrincipal: 'Paciente refere dor no peito esporádica e tonturas ao se levantar.',
+							exameFisico: 'RCR em 2T sem sopros. PA: 130x85 mmHg, FC: 74 bpm. Murmúrio vesicular limpo.',
+							cid10: 'I10',
+							diagnostico: 'Hipertensão Essencial Controlada',
+							conduta: 'Prescrito Anlodipino 5mg. Solicitado ECG e Holter 24h.',
+							prescricao: '1. Anlodipino 5mg — 1 comprimido pela manhã.',
+							concluidoEm: '08:25'
+						}
+					},
+					{
+						id: 'cons-102',
+						protocolo: 'ENC20260726-004',
+						horario: '08:45',
+						status: 'EM_ATENDIMENTO',
+						pacienteId: 'pac-2',
+						paciente: {
+							nome: 'Mateus Henrique Silva',
+							cpf: '987.654.321-99',
+							cartaoSus: '898000987654321',
+							dataNascimento: '1975-08-22',
+							sexo: 'M',
+							telefone: '(51) 98877-6655',
+							endereco: 'Av. Brasil, 450'
+						},
+						solicitacao: {
+							medicoSolicitante: 'Dra. Patricia Lima',
+							crm: 'CRM 33410',
+							especialidadeSolicitada: 'Cardiologia',
+							cid10: 'I25.1',
+							cidDescricao: 'Doença aterosclerótica do coração',
+							justificativaClinica: 'Angina de peito aos esforços moderados. ECG com alteração de repolarização.',
+							prioridade: 'URGENTE',
+							dataSolicitacao: '2026-07-20'
+						},
+						unidadeOrigem: 'UBS Vila Esperança',
+						observacoesRegulacao: 'Prioridade absoluta de encaixe rápido.'
+					},
+					{
+						id: 'cons-103',
+						protocolo: 'ENC20260723-012',
+						horario: '09:30',
+						status: 'AGUARDANDO',
+						pacienteId: 'pac-3',
+						paciente: {
+							nome: 'João Pedro Santos',
+							cpf: '456.789.123-44',
+							cartaoSus: '898000456789123',
+							dataNascimento: '1960-11-30',
+							sexo: 'M',
+							telefone: '(51) 97766-5544',
+							endereco: 'Rua 7 de Setembro, 88'
+						},
+						solicitacao: {
+							medicoSolicitante: 'Dr. Lucas Viana',
+							crm: 'CRM 62300',
+							especialidadeSolicitada: 'Cardiologia',
+							cid10: 'I48',
+							cidDescricao: 'Flutter e fibrilação atrial',
+							justificativaClinica: 'Palpitações taquicárdicas esporádicas. ECG da UBS demonstrou ritmo irregular.',
+							prioridade: 'PRIORITARIA',
+							dataSolicitacao: '2026-07-18'
+						},
+						unidadeOrigem: 'UBS São José',
+						observacoesRegulacao: 'Trazer exames de sangue recentes.'
+					}
+				];
+			}
 		} finally {
 			carregando = false;
 		}

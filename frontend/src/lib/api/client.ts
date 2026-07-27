@@ -218,7 +218,6 @@ export class ApiClient {
   private headers(extra?: Record<string, string>): Record<string, string> {
     const h: Record<string, string> = {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
       ...extra
     };
     const t = this.tokens.get();

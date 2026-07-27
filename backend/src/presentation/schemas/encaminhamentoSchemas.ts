@@ -75,7 +75,7 @@ export const listarQuerySchema = z.object({
   pacienteId: z.string().optional(),
   desde: z.string().optional(),
   ate: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(500).optional(),
+  limit: z.coerce.number().int().positive().max(10000).optional(),
   respostaSUS: z.preprocess((val) => {
     if (val === 'true') return true;
     if (val === 'false') return false;
