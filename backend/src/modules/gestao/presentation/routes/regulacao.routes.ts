@@ -38,6 +38,12 @@ export function buildRegulacaoRoutes(
     controller.getFilaEsperaCentro,
   );
 
+  // Regulacao em lote / avaliacao SMS (Guia v4.0.0 § 5.2)
+  router.patch('/sms/regulacao/lote', authenticate, onlyRegulador, controller.aprovarLote);
+  router.patch('/sms/regulacao/avaliar', authenticate, onlyRegulador, controller.aprovarLote);
+  router.post('/sms/regulacao/lote', authenticate, onlyRegulador, controller.aprovarLote);
+  router.post('/sms/regulacao/avaliar', authenticate, onlyRegulador, controller.aprovarLote);
+
   router.post(
     '/encaminhamentos/:id/aprovar',
     authenticate,

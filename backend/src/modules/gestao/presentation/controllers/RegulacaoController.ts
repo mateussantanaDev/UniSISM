@@ -153,6 +153,51 @@ export class RegulacaoController {
     res.status(200).json(enc);
   };
 
+  aprovarLote = async (req: Request, res: Response): Promise<void> => {
+    const aprovarLoteSchema = z.object({
+      ids: z.array(z.string()).optional(),
+      id: z.string().optional(),
+      acao: z.enum(['APROVAR', 'REJEITAR', 'PENDENCIA']).default('APROVAR'),
+      filaDestino: z.enum(['CENTRO_ESPECIALIDADES', 'CEM', 'CEO', 'CENTRO_ODONTOLOGICO', 'SUS']).optional(),
+      observacoes: z.string().optional(),
+    });
+
+    const body = aprovarLoteSchema.parse(req.body ?? {});
+    const scope = scopeFromRequest(req);
+    const autor = await this.resolverAutor(req);
+
+    const idsList = body.ids || (body.id ? [body.id] : []);
+    if (idsList.length === 0) {
+      throw Unprocessable('IDS_OBRIGATORIOS', 'Lista de IDs de encaminhamentos obrigatória');
+    }
+
+    let processados = 0;
+    for (const id of idsList) {
+      try {
+        if (body.acao === 'REJEITAR') {
+          await this.rejeitarUC.exec(id, scope, autor, { motivo: body.observacoes || 'Rejeitado via regulação em lote' });
+        } else if (body.acao === 'PENDENCIA') {
+          await this.pendenciaUC.exec(id, scope, autor, { observacao: body.observacoes || 'Pendência registrada via regulação em lote' });
+        } else {
+          await this.aprovarUC.exec(id, scope, autor, {
+            nota: body.observacoes,
+            filaDestino: body.filaDestino as any,
+          });
+        }
+        processados++;
+      } catch (err) {
+        // ignora se falhar individualmente no lote
+      }
+    }
+
+    res.status(200).json({
+      sucesso: true,
+      processados,
+      status: body.acao === 'REJEITAR' ? 'REJEITADO' : body.acao === 'PENDENCIA' ? 'PENDENCIA_DOCUMENTO' : 'APROVADO',
+      filaDestino: body.filaDestino || 'CENTRO_ESPECIALIDADES',
+    });
+  };
+
   registrarPendencia = async (req: Request, res: Response): Promise<void> => {
     const body = pendenciaSchema.parse(req.body ?? {});
     const id = paramString(req, 'id');

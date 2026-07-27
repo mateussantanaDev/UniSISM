@@ -70,27 +70,27 @@
 	class="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white font-mono text-sm"
 >
 	<!-- Marca institucional -->
-	<div class="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-4">
+	<div class="border-b border-slate-200 bg-gradient-to-b from-blue-50 to-white px-4 py-4">
 		<div class="flex items-center gap-2">
 			<div
 				class="flex h-8 w-8 items-center justify-center bg-blue-900 text-xs font-bold text-white font-mono"
 			>
-				CE
+				CEM
 			</div>
 			<div class="leading-tight">
 				<div class="text-xs font-bold tracking-widest text-slate-900 font-mono">UNISISM</div>
-				<div class="text-[9px] tracking-wider text-slate-500 font-mono">CENTRO MUNICIPAL</div>
+				<div class="text-[9px] font-bold tracking-wider text-blue-900 font-mono">ESPECIALIDADES MÉDICAS</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Bloco de contexto -->
-	<div class="border-b border-slate-200 bg-gradient-to-b from-blue-50 to-white px-4 py-3">
+	<div class="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3">
 		<div class="text-[10px] tracking-wider text-slate-500 font-mono">
-			ESPECIALIDADES
+			ÓRGÃO MUNICIPAL
 		</div>
 		<div class="truncate text-xs font-semibold text-slate-900">
-			{auth.me?.prefeitura ?? 'Centro de Especialidades'}
+			{auth.me?.prefeitura ?? 'CEM — Centro de Especialidades Médicas'}
 		</div>
 	</div>
 

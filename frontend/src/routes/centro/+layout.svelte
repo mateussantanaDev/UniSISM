@@ -154,6 +154,10 @@
 					</h1>
 				</div>
 				<div class="flex items-center gap-4 font-mono text-xs">
+					<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline">
+						🔄 Alternar para Centro Médico (CEM) →
+					</a>
+					<span class="text-slate-300">|</span>
 					<div class="hidden items-center gap-2 md:flex">
 						<span class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-bold tracking-widest text-emerald-800 uppercase">
 							API · OK

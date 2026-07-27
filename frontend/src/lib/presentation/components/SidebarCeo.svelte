@@ -1,0 +1,141 @@
+<script lang="ts">
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { useAuth } from '$lib/presentation/contexts/authContext';
+
+	const auth = useAuth();
+
+	interface NavItem {
+		label: string;
+		href: string;
+		shortcut: string;
+	}
+
+	interface NavGroup {
+		titulo: string;
+		items: NavItem[];
+	}
+
+	// Grupos de navegação para o CEO — Centro de Especialidades Médicas
+	let gruposVisiveis = $derived.by<NavGroup[]>(() => {
+		const role = auth.me?.role;
+		const list: NavGroup[] = [];
+
+		// Recepção CEO
+		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+			list.push({
+				titulo: 'RECEPÇÃO CEO',
+				items: [
+					{ label: 'Fila da Regulação', href: '/ceo/recepcao/fila', shortcut: 'F' },
+					{ label: 'Agenda do Dia', href: '/ceo/recepcao/agenda', shortcut: 'A' },
+					{ label: 'Agendar no Balcão', href: '/ceo/recepcao/balcao', shortcut: 'B' }
+				]
+			});
+		}
+
+		// Médico Especialista CEO
+		if (role === 'MEDICO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+			list.push({
+				titulo: 'MÉDICO ESPECIALISTA CEO',
+				items: [
+					{ label: 'Consultório Digital SOAP', href: '/ceo/medico/agenda', shortcut: 'M' },
+					{ label: 'Histórico de Atendimentos', href: '/ceo/medico/historico', shortcut: 'H' },
+					{ label: 'Indicadores & Produtividade', href: '/ceo/medico/desempenho', shortcut: 'I' }
+				]
+			});
+		}
+
+		// Gestão ERP CEO
+		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+			list.push({
+				titulo: 'DIRETORIA & GESTÃO CEO',
+				items: [
+					{ label: 'Painel Geral Executivo', href: '/ceo/gestao/dashboard', shortcut: 'D' },
+					{ label: 'Gestão de Usuários & Equipes', href: '/ceo/gestao/usuarios', shortcut: 'U' },
+					{ label: 'Matriz de Vagas & Escalas', href: '/ceo/gestao/vagas', shortcut: 'V' },
+					{ label: 'Consultórios & Infraestrutura', href: '/ceo/gestao/salas', shortcut: 'S' },
+					{ label: 'Catálogo & SIGTAP', href: '/ceo/gestao/especialidades', shortcut: 'E' },
+					{ label: 'Produção e Relatórios', href: '/ceo/gestao/producao', shortcut: 'P' }
+				]
+			});
+		}
+
+		return list;
+	});
+
+	let current = $derived(page.url.pathname);
+</script>
+
+<aside class="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white font-mono text-sm">
+	<!-- Marca institucional CEO -->
+	<div class="border-b border-slate-200 bg-gradient-to-b from-emerald-50 to-white px-4 py-4">
+		<div class="flex items-center gap-2">
+			<div class="flex h-8 w-8 items-center justify-center bg-emerald-800 text-xs font-bold text-white font-mono">
+				CEO
+			</div>
+			<div class="leading-tight">
+				<div class="text-xs font-bold tracking-widest text-slate-900 font-mono">UNISISM</div>
+				<div class="text-[9px] tracking-wider text-emerald-900 font-mono font-bold">ESPECIALIDADES ODONTOLÓGICAS</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bloco de contexto -->
+	<div class="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3">
+		<div class="text-[10px] tracking-wider text-slate-500 font-mono">
+			ÓRGÃO AUTÔNOMO
+		</div>
+		<div class="truncate text-xs font-semibold text-slate-900">
+			{auth.me?.prefeitura ?? 'Centro de Especialidades Odontológicas (CEO)'}
+		</div>
+	</div>
+
+	<!-- Navegação -->
+	<nav class="flex flex-1 flex-col overflow-y-auto py-2" aria-label="Navegação CEO">
+		{#each gruposVisiveis as grupo (grupo.titulo)}
+			<div class="mt-3 first:mt-1">
+				<div class="px-5 pb-1.5 font-mono text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+					{grupo.titulo}
+				</div>
+				{#each grupo.items as item (item.href)}
+					{@const active = current === item.href || current.startsWith(item.href + '/')}
+					<a
+						href={item.href}
+						class="flex items-center justify-between px-5 py-2 font-mono text-xs transition-colors {active
+							? 'border-r-2 border-blue-900 bg-blue-50 font-bold text-blue-950'
+							: 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'}"
+					>
+						<span class="truncate">{item.label}</span>
+						<kbd
+							class="ml-2 flex h-4 min-w-4 items-center justify-center border border-slate-200 bg-slate-100 font-mono text-[9px] font-bold text-slate-600"
+						>
+							{item.shortcut}
+						</kbd>
+					</a>
+				{/each}
+			</div>
+		{/each}
+	</nav>
+
+	<!-- Rodapé com Usuário Conectado -->
+	<div class="border-t border-slate-200 bg-slate-50 p-4">
+		<div class="flex items-center justify-between">
+			<div class="truncate">
+				<div class="truncate font-sans text-xs font-bold text-slate-900">
+					{auth.me?.nome ?? 'Profissional CEO'}
+				</div>
+				<div class="font-mono text-[10px] text-blue-900 font-bold">
+					{auth.me?.role ?? 'DESENVOLVEDOR'}
+				</div>
+			</div>
+			<button
+				type="button"
+				onclick={() => auth.logout()}
+				class="border border-slate-300 bg-white px-2 py-1 font-mono text-[10px] font-bold text-slate-700 hover:bg-slate-100"
+				title="Sair da Plataforma"
+			>
+				Sair
+			</button>
+		</div>
+	</div>
+</aside>

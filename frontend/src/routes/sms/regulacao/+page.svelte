@@ -628,9 +628,9 @@
 							disabled={processandoLote}
 							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-slate-900 outline-none focus:border-blue-900 font-sans"
 						>
-							<option value="SUS">Fila SUS (Regulação do Estado)</option>
-							<option value="CENTRO_ESPECIALIDADES">Centro de Especialidades Municipal</option>
-							<option value="CEO">Centro de Especialidades Odontológicas (CEO)</option>
+							<option value="CENTRO_ESPECIALIDADES">CEM — Centro de Especialidades Médicas</option>
+							<option value="CEO">CEO — Centro de Especialidades Odontológicas</option>
+							<option value="SUS">Fila SUS Regional (Regulação Estadual)</option>
 						</select>
 						{#if filaDestinoLote === 'CENTRO_ESPECIALIDADES' || filaDestinoLote === 'CEO'}
 							<div class="text-[10px] text-emerald-800 font-bold uppercase mt-1">

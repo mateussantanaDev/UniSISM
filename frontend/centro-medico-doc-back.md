@@ -1,37 +1,53 @@
-# 🩺 ESPECIFICAÇÃO DE INTEGRAÇÃO DO BACKEND — MÓDULO MÉDICO & ATENDIMENTO ERP (v3.1.0)
+# 🩺 ESPECIFICAÇÃO DE INTEGRAÇÃO DO BACKEND — MÓDULO DE ATENDIMENTO CONSULTÓRIO DIGITAL CEM & CEO (v4.0.0)
 
-Documentação técnica dos contratos HTTP REST, esquemas de dados, prontuário eletrônico (PEP) e requisições do módulo **Médico Especialista & Consultório Digital SOAP** do UniSISM (`/centro/medico/*`).
+Documentação técnica dos contratos HTTP REST, esquemas de dados, prontuário eletrônico (PEC/PEP), regulação de encaminhamentos e formulários de atendimento do **CEM (Centro de Especialidades Médicas)** e do **CEO (Centro de Especialidades Odontológicas)**.
 
 ---
 
 ## 🔒 1. AUTENTICAÇÃO E PERMISSÕES (RBAC)
 
-Todas as chamadas contêm os cabeçalhos:
+Todas as requisições enviadas ao módulo de atendimento do CEM (`/cem/medico/*`) ou do CEO (`/ceo/medico/*`) exigem:
+
 ```http
 Authorization: Bearer <jwt_token>
 Accept: application/json
+Content-Type: application/json
 ```
 
 > **Perfis de Acesso Autorizados:**
-> - `MEDICO` (Médico Especialista)
-> - `COORDENADOR_UBS` (Coordenador com perfil assistencial)
+> - `MEDICO` (Médicos do CEM e Dentistas do CEO)
+> - `COORDENADOR_UBS` (Coordenação com perfil assistencial)
 > - `ADMIN` / `DESENVOLVEDOR`
 
 ---
 
-## 📋 2. ENDPOINTS DO CONSULTÓRIO DIGITAL MÉDICO
+## 🏛️ 2. SEPARAÇÃO DE DADOS CEM E CEO NO BANCO DE DADOS
 
-### 2.1 GET `/v1/centro/medico/agenda`
-Retorna a lista de pacientes agendados para a consulta do especialista no dia.
+O banco de dados armazena o campo `filaDestino` na tabela `encaminhamentos`:
+- **CEM (Centro de Especialidades Médicas)**: `filaDestino = 'CENTRO_ESPECIALIDADES'`
+- **CEO (Centro de Especialidades Odontológicas)**: `filaDestino = 'CEO'`
+- **Fila Regional / TFD**: `filaDestino = 'SUS'`
+
+A API backend deve isolar os agendamentos de forma que o profissional logado no CEM visualize apenas a agenda do CEM, e o profissional logado no CEO visualize apenas a agenda do CEO.
+
+---
+
+## 📋 3. ENDPOINTS REST DO CONSULTÓRIO DIGITAL
+
+### 3.1 GET `/v1/centro/medico/agenda`
+Retorna a agenda de atendimentos do profissional no dia.
 
 * **Método:** `GET`
 * **Rota:** `/v1/centro/medico/agenda?data=YYYY-MM-DD`
-* **Query Parameters:** `data` (opcional, padrão: data atual).
+* **Query Parameters:**
+  - `data`: data no formato `YYYY-MM-DD` (padrão: data atual)
+  - `centro`: `CENTRO_ESPECIALIDADES` (CEM) | `CEO` (CEO)
 
 #### **Resposta JSON (200 OK):**
 ```json
 {
   "data": "2026-07-27",
+  "centro": "CENTRO_ESPECIALIDADES",
   "agenda": [
     {
       "id": "enc-uuid-101",
@@ -45,20 +61,20 @@ Retorna a lista de pacientes agendados para a consulta do especialista no dia.
         "dataNascimento": "1978-05-14",
         "sexo": "F",
         "telefone": "(51) 99887-1122",
-        "endereco": "Rua Central, 120 - Bairro Novo"
+        "endereco": "Rua Central, 120"
       },
       "solicitacao": {
         "medicoSolicitante": "Dr. Carlos Moreira",
         "crm": "CRM 45892",
-        "especialidadeSolicitada": "Cardiologia",
+        "especialidadeSolicitada": "Cardiologia Pediátrica",
         "cid10": "I10",
         "cidDescricao": "Hipertensão Essencial",
-        "justificativaClinica": "Picos hipertensivos recorrentes apesar de medicação em dose máxima.",
+        "justificativaClinica": "Picos hipertensivos recorrentes.",
         "prioridade": "PRIORITARIA",
         "dataSolicitacao": "2026-07-20"
       },
-      "unidadeOrigem": "UBS Central - Bairro Novo",
-      "observacoesRegulacao": "Encaixe prioritário autorizado pela regulação."
+      "unidadeOrigem": "UBS Central",
+      "observacoesRegulacao": "Aprovado pela Regulação SMS."
     }
   ]
 }
@@ -66,57 +82,58 @@ Retorna a lista de pacientes agendados para a consulta do especialista no dia.
 
 ---
 
-### 2.2 POST `/v1/centro/medico/atendimentos/:id/chamar`
-Aciona a chamada do paciente na sala de espera (painel e notificação sonora).
+### 3.2 POST `/v1/encaminhamentos` (Novo Encaminhamento pelo Médico/Dentista)
+Permite ao médico do CEM ou dentista do CEO criar uma **nova solicitação de encaminhamento** durante a consulta para ser regulada pela Secretaria de Saúde (SMS).
 
 * **Método:** `POST`
-* **Rota:** `/v1/centro/medico/atendimentos/:id/chamar`
-* **Resposta (200 OK):** `{ "sucesso": true, "status": "EM_ATENDIMENTO" }`
-
----
-
-### 2.3 GET `/v1/centro/medico/prontuario/:pacienteId`
-Obtém o Prontuário Eletrônico Unificado (PEP) do paciente contendo histórico de consultas anteriores, alergias, condições crônicas e exames.
-
-* **Método:** `GET`
-* **Rota:** `/v1/centro/medico/prontuario/:pacienteId`
-
-#### **Resposta JSON (200 OK):**
+* **Rota:** `/v1/encaminhamentos`
+* **Payload (Body JSON):**
 ```json
 {
-  "pacienteId": "pac-uuid-001",
-  "alergias": ["Dipirona", "Penicilina"],
-  "condicoesCronicas": ["Hipertensão Arterial", "Diabetes Tipo 2"],
-  "medicamentosEmUso": [
-    { "nome": "Losartana Potássica", "dosagem": "50mg", "frequencia": "12/12h" }
-  ],
-  "historicoAtendimentos": [
-    {
-      "id": "atend-01",
-      "data": "2026-05-10",
-      "especialidade": "Clínica Geral",
-      "medicoNome": "Dr. Carlos Moreira",
-      "cid10": "I10",
-      "conduta": "Solicitado encaminhamento para Cardiologia."
-    }
-  ]
+  "paciente": {
+    "nome": "Maria Eduarda Silva",
+    "cpf": "123.456.789-00",
+    "cartaoSus": "898000123456789",
+    "dataNascimento": "1978-05-14",
+    "sexo": "F",
+    "telefone": "(51) 99887-1122",
+    "endereco": "Rua Central, 120"
+  },
+  "solicitacao": {
+    "medicoSolicitante": "Dr. Roberto Medeiros",
+    "crm": "CRM 12345",
+    "especialidadeSolicitada": "Cirurgia Vascular",
+    "cid10": "I73.9",
+    "cidDescricao": "Doença vascular periférica não especificada",
+    "justificativaClinica": "Paciente necessita de avaliação especializada em Cirurgia Vascular devido a claudicação intermitente severa.",
+    "prioridade": "URGENTE",
+    "dataSolicitacao": "2026-07-27"
+  }
+}
+```
+
+#### **Resposta (201 Created):**
+```json
+{
+  "id": "enc-uuid-999",
+  "protocolo": "ENC20260727-0999",
+  "status": "AGUARDANDO_REGULACAO",
+  "criadoEm": "2026-07-27T17:41:00Z"
 }
 ```
 
 ---
 
-### 2.4 POST `/v1/centro/medico/atendimentos/:id/soap`
-Registra a consulta médica SOAP finalizada, assinando o PEP no banco de dados.
+### 3.3 POST `/v1/centro/medico/atendimentos/:id/soap`
+Finaliza o atendimento gravando os dados clínicos no Prontuário Eletrônico (PEC/PEP).
 
 * **Método:** `POST`
 * **Rota:** `/v1/centro/medico/atendimentos/:id/soap`
-* **Headers:** `Content-Type: application/json`
-
-#### **Payload de Entrada (Body JSON):**
+* **Payload (Body JSON):**
 ```json
 {
-  "queixaPrincipal": "Paciente refere melhora das palpitações, em uso regular das medicações.",
-  "exameFisico": "PA: 120/80 mmHg, FC: 72 bpm, Peso: 70.5kg, Altura: 170cm, SpO2: 98%. Ausculta cardíaca normal.",
+  "queixaPrincipal": "Paciente refere melhora após início da medicação.",
+  "exameFisico": "PA: 120/80 mmHg, FC: 72 bpm, Peso: 70.5kg, Altura: 170cm, SpO2: 98%.",
   "cid10": "I10",
   "diagnostico": "Hipertensão arterial essencial controlada.",
   "conduta": "Mantida prescrição. Retorno em 60 dias para reavaliação.",
@@ -127,52 +144,21 @@ Registra a consulta médica SOAP finalizada, assinando o PEP no banco de dados.
 }
 ```
 
-#### **Resposta JSON (200 OK):**
+#### **Resposta (200 OK):**
 ```json
 {
   "sucesso": true,
   "id": "enc-uuid-101",
   "statusAtendimentoCentro": "CONCLUIDO",
-  "concluidoEm": "2026-07-27T16:30:00Z"
+  "concluidoEm": "2026-07-27T17:41:05Z"
 }
 ```
 
 ---
 
-### 2.5 POST `/v1/centro/medico/encaminhamento-intermunicipal`
-Encaminha o paciente para alta complexidade ou regulação em município de referência (TFD).
-
-* **Método:** `POST`
-* **Rota:** `/v1/centro/medico/encaminhamento-intermunicipal`
-* **Payload (Body JSON):**
-```json
-{
-  "encaminhamentoId": "enc-uuid-101",
-  "municipioDestino": "Porto Alegre",
-  "especialidade": "Oncologia Cirúrgica",
-  "cid10": "C50.9",
-  "diagnostico": "Neoplasia maligna da mama",
-  "justificativa": "Tratamento cirúrgico de alta complexidade e radioterapia não disponíveis na rede municipal.",
-  "prioridade": "URGENTE",
-  "transporteRequerido": "VAN_SMS",
-  "requerAcompanhante": true
-}
-```
-
-#### **Resposta JSON (201 Created):**
-```json
-{
-  "protocolo": "TFD20260727-889",
-  "criadoEm": "2026-07-27T16:30:05Z",
-  "municipioDestino": "Porto Alegre",
-  "status": "AGUARDANDO_VAGA_ESTADUAL"
-}
-```
-
----
-
-## 🛡️ CONFORMIDADE CFM & USABILIDADE MÉDICA
+## 🛡️ CONFORMIDADE E USABILIDADE MÉDICA
 - **Cálculo Automático de IMC**: Calculado no cliente a partir de Peso (kg) e Altura (cm) com classificação da OMS.
 - **Inserção de Prescrição REMUME**: Seleção em 1-clique de medicamentos padronizados da farmácia pública municipal.
 - **Sugestão de CIDs Frequentes**: Acesso instantâneo a CIDs comuns da especialidade.
+- **Transmissão Automática para a Regulação**: Encaminhamentos criados pelo profissional caem diretamente na fila de triagem da Secretaria Municipal de Saúde.
 - **Zero Mock Data**: Operação em produção consumindo respostas dos endpoints da API REST.

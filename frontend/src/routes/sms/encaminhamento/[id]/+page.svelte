@@ -93,11 +93,11 @@
 				</div>
 				<div class="mt-0.5 font-mono text-xs font-bold text-blue-900 uppercase">
 					{#if enc.filaDestino === 'SUS'}
-						Regulação SUS (Estado)
+						Regulação SUS Regional (Estado)
 					{:else if enc.filaDestino === 'CENTRO_ESPECIALIDADES'}
-						Centro de Especialidades Municipal (Fila Direta)
+						CEM — Centro de Especialidades Médicas (Fila Direta)
 					{:else if enc.filaDestino === 'CEO'}
-						Centro de Especialidades Odontológicas - CEO (Fila Direta)
+						CEO — Centro de Especialidades Odontológicas (Fila Direta)
 					{/if}
 				</div>
 			</div>
