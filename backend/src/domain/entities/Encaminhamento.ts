@@ -121,6 +121,12 @@ export interface Encaminhamento {
   motivoRejeicao?: string | null;
   /** Recomendações "o que levar no dia". */
   recomendacoes?: string[];
+
+  // ───── Status e Horários do Atendimento no Centro de Especialidades ─────
+  statusAtendimentoCentro?: 'AGENDADO' | 'AGUARDANDO_ATENDIMENTO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU' | null;
+  presencaRegistradaEm?: string | null;
+  atendimentoIniciadoEm?: string | null;
+  atendimentoConcluidoEm?: string | null;
 }
 
 export interface MetricasDashboard {

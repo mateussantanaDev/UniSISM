@@ -1209,3 +1209,262 @@ export interface AtualizarRecomendacaoRequest {
   recomendacoes?: string[];
   ativo?: boolean;
 }
+
+// ============================================================
+// CENTRO MUNICIPAL DE ESPECIALIDADES (v3.0.0) — FASE 1 RECEPÇÃO
+// ============================================================
+
+export type StatusAtendimentoCentro =
+  | 'AGENDADO'
+  | 'AGUARDANDO_ATENDIMENTO'
+  | 'EM_ATENDIMENTO'
+  | 'CONCLUIDO'
+  | 'FALTOU';
+
+export type CanalRoteamento =
+  | 'SUS'
+  | 'CENTRO_ESPECIALIDADES'
+  | 'CENTRO_ODONTOLOGICO';
+
+export interface EncaminhamentoCentroItem {
+  id: string;
+  protocolo: string;
+  status: StatusEncaminhamento;
+  canalRoteamento?: CanalRoteamento;
+  destinoRegulacao?: CanalRoteamento;
+  agendamentoPrevisto?: string | null;
+  statusAtendimentoCentro?: StatusAtendimentoCentro | null;
+  profissionalAgendado?: string | null;
+  localAgendamento?: string | null;
+  observacoesRegulacao?: string | null;
+  presencaRegistradaEm?: string | null;
+  atendimentoIniciadoEm?: string | null;
+  atendimentoConcluidoEm?: string | null;
+  unidadeOrigem?: string;
+  paciente: Paciente;
+  solicitacao: SolicitacaoMedica;
+}
+
+export interface ListFilaEsperaQuery {
+  centro?: CanalRoteamento;
+  status?: StatusEncaminhamento | 'TODOS';
+  agendado?: boolean;
+  especialidade?: string;
+  prioridade?: PrioridadeClinica;
+  busca?: string;
+}
+
+export interface ListFilaEsperaResponse {
+  encaminhamentos: EncaminhamentoCentroItem[];
+  total: number;
+}
+
+export interface AgendarConsultaCentroRequest {
+  profissional: string;
+  nota?: string;
+  localAgendamento?: string;
+}
+
+export interface AgendarConsultaCentroResponse {
+  encaminhamento: EncaminhamentoCentroItem;
+}
+
+export interface AgendamentoDiaCentroItem {
+  id: string;
+  protocolo: string;
+  agendamentoPrevisto: string;
+  profissionalAgendado: string;
+  statusAtendimentoCentro: StatusAtendimentoCentro;
+  presencaRegistradaEm?: string | null;
+  paciente: {
+    id?: string;
+    nome: string;
+    cpf: string;
+    cartaoSus?: string;
+    dataNascimento?: string;
+    sexo?: Sexo;
+    telefone?: string;
+    endereco?: string;
+  };
+  solicitacao: {
+    medicoSolicitante?: string;
+    crm?: string;
+    especialidadeSolicitada: string;
+    cid10?: string;
+    cidDescricao?: string;
+    justificativaClinica?: string;
+    prioridade: PrioridadeClinica;
+    dataSolicitacao?: string;
+  };
+  unidadeOrigem?: string;
+  observacoesRegulacao?: string;
+}
+
+export interface ListAgendaDiaCentroQuery {
+  data?: string; // YYYY-MM-DD
+  especialidade?: string;
+  medico?: string;
+  statusAtendimento?: StatusAtendimentoCentro;
+}
+
+export interface ListAgendaDiaCentroResponse {
+  agendamentos: AgendamentoDiaCentroItem[];
+  total: number;
+}
+
+export interface ConfirmarPresencaCentroRequest {
+  status: StatusAtendimentoCentro;
+  observacao?: string;
+}
+
+export interface AgendarBalcaoCentroRequest {
+  paciente: Paciente;
+  solicitacao: SolicitacaoMedica;
+  nota?: string;
+  medicoDesejado?: string;
+}
+
+export interface DesmarcarReagendarCentroRequest {
+  acao: 'DESMARCAR' | 'REAGENDAR';
+  motivo?: string;
+}
+
+// ============================================================
+// CENTRO MUNICIPAL DE ESPECIALIDADES (v3.0.0) — FASE 2 MÉDICO
+// ============================================================
+
+export interface ListAgendaMedicoQuery {
+  data?: string; // YYYY-MM-DD
+  statusAtendimento?: StatusAtendimentoCentro;
+}
+
+export interface ListAgendaMedicoResponse {
+  agenda: EncaminhamentoCentroItem[];
+  total: number;
+}
+
+export interface RegistrarAtendimentoSoapCentroRequest {
+  subjetivo: string;
+  objetivo: string;
+  avaliacao: string;
+  plano: string;
+  queixaPrincipal: string;
+  diagnostico: string;
+  cid10: string;
+  conduta: string;
+  prescricaoResumo?: string;
+}
+
+export interface CriarEncaminhamentoIntermunicipalCentroRequest {
+  pacienteId: string;
+  solicitacao: {
+    especialidadeSolicitada: string;
+    cid10: string;
+    cidDescricao: string;
+    justificativaClinica: string;
+    prioridade: PrioridadeClinica;
+  };
+}
+
+// ============================================================
+// CENTRO MUNICIPAL DE ESPECIALIDADES (v3.0.0) — FASE 3 GESTÃO
+// ============================================================
+
+export interface DashboardGestaoCentroResponse {
+  hoje: {
+    totalAgendados: number;
+    aguardandoAtendimento: number;
+    emAtendimento: number;
+    concluidos: number;
+    faltas: number;
+  };
+  mesAtual: {
+    periodo: string;
+    totalAgendados: number;
+    totalConcluidos: number;
+    totalFaltas: number;
+    taxaAbsenteismoPorcento: number;
+  };
+  distribuicaoPorEspecialidade: Record<string, number>;
+  distribuicaoPorUbs: Record<string, number>;
+  totalEscalasAtivas: number;
+}
+
+export interface CotaUbsCentro {
+  ubsId: string;
+  ubsNome?: string;
+  totalCotasMes: number;
+  alocadas?: number;
+  disponiveis?: number;
+  status?: 'NORMAL' | 'ALERTA' | 'ESGOTADA';
+  especialidades: Record<string, number>;
+}
+
+export interface EscalaMedicoCentro {
+  id?: string;
+  medicoNome: string;
+  crm: string;
+  especialidade: string;
+  diasSemana: string[];
+  horarioInicio: string;
+  horarioFim: string;
+  duracaoMinutos: number;
+  vagasPorTurno: number;
+  status?: 'ATIVA' | 'FERIAS' | 'BLOQUEADA_PARCIAL';
+  observacoes?: string;
+}
+
+export interface RemanejamentoLoteCentroRequest {
+  medicoOrigem: string;
+  dataOrigem: string;
+  medicoDestino: string;
+  dataDestino: string;
+  notificarSms?: boolean;
+}
+
+export interface RemanejamentoLoteCentroResponse {
+  totalRemanejados: number;
+  dataDestino: string;
+  medicoDestino: string;
+}
+
+export interface RelatorioBpaCentroItem {
+  protocolo: string;
+  pacienteNome: string;
+  pacienteCpf: string;
+  pacienteCartaoSus?: string;
+  especialidade: string;
+  cid10: string;
+  profissional: string;
+  dataAgendada: string;
+}
+
+export interface RelatorioBpaCentroResponse {
+  periodo: string;
+  totalAtendimentos: number;
+  porEspecialidade: Record<string, number>;
+  itens: RelatorioBpaCentroItem[];
+}
+
+export interface LogAuditoriaCentroItem {
+  id: string;
+  acao: string;
+  recurso?: string;
+  recursoId?: string;
+  atendenteId?: string;
+  atendenteNome?: string;
+  criadoEm?: string;
+  timestamp?: string;
+  operador?: string;
+  papel?: string;
+  detalhes?: string;
+  ip?: string;
+}
+
+export interface ListAuditoriaCentroResponse {
+  total: number;
+  logs: LogAuditoriaCentroItem[];
+}
+
+
+

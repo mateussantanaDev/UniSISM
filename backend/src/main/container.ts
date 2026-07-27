@@ -88,6 +88,27 @@ import { RegulacaoController } from '../modules/gestao/presentation/controllers/
 import { EspecialistaController } from '../modules/gestao/presentation/controllers/EspecialistaController';
 import { buildEspecialistaRoutes } from '../modules/gestao/presentation/routes/especialista.routes';
 
+import { ListarFilaEsperaCentroRecepcaoUseCase } from '../modules/centro/application/use-cases/ListarFilaEsperaCentroRecepcaoUseCase';
+import { AgendarConsultaCentroUseCase } from '../modules/centro/application/use-cases/AgendarConsultaCentroUseCase';
+import { ObterAgendaDiaRecepcaoUseCase } from '../modules/centro/application/use-cases/ObterAgendaDiaRecepcaoUseCase';
+import { RegistrarPresencaPacienteUseCase } from '../modules/centro/application/use-cases/RegistrarPresencaPacienteUseCase';
+import { AgendamentoBalcaoRecepcaoUseCase } from '../modules/centro/application/use-cases/AgendamentoBalcaoRecepcaoUseCase';
+import { DesmarcarReagendarConsultaUseCase } from '../modules/centro/application/use-cases/DesmarcarReagendarConsultaUseCase';
+import { GestaoCotasUseCase } from '../modules/centro/application/use-cases/GestaoCotasUseCase';
+import { GestaoEscalasUseCase } from '../modules/centro/application/use-cases/GestaoEscalasUseCase';
+import { RemanejamentoLoteUseCase } from '../modules/centro/application/use-cases/RemanejamentoLoteUseCase';
+import { RelatorioBpaUseCase } from '../modules/centro/application/use-cases/RelatorioBpaUseCase';
+import { AuditoriaCentroUseCase } from '../modules/centro/application/use-cases/AuditoriaCentroUseCase';
+import { MetricasDashboardDiretoriaUseCase } from '../modules/centro/application/use-cases/MetricasDashboardDiretoriaUseCase';
+import { ListarAgendaMedicoCentroUseCase } from '../modules/centro/application/use-cases/ListarAgendaMedicoCentroUseCase';
+import { ChamarPacienteMedicoUseCase } from '../modules/centro/application/use-cases/ChamarPacienteMedicoUseCase';
+import { ObterProntuarioPacienteMedicoUseCase } from '../modules/centro/application/use-cases/ObterProntuarioPacienteMedicoUseCase';
+import { RegistrarConsultaSOAPMedicoUseCase } from '../modules/centro/application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
+import { EncaminhamentoIntermunicipalMedicoUseCase } from '../modules/centro/application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
+import { CentroRecepcaoController } from '../modules/centro/presentation/controllers/CentroRecepcaoController';
+import { CentroGestaoController } from '../modules/centro/presentation/controllers/CentroGestaoController';
+import { CentroMedicoController } from '../modules/centro/presentation/controllers/CentroMedicoController';
+
 import { UpdateUsuarioUseCase } from '../application/admin/UpdateUsuarioUseCase';
 import { DeleteUsuarioUseCase } from '../application/admin/DeleteUsuarioUseCase';
 import { AlterarAtivoUsuarioUseCase } from '../application/admin/AlterarAtivoUsuarioUseCase';
@@ -375,6 +396,36 @@ export function buildContainer() {
     registrarAtendimentoEspecialistaUC,
   );
 
+  // ----- Módulo Centro de Especialidades -----
+  const centroRecepcaoController = new CentroRecepcaoController(
+    atendentes,
+    new ListarFilaEsperaCentroRecepcaoUseCase(),
+    new AgendarConsultaCentroUseCase(),
+    new ObterAgendaDiaRecepcaoUseCase(),
+    new RegistrarPresencaPacienteUseCase(),
+    new AgendamentoBalcaoRecepcaoUseCase(),
+    new DesmarcarReagendarConsultaUseCase(),
+  );
+
+  const centroGestaoController = new CentroGestaoController(
+    atendentes,
+    new GestaoCotasUseCase(),
+    new GestaoEscalasUseCase(),
+    new RemanejamentoLoteUseCase(),
+    new RelatorioBpaUseCase(),
+    new AuditoriaCentroUseCase(),
+    new MetricasDashboardDiretoriaUseCase(),
+  );
+
+  const centroMedicoController = new CentroMedicoController(
+    atendentes,
+    new ListarAgendaMedicoCentroUseCase(),
+    new ChamarPacienteMedicoUseCase(),
+    new ObterProntuarioPacienteMedicoUseCase(),
+    new RegistrarConsultaSOAPMedicoUseCase(),
+    new EncaminhamentoIntermunicipalMedicoUseCase(),
+  );
+
   // ----- Módulo Prontuário (CRUD de sub-documentos) -----
   const prontuarioAudit = new PrismaProntuarioAuditLogger();
   const prontuarioController = new ProntuarioController({
@@ -509,6 +560,9 @@ export function buildContainer() {
     smsBannersAdmin: smsBannersAdminController,
     regulacao: regulacaoController,
     especialista: especialistaController,
+    centroRecepcao: centroRecepcaoController,
+    centroGestao: centroGestaoController,
+    centroMedico: centroMedicoController,
     pacienteApp: pacienteAppController,
     passwordRecoveryRateLimiter,
     downloadAnexoRateLimiter,

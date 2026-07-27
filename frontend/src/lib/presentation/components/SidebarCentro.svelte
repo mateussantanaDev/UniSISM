@@ -43,8 +43,8 @@
 			});
 		}
 
-		// Gestão: Apenas Admins e Devs
-		if (role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		// Gestão: Direção, Coordenadores, Reguladores, Admins e Devs
+		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
 				titulo: 'GESTÃO',
 				items: [

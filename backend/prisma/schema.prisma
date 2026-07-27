@@ -58,6 +58,14 @@ enum DestinoRegulacao {
   CENTRO_ODONTOLOGICO
 }
 
+enum StatusAtendimentoCentro {
+  AGENDADO
+  AGUARDANDO_ATENDIMENTO
+  EM_ATENDIMENTO
+  CONCLUIDO
+  FALTOU
+}
+
 enum PrioridadeClinica {
   ELETIVA
   PRIORITARIA
@@ -676,6 +684,10 @@ model Encaminhamento {
 
   observacoesRegulacao String?
   agendamentoPrevisto  DateTime?
+  statusAtendimentoCentro StatusAtendimentoCentro? @default(AGENDADO)
+  presencaRegistradaEm   DateTime?
+  atendimentoIniciadoEm  DateTime?
+  atendimentoConcluidoEm DateTime?
 
   // Detalhes do agendamento (preenchidos pela Regulação no fluxo de aprovação).
   // Usados pelo app do paciente pra mostrar "Sua consulta" rica.
@@ -1870,4 +1882,38 @@ model ConfiguracaoIntegracao {
   atualizadoEm DateTime @updatedAt
 
   @@map("configuracoes_integracao")
+}
+
+// ============================================================
+// CENTRO MUNICIPAL DE ESPECIALIDADES (Escalas & Cotas)
+// ============================================================
+
+model EscalaEspecialista {
+  id             String   @id @default(uuid())
+  medicoNome     String
+  crm            String
+  especialidade  String
+  diasSemana     String[]
+  horarioInicio  String
+  horarioFim     String
+  duracaoMinutos Int      @default(20)
+  vagasPorTurno  Int      @default(12)
+  ativo          Boolean  @default(true)
+  prefeituraId   String?
+
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  @@map("escalas_especialistas")
+}
+
+model CotaUbs {
+  id            String   @id @default(uuid())
+  ubsId         String   @unique
+  totalCotasMes Int      @default(350)
+  especialidades Json
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  @@map("cotas_ubs")
 }

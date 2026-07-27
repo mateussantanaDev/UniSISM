@@ -100,6 +100,23 @@
 		erroAgendamento = '';
 
 		try {
+			try {
+				const resCentro = await api.centroRecepcao.buscarPacientePorCpf(sanitizado);
+				if (resCentro && resCentro.existe && resCentro.paciente) {
+					pacienteExiste = true;
+					pacienteNome = resCentro.paciente.nome;
+					pacienteSus = resCentro.paciente.cartaoSus || '';
+					pacienteNasc = resCentro.paciente.dataNascimento || '';
+					pacienteSexo = (resCentro.paciente.sexo as Sexo) || 'M';
+					pacienteTel = resCentro.paciente.telefone || '';
+					pacienteEnd = resCentro.paciente.endereco || '';
+					return;
+				}
+			} catch (errCentro) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/pacientes/por-cpf em transição — usando fallback pacientes.porCpf', errCentro);
+			}
+
+			// Fallback para API geral de pacientes
 			const res = await api.pacientes.porCpf(sanitizado);
 			if (res.existe && res.paciente) {
 				pacienteExiste = true;
@@ -187,20 +204,41 @@
 				dataSolicitacao: new Date().toISOString().substring(0, 10)
 			};
 
-			// 3. Cria o encaminhamento no backend
-			const criado = await api.encaminhamentos.create({
-				paciente: pacientePayload,
-				solicitacao: solicitacaoPayload
-			});
+			let protocoloFinal = '';
+			let dataFinal = dataCalculada;
+			let horaFinal = horaCalculada;
 
-			// 4. Aprova e agenda no Centro
-			await api.encaminhamentos.aprovar(criado.id, {
-				filaDestino: 'CENTRO_ESPECIALIDADES',
-				agendamentoPrevisto: dataCalculada,
-				nota: notaAgendamento
-			});
+			try {
+				const resBalcao = await api.centroRecepcao.agendarBalcao({
+					paciente: pacientePayload,
+					solicitacao: solicitacaoPayload,
+					nota: recomendacoes.trim(),
+					medicoDesejado: medicoSelecionado.nome
+				});
+				if (resBalcao && resBalcao.encaminhamento) {
+					protocoloFinal = resBalcao.encaminhamento.protocolo;
+					if (resBalcao.encaminhamento.agendamentoPrevisto) {
+						dataFinal = resBalcao.encaminhamento.agendamentoPrevisto;
+					}
+				}
+			} catch (errBalcao) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/balcao em transição — usando fallback transacional create + aprovar', errBalcao);
+				// 3. Cria o encaminhamento no backend
+				const criado = await api.encaminhamentos.create({
+					paciente: pacientePayload,
+					solicitacao: solicitacaoPayload
+				});
+				protocoloFinal = criado.protocolo;
 
-			sucessoAgendamento = `Agendamento realizado com sucesso pelo algoritmo de otimização!\n\nProtocolo: ${criado.protocolo}\nData Calculada: ${new Date(dataCalculada + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaCalculada}\nMédico: ${medicoSelecionado.nome}`;
+				// 4. Aprova e agenda no Centro
+				await api.encaminhamentos.aprovar(criado.id, {
+					filaDestino: 'CENTRO_ESPECIALIDADES',
+					agendamentoPrevisto: dataCalculada,
+					nota: notaAgendamento
+				});
+			}
+
+			sucessoAgendamento = `Agendamento realizado com sucesso pelo algoritmo de otimização!\n\nProtocolo: ${protocoloFinal}\nData Calculada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaFinal}\nMédico: ${medicoSelecionado.nome}`;
 			
 			// Limpa o formulário
 			pacienteCpf = '';

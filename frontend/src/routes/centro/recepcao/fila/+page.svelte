@@ -71,6 +71,22 @@
 		carregando = true;
 		erro = '';
 		try {
+			// Tenta consumir endpoint v3.0.0 de regulação do Centro (centro-doc-back.md)
+			try {
+				const resCentro = await api.centroRecepcao.listFilaEspera({
+					centro: 'CENTRO_ESPECIALIDADES',
+					status: 'APROVADO',
+					agendado: false
+				});
+				if (resCentro && Array.isArray(resCentro.encaminhamentos) && resCentro.encaminhamentos.length > 0) {
+					encaminhamentos = resCentro.encaminhamentos as any[];
+					return;
+				}
+			} catch (errCentro) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/fila-espera em transição — usando fallback /v1/encaminhamentos', errCentro);
+			}
+
+			// Fallback para API geral de encaminhamentos
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			encaminhamentos = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 		} catch (e) {
@@ -173,11 +189,20 @@
 		const notaCompleta = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | Obs: ${notaAgendamento.trim() || 'Nenhuma'}`;
 
 		try {
-			await api.encaminhamentos.aprovar(selecionado.id, {
-				filaDestino: 'CENTRO_ESPECIALIDADES',
-				agendamentoPrevisto: dataCalculada,
-				nota: notaCompleta
-			});
+			try {
+				await api.centroRecepcao.agendar(selecionado.id, {
+					profissional: medicoSelecionado.nome,
+					nota: notaCompleta,
+					localAgendamento: 'Centro Municipal de Especialidades'
+				});
+			} catch (errAgendar) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/agendar/:id em transição — usando fallback aprovar', errAgendar);
+				await api.encaminhamentos.aprovar(selecionado.id, {
+					filaDestino: 'CENTRO_ESPECIALIDADES',
+					agendamentoPrevisto: dataCalculada,
+					nota: notaCompleta
+				});
+			}
 			fecharAgendamento();
 			await carregarFila();
 			

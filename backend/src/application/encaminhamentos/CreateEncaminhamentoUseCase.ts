@@ -213,8 +213,8 @@ export class CreateEncaminhamentoUseCase {
       // Notificações de aprovação e agendamento para o paciente
       void this.notificacoes
         .notificar({
-          cpfPaciente: finalEnc.pacienteCpf,
-          pacienteNome: finalEnc.pacienteNome,
+          cpfPaciente: finalEnc.paciente.cpf,
+          pacienteNome: finalEnc.paciente.nome,
           encaminhamentoId: finalEnc.id,
           tipo: 'APROVADO',
           ...MENSAGENS.aprovado(finalEnc.protocolo),
@@ -224,8 +224,8 @@ export class CreateEncaminhamentoUseCase {
 
       void this.notificacoes
         .notificar({
-          cpfPaciente: finalEnc.pacienteCpf,
-          pacienteNome: finalEnc.pacienteNome,
+          cpfPaciente: finalEnc.paciente.cpf,
+          pacienteNome: finalEnc.paciente.nome,
           encaminhamentoId: finalEnc.id,
           tipo: 'AGENDADO',
           ...MENSAGENS.agendado(finalEnc.protocolo, otimizado.dateTime.toISOString()),

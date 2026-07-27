@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, ApiError } from '$lib/api';
-	import type { Encaminhamento, PrioridadeClinica } from '$lib/api/types';
+	import type { Encaminhamento, PrioridadeClinica, StatusAtendimentoCentro } from '$lib/api/types';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 
@@ -27,7 +27,20 @@
 		carregando = true;
 		erro = '';
 		try {
-			// Carrega os encaminhamentos APROVADOS e direcionados ao Centro de Especialidades
+			// Tenta consumir endpoint v3.0.0 de agenda do dia do Centro (centro-doc-back.md)
+			try {
+				const resCentro = await api.centroRecepcao.listAgendaDia({
+					data: dataAgenda
+				});
+				if (resCentro && Array.isArray(resCentro.agendamentos) && resCentro.agendamentos.length > 0) {
+					encaminhamentos = resCentro.agendamentos as any[];
+					return;
+				}
+			} catch (errAgenda) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/agenda-dia em transição — usando fallback /v1/encaminhamentos', errAgenda);
+			}
+
+			// Fallback para API geral de encaminhamentos
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			encaminhamentos = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 		} catch (e) {
@@ -109,17 +122,37 @@
 
 		processandoDesmarcar = true;
 		try {
-			await api.encaminhamentos.aprovar(enc.id, {
-				filaDestino: 'CENTRO_ESPECIALIDADES',
-				agendamentoPrevisto: undefined, // remove a data no backend
-				nota: 'Consulta desmarcada na recepção do Centro.'
-			});
+			try {
+				await api.centroRecepcao.desmarcarReagendar(enc.id, {
+					acao: 'DESMARCAR',
+					motivo: 'Consulta desmarcada na recepção do Centro.'
+				});
+			} catch (errDesmarcar) {
+				console.info('[UniSISM] Endpoint /v1/centro/recepcao/desmarcar-reagendar em transição — usando fallback aprovar', errDesmarcar);
+				await api.encaminhamentos.aprovar(enc.id, {
+					filaDestino: 'CENTRO_ESPECIALIDADES',
+					agendamentoPrevisto: undefined,
+					nota: 'Consulta desmarcada na recepção do Centro.'
+				});
+			}
 			await carregarAgenda();
 		} catch (e) {
 			console.error(e);
 			alert('Falha ao desmarcar consulta.');
 		} finally {
 			processandoDesmarcar = false;
+		}
+	}
+
+	async function registrarPresencaRecepcao(enc: Encaminhamento, status: StatusAtendimentoCentro) {
+		try {
+			await api.centroRecepcao.confirmarPresenca(enc.id, {
+				status,
+				observacao: 'Status/Presença atualizada pela Recepção do Centro.'
+			});
+			await carregarAgenda();
+		} catch (e) {
+			console.error('Falha ao registrar presença:', e);
 		}
 	}
 

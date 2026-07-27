@@ -90,6 +90,30 @@ import type {
   UsuarioListado,
   VerifyCodeRequest,
   VerifyCodeResponse,
+  StatusAtendimentoCentro,
+  CanalRoteamento,
+  EncaminhamentoCentroItem,
+  ListFilaEsperaQuery,
+  ListFilaEsperaResponse,
+  AgendarConsultaCentroRequest,
+  AgendarConsultaCentroResponse,
+  AgendamentoDiaCentroItem,
+  ListAgendaDiaCentroQuery,
+  ListAgendaDiaCentroResponse,
+  ConfirmarPresencaCentroRequest,
+  AgendarBalcaoCentroRequest,
+  DesmarcarReagendarCentroRequest,
+  ListAgendaMedicoQuery,
+  ListAgendaMedicoResponse,
+  RegistrarAtendimentoSoapCentroRequest,
+  CriarEncaminhamentoIntermunicipalCentroRequest,
+  DashboardGestaoCentroResponse,
+  CotaUbsCentro,
+  EscalaMedicoCentro,
+  RemanejamentoLoteCentroRequest,
+  RemanejamentoLoteCentroResponse,
+  RelatorioBpaCentroResponse,
+  ListAuditoriaCentroResponse,
 } from './types';
 
 // ============================================================
@@ -157,6 +181,10 @@ export class ApiClient {
   readonly admin: AdminApi;
   readonly pacienteApp: PacienteAppApi;
   readonly tfd: TfdApi;
+  readonly centro: CentroApi;
+  readonly centroRecepcao: CentroRecepcaoApi;
+  readonly centroMedico: CentroMedicoApi;
+  readonly centroGestao: CentroGestaoApi;
 
   private _onUnauthorized?: (code: string) => void;
 
@@ -174,6 +202,10 @@ export class ApiClient {
     this.admin = new AdminApi(this);
     this.pacienteApp = new PacienteAppApi(this);
     this.tfd = new TfdApi(this);
+    this.centro = new CentroApi(this);
+    this.centroRecepcao = this.centro.recepcao;
+    this.centroMedico = this.centro.medico;
+    this.centroGestao = this.centro.gestao;
   }
 
   /** Registra callback disparado em qualquer resposta 401 (inclui code do erro). */
@@ -184,7 +216,11 @@ export class ApiClient {
   // ----- Helpers internos -----
 
   private headers(extra?: Record<string, string>): Record<string, string> {
-    const h: Record<string, string> = { Accept: 'application/json', ...extra };
+    const h: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...extra
+    };
     const t = this.tokens.get();
     if (t) h.Authorization = `Bearer ${t}`;
     if (this.apiKey) h['x-api-key'] = this.apiKey;
@@ -1391,3 +1427,194 @@ class TfdApi {
       this.api.post(`/tfd/solicitacoes-paciente/${encodeURIComponent(id)}/concluir`),
   };
 }
+
+// ============================================================
+// CENTRO MUNICIPAL DE ESPECIALIDADES — RECEPÇÃO & REGULAÇÃO (v3.0.0)
+// ============================================================
+
+export class CentroRecepcaoApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Listar fila de espera do Centro (GET /v1/centro/recepcao/fila-espera). */
+  listFilaEspera(query?: ListFilaEsperaQuery): Promise<ListFilaEsperaResponse> {
+    return this.api.get<ListFilaEsperaResponse>(
+      '/centro/recepcao/fila-espera',
+      query as Record<string, unknown> | undefined
+    );
+  }
+
+  /** Agendar consulta via algoritmo de otimização backend (POST /v1/centro/recepcao/agendar/:id). */
+  agendar(
+    id: string,
+    req: AgendarConsultaCentroRequest
+  ): Promise<AgendarConsultaCentroResponse> {
+    return this.api.post<AgendarConsultaCentroResponse>(
+      `/centro/recepcao/agendar/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+
+  /** Agenda do dia da recepção (GET /v1/centro/recepcao/agenda-dia). */
+  listAgendaDia(query?: ListAgendaDiaCentroQuery): Promise<ListAgendaDiaCentroResponse> {
+    return this.api.get<ListAgendaDiaCentroResponse>(
+      '/centro/recepcao/agenda-dia',
+      query as Record<string, unknown> | undefined
+    );
+  }
+
+  /** Confirmar chegada / presença / status do paciente (POST /v1/centro/recepcao/presenca/:id). */
+  confirmarPresenca(
+    id: string,
+    req: ConfirmarPresencaCentroRequest
+  ): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      `/centro/recepcao/presenca/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+
+  /** Busca de paciente no PEC por CPF (GET /v1/centro/recepcao/pacientes/por-cpf/:cpf). */
+  buscarPacientePorCpf(cpf: string): Promise<BuscarPacientePorCpfResponse> {
+    const sanitizado = cpf.replace(/\D/g, '');
+    return this.api.get<BuscarPacientePorCpfResponse>(
+      `/centro/recepcao/pacientes/por-cpf/${encodeURIComponent(sanitizado)}`
+    );
+  }
+
+  /** Agendamento direto de balcão 1 passo (POST /v1/centro/recepcao/balcao). */
+  agendarBalcao(
+    req: AgendarBalcaoCentroRequest
+  ): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      '/centro/recepcao/balcao',
+      req
+    );
+  }
+
+  /** Desmarcar ou reagendar consulta (POST /v1/centro/recepcao/desmarcar-reagendar/:id). */
+  desmarcarReagendar(
+    id: string,
+    req: DesmarcarReagendarCentroRequest
+  ): Promise<{ sucesso: boolean; mensagem: string }> {
+    return this.api.post<{ sucesso: boolean; mensagem: string }>(
+      `/centro/recepcao/desmarcar-reagendar/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+}
+
+export class CentroMedicoApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Agenda do dia do médico especialista (GET /v1/centro/medico/agenda). */
+  listAgenda(query?: ListAgendaMedicoQuery): Promise<ListAgendaMedicoResponse> {
+    return this.api.get<ListAgendaMedicoResponse>(
+      '/centro/medico/agenda',
+      query as Record<string, unknown> | undefined
+    );
+  }
+
+  /** Chamar paciente para consultório (POST /v1/centro/medico/chamar/:id). */
+  chamarPaciente(id: string): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      `/centro/medico/chamar/${encodeURIComponent(id)}`
+    );
+  }
+
+  /** Consultar Prontuário Eletrônico do Cidadão - PEC (GET /v1/centro/medico/pacientes/:pacienteId/prontuario). */
+  obterProntuario(pacienteId: string): Promise<PacienteCompleto> {
+    return this.api.get<PacienteCompleto>(
+      `/centro/medico/pacientes/${encodeURIComponent(pacienteId)}/prontuario`
+    );
+  }
+
+  /** Registrar consulta SOAP e finalizar atendimento (POST /v1/centro/medico/atendimento/:id). */
+  registrarAtendimentoSoap(
+    id: string,
+    req: RegistrarAtendimentoSoapCentroRequest
+  ): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      `/centro/medico/atendimento/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+
+  /** Encaminhamento Intermunicipal / TFD de alta complexidade (POST /v1/centro/medico/encaminhamento-intermunicipal). */
+  criarEncaminhamentoIntermunicipal(
+    req: CriarEncaminhamentoIntermunicipalCentroRequest
+  ): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      '/centro/medico/encaminhamento-intermunicipal',
+      req
+    );
+  }
+}
+
+export class CentroGestaoApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Dashboard executivo em tempo real da diretoria (GET /v1/centro/gestao/dashboard). */
+  obterDashboard(): Promise<DashboardGestaoCentroResponse> {
+    return this.api.get<DashboardGestaoCentroResponse>('/centro/gestao/dashboard');
+  }
+
+  /** Listar cotas mensais das UBSs (GET /v1/centro/gestao/cotas). */
+  listCotas(): Promise<CotaUbsCentro[]> {
+    return this.api.get<CotaUbsCentro[]>('/centro/gestao/cotas');
+  }
+
+  /** Atualizar matriz de cotas de uma UBS (PUT /v1/centro/gestao/cotas/:ubsId). */
+  atualizarCotas(ubsId: string, req: CotaUbsCentro): Promise<CotaUbsCentro> {
+    return this.api.put<CotaUbsCentro>(`/centro/gestao/cotas/${encodeURIComponent(ubsId)}`, req);
+  }
+
+  /** Listar escalas médicas ativas (GET /v1/centro/gestao/escalas). */
+  listEscalas(): Promise<EscalaMedicoCentro[]> {
+    return this.api.get<EscalaMedicoCentro[]>('/centro/gestao/escalas');
+  }
+
+  /** Cadastrar nova escala de atendimento médico (POST /v1/centro/gestao/escalas). */
+  criarEscala(req: EscalaMedicoCentro): Promise<EscalaMedicoCentro> {
+    return this.api.post<EscalaMedicoCentro>('/centro/gestao/escalas', req);
+  }
+
+  /** Atualizar escala médica existente (PUT /v1/centro/gestao/escalas/:id). */
+  atualizarEscala(id: string, req: Partial<EscalaMedicoCentro>): Promise<EscalaMedicoCentro> {
+    return this.api.put<EscalaMedicoCentro>(`/centro/gestao/escalas/${encodeURIComponent(id)}`, req);
+  }
+
+  /** Remover/inativar escala médica (DELETE /v1/centro/gestao/escalas/:id). */
+  excluirEscala(id: string): Promise<{ sucesso: boolean }> {
+    return this.api.delete<{ sucesso: boolean }>(`/centro/gestao/escalas/${encodeURIComponent(id)}`);
+  }
+
+  /** Executar remanejamento emergencial em lote (POST /v1/centro/gestao/remanejamento-lote). */
+  remanejarEmLote(req: RemanejamentoLoteCentroRequest): Promise<RemanejamentoLoteCentroResponse> {
+    return this.api.post<RemanejamentoLoteCentroResponse>('/centro/gestao/remanejamento-lote', req);
+  }
+
+  /** Obter relatório faturável BPA / SIA-SUS (GET /v1/centro/gestao/relatorios/bpa?periodo=YYYY-MM). */
+  obterRelatorioBpa(periodo: string): Promise<RelatorioBpaCentroResponse> {
+    return this.api.get<RelatorioBpaCentroResponse>(`/centro/gestao/relatorios/bpa?periodo=${encodeURIComponent(periodo)}`);
+  }
+
+  /** Consultar trilha de auditoria imutável (GET /v1/centro/gestao/auditoria). */
+  listAuditoria(limit = 50, offset = 0): Promise<ListAuditoriaCentroResponse> {
+    return this.api.get<ListAuditoriaCentroResponse>(`/centro/gestao/auditoria?limit=${limit}&offset=${offset}`);
+  }
+}
+
+export class CentroApi {
+  readonly recepcao: CentroRecepcaoApi;
+  readonly medico: CentroMedicoApi;
+  readonly gestao: CentroGestaoApi;
+
+  constructor(api: ApiClient) {
+    this.recepcao = new CentroRecepcaoApi(api);
+    this.medico = new CentroMedicoApi(api);
+    this.gestao = new CentroGestaoApi(api);
+  }
+}
+
+
+

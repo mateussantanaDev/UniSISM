@@ -95,6 +95,10 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     filaDestino: r.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'CEO' : r.canalRoteamento ?? null,
     destinoRegulacao: r.destinoRegulacao ?? null,
     dataDisponibilidade: r.dataDisponibilidade ? r.dataDisponibilidade.toISOString() : null,
+    statusAtendimentoCentro: r.statusAtendimentoCentro ?? null,
+    presencaRegistradaEm: r.presencaRegistradaEm ? r.presencaRegistradaEm.toISOString() : null,
+    atendimentoIniciadoEm: r.atendimentoIniciadoEm ? r.atendimentoIniciadoEm.toISOString() : null,
+    atendimentoConcluidoEm: r.atendimentoConcluidoEm ? r.atendimentoConcluidoEm.toISOString() : null,
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 

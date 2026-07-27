@@ -13,6 +13,10 @@ import type { RegulacaoController } from '../../modules/gestao/presentation/cont
 import { buildRegulacaoRoutes } from '../../modules/gestao/presentation/routes/regulacao.routes';
 import type { EspecialistaController } from '../../modules/gestao/presentation/controllers/EspecialistaController';
 import { buildEspecialistaRoutes } from '../../modules/gestao/presentation/routes/especialista.routes';
+import type { CentroRecepcaoController } from '../../modules/centro/presentation/controllers/CentroRecepcaoController';
+import type { CentroGestaoController } from '../../modules/centro/presentation/controllers/CentroGestaoController';
+import type { CentroMedicoController } from '../../modules/centro/presentation/controllers/CentroMedicoController';
+import { buildCentroRoutes } from '../../modules/centro/presentation/routes/centro.routes';
 import type { PacienteAppController } from '../../modules/paciente-app/presentation/controllers/PacienteAppController';
 import {
   buildPacienteAppRoutes,
@@ -56,6 +60,9 @@ interface Deps {
   smsBannersAdmin: SmsBannersAdminController;
   regulacao: RegulacaoController;
   especialista: EspecialistaController;
+  centroRecepcao: CentroRecepcaoController;
+  centroGestao: CentroGestaoController;
+  centroMedico: CentroMedicoController;
   pacienteApp: PacienteAppController;
   passwordRecoveryRateLimiter: PasswordRecoveryRateLimiter;
   downloadAnexoRateLimiter: DownloadAnexoRateLimiter;
@@ -91,11 +98,12 @@ export function buildRoutes(deps: Deps): Router {
   // ----- Dashboard (escopo automático via scope) -----
   router.get('/dashboard/metrics', authenticate, deps.dashboard.get);
 
-  // ----- Face 2 · SMS (módulo Gestão / Regulação) -----
+  // ----- Face 2 · SMS (módulo Gestão / Regulação) e Centro de Especialidades -----
   // IMPORTANTE: registrar antes das rotas /encaminhamentos/:id pra evitar
   // que Express trate "/encaminhamentos/arvore" como :id="arvore".
   router.use(buildRegulacaoRoutes(deps.tokens, deps.regulacao));
   router.use(buildEspecialistaRoutes(deps.tokens, deps.especialista));
+  router.use(buildCentroRoutes(deps.tokens, deps.centroRecepcao, deps.centroGestao, deps.centroMedico));
 
   // ----- Encaminhamentos -----
   // consolidar/resolver requer UBS — DESENVOLVEDOR e ADMIN não podem (eles não são de uma UBS)

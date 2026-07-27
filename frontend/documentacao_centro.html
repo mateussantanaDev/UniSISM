@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNISISM - Guia de Integração do Centro Municipal de Especialidades</title>
+    <title>UNISISM - Guia do Centro Municipal de Especialidades (Recepção e Médico)</title>
     <style>
         :root {
             --primary: #0f766e;
@@ -213,74 +213,65 @@
 
     <header>
         <div class="header-container">
-            <h1>UNISISM · Centro de Especialidades (Fase 1: Recepção)</h1>
-            <p>Guia de Integração e Regras do Algoritmo Backend - v1.1.0</p>
+            <h1>UNISISM · Centro Municipal de Especialidades</h1>
+            <p>Guia de Integração e Especificação do Backend (Fase 1: Recepção + Fase 2: Médico) - v2.0.0</p>
         </div>
     </header>
 
     <main>
         <!-- 1. Visão Geral -->
         <div class="card">
-            <h2 class="card-title">1. Visão Geral do Módulo</h2>
+            <h2 class="card-title">1. Visão Geral das Duas Faces do Módulo</h2>
             <p>
-                O módulo <strong>Centro de Especialidades Municipal</strong> gerencia a jornada secundária do paciente após a regulação da Secretaria Municipal de Saúde (SMS). A <strong>Fase 1: Recepção</strong> gerencia os agendamentos das consultas e exames especializados.
+                O <strong>Centro Municipal de Especialidades</strong> é o núcleo de atenção secundária em saúde do município. Ele é dividido em duas operações integradas:
             </p>
+            <ul>
+                <li><strong>Fase 1: Recepção / Atendente</strong> — Gestão da fila de regulação, otimização de agendamentos por especialista e recepção direta no balcão.</li>
+                <li><strong>Fase 2: Módulo Médico Especialista</strong> — Agenda diária por data/horário, consulta ao Prontuário Eletrônico (PEC), registro de consulta SOAP e geração de Encaminhamentos Intermunicipais para a Regulação da SMS / TFD.</li>
+            </ul>
             <div class="alert alert-success font-mono">
-                Fluxo de Estados: [UBS: RASCUNHO] &rarr; [SMS: AGUARDANDO_REGULACAO] &rarr; [SMS: APROVADO com filaDestino: CENTRO_ESPECIALIDADES] &rarr; [CENTRO: agendamentoPrevisto setado].
+                Fluxo de Estados: [UBS] &rarr; [SMS: AGUARDANDO_REGULACAO] &rarr; [SMS: APROVADO · filaDestino: CENTRO_ESPECIALIDADES] &rarr; [CENTRO RECEPÇÃO: Agendado] &rarr; [CENTRO MÉDICO: Em Atendimento &rarr; Concluído &rarr; (Opção TFD Intermunicipal)].
             </div>
         </div>
 
-        <!-- 2. Requisito Novo: Algoritmo de Otimização -->
+        <!-- 2. Endpoints e Contratos -->
         <div class="card">
-            <h2 class="card-title">
-                2. Algoritmo de Otimização de Vagas (Backend)
-                <span class="badge badge-alg">REQUISITO</span>
-            </h2>
-            <p>
-                A recepção do Centro <strong>não escolhe a data ou hora da consulta manualmente</strong>. Esse controle foi removido do frontend para evitar favorecimentos e otimizar a fila clínica de forma impessoal.
-            </p>
-            <p><strong>Regras para desenvolvimento do algoritmo no Backend:</strong></p>
-            <ol>
-                <li>
-                    <strong>Classificação Clínico-Temporal (Prioridade)</strong>: Pacientes em estados mais críticos (<code>EMERGENCIA</code> e <code>URGENTE</code>) devem ter preferência absoluta na fila, recebendo as vagas mais próximas possíveis da escala de trabalho do médico.
-                </li>
-                <li>
-                    <strong>Escala de Trabalho dos Médicos</strong>: O algoritmo deve mapear os dias e turnos de trabalho de cada especialista solicitado (ex: segundas e quartas, das 08h às 12h) e preencher sequencialmente as vagas vagas/slots livres.
-                </li>
-                <li>
-                    <strong>Tratamento na API</strong>: Ao receber o agendamento (tanto via Fila da Regulação quanto via Balcão), o backend roda o algoritmo de otimização de vagas, agenda o paciente e retorna a data calculada (<code>agendamentoPrevisto</code>) e o horário nos detalhes do agendamento.
-                </li>
-            </ol>
-        </div>
-
-        <!-- 3. Endpoints e Contratos -->
-        <div class="card">
-            <h2 class="card-title">3. Endpoints Requeridos / Consumidos</h2>
+            <h2 class="card-title">2. Endpoints Requeridos (Recepção e Médico)</h2>
 
             <!-- GET /encaminhamentos -->
             <div>
                 <h3>
                     <span class="badge badge-get">GET</span>
-                    <code>/encaminhamentos?status=APROVADO&limit=1000</code>
+                    <code>/v1/encaminhamentos?status=APROVADO&limit=1000</code>
                 </h3>
-                <p>Retorna os encaminhamentos aprovados pela regulação. O frontend filtra no cliente por <code>filaDestino === 'CENTRO_ESPECIALIDADES'</code>.</p>
+                <p>Retorna os encaminhamentos aprovados pela regulação da SMS destinados ao Centro. Tanto a Recepção quanto o Médico consomem este endpoint para listar a demanda por especialidade e data de agenda.</p>
                 <pre>{
   "encaminhamentos": [
     {
-      "id": "uuid-1234",
+      "id": "uuid-enc-101",
       "protocolo": "ENC20260721-001",
       "status": "APROVADO",
       "filaDestino": "CENTRO_ESPECIALIDADES",
-      "agendamentoPrevisto": null,
+      "agendamentoPrevisto": "2026-07-27",
       "paciente": {
-        "nome": "Mateus Silva",
-        "cpf": "12345678909"
+        "nome": "Mateus Henrique Silva",
+        "cpf": "12345678909",
+        "cartaoSus": "898000123456789",
+        "dataNascimento": "1985-04-12",
+        "sexo": "M",
+        "telefone": "51999887766"
       },
       "solicitacao": {
+        "medicoSolicitante": "Dr. Fernando Souza",
+        "crm": "CRM 34120",
         "especialidadeSolicitada": "Cardiologia",
         "cid10": "I10",
+        "cidDescricao": "Hipertensão essencial (primária)",
+        "justificativaClinica": "Picos hipertensivos recorrentes.",
         "prioridade": "URGENTE"
-      }
+      },
+      "unidadeOrigem": "UBS Central",
+      "observacoesRegulacao": "Médico: Dr. Roberto Medeiros às 08:00 | Obs: Trazer exames antigos."
     }
   ]
 }</pre>
@@ -290,129 +281,114 @@
             <div>
                 <h3>
                     <span class="badge badge-post">POST</span>
-                    <code>/encaminhamentos/:id/aprovar</code>
+                    <code>/v1/encaminhamentos/:id/aprovar</code>
                 </h3>
-                <p>Aciona o algoritmo de agendamento automático. O atendente passa apenas o médico selecionado e a observação de balcão.</p>
+                <p>Usado pela Recepção para acionar a alocação de vaga pelo algoritmo backend ou desmarcar consulta.</p>
                 <pre>{
   "filaDestino": "CENTRO_ESPECIALIDADES",
-  "nota": "Médico: Dr. Roberto Medeiros | Obs: Trazer exames antigos."
+  "agendamentoPrevisto": "2026-07-27",
+  "nota": "Médico: Dr. Roberto Medeiros às 08:00 | Obs: Comparecer 15 min antes."
 }</pre>
             </div>
 
-            <!-- GET /pacientes/por-cpf/:cpf -->
+            <!-- GET /pacientes/:id -->
             <div>
                 <h3>
                     <span class="badge badge-get">GET</span>
-                    <code>/pacientes/por-cpf/:cpf</code>
+                    <code>/v1/pacientes/:id</code>
                 </h3>
-                <p>Consulta se o paciente já possui cadastro no PEC municipal para preenchimento automático no Balcão.</p>
-                <pre>{
-  "existe": true,
-  "paciente": {
-    "nome": "João dos Santos",
-    "cartaoSus": "898000123456789",
-    "dataNascimento": "1985-04-12",
-    "sexo": "M",
-    "telefone": "51999998888",
-    "endereco": "Av. Central, 100"
-  }
-}</pre>
+                <p>Usado pelo Médico Especialista para abrir o <strong>Dossiê Completo do Paciente (Prontuário PEC)</strong> com alergias, crônicas, medicamentos, consultas anteriores, exames e vacinas.</p>
             </div>
 
-            <!-- POST /encaminhamentos -->
+            <!-- POST /pacientes/:id/atendimentos -->
             <div>
                 <h3>
                     <span class="badge badge-post">POST</span>
-                    <code>/encaminhamentos</code>
+                    <code>/v1/pacientes/:pacienteId/atendimentos</code>
                 </h3>
-                <p>Usado no agendamento direto de Balcão quando o paciente não vem da regulação digital da SMS (ex: encaminhamento de papel antigo).</p>
+                <p>Enviado quando o médico conclui a consulta. Grava permanentemente a anamnese SOAP, diagnósticos CID-10 e prescrições no prontuário do paciente.</p>
+                <pre>{
+  "data": "2026-07-27T11:30:00.000Z",
+  "tipo": "CONSULTA_MEDICA",
+  "profissional": "Dr. Roberto Medeiros",
+  "registroProfissional": "CRM 12345",
+  "especialidade": "Cardiologia",
+  "unidade": "Centro Municipal de Especialidades",
+  "queixaPrincipal": "Paciente relata picos hipertensivos recorrentes e tonturas.",
+  "diagnostico": "Hipertensão arterial primária sob controle medicamentos ajustado",
+  "cid10": "I10",
+  "conduta": "Ajustado anti-hipertensivo para Losartana 50mg 12/12h. Solicitado ECG.",
+  "prescricaoResumo": "1. Losartana 50mg — Tomar 1 cp VO de 12/12h por 60 dias."
+}</pre>
+            </div>
+
+            <!-- POST /encaminhamentos (Encaminhamento Intermunicipal do Médico) -->
+            <div>
+                <h3>
+                    <span class="badge badge-post">POST</span>
+                    <code>/v1/encaminhamentos</code>
+                </h3>
+                <p>Enviado pelo Médico Especialista quando o paciente necessita de procedimento de alta complexidade fora do município. O pedido entra direto na Regulação da SMS (status <code>AGUARDANDO_REGULACAO</code>).</p>
                 <pre>{
   "paciente": {
-    "nome": "Lucia Souza",
+    "nome": "Maria Eduarda Oliveira",
     "cpf": "98765432100",
-    "cartaoSus": "898000222233334",
+    "cartaoSus": "898000987654321",
     "dataNascimento": "1972-09-25",
     "sexo": "F",
-    "telefone": "51988887777",
-    "endereco": "Rua das Flores, 45"
+    "telefone": "51988776655",
+    "endereco": "Rua das Palmeiras, 450"
   },
   "solicitacao": {
-    "medicoSolicitante": "Médico do Balcão",
-    "crm": "000000",
-    "especialidadeSolicitada": "Oftalmologia",
-    "cid10": "H52",
-    "cidDescricao": "Erros de refração",
-    "justificativaClinica": "Agendamento direto efetuado no balcão do Centro.",
-    "prioridade": "ELETIVA",
-    "dataSolicitacao": "2026-07-21"
+    "medicoSolicitante": "Dr. Roberto Medeiros",
+    "crm": "CRM 12345",
+    "especialidadeSolicitada": "Cirurgia Cardiovascular (Porto Alegre)",
+    "cid10": "I20.9",
+    "cidDescricao": "Angina pectoris não especificada",
+    "justificativaClinica": "[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: Porto Alegre\nTransporte: VAN_SMS | Acompanhante: Sim\n\nLaudo Médico:\nPaciente necessita de avaliação e intervenção cirúrgica cardiovascular de alta complexidade.",
+    "prioridade": "URGENTE",
+    "dataSolicitacao": "2026-07-27"
   }
 }</pre>
             </div>
         </div>
 
-        <!-- 4. Modelagem de Dados no Backend -->
+        <!-- 3. Simulador Interativo de Payloads -->
         <div class="card">
-            <h2 class="card-title">4. Modelagem de Dados no Backend</h2>
-            <p>Os seguintes campos na tabela de <code>encaminhamentos</code> dão suporte à feature:</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Campo</th>
-                        <th>Tipo</th>
-                        <th>Descrição</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>filaDestino</code></td>
-                        <td><code>ENUM('SUS', 'CENTRO_ESPECIALIDADES', 'CEO')</code></td>
-                        <td>Define a triagem/fila final para onde o encaminhamento aprovado foi destinado.</td>
-                    </tr>
-                    <tr>
-                        <td><code>agendamentoPrevisto</code></td>
-                        <td><code>DATE</code> (Nullable)</td>
-                        <td>A data reservada para a consulta (calculada pelo algoritmo backend no momento da aprovação/agendamento).</td>
-                    </tr>
-                    <tr>
-                        <td><code>observacoesRegulacao</code></td>
-                        <td><code>TEXT</code> (Nullable)</td>
-                        <td>Armazena as instruções do agendamento (nome do especialista, horário calculado, recomendações).</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <h2 class="card-title">3. Simulador Interativo de Payloads do Centro</h2>
+            <p>Selecione a ação e simule o JSON enviado pelo frontend ao backend:</p>
 
-        <!-- 5. Simulador Interativo -->
-        <div class="card">
-            <h2 class="card-title">5. Simulador de Payload da Recepção (Com Otimização)</h2>
-            <p>Selecione um médico e gere o JSON enviado ao backend no clique de agendar:</p>
-            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                 <div>
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Médico Especialista:</label>
-                    <select id="sim-medico" class="sim-input" style="height: 35px; width: 100%;">
-                        <option value="Dr. Roberto Medeiros (Cardiologia)">Dr. Roberto Medeiros (Cardiologia)</option>
-                        <option value="Dra. Sandra Regina (Cardiologia)">Dra. Sandra Regina (Cardiologia)</option>
-                        <option value="Dr. Fábio Alencar (Oftalmologia)">Dr. Fábio Alencar (Oftalmologia)</option>
-                        <option value="Dra. Patrícia Silveira (Oftalmologia)">Dra. Patrícia Silveira (Oftalmologia)</option>
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Ação / Perfil Operacional:</label>
+                    <select id="sim-modo" class="sim-input" style="height: 35px; width: 100%; font-weight: bold;" onchange="alternarModoSimulacao()">
+                        <option value="RECEPCAO">Recepção: Agendar Vaga (POST /aprovar)</option>
+                        <option value="ATENDIMENTO">Médico: Concluir Consulta SOAP (POST /atendimentos)</option>
+                        <option value="INTERMUNICIPAL">Médico: Encaminhamento Intermunicipal (POST /encaminhamentos)</option>
                     </select>
 
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Prioridade Clínica:</label>
-                    <select id="sim-prioridade" class="sim-input" style="height: 35px; width: 100%;">
-                        <option value="ELETIVA">ELETIVA (Mock: +15 dias)</option>
-                        <option value="PRIORITARIA">PRIORITÁRIA (Mock: +7 dias)</option>
-                        <option value="URGENTE">URGENTE (Mock: +3 dias)</option>
-                        <option value="EMERGENCIA">EMERGÊNCIA (Mock: +1 dia)</option>
-                    </select>
+                    <div id="sim-painel-recepcao">
+                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Médico Especialista:</label>
+                        <select id="sim-medico" class="sim-input" style="height: 35px; width: 100%;">
+                            <option value="Dr. Roberto Medeiros (Cardiologia)">Dr. Roberto Medeiros (Cardiologia)</option>
+                            <option value="Dra. Sandra Regina (Cardiologia)">Dra. Sandra Regina (Cardiologia)</option>
+                            <option value="Dr. Fábio Alencar (Oftalmologia)">Dr. Fábio Alencar (Oftalmologia)</option>
+                        </select>
+                    </div>
 
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Recomendações:</label>
-                    <textarea id="sim-obs" class="sim-input" style="height: 60px;">Trazer exames anteriores.</textarea>
+                    <div id="sim-painel-medico" style="display: none;">
+                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Diagnóstico / CID-10:</label>
+                        <input id="sim-cid" class="sim-input" value="I10 — Hipertensão arterial primária" />
 
-                    <button type="button" class="sim-btn" onclick="gerarPayload()">Gerar JSON</button>
+                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Conduta / Prescrição:</label>
+                        <textarea id="sim-conduta" class="sim-input" style="height: 50px;">Ajustado anti-hipertensivo. Solicitado ECG de controle.</textarea>
+                    </div>
+
+                    <button type="button" class="sim-btn" onclick="gerarPayload()">Gerar JSON de Teste</button>
                 </div>
                 <div>
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Payload Produzido (POST /aprovar):</label>
-                    <pre id="sim-output" style="margin-top: 0; height: 215px; overflow-y: auto;">Clique em "Gerar" para ver o JSON.</pre>
+                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Payload Produzido:</label>
+                    <pre id="sim-output" style="margin-top: 0; height: 230px; overflow-y: auto;">Clique em "Gerar" para ver o JSON.</pre>
                 </div>
             </div>
         </div>
@@ -423,24 +399,66 @@
     </footer>
 
     <script>
+        function alternarModoSimulacao() {
+            const modo = document.getElementById('sim-modo').value;
+            const pRecep = document.getElementById('sim-painel-recepcao');
+            const pMed = document.getElementById('sim-painel-medico');
+
+            if (modo === 'RECEPCAO') {
+                pRecep.style.display = 'block';
+                pMed.style.display = 'none';
+            } else {
+                pRecep.style.display = 'none';
+                pMed.style.display = 'block';
+            }
+            gerarPayload();
+        }
+
         function gerarPayload() {
-            const medico = document.getElementById('sim-medico').value;
-            const prio = document.getElementById('sim-prioridade').value;
-            const obs = document.getElementById('sim-obs').value;
+            const modo = document.getElementById('sim-modo').value;
+            let payload = {};
 
-            // Simula a data calculada que o backend gerará
-            const hoje = new Date();
-            let dias = 15;
-            if (prio === 'EMERGENCIA') dias = 1;
-            else if (prio === 'URGENTE') dias = 3;
-            else if (prio === 'PRIORITARIA') dias = 7;
-            hoje.setDate(hoje.getDate() + dias);
-            const dataStr = hoje.toISOString().substring(0, 10);
-
-            const payload = {
-                filaDestino: "CENTRO_ESPECIALIDADES",
-                nota: "Médico: " + medico + " às 14:15 | Obs: " + (obs || "Nenhuma")
-            };
+            if (modo === 'RECEPCAO') {
+                const medico = document.getElementById('sim-medico').value;
+                payload = {
+                    filaDestino: "CENTRO_ESPECIALIDADES",
+                    agendamentoPrevisto: "2026-07-27",
+                    nota: "Médico: " + medico + " às 08:45 | Obs: Trazer exames antigos."
+                };
+            } else if (modo === 'ATENDIMENTO') {
+                const cid = document.getElementById('sim-cid').value;
+                const conduta = document.getElementById('sim-conduta').value;
+                payload = {
+                    data: new Date().toISOString(),
+                    tipo: "CONSULTA_MEDICA",
+                    profissional: "Dr. Roberto Medeiros",
+                    registroProfissional: "CRM 12345",
+                    especialidade: "Cardiologia",
+                    unidade: "Centro Municipal de Especialidades",
+                    queixaPrincipal: "Paciente com picos hipertensivos recorrentes.",
+                    diagnostico: cid,
+                    cid10: "I10",
+                    conduta: conduta,
+                    prescricaoResumo: "1. Losartana 50mg — 1 cp VO de 12/12h."
+                };
+            } else {
+                payload = {
+                    paciente: {
+                        nome: "Maria Eduarda Oliveira",
+                        cpf: "98765432100",
+                        cartaoSus: "898000987654321"
+                    },
+                    solicitacao: {
+                        medicoSolicitante: "Dr. Roberto Medeiros",
+                        crm: "CRM 12345",
+                        especialidadeSolicitada: "Cirurgia Cardiovascular (Porto Alegre)",
+                        cid10: "I20.9",
+                        cidDescricao: "Angina pectoris não especificada",
+                        justificativaClinica: "[ENCAMINHAMENTO INTERMUNICIPAL FORA DO DOMICÍLIO]\nMunicípio Destino: Porto Alegre",
+                        prioridade: "URGENTE"
+                    }
+                };
+            }
 
             document.getElementById('sim-output').textContent = JSON.stringify(payload, null, 2);
         }

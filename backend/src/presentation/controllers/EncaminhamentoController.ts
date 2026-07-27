@@ -87,7 +87,7 @@ export class EncaminhamentoController {
     const anexoFiles = getFiles(req, 'anexo');
     const tipoAnexoRaw = req.body?.tipoAnexo;
     const tiposAnexo: string[] = Array.isArray(tipoAnexoRaw)
-      ? tiposAnexoRaw.map(String)
+      ? tipoAnexoRaw.map(String)
       : tipoAnexoRaw
         ? [String(tipoAnexoRaw)]
         : [];
