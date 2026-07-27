@@ -20,7 +20,8 @@ export type Role =
   | 'ATENDENTE_UBS'
   | 'REGULADOR_SMS'
   | 'GESTOR_TFD'
-  | 'REGULADOR_TFD';
+  | 'REGULADOR_TFD'
+  | 'MEDICO';
 
 export type Escopo = 'GLOBAL' | 'PREFEITURA' | 'UBS';
 

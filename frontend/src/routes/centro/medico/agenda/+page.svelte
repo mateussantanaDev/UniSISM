@@ -84,20 +84,85 @@
 	let timerInterval: any = null;
 
 	// Form fields for active SOAP Consultation
+	let tabAtendimento = $state<'SOAP' | 'PRESCRICAO' | 'EXAMES' | 'ATESTADO' | 'CONTRA_REFERENCIA'>('SOAP');
 	let soapQueixa = $state('');
 	let soapExameFisico = $state('');
 	let soapPa = $state('120/80');
 	let soapFc = $state('72');
 	let soapPeso = $state('70.5');
+	let soapAltura = $state('170');
+	let soapSpo2 = $state('98');
+	let soapTemp = $state('36.5');
+	let soapGlicemia = $state('95');
 	let soapCid10 = $state('I10');
 	let soapDiagnostico = $state('Hipertensão arterial essencial');
 	let soapConduta = $state('');
 	let soapPrescricao = $state('');
 	let salvandoAtendimento = $state(false);
 
+	// Automatic IMC calculation
+	let soapImc = $derived.by(() => {
+		const p = parseFloat(soapPeso);
+		const a = parseFloat(soapAltura) / 100;
+		if (isNaN(p) || isNaN(a) || a <= 0) return { imc: '0.0', classificacao: 'Indefinido' };
+		const val = p / (a * a);
+		let cls = 'Eutrófico';
+		if (val < 18.5) cls = 'Abaixo do peso';
+		else if (val < 25) cls = 'Eutrófico';
+		else if (val < 30) cls = 'Sobrepeso';
+		else if (val < 35) cls = 'Obesidade Grau I';
+		else if (val < 40) cls = 'Obesidade Grau II';
+		else cls = 'Obesidade Grau III';
+		return { imc: val.toFixed(1), classificacao: cls };
+	});
+
+	// REMUME Drugs Quick Insert
+	const medicamentosRemume = [
+		{ nome: 'Losartana Potássica 50mg', dose: '1 comp VO de 12/12h por 60 dias' },
+		{ nome: 'Atenolol 50mg', dose: '1 comp VO pela manhã por 60 dias' },
+		{ nome: 'Metformina 850mg', dose: '1 comp VO junto às refeições (2x ao dia)' },
+		{ nome: 'Omeprazol 20mg', dose: '1 comp VO em jejum pela manhã por 30 dias' },
+		{ nome: 'Sinvastatina 20mg', dose: '1 comp VO à noite por 60 dias' },
+		{ nome: 'Dipirona 500mg', dose: '1 comp VO de 6/6h se dor ou febre' },
+		{ nome: 'Paracetamol 500mg', dose: '1 comp VO de 6/6h se dor' },
+		{ nome: 'Hydrochlorothiazide 25mg', dose: '1 comp VO pela manhã por 60 dias' }
+	];
+
+	// Common CIDs Quick List
+	const cidsFrequentes = [
+		{ codigo: 'I10', descricao: 'Hipertensão arterial essencial' },
+		{ codigo: 'E11', descricao: 'Diabetes mellitus tipo 2' },
+		{ codigo: 'J45', descricao: 'Asma' },
+		{ codigo: 'M54.5', descricao: 'Dor lombar baixa' },
+		{ codigo: 'G43', descricao: 'Enxaqueca' },
+		{ codigo: 'H52.1', descricao: 'Miopia' },
+		{ codigo: 'L20', descricao: 'Dermatite atópica' }
+	];
+
+	// Form fields for Prescrição / Exames / Atestado / Contra-Referência
+	let atestadoDias = $state(1);
+	let atestadoMotivo = $state('Necessidade de repouso para recuperação médica.');
+	let examesPedidosTexto = $state('1. Eletrocardiógrafo 12 canais (ECG de repouso)\n2. Ecocardiograma Transtorácico');
+	let contraReferenciaTexto = $state('Devolutiva para a UBS de origem: Paciente avaliado pela Cardiologia com diagnóstico de Hipertensão arterial essencial (I10). Mantida conduta medicamentosa. Retorno em 60 dias.');
+
 	// Modals State
 	let modalSolicitacaoAberto = $state(false);
 	let consultaSolicitacao = $state<ConsultaAgenda | null>(null);
+
+	function inserirMedicamentoPrescricao(med: { nome: string; dose: string }) {
+		const linha = `${med.nome} — ${med.dose}`;
+		if (!soapPrescricao.trim()) {
+			soapPrescricao = '1. ' + linha;
+		} else {
+			const linhas = soapPrescricao.split('\n').filter(Boolean);
+			soapPrescricao = soapPrescricao + `\n${linhas.length + 1}. ` + linha;
+		}
+	}
+
+	function selecionarCidRapido(item: { codigo: string; descricao: string }) {
+		soapCid10 = item.codigo;
+		soapDiagnostico = item.descricao;
+	}
 
 	let modalDossieAberto = $state(false);
 	let pacienteDossie = $state<PacienteCompleto | null>(null);
@@ -147,49 +212,49 @@
 		carregando = true;
 		erroGlobal = '';
 		try {
-			// Tenta consumir endpoint v3.0.0 de agenda do especialista (centro-doc-back.md)
+			// Consome endpoint v3.0.0 de agenda do especialista (centro-doc-back.md)
 			try {
 				const resCentro = await api.centroMedico.listAgenda({ data: dataAgenda });
-				if (resCentro && Array.isArray(resCentro.agenda) && resCentro.agenda.length > 0) {
+				if (resCentro && Array.isArray(resCentro.agenda)) {
 					consultas = resCentro.agenda.map((enc, idx) => ({
 						id: enc.id,
 						protocolo: enc.protocolo,
 						horario: `0${8 + (idx % 4)}:${(idx * 20) % 60 === 0 ? '00' : (idx * 20) % 60}`,
 						status: (enc.statusAtendimentoCentro || 'AGUARDANDO') as any,
-						pacienteId: (enc.paciente as any).id || 'pac-uuid-' + (idx + 1),
+						pacienteId: (enc.paciente as any).id || enc.id,
 						paciente: {
 							nome: enc.paciente.nome,
 							cpf: enc.paciente.cpf,
-							cartaoSus: enc.paciente.cartaoSus || '898000123456' + idx,
-							dataNascimento: enc.paciente.dataNascimento || '1978-05-14',
+							cartaoSus: enc.paciente.cartaoSus || '',
+							dataNascimento: enc.paciente.dataNascimento || '',
 							sexo: enc.paciente.sexo || 'M',
-							telefone: enc.paciente.telefone || '(51) 99887-1122',
-							endereco: enc.paciente.endereco || 'Rua Central, 120'
+							telefone: enc.paciente.telefone || '',
+							endereco: enc.paciente.endereco || ''
 						},
 						solicitacao: {
-							medicoSolicitante: enc.solicitacao.medicoSolicitante || 'Dr. Carlos Moreira',
-							crm: enc.solicitacao.crm || 'CRM 45892',
-							especialidadeSolicitada: enc.solicitacao.especialidadeSolicitada || 'Cardiologia',
-							cid10: enc.solicitacao.cid10 || 'I10',
-							cidDescricao: enc.solicitacao.cidDescricao || 'Hipertensão Essencial',
-							justificativaClinica: enc.solicitacao.justificativaClinica || 'Picos hipertensivos recorrentes.',
-							prioridade: enc.solicitacao.prioridade || 'PRIORITARIA',
-							dataSolicitacao: enc.solicitacao.dataSolicitacao || '2026-07-20'
+							medicoSolicitante: enc.solicitacao.medicoSolicitante || '',
+							crm: enc.solicitacao.crm || '',
+							especialidadeSolicitada: enc.solicitacao.especialidadeSolicitada || '',
+							cid10: enc.solicitacao.cid10 || '',
+							cidDescricao: enc.solicitacao.cidDescricao || '',
+							justificativaClinica: enc.solicitacao.justificativaClinica || '',
+							prioridade: enc.solicitacao.prioridade || 'ELETIVA',
+							dataSolicitacao: enc.solicitacao.dataSolicitacao || ''
 						},
-						unidadeOrigem: enc.unidadeOrigem || 'UBS Central',
-						observacoesRegulacao: enc.observacoesRegulacao || 'Prioridade de encaixe.'
+						unidadeOrigem: enc.unidadeOrigem || 'Unidade de Origem',
+						observacoesRegulacao: enc.observacoesRegulacao || ''
 					}));
 					return;
 				}
 			} catch (errMedico) {
-				console.info('[UniSISM] Endpoint /v1/centro/medico/agenda em transição — usando fallback /v1/encaminhamentos', errMedico);
+				console.info('[UniSISM] Tentando recuperar agenda via /v1/encaminhamentos.', errMedico);
 			}
 
-			// Fallback para API de encaminhamentos
+			// Consulta via API de encaminhamentos aprovados
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
-
 			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto === dataAgenda);
+
 			consultas = agendados.map((enc, idx) => {
 				const horas = ['08:00', '08:45', '09:30', '10:15', '11:00', '13:30', '14:15', '15:00'];
 				return {
@@ -711,21 +776,34 @@
 
 					<!-- O: Objetivo / Sinais Vitais + Exame Físico -->
 					<div class="border border-slate-200 bg-slate-50 p-3 flex flex-col gap-3">
-						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-							O — OBJETIVO / SINAIS VITAIS E AFERIÇÕES
+						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase flex items-center justify-between">
+							<span>O — OBJETIVO / SINAIS VITAIS E AFERIÇÕES</span>
+							<span class="text-blue-900 bg-blue-100 px-2 py-0.5 font-bold">IMC: {soapImc.imc} ({soapImc.classificacao})</span>
 						</div>
-						<div class="grid grid-cols-3 gap-2 font-mono text-xs">
+						<div class="grid grid-cols-3 gap-2 font-mono text-xs sm:grid-cols-6">
 							<div>
-								<label for="sv-pa" class="text-[9px] text-slate-500">PA (mmHg)</label>
+								<label for="sv-pa" class="text-[9px] text-slate-500 font-bold">PA (mmHg)</label>
 								<input id="sv-pa" type="text" bind:value={soapPa} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
 							</div>
 							<div>
-								<label for="sv-fc" class="text-[9px] text-slate-500">FC (bpm)</label>
+								<label for="sv-fc" class="text-[9px] text-slate-500 font-bold">FC (bpm)</label>
 								<input id="sv-fc" type="text" bind:value={soapFc} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
 							</div>
 							<div>
-								<label for="sv-peso" class="text-[9px] text-slate-500">PESO (kg)</label>
+								<label for="sv-peso" class="text-[9px] text-slate-500 font-bold">PESO (kg)</label>
 								<input id="sv-peso" type="text" bind:value={soapPeso} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+							</div>
+							<div>
+								<label for="sv-altura" class="text-[9px] text-slate-500 font-bold">ALTURA (cm)</label>
+								<input id="sv-altura" type="text" bind:value={soapAltura} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+							</div>
+							<div>
+								<label for="sv-spo2" class="text-[9px] text-slate-500 font-bold">SpO2 (%)</label>
+								<input id="sv-spo2" type="text" bind:value={soapSpo2} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+							</div>
+							<div>
+								<label for="sv-glic" class="text-[9px] text-slate-500 font-bold">GLICEMIA (mg/dL)</label>
+								<input id="sv-glic" type="text" bind:value={soapGlicemia} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
 							</div>
 						</div>
 						<div class="flex flex-col gap-1 mt-1">
@@ -743,31 +821,46 @@
 
 				<!-- Lado Direito: SOAP Avaliação, Diagnóstico CID-10, Plano, Prescrição e Encaminhamentos -->
 				<div class="md:col-span-6 flex flex-col gap-4">
-					<!-- A: Avaliação e CID-10 -->
-					<div class="grid grid-cols-12 gap-2">
-						<div class="col-span-4 flex flex-col gap-1">
-							<label for="soap-cid" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-								CID-10 <span class="text-red-700">*</span>
-							</label>
-							<input
-								id="soap-cid"
-								type="text"
-								bind:value={soapCid10}
-								placeholder="I10"
-								class="w-full border border-slate-300 bg-white p-2 font-mono text-xs font-bold outline-none focus:border-blue-900 uppercase"
-							/>
+					<!-- A: Avaliação e CID-10 com sugestões rápidas -->
+					<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-3">
+						<div class="grid grid-cols-12 gap-2">
+							<div class="col-span-4 flex flex-col gap-1">
+								<label for="soap-cid" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+									CID-10 <span class="text-red-700">*</span>
+								</label>
+								<input
+									id="soap-cid"
+									type="text"
+									bind:value={soapCid10}
+									placeholder="I10"
+									class="w-full border border-slate-300 bg-white p-2 font-mono text-xs font-bold outline-none focus:border-blue-900 uppercase"
+								/>
+							</div>
+							<div class="col-span-8 flex flex-col gap-1">
+								<label for="soap-diag" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+									DIAGNÓSTICO DA ESPECIALIDADE <span class="text-red-700">*</span>
+								</label>
+								<input
+									id="soap-diag"
+									type="text"
+									bind:value={soapDiagnostico}
+									placeholder="Descrição diagnóstica"
+									class="w-full border border-slate-300 bg-white p-2 text-xs font-semibold outline-none focus:border-blue-900"
+								/>
+							</div>
 						</div>
-						<div class="col-span-8 flex flex-col gap-1">
-							<label for="soap-diag" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-								DIAGNÓSTICO DA ESPECIALIDADE <span class="text-red-700">*</span>
-							</label>
-							<input
-								id="soap-diag"
-								type="text"
-								bind:value={soapDiagnostico}
-								placeholder="Descrição diagnóstica"
-								class="w-full border border-slate-300 bg-white p-2 text-xs font-semibold outline-none focus:border-blue-900"
-							/>
+						<!-- CIDs Frequentes da Especialidade -->
+						<div class="flex items-center gap-1 overflow-x-auto pt-1">
+							<span class="text-[9px] font-bold text-slate-500 font-mono shrink-0">CIDs Rápidos:</span>
+							{#each cidsFrequentes as item}
+								<button
+									type="button"
+									onclick={() => selecionarCidRapido(item)}
+									class="border border-slate-300 bg-white hover:bg-slate-100 text-[9px] font-mono px-1.5 py-0.5 font-bold shrink-0"
+								>
+									{item.codigo}
+								</button>
+							{/each}
 						</div>
 					</div>
 
@@ -785,18 +878,31 @@
 						></textarea>
 					</div>
 
-					<!-- Prescrição Médica -->
-					<div class="flex flex-col gap-1">
-						<label for="soap-presc" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-							RECEITA E PRESCRIÇÃO DE MEDICAMENTOS
+					<!-- Prescrição Médica + Botões da REMUME -->
+					<div class="flex flex-col gap-1 border border-emerald-200 bg-emerald-50/50 p-3">
+						<label for="soap-presc" class="font-mono text-[10px] font-bold tracking-widest text-emerald-900 uppercase flex items-center justify-between">
+							<span>💊 RECEITA E PRESCRIÇÃO DE MEDICAMENTOS (REMUME)</span>
+							<span class="text-[9px] text-emerald-800 font-normal">Farmácia Municipal</span>
 						</label>
 						<textarea
 							id="soap-presc"
 							rows="3"
 							bind:value={soapPrescricao}
 							placeholder="1. Nome do medicamento - posologia..."
-							class="w-full border border-slate-300 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-900 resize-none"
+							class="w-full border border-emerald-300 bg-white p-2.5 text-xs font-mono outline-none focus:border-emerald-700 resize-none"
 						></textarea>
+						<div class="flex flex-wrap gap-1 pt-1">
+							<span class="text-[9px] font-bold text-emerald-800 font-mono self-center">Atalhos REMUME:</span>
+							{#each medicamentosRemume as med}
+								<button
+									type="button"
+									onclick={() => inserirMedicamentoPrescricao(med)}
+									class="border border-emerald-300 bg-white hover:bg-emerald-100 text-[9px] font-mono px-1.5 py-0.5 font-semibold text-emerald-950"
+								>
+									+ {med.nome.split(' ')[0]}
+								</button>
+							{/each}
+						</div>
 					</div>
 
 					<!-- Botão de Destaque: Encaminhar para Outra Cidade (Regulação SMS / TFD) -->

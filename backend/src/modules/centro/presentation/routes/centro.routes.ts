@@ -49,14 +49,21 @@ export function buildCentroRoutes(
   router.post('/centro/recepcao/balcao', authenticate, recepcaoRoles, recepcaoController.postBalcao);
   router.post('/centro/recepcao/desmarcar-reagendar/:id', authenticate, recepcaoRoles, recepcaoController.postDesmarcarReagendar);
 
-  // ───── Médico Especialista (Fase 2) ─────
+  // ───── Médico Especialista & Consultório Digital ERP (Fase 2 / ERP v3.1.0) ─────
   router.get('/centro/medico/agenda', authenticate, medicoRoles, medicoController.getAgenda);
+  
+  router.post('/centro/medico/atendimentos/:id/chamar', authenticate, medicoRoles, medicoController.postChamar);
   router.post('/centro/medico/chamar/:id', authenticate, medicoRoles, medicoController.postChamar);
+  
+  router.get('/centro/medico/prontuario/:pacienteId', authenticate, medicoRoles, medicoController.getProntuario);
   router.get('/centro/medico/pacientes/:pacienteId/prontuario', authenticate, medicoRoles, medicoController.getProntuario);
+  
+  router.post('/centro/medico/atendimentos/:id/soap', authenticate, medicoRoles, medicoController.postRegistrarSOAP);
   router.post('/centro/medico/atendimento/:id', authenticate, medicoRoles, medicoController.postRegistrarSOAP);
+  
   router.post('/centro/medico/encaminhamento-intermunicipal', authenticate, medicoRoles, medicoController.postEncaminhamentoIntermunicipal);
 
-  // ───── Gestão & Diretoria Executiva (Fase 3 / ERP) ─────
+  // ───── Gestão & Diretoria Executiva (Fase 3 / ERP v3.1.0) ─────
   router.get('/centro/gestao/dashboard', authenticate, gestaoRoles, gestaoController.getDashboard);
   router.get('/centro/gestao/cotas', authenticate, gestaoRoles, gestaoController.getCotas);
   router.put('/centro/gestao/cotas/:ubsId', authenticate, gestaoRoles, gestaoController.putCota);

@@ -58,7 +58,8 @@
 		COORDENADOR_UBS: 'border-amber-600 bg-amber-50 text-amber-800',
 		ATENDENTE_UBS: 'border-emerald-700 bg-emerald-50 text-emerald-800',
 		GESTOR_TFD: 'border-sky-700 bg-sky-50 text-sky-800',
-		REGULADOR_TFD: 'border-blue-900 bg-blue-50 text-blue-900'
+		REGULADOR_TFD: 'border-blue-900 bg-blue-50 text-blue-900',
+		MEDICO: 'border-blue-900 bg-blue-50 text-blue-950'
 	};
 
 	const roles: Array<'TODOS' | Role> = [

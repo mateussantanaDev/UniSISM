@@ -69,20 +69,15 @@ Retorna os indicadores operacionais em tempo real e consolidados mensais do Cent
 ## 👥 3. MÓDULO 2: GESTÃO DE EQUIPES & USUÁRIOS (ADMIN USER MANAGEMENT)
 
 ### 3.1 GET `/v1/admin/usuarios`
-Lista os profissionais de saúde e operadores cadastrados no município.
+Lista todos os profissionais de saúde e operadores cadastrados no município com filtros opcionais.
 
 * **Método:** `GET`
 * **Rota:** `/v1/admin/usuarios`
 * **Query Parameters:**
   - `q` (opcional, string): Busca por nome, CPF, e-mail ou matrícula.
   - `role` (opcional, string): `MEDICO`, `REGULADOR_SMS`, `ATENDENTE_UBS`, `COORDENADOR_UBS`, `ADMIN`.
-  - `ubsId` (opcional, string): Filtro por ID da unidade (utilizado obrigatoriamente para limitar o escopo do Gestor do Centro de Especialidades).
   - `ativo` (opcional, boolean): `true` ou `false`.
   - `limit` (opcional, number): Máximo de registros (Padrão: 1000).
-
-> **🛡️ Regra de Escopo de Segurança por Perfil:**
-> - **`ADMIN` e `DESENVOLVEDOR` (Escopo Global)**: Têm acesso irrestrito para listar e visualizar todos os usuários cadastrados na rede/prefeitura, independentemente da unidade.
-> - **`COORDENADOR_UBS` e `REGULADOR_SMS` (Gestor do Centro)**: O frontend e o backend filtram a consulta via parâmetro `ubsId` para retornar estritamente os profissionais e equipes vinculados ao Centro de Especialidades (`unidadeVinculadaId`).
 
 #### **Resposta JSON (200 OK):**
 ```json

@@ -33,12 +33,25 @@
 
 	// Reset Senha Form State
 	let formNovaSenha = $state('');
+	let usuarioLogado = $state<any>(null);
+	let isSuperUser = $derived(usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR');
 
 	async function carregarUsuarios() {
 		carregando = true;
 		erro = '';
 		try {
-			const res = await api.admin.listUsuarios();
+			// Carrega perfil autenticado para verificar escopo de permissão
+			try {
+				usuarioLogado = await api.auth.me();
+			} catch (errMe) {
+				console.info('[UniSISM] Não foi possível obter me() na tela de gestão de usuários.', errMe);
+			}
+
+			// Se não for Administrador/Desenvolvedor, filtra pela unidade do Centro de Especialidades
+			const superUser = usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR';
+			const query = !superUser && usuarioLogado?.unidadeVinculadaId ? { ubsId: usuarioLogado.unidadeVinculadaId } : undefined;
+
+			const res = await api.admin.listUsuarios(query);
 			listaUsuarios = res || [];
 		} catch (e: any) {
 			console.error(e);
@@ -54,6 +67,14 @@
 
 	let usuariosFiltrados = $derived.by(() => {
 		return listaUsuarios.filter(u => {
+			// Restrição de Escopo: Gestor do Centro só vê usuários do Centro de Especialidades
+			if (!isSuperUser && usuarioLogado?.unidadeVinculadaId) {
+				const ubsIdDoUsuario = u.ubs?.id || (u as any).ubsId;
+				if (ubsIdDoUsuario && ubsIdDoUsuario !== usuarioLogado.unidadeVinculadaId) {
+					return false;
+				}
+			}
+
 			const q = busca.toLowerCase().trim();
 			if (q) {
 				const matchNome = u.nome?.toLowerCase().includes(q);
@@ -224,6 +245,22 @@
 			</button>
 		</div>
 	{/if}
+
+	<!-- Indicador de Escopo de Permissão -->
+	<div class="border border-slate-200 bg-white p-3 flex items-center justify-between">
+		{#if isSuperUser}
+			<div class="flex items-center gap-2">
+				<span class="bg-indigo-900 text-white px-2 py-0.5 font-bold text-[10px]">🔓 ESCOPO GLOBAL</span>
+				<span class="text-slate-700 text-[11px] font-bold">Perfil Administrador/Desenvolvedor — Exibindo todos os usuários cadastrados na rede municipal.</span>
+			</div>
+		{:else}
+			<div class="flex items-center gap-2">
+				<span class="bg-blue-900 text-white px-2 py-0.5 font-bold text-[10px]">🔒 ESCOPO DO CENTRO DE ESPECIALIDADES</span>
+				<span class="text-slate-700 text-[11px] font-bold">Perfil Gestão do Centro — Exibindo exclusivamente a equipe e profissionais vinculados a esta unidade.</span>
+			</div>
+		{/if}
+		<span class="text-[10px] text-slate-500">{usuariosFiltrados.length} usuário(s) visível(is)</span>
+	</div>
 
 	<!-- Barra Superior de Controle e Filtros -->
 	<section class="border border-slate-200 bg-white p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

@@ -33,12 +33,14 @@
 			});
 		}
 
-		// Médico: Coordenador (simulando papel médico) ou Admin/Dev
-		if (role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		// Médico: Médicos, Coordenadores, Admins e Devs
+		if (role === 'MEDICO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'MÉDICO',
+				titulo: 'MÉDICO ERP',
 				items: [
-					{ label: 'Minhas Consultas', href: '/centro/medico/agenda', shortcut: 'M' }
+					{ label: 'Consultório Digital SOAP', href: '/centro/medico/agenda', shortcut: 'M' },
+					{ label: 'Histórico de Atendimentos', href: '/centro/medico/historico', shortcut: 'H' },
+					{ label: 'Indicadores & Produtividade', href: '/centro/medico/desempenho', shortcut: 'I' }
 				]
 			});
 		}
