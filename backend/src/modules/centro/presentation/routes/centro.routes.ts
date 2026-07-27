@@ -62,6 +62,8 @@ export function buildCentroRoutes(
   router.post('/centro/medico/atendimento/:id', authenticate, medicoRoles, medicoController.postRegistrarSOAP);
   
   router.post('/centro/medico/encaminhamento-intermunicipal', authenticate, medicoRoles, medicoController.postEncaminhamentoIntermunicipal);
+  router.post('/centro/medico/atendimentos/:id/encaminhamento', authenticate, medicoRoles, medicoController.postSolicitarEncaminhamento);
+  router.post('/centro/medico/solicitar-encaminhamento', authenticate, medicoRoles, medicoController.postSolicitarEncaminhamento);
 
   // ───── Gestão & Diretoria Executiva (Fase 3 / ERP v3.1.0) ─────
   router.get('/centro/gestao/dashboard', authenticate, gestaoRoles, gestaoController.getDashboard);

@@ -8,6 +8,8 @@ import type { ChamarPacienteMedicoUseCase } from '../../application/use-cases/Ch
 import type { ObterProntuarioPacienteMedicoUseCase } from '../../application/use-cases/ObterProntuarioPacienteMedicoUseCase';
 import type { RegistrarConsultaSOAPMedicoUseCase } from '../../application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
 import type { EncaminhamentoIntermunicipalMedicoUseCase } from '../../application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
+import type { SolicitarEncaminhamentoMedicoUseCase } from '../../application/use-cases/SolicitarEncaminhamentoMedicoUseCase';
+import { BadRequest } from '../../../../shared/errors';
 
 const soapSchema = z.object({
   queixaPrincipal: z.string().optional(),
@@ -47,6 +49,17 @@ const intermunicipalSchema = z.object({
   }).optional(),
 });
 
+const solicitarEncaminhamentoSchema = z.object({
+  encaminhamentoId: z.string().optional(),
+  pacienteId: z.string().optional(),
+  especialidadeSolicitada: z.string().min(2),
+  cid10: z.string().min(1),
+  cidDescricao: z.string().optional(),
+  justificativaClinica: z.string().min(3),
+  prioridade: z.enum(['ELETIVA', 'PRIORITARIA', 'URGENTE', 'EMERGENCIA']).default('ELETIVA'),
+  observacao: z.string().optional(),
+});
+
 export class CentroMedicoController {
   constructor(
     private readonly atendentes: IAtendenteRepository,
@@ -55,6 +68,7 @@ export class CentroMedicoController {
     private readonly prontuarioUC: ObterProntuarioPacienteMedicoUseCase,
     private readonly registrarSoapUC: RegistrarConsultaSOAPMedicoUseCase,
     private readonly intermunicipalUC: EncaminhamentoIntermunicipalMedicoUseCase,
+    private readonly solicitarEncaminhamentoUC: SolicitarEncaminhamentoMedicoUseCase,
   ) {}
 
   getAgenda = async (req: Request, res: Response): Promise<void> => {
@@ -248,6 +262,47 @@ export class CentroMedicoController {
       criadoEm: nowIso,
       municipioDestino: body.municipioDestino || 'Porto Alegre',
       status: 'AGUARDANDO_VAGA_ESTADUAL',
+      encaminhamento: result,
+    });
+  };
+
+  postSolicitarEncaminhamento = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = solicitarEncaminhamentoSchema.parse(req.body);
+    const idFromParam = req.params.id as string | undefined;
+    const targetId = idFromParam || body.encaminhamentoId || body.pacienteId;
+
+    if (!targetId) {
+      throw BadRequest('ID_AUSENTE', 'ID do encaminhamento ou paciente não fornecido.');
+    }
+
+    const doctor = await this.atendentes.buscarPorId(req.auth!.sub);
+
+    const result = await this.solicitarEncaminhamentoUC.exec(
+      {
+        encaminhamentoIdOrPacienteId: targetId,
+        solicitacao: {
+          especialidadeSolicitada: body.especialidadeSolicitada,
+          cid10: body.cid10,
+          cidDescricao: body.cidDescricao,
+          justificativaClinica: body.justificativaClinica,
+          prioridade: body.prioridade,
+          observacao: body.observacao,
+        },
+        doctor: {
+          id: doctor?.id || req.auth!.sub,
+          nome: doctor?.nome || 'Médico Especialista',
+          matricula: doctor?.matricula || 'CRM 00000',
+        },
+      },
+      scope,
+    );
+
+    res.status(201).json({
+      sucesso: true,
+      protocolo: result.protocolo,
+      status: result.status,
+      mensagem: 'Encaminhamento gerado com sucesso e enviado à Regulação da Secretaria de Saúde.',
       encaminhamento: result,
     });
   };

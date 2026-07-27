@@ -12,6 +12,7 @@ import { ChamarPacienteMedicoUseCase } from '../src/modules/centro/application/u
 import { ObterProntuarioPacienteMedicoUseCase } from '../src/modules/centro/application/use-cases/ObterProntuarioPacienteMedicoUseCase';
 import { RegistrarConsultaSOAPMedicoUseCase } from '../src/modules/centro/application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
 import { EncaminhamentoIntermunicipalMedicoUseCase } from '../src/modules/centro/application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
+import { SolicitarEncaminhamentoMedicoUseCase } from '../src/modules/centro/application/use-cases/SolicitarEncaminhamentoMedicoUseCase';
 
 import { GestaoCotasUseCase } from '../src/modules/centro/application/use-cases/GestaoCotasUseCase';
 import { GestaoEscalasUseCase } from '../src/modules/centro/application/use-cases/GestaoEscalasUseCase';
@@ -43,12 +44,13 @@ async function runTests() {
   const balcaoUC = new AgendamentoBalcaoRecepcaoUseCase();
   const desmarcarReagendarUC = new DesmarcarReagendarConsultaUseCase();
 
-  // Test 3: Instantiation of all Doctor Use Cases (Fase 2)
+  // Test 3: Instantiation of all Doctor Use Cases (Fase 2 + Solicitar Encaminhamento)
   const agendaMedicoUC = new ListarAgendaMedicoCentroUseCase();
   const chamarUC = new ChamarPacienteMedicoUseCase();
   const prontuarioUC = new ObterProntuarioPacienteMedicoUseCase();
   const registrarSoapUC = new RegistrarConsultaSOAPMedicoUseCase();
   const intermunicipalUC = new EncaminhamentoIntermunicipalMedicoUseCase();
+  const solicitarEncaminhamentoUC = new SolicitarEncaminhamentoMedicoUseCase();
 
   // Test 4: Instantiation of Management & Executive Board ERP Use Cases (Fase 3 / ERP v3.1.0)
   const cotasUC = new GestaoCotasUseCase();
@@ -61,10 +63,10 @@ async function runTests() {
   const especialidadesUC = new GestaoEspecialidadesCatalogoUseCase();
 
   assert(filaUC && agendarUC && agendaDiaUC && presencaUC && balcaoUC && desmarcarReagendarUC, 'All Reception use cases loaded');
-  assert(agendaMedicoUC && chamarUC && prontuarioUC && registrarSoapUC && intermunicipalUC, 'All Doctor use cases loaded');
+  assert(agendaMedicoUC && chamarUC && prontuarioUC && registrarSoapUC && intermunicipalUC && solicitarEncaminhamentoUC, 'All Doctor use cases loaded');
   assert(cotasUC && escalasUC && remanejamentoUC && bpaUC && auditUC && dashboardUC && salasUC && especialidadesUC, 'All Management ERP use cases loaded');
 
-  console.log('✅ All 19 ERP Centro de Especialidades UseCases instantiated successfully');
+  console.log('✅ All 20 ERP Centro de Especialidades UseCases instantiated successfully');
   console.log('🎉 All tests completed successfully!');
 }
 

@@ -107,6 +107,7 @@ import { ChamarPacienteMedicoUseCase } from '../modules/centro/application/use-c
 import { ObterProntuarioPacienteMedicoUseCase } from '../modules/centro/application/use-cases/ObterProntuarioPacienteMedicoUseCase';
 import { RegistrarConsultaSOAPMedicoUseCase } from '../modules/centro/application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
 import { EncaminhamentoIntermunicipalMedicoUseCase } from '../modules/centro/application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
+import { SolicitarEncaminhamentoMedicoUseCase } from '../modules/centro/application/use-cases/SolicitarEncaminhamentoMedicoUseCase';
 import { CentroRecepcaoController } from '../modules/centro/presentation/controllers/CentroRecepcaoController';
 import { CentroGestaoController } from '../modules/centro/presentation/controllers/CentroGestaoController';
 import { CentroMedicoController } from '../modules/centro/presentation/controllers/CentroMedicoController';
@@ -428,6 +429,7 @@ export function buildContainer() {
     new ObterProntuarioPacienteMedicoUseCase(),
     new RegistrarConsultaSOAPMedicoUseCase(),
     new EncaminhamentoIntermunicipalMedicoUseCase(),
+    new SolicitarEncaminhamentoMedicoUseCase(),
   );
 
   // ----- Módulo Prontuário (CRUD de sub-documentos) -----
