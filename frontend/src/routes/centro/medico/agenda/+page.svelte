@@ -67,7 +67,8 @@
 
 	// Dynamic State
 	let dataAgenda = $state(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
-	let medicoLogado = $state('Dr. Roberto Medeiros (Cardiologia)');
+	let medicoLogado = $state('Médico Especialista');
+	let medicoCrm = $state('CRM Regulação');
 	let busca = $state('');
 	let filtroStatus = $state<'TODOS' | 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU'>('TODOS');
 	let carregando = $state(true);
@@ -188,300 +189,58 @@
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 
-			// If API returns real appointments for this date, map them; otherwise provide rich demo schedule
-			if (filtradosCentro.length > 0) {
-				const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto === dataAgenda);
-				consultas = agendados.map((enc, idx) => {
-					const horas = ['08:00', '08:45', '09:30', '10:15', '11:00', '13:30', '14:15', '15:00'];
-					return {
-						id: enc.id,
-						protocolo: enc.protocolo,
-						horario: horas[idx % horas.length],
-						status: (idx === 0 ? 'CONCLUIDO' : idx === 1 ? 'EM_ATENDIMENTO' : 'AGUARDANDO') as any,
-						pacienteId: 'pac-uuid-' + (idx + 1),
-						paciente: {
-							nome: enc.paciente.nome,
-							cpf: enc.paciente.cpf,
-							cartaoSus: enc.paciente.cartaoSus || '898000123456' + idx,
-							dataNascimento: enc.paciente.dataNascimento || '1978-05-14',
-							sexo: enc.paciente.sexo || 'M',
-							telefone: enc.paciente.telefone || '(51) 99887-1122',
-							endereco: enc.paciente.endereco || 'Rua das Flores, 120'
-						},
-						solicitacao: {
-							medicoSolicitante: enc.solicitacao.medicoSolicitante || 'Dr. Carlos Moreira',
-							crm: enc.solicitacao.crm || 'CRM 45892',
-							especialidadeSolicitada: enc.solicitacao.especialidadeSolicitada || 'Cardiologia',
-							cid10: enc.solicitacao.cid10 || 'I10',
-							cidDescricao: enc.solicitacao.cidDescricao || 'Hipertensão Essencial',
-							justificativaClinica: enc.solicitacao.justificativaClinica || 'Paciente com picos hipertensivos recorrentes e queixa de palpitações.',
-							prioridade: enc.solicitacao.prioridade || 'PRIORITARIA',
-							dataSolicitacao: enc.solicitacao.dataSolicitacao || '2026-07-20'
-						},
-						unidadeOrigem: enc.unidadeOrigem || 'UBS Central',
-						observacoesRegulacao: enc.observacoesRegulacao || 'Agendado no Centro de Especialidades.'
-					};
-				});
-			} else {
-				// Rich demo dataset for daily agenda
-				consultas = [
-					{
-						id: 'cons-101',
-						protocolo: 'ENC20260721-001',
-						horario: '08:00',
-						status: 'CONCLUIDO',
-						pacienteId: 'pac-1',
-						paciente: {
-							nome: 'Mateus Henrique Silva',
-							cpf: '123.456.789-09',
-							cartaoSus: '898000123456789',
-							dataNascimento: '1985-04-12',
-							sexo: 'M',
-							telefone: '(51) 99988-7766',
-							endereco: 'Av. Central, 100 - Centro'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dr. Fernando Souza',
-							crm: 'CRM 34120',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I10',
-							cidDescricao: 'Hipertensão essencial (primária)',
-							justificativaClinica: 'Paciente relata episódios de tontura e pressão 160x100 mmHg mantida.',
-							prioridade: 'URGENTE',
-							dataSolicitacao: '2026-07-15'
-						},
-						unidadeOrigem: 'UBS Central - Bairro Novo',
-						observacoesRegulacao: 'Recepção: Médico Dr. Roberto Medeiros às 08:00.',
-						atendimentoSOAP: {
-							queixaPrincipal: 'Retorno para avaliação de picos hipertensivos.',
-							exameFisico: 'PA: 130/85 mmHg, FC: 74 bpm, RCR 2T BNF sem sopros. Murmúrio vesicular presente sem ruídos adventícios.',
-							cid10: 'I10',
-							diagnostico: 'Hipertensão arterial primária sob controle medicamentos ajustado.',
-							conduta: 'Ajustado anti-hipertensivo para Losartana 50mg 12/12h. Solicitado ECG e Ecocardiograma.',
-							prescricao: '1. Losartana 50mg — Tomar 1 cp VO de 12/12h por 60 dias.\n2. Anlodipino 5mg — Tomar 1 cp VO pela manhã.',
-							concluidoEm: '08:35'
-						}
+			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto === dataAgenda);
+			consultas = agendados.map((enc, idx) => {
+				const horas = ['08:00', '08:45', '09:30', '10:15', '11:00', '13:30', '14:15', '15:00'];
+				return {
+					id: enc.id,
+					protocolo: enc.protocolo,
+					horario: horas[idx % horas.length],
+					status: ((enc as any).statusAtendimentoCentro || 'AGUARDANDO') as any,
+					pacienteId: (enc.paciente as any).id || enc.id,
+					paciente: {
+						nome: enc.paciente.nome,
+						cpf: enc.paciente.cpf,
+						cartaoSus: enc.paciente.cartaoSus || '',
+						dataNascimento: enc.paciente.dataNascimento || '',
+						sexo: enc.paciente.sexo || 'M',
+						telefone: enc.paciente.telefone || '',
+						endereco: enc.paciente.endereco || ''
 					},
-					{
-						id: 'cons-102',
-						protocolo: 'ENC20260722-004',
-						horario: '08:45',
-						status: 'EM_ATENDIMENTO',
-						pacienteId: 'pac-2',
-						paciente: {
-							nome: 'Maria Eduarda Oliveira',
-							cpf: '987.654.321-00',
-							cartaoSus: '898000987654321',
-							dataNascimento: '1972-09-25',
-							sexo: 'F',
-							telefone: '(51) 98877-6655',
-							endereco: 'Rua das Palmeiras, 450'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dra. Juliana Paes',
-							crm: 'CRM 51209',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I20.9',
-							cidDescricao: 'Angina pectoris não especificada',
-							justificativaClinica: 'Dor precordial aos médios esforços com irradiação para membro superior esquerdo.',
-							prioridade: 'EMERGENCIA',
-							dataSolicitacao: '2026-07-20'
-						},
-						unidadeOrigem: 'UBS Vila Esperança',
-						observacoesRegulacao: 'Prioridade absoluta de encaixe rápido.'
+					solicitacao: {
+						medicoSolicitante: enc.solicitacao.medicoSolicitante || '',
+						crm: enc.solicitacao.crm || '',
+						especialidadeSolicitada: enc.solicitacao.especialidadeSolicitada || '',
+						cid10: enc.solicitacao.cid10 || '',
+						cidDescricao: enc.solicitacao.cidDescricao || '',
+						justificativaClinica: enc.solicitacao.justificativaClinica || '',
+						prioridade: enc.solicitacao.prioridade || 'ELETIVA',
+						dataSolicitacao: enc.solicitacao.dataSolicitacao || ''
 					},
-					{
-						id: 'cons-103',
-						protocolo: 'ENC20260723-012',
-						horario: '09:30',
-						status: 'AGUARDANDO',
-						pacienteId: 'pac-3',
-						paciente: {
-							nome: 'João Pedro Santos',
-							cpf: '456.789.123-44',
-							cartaoSus: '898000456789123',
-							dataNascimento: '1960-11-30',
-							sexo: 'M',
-							telefone: '(51) 97766-5544',
-							endereco: 'Rua 7 de Setembro, 88'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dr. Lucas Viana',
-							crm: 'CRM 62300',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I48',
-							cidDescricao: 'Flutter e fibrilação atrial',
-							justificativaClinica: 'Palpitações taquicárdicas esporádicas. ECG da UBS demonstrou ritmo irregular.',
-							prioridade: 'PRIORITARIA',
-							dataSolicitacao: '2026-07-18'
-						},
-						unidadeOrigem: 'UBS São José',
-						observacoesRegulacao: 'Trazer exames de sangue recentes.'
-					},
-					{
-						id: 'cons-104',
-						protocolo: 'ENC20260724-019',
-						horario: '10:15',
-						status: 'AGUARDANDO',
-						pacienteId: 'pac-4',
-						paciente: {
-							nome: 'Ana Lucia Ferreira',
-							cpf: '321.654.987-11',
-							cartaoSus: '898000321654987',
-							dataNascimento: '1990-01-15',
-							sexo: 'F',
-							telefone: '(51) 96655-4433',
-							endereco: 'Av. Industrial, 1200'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dr. Roberto Medeiros',
-							crm: 'CRM 12345',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'R00.2',
-							cidDescricao: 'Palpitações',
-							justificativaClinica: 'Avaliação de síncope vasovagal recorrente.',
-							prioridade: 'ELETIVA',
-							dataSolicitacao: '2026-07-10'
-						},
-						unidadeOrigem: 'Balcão do Centro',
-						observacoesRegulacao: 'Agendamento direto efetuado no balcão do Centro.'
-					},
-					{
-						id: 'cons-105',
-						protocolo: 'ENC20260725-022',
-						horario: '11:00',
-						status: 'FALTOU',
-						pacienteId: 'pac-5',
-						paciente: {
-							nome: 'Carlos Eduardo Ramos',
-							cpf: '789.123.456-55',
-							cartaoSus: '898000789123456',
-							dataNascimento: '1955-06-08',
-							sexo: 'M',
-							telefone: '(51) 95544-3322',
-							endereco: 'Linha IV Interior'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dra. Beatriz Costa',
-							crm: 'CRM 55667',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I50',
-							cidDescricao: 'Insuficiência cardíaca',
-							justificativaClinica: 'Dispneia paroxística noturna e edema de membros inferiores ++/4.',
-							prioridade: 'PRIORITARIA',
-							dataSolicitacao: '2026-07-12'
-						},
-						unidadeOrigem: 'UBS Rural',
-						observacoesRegulacao: 'Paciente não compareceu no horário.'
-					}
-				];
-			}
-		} catch (e) {
+					unidadeOrigem: enc.unidadeOrigem || 'Unidade de Origem',
+					observacoesRegulacao: enc.observacoesRegulacao || ''
+				};
+			});
+		} catch (e: any) {
 			console.error(e);
-			erroGlobal = 'Modo de simulação ativado (servidor backend offline ou em manutenção).';
-			if (consultas.length === 0) {
-				consultas = [
-					{
-						id: 'cons-101',
-						protocolo: 'ENC20260727-001',
-						horario: '08:00',
-						status: 'CONCLUIDO',
-						pacienteId: 'pac-1',
-						paciente: {
-							nome: 'Maria Eduarda Silva',
-							cpf: '123.456.789-00',
-							cartaoSus: '898000123456789',
-							dataNascimento: '1982-03-14',
-							sexo: 'F',
-							telefone: '(51) 99887-1122',
-							endereco: 'Rua das Flores, 120 - Centro'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dr. Carlos Eduardo',
-							crm: 'CRM 45892',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I10',
-							cidDescricao: 'Hipertensão essencial (primária)',
-							justificativaClinica: 'Paciente com picos hipertensivos recorrentes e palpitações esporádicas. Solícito avaliação especializada.',
-							prioridade: 'URGENTE',
-							dataSolicitacao: '2026-07-25'
-						},
-						unidadeOrigem: 'UBS Central - Bairro Novo',
-						observacoesRegulacao: 'Instruir paciente a chegar 15 minutos antes com exames anteriores.',
-						atendimentoSOAP: {
-							queixaPrincipal: 'Paciente refere dor no peito esporádica e tonturas ao se levantar.',
-							exameFisico: 'RCR em 2T sem sopros. PA: 130x85 mmHg, FC: 74 bpm. Murmúrio vesicular limpo.',
-							cid10: 'I10',
-							diagnostico: 'Hipertensão Essencial Controlada',
-							conduta: 'Prescrito Anlodipino 5mg. Solicitado ECG e Holter 24h.',
-							prescricao: '1. Anlodipino 5mg — 1 comprimido pela manhã.',
-							concluidoEm: '08:25'
-						}
-					},
-					{
-						id: 'cons-102',
-						protocolo: 'ENC20260726-004',
-						horario: '08:45',
-						status: 'EM_ATENDIMENTO',
-						pacienteId: 'pac-2',
-						paciente: {
-							nome: 'Mateus Henrique Silva',
-							cpf: '987.654.321-99',
-							cartaoSus: '898000987654321',
-							dataNascimento: '1975-08-22',
-							sexo: 'M',
-							telefone: '(51) 98877-6655',
-							endereco: 'Av. Brasil, 450'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dra. Patricia Lima',
-							crm: 'CRM 33410',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I25.1',
-							cidDescricao: 'Doença aterosclerótica do coração',
-							justificativaClinica: 'Angina de peito aos esforços moderados. ECG com alteração de repolarização.',
-							prioridade: 'URGENTE',
-							dataSolicitacao: '2026-07-20'
-						},
-						unidadeOrigem: 'UBS Vila Esperança',
-						observacoesRegulacao: 'Prioridade absoluta de encaixe rápido.'
-					},
-					{
-						id: 'cons-103',
-						protocolo: 'ENC20260723-012',
-						horario: '09:30',
-						status: 'AGUARDANDO',
-						pacienteId: 'pac-3',
-						paciente: {
-							nome: 'João Pedro Santos',
-							cpf: '456.789.123-44',
-							cartaoSus: '898000456789123',
-							dataNascimento: '1960-11-30',
-							sexo: 'M',
-							telefone: '(51) 97766-5544',
-							endereco: 'Rua 7 de Setembro, 88'
-						},
-						solicitacao: {
-							medicoSolicitante: 'Dr. Lucas Viana',
-							crm: 'CRM 62300',
-							especialidadeSolicitada: 'Cardiologia',
-							cid10: 'I48',
-							cidDescricao: 'Flutter e fibrilação atrial',
-							justificativaClinica: 'Palpitações taquicárdicas esporádicas. ECG da UBS demonstrou ritmo irregular.',
-							prioridade: 'PRIORITARIA',
-							dataSolicitacao: '2026-07-18'
-						},
-						unidadeOrigem: 'UBS São José',
-						observacoesRegulacao: 'Trazer exames de sangue recentes.'
-					}
-				];
-			}
+			erroGlobal = `Falha ao carregar agenda do servidor: ${e?.message || 'Erro de conexão'}`;
+			consultas = [];
 		} finally {
 			carregando = false;
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		try {
+			const me = await api.auth.me();
+			if (me && me.nome) {
+				const esp = (me as any).especialidade ? ` (${(me as any).especialidade})` : '';
+				medicoLogado = `${me.nome}${esp}`;
+				medicoCrm = (me as any).crm ? `CRM ${(me as any).crm}` : (me as any).cpf ? `CRM/REG ${(me as any).cpf.substring(0, 6)}` : 'CRM Regulação';
+			}
+		} catch (e) {
+			console.info('[UniSISM] Erro ao carregar perfil do médico conectado.', e);
+		}
 		carregarAgendaDoDia();
 	});
 
@@ -683,71 +442,10 @@
 
 			const p = await api.pacientes.byId(c.pacienteId);
 			pacienteDossie = p;
-		} catch (e) {
-			console.warn('Usando dossiê fallback estruturado para exibição do prontuário.');
-			pacienteDossie = {
-				id: c.pacienteId,
-				nome: c.paciente.nome,
-				cpf: c.paciente.cpf,
-				cartaoSus: c.paciente.cartaoSus,
-				dataNascimento: c.paciente.dataNascimento,
-				sexo: c.paciente.sexo,
-				telefone: c.paciente.telefone,
-				unidadeVinculada: c.unidadeOrigem,
-				condicoesCronicasAtivas: 2,
-				encaminhamentosAtivos: 1,
-				cadastradoEm: '2025-01-10',
-				nomeMae: 'Maria Helena Silva',
-				estadoCivil: 'CASADO',
-				escolaridade: 'Ensino Médio Completo',
-				racaCor: 'PARDA',
-				endereco: c.paciente.endereco,
-				bairro: 'Centro',
-				municipio: 'Município Sede',
-				uf: 'RS',
-				cep: '95000-000',
-				grupoSanguineo: 'O+',
-				alergias: [
-					{ id: 'al-1', substancia: 'Penicilina', tipo: 'MEDICAMENTO', gravidade: 'GRAVE', observacao: 'Anafilaxia previa em 2018' },
-					{ id: 'al-2', substancia: 'Dipirona', tipo: 'MEDICAMENTO', gravidade: 'MODERADA', observacao: 'Exantema cutaneo' }
-				],
-				condicoesCronicas: [
-					{ id: 'cc-1', cid10: 'I10', descricao: 'Hipertensão Arterial Essencial', desde: '2020-03-15', ativo: true },
-					{ id: 'cc-2', cid10: 'E11', descricao: 'Diabetes Mellitus Tipo 2', desde: '2022-08-10', ativo: true }
-				],
-				medicamentosEmUso: [
-					{ id: 'med-1', nome: 'Losartana Potássica', dosagem: '50mg', frequencia: '12/12h', desde: '2020-03-15', prescritor: 'Dr. Fernando Souza', ativo: true },
-					{ id: 'med-2', nome: 'Metformina', dosagem: '850mg', frequencia: 'Após almoço', desde: '2022-08-10', prescritor: 'Dra. Ana Paula', ativo: true }
-				],
-				historicoFamiliar: ['Pai: Infarto Agudo do Miocárdio aos 58 anos', 'Mãe: Diabetes Mellitus Tipo 2'],
-				atendimentos: [
-					{
-						id: 'at-1',
-						data: '2026-05-10T14:30:00Z',
-						tipo: 'CONSULTA_MEDICA',
-						profissional: 'Dr. Fernando Souza',
-						registroProfissional: 'CRM 34120',
-						especialidade: 'Medicina da Família',
-						unidade: c.unidadeOrigem,
-						queixaPrincipal: 'Checkup de rotina e receitas de uso contínuo',
-						diagnostico: 'Hipertensão Essencial Controlada',
-						cid10: 'I10',
-						conduta: 'Renovadas receitas de Losartana e Metformina. Solicitado ECG e Perfil Lipídico.'
-					}
-				],
-				viagensTFD: [],
-				exames: [
-					{ id: 'ex-1', data: '2026-06-01', tipo: 'Eletrocardiograma (ECG)', categoria: 'FUNCIONAL', solicitante: 'Dr. Fernando Souza', unidadeExecutora: 'Centro de Especialidades', resultado: 'ALTERADO', observacao: 'Ritmo sinusal com sobrecarga ventricular esquerda leve.' },
-					{ id: 'ex-2', data: '2026-06-01', tipo: 'Glicemia de Jejum', categoria: 'LABORATORIAL', solicitante: 'Dr. Fernando Souza', unidadeExecutora: 'Lab Municipal', resultado: 'NORMAL', observacao: '94 mg/dL' }
-				],
-				vacinacoes: [
-					{ id: 'vac-1', data: '2026-04-10', vacina: 'Influenza Quadrivalente 2026', dose: 'Dose Anual', lote: 'INF2026-X8', aplicador: 'Enf. Carla', unidade: c.unidadeOrigem, via: 'INTRAMUSCULAR' }
-				],
-				medicosAtendentes: [
-					{ nome: 'Dr. Roberto Medeiros', registro: 'CRM 12345', especialidade: 'Cardiologia', unidade: 'Centro de Especialidades', ultimaConsulta: '2026-07-27', totalConsultas: 2 }
-				],
-				encaminhamentosIds: [c.id]
-			};
+		} catch (e: any) {
+			console.error('Erro ao obter prontuário do servidor:', e);
+			alert('Prontuário do paciente não encontrado no servidor.');
+			modalDossieAberto = false;
 		} finally {
 			carregandoDossie = false;
 		}
@@ -866,7 +564,7 @@
 			<div>
 				<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">ESPECIALISTA RESPONSÁVEL</div>
 				<div class="mt-1 text-base font-bold text-slate-900 font-sans">{medicoLogado}</div>
-				<div class="text-[11px] text-blue-900 font-bold mt-0.5">Centro Municipal de Especialidades · CRM 12345</div>
+				<div class="text-[11px] text-blue-900 font-bold mt-0.5">Centro Municipal de Especialidades · {medicoCrm}</div>
 			</div>
 			<div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-600">
 				<span>Status da Escala: <strong class="text-emerald-700 font-bold">EM ATENDIMENTO</strong></span>

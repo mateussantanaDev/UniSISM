@@ -984,6 +984,7 @@ export interface AtualizarViagemTfdRequest {
 export interface AtualizarUsuarioRequest {
   nome?: string;
   email?: string;
+  role?: Role;
   telefone?: string;
   cargo?: string;
   funcao?: string;
@@ -1465,6 +1466,31 @@ export interface ListAuditoriaCentroResponse {
   total: number;
   logs: LogAuditoriaCentroItem[];
 }
+
+export interface SalaConsultorioCentro {
+  id: string;
+  codigo: string;
+  nome: string;
+  especialidadePrincipal: string;
+  medicoAlocado?: string;
+  medicoCrm?: string;
+  status: 'DISPONIVEL' | 'EM_ATENDIMENTO' | 'MANUTENCAO' | 'RESERVADA';
+  equipamentos: string[];
+  ala: string;
+  observacoes?: string;
+}
+
+export interface EspecialidadeSigtapCentro {
+  id: string;
+  nome: string;
+  codigoSigtap: string;
+  tempoPadraoMinutos: number;
+  valorTabelaBrl: number;
+  documentosObrigatorios: string[];
+  preparoRequerido: string;
+  ativa: boolean;
+}
+
 
 
 

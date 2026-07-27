@@ -19,9 +19,11 @@ import { RemanejamentoLoteUseCase } from '../src/modules/centro/application/use-
 import { RelatorioBpaUseCase } from '../src/modules/centro/application/use-cases/RelatorioBpaUseCase';
 import { AuditoriaCentroUseCase } from '../src/modules/centro/application/use-cases/AuditoriaCentroUseCase';
 import { MetricasDashboardDiretoriaUseCase } from '../src/modules/centro/application/use-cases/MetricasDashboardDiretoriaUseCase';
+import { GestaoSalasUseCase } from '../src/modules/centro/application/use-cases/GestaoSalasUseCase';
+import { GestaoEspecialidadesCatalogoUseCase } from '../src/modules/centro/application/use-cases/GestaoEspecialidadesCatalogoUseCase';
 
 async function runTests() {
-  console.log('🧪 Running Centro de Especialidades unit tests (Recepção + Médico + Gestão & Diretoria)...');
+  console.log('🧪 Running ERP Gestão do Centro de Especialidades unit tests (v3.1.0)...');
 
   // Test 1: Doctor selection logic in OtimizadorVagas
   const doctorCardio = findDoctor('Dr. Roberto Medeiros', '', 'Cardiologia');
@@ -48,19 +50,21 @@ async function runTests() {
   const registrarSoapUC = new RegistrarConsultaSOAPMedicoUseCase();
   const intermunicipalUC = new EncaminhamentoIntermunicipalMedicoUseCase();
 
-  // Test 4: Instantiation of Management & Executive Board Use Cases (Fase 3)
+  // Test 4: Instantiation of Management & Executive Board ERP Use Cases (Fase 3 / ERP v3.1.0)
   const cotasUC = new GestaoCotasUseCase();
   const escalasUC = new GestaoEscalasUseCase();
   const remanejamentoUC = new RemanejamentoLoteUseCase();
   const bpaUC = new RelatorioBpaUseCase();
   const auditUC = new AuditoriaCentroUseCase();
   const dashboardUC = new MetricasDashboardDiretoriaUseCase();
+  const salasUC = new GestaoSalasUseCase();
+  const especialidadesUC = new GestaoEspecialidadesCatalogoUseCase();
 
   assert(filaUC && agendarUC && agendaDiaUC && presencaUC && balcaoUC && desmarcarReagendarUC, 'All Reception use cases loaded');
   assert(agendaMedicoUC && chamarUC && prontuarioUC && registrarSoapUC && intermunicipalUC, 'All Doctor use cases loaded');
-  assert(cotasUC && escalasUC && remanejamentoUC && bpaUC && auditUC && dashboardUC, 'All Management use cases loaded');
+  assert(cotasUC && escalasUC && remanejamentoUC && bpaUC && auditUC && dashboardUC && salasUC && especialidadesUC, 'All Management ERP use cases loaded');
 
-  console.log('✅ All 17 Centro de Especialidades UseCases (Fase 1 + 2 + 3) instantiated successfully');
+  console.log('✅ All 19 ERP Centro de Especialidades UseCases instantiated successfully');
   console.log('🎉 All tests completed successfully!');
 }
 

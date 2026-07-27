@@ -100,6 +100,8 @@ import { RemanejamentoLoteUseCase } from '../modules/centro/application/use-case
 import { RelatorioBpaUseCase } from '../modules/centro/application/use-cases/RelatorioBpaUseCase';
 import { AuditoriaCentroUseCase } from '../modules/centro/application/use-cases/AuditoriaCentroUseCase';
 import { MetricasDashboardDiretoriaUseCase } from '../modules/centro/application/use-cases/MetricasDashboardDiretoriaUseCase';
+import { GestaoSalasUseCase } from '../modules/centro/application/use-cases/GestaoSalasUseCase';
+import { GestaoEspecialidadesCatalogoUseCase } from '../modules/centro/application/use-cases/GestaoEspecialidadesCatalogoUseCase';
 import { ListarAgendaMedicoCentroUseCase } from '../modules/centro/application/use-cases/ListarAgendaMedicoCentroUseCase';
 import { ChamarPacienteMedicoUseCase } from '../modules/centro/application/use-cases/ChamarPacienteMedicoUseCase';
 import { ObterProntuarioPacienteMedicoUseCase } from '../modules/centro/application/use-cases/ObterProntuarioPacienteMedicoUseCase';
@@ -415,6 +417,8 @@ export function buildContainer() {
     new RelatorioBpaUseCase(),
     new AuditoriaCentroUseCase(),
     new MetricasDashboardDiretoriaUseCase(),
+    new GestaoSalasUseCase(),
+    new GestaoEspecialidadesCatalogoUseCase(),
   );
 
   const centroMedicoController = new CentroMedicoController(

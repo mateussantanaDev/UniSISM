@@ -9,6 +9,8 @@ import type { RemanejamentoLoteUseCase } from '../../application/use-cases/Reman
 import type { RelatorioBpaUseCase } from '../../application/use-cases/RelatorioBpaUseCase';
 import type { AuditoriaCentroUseCase } from '../../application/use-cases/AuditoriaCentroUseCase';
 import type { MetricasDashboardDiretoriaUseCase } from '../../application/use-cases/MetricasDashboardDiretoriaUseCase';
+import type { GestaoSalasUseCase } from '../../application/use-cases/GestaoSalasUseCase';
+import type { GestaoEspecialidadesCatalogoUseCase } from '../../application/use-cases/GestaoEspecialidadesCatalogoUseCase';
 import { NotFound } from '../../../../shared/errors';
 
 const putCotaSchema = z.object({
@@ -29,6 +31,29 @@ const postEscalaSchema = z.object({
 
 const putEscalaSchema = postEscalaSchema.partial();
 
+const postSalaSchema = z.object({
+  codigo: z.string().min(1),
+  nome: z.string().min(2),
+  especialidadePrincipal: z.string().min(2),
+  status: z.enum(['DISPONIVEL', 'EM_ATENDIMENTO', 'MANUTENCAO', 'RESERVADA']).default('DISPONIVEL'),
+  equipamentos: z.array(z.string()).default([]),
+  ala: z.string().optional(),
+});
+
+const putSalaSchema = postSalaSchema.partial();
+
+const postEspecialidadeSchema = z.object({
+  nome: z.string().min(2),
+  codigoSigtap: z.string().optional(),
+  tempoPadraoMinutos: z.number().int().default(20),
+  valorTabelaBrl: z.number().default(0),
+  documentosObrigatorios: z.array(z.string()).default([]),
+  preparoRequerido: z.string().optional(),
+  ativa: z.boolean().default(true),
+});
+
+const putEspecialidadeSchema = postEspecialidadeSchema.partial();
+
 const remanejamentoSchema = z.object({
   medicoOrigem: z.string().min(2),
   dataOrigem: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -46,6 +71,8 @@ export class CentroGestaoController {
     private readonly relatorioBpaUC: RelatorioBpaUseCase,
     private readonly auditoriaUC: AuditoriaCentroUseCase,
     private readonly dashboardUC: MetricasDashboardDiretoriaUseCase,
+    private readonly salasUC: GestaoSalasUseCase,
+    private readonly especialidadesUC: GestaoEspecialidadesCatalogoUseCase,
   ) {}
 
   getDashboard = async (req: Request, res: Response): Promise<void> => {
@@ -57,7 +84,7 @@ export class CentroGestaoController {
   getCotas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const cotas = await this.cotasUC.listarCotas(scope);
-    res.json({ cotas });
+    res.json(cotas);
   };
 
   putCota = async (req: Request, res: Response): Promise<void> => {
@@ -66,13 +93,13 @@ export class CentroGestaoController {
     const atendenteId = req.auth!.sub;
 
     const result = await this.cotasUC.atualizarCota(ubsId, body, atendenteId);
-    res.json({ cota: result });
+    res.json(result);
   };
 
   getEscalas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const escalas = await this.escalasUC.listarEscalas(scope);
-    res.json({ escalas });
+    res.json(escalas);
   };
 
   postEscala = async (req: Request, res: Response): Promise<void> => {
@@ -81,7 +108,7 @@ export class CentroGestaoController {
     const atendenteId = req.auth!.sub;
 
     const result = await this.escalasUC.criarEscala(body, scope, atendenteId);
-    res.status(201).json({ escala: result });
+    res.status(201).json(result);
   };
 
   putEscala = async (req: Request, res: Response): Promise<void> => {
@@ -90,7 +117,7 @@ export class CentroGestaoController {
     const atendenteId = req.auth!.sub;
 
     const result = await this.escalasUC.atualizarEscala(id, body, atendenteId);
-    res.json({ escala: result });
+    res.json(result);
   };
 
   deleteEscala = async (req: Request, res: Response): Promise<void> => {
@@ -98,6 +125,70 @@ export class CentroGestaoController {
     const atendenteId = req.auth!.sub;
 
     await this.escalasUC.deletarEscala(id, atendenteId);
+    res.status(204).send();
+  };
+
+  getSalas = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const salas = await this.salasUC.listarSalas(scope);
+    res.json(salas);
+  };
+
+  postSala = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = postSalaSchema.parse(req.body);
+    const atendenteId = req.auth!.sub;
+
+    const result = await this.salasUC.criarSala(body, scope, atendenteId);
+    res.status(201).json(result);
+  };
+
+  putSala = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const body = putSalaSchema.parse(req.body);
+    const atendenteId = req.auth!.sub;
+
+    const result = await this.salasUC.atualizarSala(id, body, atendenteId);
+    res.json(result);
+  };
+
+  deleteSala = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const atendenteId = req.auth!.sub;
+
+    await this.salasUC.deletarSala(id, atendenteId);
+    res.status(204).send();
+  };
+
+  getEspecialidades = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const lista = await this.especialidadesUC.listarEspecialidades(scope);
+    res.json(lista);
+  };
+
+  postEspecialidade = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = postEspecialidadeSchema.parse(req.body);
+    const atendenteId = req.auth!.sub;
+
+    const result = await this.especialidadesUC.criarEspecialidade(body, scope, atendenteId);
+    res.status(201).json(result);
+  };
+
+  putEspecialidade = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const body = putEspecialidadeSchema.parse(req.body);
+    const atendenteId = req.auth!.sub;
+
+    const result = await this.especialidadesUC.atualizarEspecialidade(id, body, atendenteId);
+    res.json(result);
+  };
+
+  deleteEspecialidade = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const atendenteId = req.auth!.sub;
+
+    await this.especialidadesUC.deletarEspecialidade(id, atendenteId);
     res.status(204).send();
   };
 

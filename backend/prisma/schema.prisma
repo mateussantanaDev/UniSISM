@@ -1917,3 +1917,43 @@ model CotaUbs {
 
   @@map("cotas_ubs")
 }
+
+enum StatusSalaConsultorio {
+  DISPONIVEL
+  EM_ATENDIMENTO
+  MANUTENCAO
+  RESERVADA
+}
+
+model SalaConsultorio {
+  id                     String                @id @default(uuid())
+  codigo                 String
+  nome                   String
+  especialidadePrincipal String
+  status                 StatusSalaConsultorio @default(DISPONIVEL)
+  equipamentos           String[]
+  ala                    String?
+  prefeituraId           String?
+
+  criadoEm               DateTime              @default(now())
+  atualizadoEm           DateTime              @updatedAt
+
+  @@map("salas_consultorios")
+}
+
+model EspecialidadeCatalogo {
+  id                     String   @id @default(uuid())
+  nome                   String
+  codigoSigtap           String?
+  tempoPadraoMinutos     Int      @default(20)
+  valorTabelaBrl         Float    @default(0)
+  documentosObrigatorios String[]
+  preparoRequerido       String?
+  ativa                  Boolean  @default(true)
+  prefeituraId           String?
+
+  criadoEm               DateTime @default(now())
+  atualizadoEm           DateTime @updatedAt
+
+  @@map("especialidades_catalogo")
+}

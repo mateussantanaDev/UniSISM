@@ -114,6 +114,8 @@ import type {
   RemanejamentoLoteCentroResponse,
   RelatorioBpaCentroResponse,
   ListAuditoriaCentroResponse,
+  SalaConsultorioCentro,
+  EspecialidadeSigtapCentro,
 } from './types';
 
 // ============================================================
@@ -1600,6 +1602,31 @@ export class CentroGestaoApi {
   /** Consultar trilha de auditoria imutável (GET /v1/centro/gestao/auditoria). */
   listAuditoria(limit = 50, offset = 0): Promise<ListAuditoriaCentroResponse> {
     return this.api.get<ListAuditoriaCentroResponse>(`/centro/gestao/auditoria?limit=${limit}&offset=${offset}`);
+  }
+
+  /** Listar consultórios e salas físicas (GET /v1/centro/gestao/salas). */
+  listSalas(): Promise<SalaConsultorioCentro[]> {
+    return this.api.get<SalaConsultorioCentro[]>('/centro/gestao/salas');
+  }
+
+  /** Cadastrar novo consultório / sala (POST /v1/centro/gestao/salas). */
+  criarSala(req: Partial<SalaConsultorioCentro>): Promise<SalaConsultorioCentro> {
+    return this.api.post<SalaConsultorioCentro>('/centro/gestao/salas', req);
+  }
+
+  /** Atualizar consultório / sala (PUT /v1/centro/gestao/salas/:id). */
+  atualizarSala(id: string, req: Partial<SalaConsultorioCentro>): Promise<SalaConsultorioCentro> {
+    return this.api.put<SalaConsultorioCentro>(`/centro/gestao/salas/${encodeURIComponent(id)}`, req);
+  }
+
+  /** Listar catálogo de especialidades e procedimento SIGTAP (GET /v1/centro/gestao/especialidades). */
+  listEspecialidades(): Promise<EspecialidadeSigtapCentro[]> {
+    return this.api.get<EspecialidadeSigtapCentro[]>('/centro/gestao/especialidades');
+  }
+
+  /** Habilitar nova especialidade no catálogo (POST /v1/centro/gestao/especialidades). */
+  criarEspecialidade(req: Partial<EspecialidadeSigtapCentro>): Promise<EspecialidadeSigtapCentro> {
+    return this.api.post<EspecialidadeSigtapCentro>('/centro/gestao/especialidades', req);
   }
 }
 

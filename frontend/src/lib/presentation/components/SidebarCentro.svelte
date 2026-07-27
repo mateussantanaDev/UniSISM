@@ -46,9 +46,13 @@
 		// Gestão: Direção, Coordenadores, Reguladores, Admins e Devs
 		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'GESTÃO',
+				titulo: 'GESTÃO ERP',
 				items: [
-					{ label: 'Painel de Vagas', href: '/centro/gestao/vagas', shortcut: 'V' },
+					{ label: 'Painel Geral Executivo', href: '/centro/gestao/dashboard', shortcut: 'D' },
+					{ label: 'Gestão de Usuários & Equipes', href: '/centro/gestao/usuarios', shortcut: 'U' },
+					{ label: 'Matriz de Vagas & Escalas', href: '/centro/gestao/vagas', shortcut: 'V' },
+					{ label: 'Consultórios & Infraestrutura', href: '/centro/gestao/salas', shortcut: 'S' },
+					{ label: 'Catálogo & SIGTAP', href: '/centro/gestao/especialidades', shortcut: 'E' },
 					{ label: 'Produção e Relatórios', href: '/centro/gestao/producao', shortcut: 'P' }
 				]
 			});

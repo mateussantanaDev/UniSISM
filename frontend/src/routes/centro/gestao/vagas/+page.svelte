@@ -39,132 +39,9 @@
 	let mensagemSucesso = $state('');
 	let erroGlobal = $state('');
 
-	// Mock Data for Cotas per UBS
-	let cotasUbsList = $state<CotaUbs[]>([
-		{
-			ubsId: 'ubs-1',
-			ubsNome: 'UBS Central - Bairro Novo',
-			totalCotasMes: 350,
-			alocadas: 295,
-			disponiveis: 55,
-			status: 'NORMAL',
-			especialidades: { Cardiologia: 80, Oftalmologia: 100, Dermatologia: 50, Ortopedia: 70, Neurologia: 50 }
-		},
-		{
-			ubsId: 'ubs-2',
-			ubsNome: 'UBS Vila Esperança',
-			totalCotasMes: 280,
-			alocadas: 275,
-			disponiveis: 5,
-			status: 'ALERTA',
-			especialidades: { Cardiologia: 60, Oftalmologia: 80, Dermatologia: 40, Ortopedia: 60, Neurologia: 40 }
-		},
-		{
-			ubsId: 'ubs-3',
-			ubsNome: 'UBS São José',
-			totalCotasMes: 220,
-			alocadas: 220,
-			disponiveis: 0,
-			status: 'ESGOTADA',
-			especialidades: { Cardiologia: 50, Oftalmologia: 60, Dermatologia: 30, Ortopedia: 50, Neurologia: 30 }
-		},
-		{
-			ubsId: 'ubs-4',
-			ubsNome: 'UBS Rural - Linha IV',
-			totalCotasMes: 150,
-			alocadas: 90,
-			disponiveis: 60,
-			status: 'NORMAL',
-			especialidades: { Cardiologia: 30, Oftalmologia: 40, Dermatologia: 20, Ortopedia: 40, Neurologia: 20 }
-		},
-		{
-			ubsId: 'ubs-balcao',
-			ubsNome: 'Balcão do Centro (Direct)',
-			totalCotasMes: 250,
-			alocadas: 180,
-			disponiveis: 70,
-			status: 'NORMAL',
-			especialidades: { Cardiologia: 60, Oftalmologia: 70, Dermatologia: 40, Ortopedia: 50, Neurologia: 30 }
-		}
-	]);
-
-	// Mock Data for Specialist Schedules (Escalas)
-	let escalasList = $state<EscalaEspecialista[]>([
-		{
-			id: 'esc-1',
-			medicoNome: 'Dr. Roberto Medeiros',
-			crm: 'CRM 12345',
-			especialidade: 'Cardiologia',
-			diasSemana: ['SEG', 'QUA', 'SEX'],
-			horarioInicio: '08:00',
-			horarioFim: '12:00',
-			duracaoMinutos: 20,
-			vagasPorTurno: 12,
-			status: 'ATIVA',
-			observacoes: 'Atendimento presencial no consultório 04.'
-		},
-		{
-			id: 'esc-2',
-			medicoNome: 'Dra. Sandra Regina',
-			crm: 'CRM 67890',
-			especialidade: 'Cardiologia',
-			diasSemana: ['TER', 'QUI'],
-			horarioInicio: '13:00',
-			horarioFim: '17:00',
-			duracaoMinutos: 20,
-			vagasPorTurno: 12,
-			status: 'ATIVA'
-		},
-		{
-			id: 'esc-3',
-			medicoNome: 'Dr. Fábio Alencar',
-			crm: 'CRM 24680',
-			especialidade: 'Oftalmologia',
-			diasSemana: ['SEG', 'TER', 'QUA', 'QUI'],
-			horarioInicio: '08:00',
-			horarioFim: '12:00',
-			duracaoMinutos: 15,
-			vagasPorTurno: 16,
-			status: 'ATIVA'
-		},
-		{
-			id: 'esc-4',
-			medicoNome: 'Dra. Patrícia Silveira',
-			crm: 'CRM 13579',
-			especialidade: 'Oftalmologia',
-			diasSemana: ['SEX'],
-			horarioInicio: '13:00',
-			horarioFim: '17:00',
-			duracaoMinutos: 15,
-			vagasPorTurno: 16,
-			status: 'FERIAS',
-			observacoes: 'Em férias regulamentares de 15 a 30 de Julho.'
-		},
-		{
-			id: 'esc-5',
-			medicoNome: 'Dr. Carlos Alberto',
-			crm: 'CRM 11223',
-			especialidade: 'Dermatologia',
-			diasSemana: ['TER', 'SEX'],
-			horarioInicio: '08:00',
-			horarioFim: '12:00',
-			duracaoMinutos: 20,
-			vagasPorTurno: 12,
-			status: 'ATIVA'
-		},
-		{
-			id: 'esc-6',
-			medicoNome: 'Dr. Paulo Souza',
-			crm: 'CRM 33445',
-			especialidade: 'Ortopedia',
-			diasSemana: ['SEG', 'QUA'],
-			horarioInicio: '13:00',
-			horarioFim: '17:00',
-			duracaoMinutos: 20,
-			vagasPorTurno: 12,
-			status: 'ATIVA'
-		}
-	]);
+	// Real Data from API
+	let cotasUbsList = $state<CotaUbs[]>([]);
+	let escalasList = $state<EscalaEspecialista[]>([]);
 
 	// Modals State
 	let modalAjustarCotasAberto = $state(false);
@@ -186,11 +63,12 @@
 	let acaoPacientesAfetados = $state<'REMANEJAR_AUTOMATICO' | 'FILA_AVISO_SMS'>('REMANEJAR_AUTOMATICO');
 
 	// Remanejamento State
-	let remOrigemMedico = $state('Dr. Roberto Medeiros');
+	let remOrigemMedico = $state('');
 	let remOrigemData = $state(new Date().toISOString().substring(0, 10));
-	let remDestinoMedico = $state('Dra. Sandra Regina');
+	let remDestinoMedico = $state('');
 	let remDestinoData = $state(new Date().toISOString().substring(0, 10));
 	let processandoRemanejamento = $state(false);
+	let medicosDoAdmin = $state<{ nome: string; especialidade: string }[]>([]);
 
 	// Derived metrics
 	let totalVagasMes = $derived(cotasUbsList.reduce((acc, c) => acc + c.totalCotasMes, 0));
@@ -205,20 +83,54 @@
 		)
 	);
 
+	let opcoesMedicos = $derived.by(() => {
+		const mapa = new Map<string, { nome: string; especialidade: string }>();
+		for (const esc of escalasList) {
+			if (esc.medicoNome) {
+				mapa.set(esc.medicoNome, { nome: esc.medicoNome, especialidade: esc.especialidade || 'Especialidade' });
+			}
+		}
+		for (const m of medicosDoAdmin) {
+			if (m.nome && !mapa.has(m.nome)) {
+				mapa.set(m.nome, { nome: m.nome, especialidade: m.especialidade || 'Especialidade' });
+			}
+		}
+		return Array.from(mapa.values());
+	});
+
+	$effect(() => {
+		if (opcoesMedicos.length > 0) {
+			if (!remOrigemMedico || !opcoesMedicos.some(m => m.nome === remOrigemMedico)) {
+				remOrigemMedico = opcoesMedicos[0].nome;
+			}
+			if (!remDestinoMedico || !opcoesMedicos.some(m => m.nome === remDestinoMedico)) {
+				remDestinoMedico = opcoesMedicos[1]?.nome || opcoesMedicos[0].nome;
+			}
+		}
+	});
+
 	onMount(async () => {
 		try {
-			const [cotasRes, escalasRes] = await Promise.allSettled([
+			const [cotasRes, escalasRes, usuariosRes] = await Promise.allSettled([
 				api.centroGestao.listCotas(),
-				api.centroGestao.listEscalas()
+				api.centroGestao.listEscalas(),
+				api.admin.listUsuarios()
 			]);
-			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value) && cotasRes.value.length > 0) {
+			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value)) {
 				cotasUbsList = cotasRes.value as any[];
 			}
-			if (escalasRes.status === 'fulfilled' && Array.isArray(escalasRes.value) && escalasRes.value.length > 0) {
+			if (escalasRes.status === 'fulfilled' && Array.isArray(escalasRes.value)) {
 				escalasList = escalasRes.value as any[];
 			}
+			if (usuariosRes.status === 'fulfilled' && Array.isArray(usuariosRes.value)) {
+				const medicos = usuariosRes.value.filter((u: any) => u.perfil === 'MEDICO' || u.perfil === 'REGULADOR_SMS');
+				medicosDoAdmin = medicos.map((m: any) => ({
+					nome: m.nome,
+					especialidade: m.especialidade || 'Especialista'
+				}));
+			}
 		} catch (err) {
-			console.info('[UniSISM] Usando dados locais para painel de vagas da diretoria.', err);
+			console.info('[UniSISM] Carregando dados de remanejamento da diretoria.', err);
 		}
 	});
 
@@ -647,9 +559,13 @@
 						<div class="flex flex-col gap-1">
 							<label for="rem-med-origem" class="text-[10px] font-semibold text-slate-600">Médico Afetado</label>
 							<select id="rem-med-origem" bind:value={remOrigemMedico} class="border border-slate-300 bg-white p-2 text-xs">
-								<option value="Dr. Roberto Medeiros">Dr. Roberto Medeiros (Cardiologia)</option>
-								<option value="Dra. Sandra Regina">Dra. Sandra Regina (Cardiologia)</option>
-								<option value="Dr. Fábio Alencar">Dr. Fábio Alencar (Oftalmologia)</option>
+								{#if opcoesMedicos.length === 0}
+									<option value="">Nenhum médico cadastrado no servidor</option>
+								{:else}
+									{#each opcoesMedicos as med}
+										<option value={med.nome}>{med.nome} ({med.especialidade})</option>
+									{/each}
+								{/if}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1">
@@ -657,7 +573,7 @@
 							<input id="rem-data-origem" type="date" bind:value={remOrigemData} class="border border-slate-300 bg-white p-2 text-xs" />
 						</div>
 						<div class="bg-white border border-slate-200 p-3 mt-2 text-slate-700 text-[11px]">
-							Pacientes Encontrados nesta data: <strong>8 Pacientes Agendados</strong>
+							Pacientes Encontrados nesta data: <strong>Agenda Ativa no Servidor</strong>
 						</div>
 					</div>
 
@@ -669,9 +585,13 @@
 						<div class="flex flex-col gap-1">
 							<label for="rem-med-dest" class="text-[10px] font-semibold text-slate-600">Médico Substituto</label>
 							<select id="rem-med-dest" bind:value={remDestinoMedico} class="border border-slate-300 bg-white p-2 text-xs">
-								<option value="Dra. Sandra Regina">Dra. Sandra Regina (Cardiologia)</option>
-								<option value="Dr. Roberto Medeiros">Dr. Roberto Medeiros (Cardiologia)</option>
-								<option value="Dra. Patrícia Silveira">Dra. Patrícia Silveira (Oftalmologia)</option>
+								{#if opcoesMedicos.length === 0}
+									<option value="">Nenhum médico cadastrado no servidor</option>
+								{:else}
+									{#each opcoesMedicos as med}
+										<option value={med.nome}>{med.nome} ({med.especialidade})</option>
+									{/each}
+								{/if}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1">

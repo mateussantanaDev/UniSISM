@@ -25,19 +25,8 @@
 	let processandoAgendamento = $state(false);
 	let erroModal = $state('');
 
-	// Dropdown de Médicos com Busca
-	const medicosEspecialistas = [
-		{ nome: 'Dr. Roberto Medeiros', especialidade: 'Cardiologia', registro: 'CRM 12345' },
-		{ nome: 'Dra. Sandra Regina', especialidade: 'Cardiologia', registro: 'CRM 67890' },
-		{ nome: 'Dr. Fábio Alencar', especialidade: 'Oftalmologia', registro: 'CRM 24680' },
-		{ nome: 'Dra. Patrícia Silveira', especialidade: 'Oftalmologia', registro: 'CRM 13579' },
-		{ nome: 'Dr. Carlos Alberto', especialidade: 'Dermatologia', registro: 'CRM 11223' },
-		{ nome: 'Dra. Marina Rocha', especialidade: 'Dermatologia', registro: 'CRM 44556' },
-		{ nome: 'Dr. André Antunes', especialidade: 'Endocrinologia', registro: 'CRM 77889' },
-		{ nome: 'Dra. Cláudia Mendes', especialidade: 'Ginecologia/Obstetrícia', registro: 'CRM 99001' },
-		{ nome: 'Dr. Paulo Souza', especialidade: 'Ortopedia', registro: 'CRM 33445' },
-		{ nome: 'Dra. Beatriz Costa', especialidade: 'Neurologia', registro: 'CRM 55667' }
-	];
+	// Dropdown de Médicos com Busca (carregados do servidor)
+	let medicosEspecialistas = $state<{ nome: string, especialidade: string, registro: string }[]>([]);
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
 	let medicoSelecionado = $state<{ nome: string, especialidade: string, registro: string } | null>(null);
@@ -86,12 +75,25 @@
 				console.info('[UniSISM] Endpoint /v1/centro/recepcao/fila-espera em transição — usando fallback /v1/encaminhamentos', errCentro);
 			}
 
+			// Carrega médicos do banco de dados para o seletor de agendamento
+			try {
+				const usuarios = await api.admin.listUsuarios();
+				const medicos = usuarios.filter(u => (u as any).perfil === 'MEDICO' || (u as any).perfil === 'REGULADOR_SMS');
+				medicosEspecialistas = medicos.map(m => ({
+					nome: m.nome,
+					especialidade: (m as any).especialidade || 'Especialista',
+					registro: m.cpf ? `CRM/REG ${m.cpf.substring(0, 6)}` : 'CRM 10000'
+				}));
+			} catch (eMed) {
+				console.info('[UniSISM] Não foi possível carregar lista de médicos do admin.', eMed);
+			}
+
 			// Fallback para API geral de encaminhamentos
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			encaminhamentos = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
-		} catch (e) {
+		} catch (e: any) {
 			console.error(e);
-			erro = 'Falha ao carregar fila da regulação.';
+			erro = `Falha ao carregar fila da regulação: ${e?.message || 'Erro no servidor'}`;
 		} finally {
 			carregando = false;
 		}

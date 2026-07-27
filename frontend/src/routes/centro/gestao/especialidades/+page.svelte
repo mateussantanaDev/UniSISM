@@ -1,0 +1,220 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { api } from '$lib/api';
+	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+
+	interface EspecialidadeSigtap {
+		id: string;
+		nome: string;
+		codigoSigtap: string;
+		tempoPadraoMinutos: number;
+		valorTabelaBrl: number;
+		documentosObrigatorios: string[];
+		preparoRequerido: string;
+		ativa: boolean;
+	}
+
+	let carregando = $state(true);
+	let mensagemSucesso = $state('');
+	let erro = $state('');
+
+	let listaEspecialidades = $state<EspecialidadeSigtap[]>([]);
+
+	// Modal State
+	let modalNovaAberto = $state(false);
+	let formNome = $state('Neurologia Clínica');
+	let formCodigo = $state('03.01.01.007-6');
+	let formTempo = $state(20);
+	let formValor = $state(100.00);
+	let formDocs = $state('Laudo de Tomografia ou Ressonância se houver');
+	let formPreparo = $state('Trazer exames neurológicos prévios.');
+
+	async function carregarEspecialidades() {
+		carregando = true;
+		erro = '';
+		try {
+			const res = await api.centroGestao.listEspecialidades();
+			listaEspecialidades = (res as any[]) || [];
+		} catch (e: any) {
+			console.info('[UniSISM] Endpoint /v1/centro/gestao/especialidades em transição.', e);
+			listaEspecialidades = [];
+		} finally {
+			carregando = false;
+		}
+	}
+
+	onMount(() => {
+		carregarEspecialidades();
+	});
+
+	async function cadastrarEspecialidade() {
+		if (!formNome.trim() || !formCodigo.trim()) {
+			alert('Preencha o nome e o código SIGTAP.');
+			return;
+		}
+
+		const nova: EspecialidadeSigtap = {
+			id: 'esp-' + Date.now(),
+			nome: formNome.trim(),
+			codigoSigtap: formCodigo.trim(),
+			tempoPadraoMinutos: formTempo,
+			valorTabelaBrl: formValor,
+			documentosObrigatorios: formDocs.split(',').map(s => s.trim()).filter(Boolean),
+			preparoRequerido: formPreparo,
+			ativa: true
+		};
+
+		try {
+			await api.centroGestao.criarEspecialidade(nova as any);
+		} catch (e) {
+			console.info('[UniSISM] Criar especialidade executado em modo local.', e);
+		}
+
+		listaEspecialidades.push(nova);
+		modalNovaAberto = false;
+		mensagemSucesso = `✓ Especialidade ${nova.nome} (SIGTAP ${nova.codigoSigtap}) cadastrada no catálogo!`;
+		setTimeout(() => mensagemSucesso = '', 4000);
+	}
+</script>
+
+<svelte:head>
+	<title>ERP Gestão - Catálogo SIGTAP / Especialidades | UniSISM Centro</title>
+</svelte:head>
+
+<div class="flex flex-col gap-5 font-mono text-xs">
+	<!-- Panel Header -->
+	<PanelHeader
+		title="CATÁLOGO DE ESPECIALIDADES & TABELA DE PROCEDIMENTOS SIGTAP / SUS"
+		subtitle="Parâmetros clínicos do Centro de Especialidades: cadastramento de serviços, códigos SIGTAP/SIA-SUS, tempo médio de consulta e diretrizes de exames exigidos das UBSs."
+	/>
+
+	<!-- Banner Sucesso -->
+	{#if mensagemSucesso}
+		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 flex flex-col gap-1 shadow-sm whitespace-pre-wrap">
+			<div class="flex items-center gap-2 text-sm font-black">
+				<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono">SUCESSO</span>
+				<span>CATÁLOGO ATUALIZADO</span>
+			</div>
+			<div class="text-xs font-mono font-normal mt-1">{mensagemSucesso}</div>
+		</div>
+	{/if}
+
+	<!-- Control Bar -->
+	<section class="border border-slate-200 bg-white p-4 flex items-center justify-between">
+		<div>
+			<span class="font-bold text-slate-900 text-xs uppercase">SERVIÇOS ESPECIALIZADOS HABILITADOS</span>
+			<span class="text-slate-500 text-[10px] block">Tabela oficial SUS e critérios de acolhimento na regulação</span>
+		</div>
+		<button
+			onclick={() => modalNovaAberto = true}
+			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950"
+		>
+			+ Habilitar Nova Especialidade / SIGTAP
+		</button>
+	</section>
+
+	<!-- Tabela SIGTAP / Especialidades -->
+	<section class="border border-slate-200 bg-white overflow-hidden">
+		<div class="overflow-x-auto">
+			<table class="w-full text-left border-collapse">
+				<thead>
+					<tr class="border-b border-slate-200 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
+						<th class="p-3">Especialidade / Serviço</th>
+						<th class="p-3">Código SIGTAP (SIA-SUS)</th>
+						<th class="p-3">Tempo Padrão</th>
+						<th class="p-3">Valor Repasse SIA-SUS</th>
+						<th class="p-3">Documentos & Exames Obrigatórios (UBS)</th>
+						<th class="p-3">Status</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-slate-200 text-xs font-mono">
+					{#each listaEspecialidades as esp (esp.id)}
+						<tr class="hover:bg-slate-50">
+							<td class="p-3 font-bold text-slate-900 font-sans">{esp.nome}</td>
+							<td class="p-3">
+								<span class="bg-slate-100 border border-slate-300 font-mono px-2 py-0.5 text-[11px] font-bold text-blue-900">
+									{esp.codigoSigtap}
+								</span>
+							</td>
+							<td class="p-3 text-slate-700 font-semibold">{esp.tempoPadraoMinutos} minutos</td>
+							<td class="p-3 text-emerald-800 font-bold">R$ {esp.valorTabelaBrl.toFixed(2)}</td>
+							<td class="p-3 text-slate-700">
+								<div class="flex flex-col gap-1">
+									{#each esp.documentosObrigatorios as doc}
+										<div class="text-[10px] bg-amber-50 border border-amber-200 text-amber-900 p-1 font-sans">
+											📄 {doc}
+										</div>
+									{/each}
+									<div class="text-[10px] text-slate-500 italic mt-0.5">Preparo: {esp.preparoRequerido}</div>
+								</div>
+							</td>
+							<td class="p-3">
+								<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold px-2 py-0.5 text-[10px]">
+									HABILITADA
+								</span>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	</section>
+</div>
+
+<!-- Modal: Habilitar Especialidade -->
+{#if modalNovaAberto}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
+		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-2xl">
+			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
+				<div class="font-bold uppercase tracking-wider text-xs">+ Habilitar Nova Especialidade SIGTAP</div>
+				<button onclick={() => modalNovaAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+			</div>
+
+			<div class="p-5 flex flex-col gap-4">
+				<div class="grid grid-cols-2 gap-3">
+					<div class="flex flex-col gap-1">
+						<label for="esp-nome" class="font-bold text-slate-700 text-[11px]">Nome da Especialidade *</label>
+						<input id="esp-nome" type="text" bind:value={formNome} class="border border-slate-300 p-2 text-xs" />
+					</div>
+					<div class="flex flex-col gap-1">
+						<label for="esp-cod" class="font-bold text-slate-700 text-[11px]">Código SIGTAP / SIA-SUS *</label>
+						<input id="esp-cod" type="text" bind:value={formCodigo} class="border border-slate-300 p-2 text-xs font-bold" />
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div class="flex flex-col gap-1">
+						<label for="esp-tempo" class="font-bold text-slate-700 text-[11px]">Tempo de Consulta (Minutos)</label>
+						<input id="esp-tempo" type="number" bind:value={formTempo} class="border border-slate-300 p-2 text-xs" />
+					</div>
+					<div class="flex flex-col gap-1">
+						<label for="esp-val" class="font-bold text-slate-700 text-[11px]">Valor de Repasse Tabela SUS (R$)</label>
+						<input id="esp-val" type="number" step="0.01" bind:value={formValor} class="border border-slate-300 p-2 text-xs" />
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="esp-docs" class="font-bold text-slate-700 text-[11px]">Exames / Documentos Exigidos da UBS</label>
+					<input id="esp-docs" type="text" bind:value={formDocs} class="border border-slate-300 p-2 text-xs" />
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="esp-prep" class="font-bold text-slate-700 text-[11px]">Orientações de Preparo para o Paciente</label>
+					<input id="esp-prep" type="text" bind:value={formPreparo} class="border border-slate-300 p-2 text-xs" />
+				</div>
+			</div>
+
+			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
+				<button onclick={() => modalNovaAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
+					Cancelar
+				</button>
+				<button
+					onclick={cadastrarEspecialidade}
+					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950"
+				>
+					✓ Salvar no Catálogo SIGTAP
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

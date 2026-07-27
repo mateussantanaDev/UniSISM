@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { Paciente, SolicitacaoMedica, PrioridadeClinica, Sexo } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
@@ -42,19 +43,8 @@
 		'Neurologia'
 	];
 
-	// Dropdown de Médicos com Busca
-	const medicosEspecialistas = [
-		{ nome: 'Dr. Roberto Medeiros', especialidade: 'Cardiologia', registro: 'CRM 12345' },
-		{ nome: 'Dra. Sandra Regina', especialidade: 'Cardiologia', registro: 'CRM 67890' },
-		{ nome: 'Dr. Fábio Alencar', especialidade: 'Oftalmologia', registro: 'CRM 24680' },
-		{ nome: 'Dra. Patrícia Silveira', especialidade: 'Oftalmologia', registro: 'CRM 13579' },
-		{ nome: 'Dr. Carlos Alberto', especialidade: 'Dermatologia', registro: 'CRM 11223' },
-		{ nome: 'Dra. Marina Rocha', especialidade: 'Dermatologia', registro: 'CRM 44556' },
-		{ nome: 'Dr. André Antunes', especialidade: 'Endocrinologia', registro: 'CRM 77889' },
-		{ nome: 'Dra. Cláudia Mendes', especialidade: 'Ginecologia/Obstetrícia', registro: 'CRM 99001' },
-		{ nome: 'Dr. Paulo Souza', especialidade: 'Ortopedia', registro: 'CRM 33445' },
-		{ nome: 'Dra. Beatriz Costa', especialidade: 'Neurologia', registro: 'CRM 55667' }
-	];
+	// Dropdown de Médicos com Busca (carregados do servidor)
+	let medicosEspecialistas = $state<{ nome: string, especialidade: string, registro: string }[]>([]);
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
 	let medicoSelecionado = $state<{ nome: string, especialidade: string, registro: string } | null>(null);
@@ -137,6 +127,20 @@
 			buscandoCpf = false;
 		}
 	}
+
+	onMount(async () => {
+		try {
+			const usuarios = await api.admin.listUsuarios();
+			const medicos = usuarios.filter(u => (u as any).perfil === 'MEDICO' || (u as any).perfil === 'REGULADOR_SMS');
+			medicosEspecialistas = medicos.map(m => ({
+				nome: m.nome,
+				especialidade: (m as any).especialidade || 'Especialista',
+				registro: m.cpf ? `CRM/REG ${m.cpf.substring(0, 6)}` : 'CRM 10000'
+			}));
+		} catch (eMed) {
+			console.info('[UniSISM] Não foi possível carregar lista de médicos do admin.', eMed);
+		}
+	});
 
 	// Reatividade do CPF
 	$effect(() => {
