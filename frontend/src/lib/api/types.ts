@@ -143,6 +143,8 @@ export interface MeResponse {
   iniciais: string;
   role: Role;
   unidade: string | null;
+  unidadeId?: string | null;
+  tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD' | null;
   prefeitura: string | null;
   cargo: string;
   escopo: Escopo;
@@ -768,6 +770,8 @@ export interface UsuarioListado {
   role: Role;
   ativo: boolean;
   criadoEm: string;
+  tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD' | null;
+  unidadeId?: string | null;
   ubs: { id: string; nome: string; prefeitura: { id: string; nome: string } } | null;
   prefeitura: { id: string; nome: string } | null;
 }
@@ -779,6 +783,8 @@ export interface CriarUsuarioRequest {
   cpf: string;
   senha: string;
   role: Role;
+  tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD';
+  unidadeId?: string;
   ubsId?: string;          // exigido para ATENDENTE_UBS / COORDENADOR_UBS
   prefeituraId?: string;   // exigido para ADMIN / REGULADOR_SMS
   telefone?: string;
@@ -792,6 +798,8 @@ export interface CriarUsuarioResponse {
   matricula: string;
   email: string;
   role: Role;
+  tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD' | null;
+  unidadeId?: string | null;
   ubs: { id: string; nome: string } | null;
   prefeitura: { id: string; nome: string } | null;
 }
@@ -986,6 +994,8 @@ export interface AtualizarUsuarioRequest {
   nome?: string;
   email?: string;
   role?: Role;
+  tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD';
+  unidadeId?: string | null;
   telefone?: string;
   cargo?: string;
   funcao?: string;

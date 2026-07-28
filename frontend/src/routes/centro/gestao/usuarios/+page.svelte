@@ -27,6 +27,7 @@
 	let formEmail = $state('');
 	let formMatricula = $state('');
 	let formPerfil = $state<any>('MEDICO');
+	let formTipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEO');
 	let formEspecialidade = $state('Cardiologia');
 	let formRegistroProfissional = $state('');
 	let formSenha = $state('Mudar@123');
@@ -97,6 +98,7 @@
 		formEmail = '';
 		formMatricula = '';
 		formPerfil = 'MEDICO';
+		formTipoUnidade = 'CEO';
 		formEspecialidade = 'Cardiologia';
 		formRegistroProfissional = '';
 		formSenha = 'Mudar@123';
@@ -117,6 +119,7 @@
 				email: formEmail.trim(),
 				matricula: formMatricula.trim() || undefined,
 				role: formPerfil as Role,
+				tipoUnidade: formTipoUnidade,
 				senha: formSenha.trim()
 			});
 
@@ -139,6 +142,7 @@
 		formEmail = u.email || '';
 		formMatricula = u.matricula || '';
 		formPerfil = ((u as any).perfil || u.role) as Role;
+		formTipoUnidade = (u.tipoUnidade || 'CEO') as any;
 		modalEditarAberto = true;
 	}
 
@@ -149,7 +153,8 @@
 			await api.admin.updateUsuario(usuarioEdicao.id, {
 				nome: formNome.trim(),
 				email: formEmail.trim(),
-				role: formPerfil as Role
+				role: formPerfil as Role,
+				tipoUnidade: formTipoUnidade
 			});
 
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;
@@ -420,7 +425,7 @@
 					</div>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
 					<div class="flex flex-col gap-1">
 						<label for="usr-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso *</label>
 						<select id="usr-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
@@ -432,13 +437,23 @@
 						</select>
 					</div>
 					<div class="flex flex-col gap-1">
+						<label for="usr-tipo-unidade" class="font-bold text-slate-700 text-[11px]">Unidade / Face *</label>
+						<select id="usr-tipo-unidade" bind:value={formTipoUnidade} class="border border-emerald-400 bg-emerald-50 text-emerald-950 p-2 text-xs font-bold">
+							<option value="CEO">Centro Odontológico (CEO)</option>
+							<option value="CEM">Centro Médico (CEM)</option>
+							<option value="UBS">Unidade Básica (UBS)</option>
+							<option value="SMS">Secretaria de Saúde (SMS)</option>
+							<option value="TFD">Logística TFD</option>
+						</select>
+					</div>
+					<div class="flex flex-col gap-1">
 						<label for="usr-senha" class="font-bold text-slate-700 text-[11px]">Senha Temporária *</label>
 						<input id="usr-senha" type="text" bind:value={formSenha} class="border border-slate-300 p-2 text-xs bg-slate-50 font-bold" />
 					</div>
 				</div>
 
-				<div class="bg-blue-50 border border-blue-200 p-3 text-[11px] text-blue-900">
-					ℹ O usuário será registrado diretamente no banco de dados do servidor da prefeitura.
+				<div class="bg-emerald-50 border border-emerald-300 p-3 text-[11px] text-emerald-950 font-semibold">
+					ℹ O usuário será vinculado diretamente ao <strong>{formTipoUnidade}</strong> e será redirecionado para a face correspondente ao realizar login.
 				</div>
 			</div>
 
@@ -476,15 +491,27 @@
 					<label for="ed-email" class="font-bold text-slate-700 text-[11px]">E-mail Institucional</label>
 					<input id="ed-email" type="email" bind:value={formEmail} class="border border-slate-300 p-2 text-xs" />
 				</div>
-				<div class="flex flex-col gap-1">
-					<label for="ed-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso</label>
-					<select id="ed-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-						<option value="MEDICO">Médico Especialista</option>
-						<option value="REGULADOR_SMS">Regulador SMS / Recepção</option>
-						<option value="ATENDENTE_UBS">Atendente Recepção</option>
-						<option value="COORDENADOR_UBS">Diretoria / Coordenação</option>
-						<option value="ADMIN">Administrador Geral</option>
-					</select>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+					<div class="flex flex-col gap-1">
+						<label for="ed-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso</label>
+						<select id="ed-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
+							<option value="MEDICO">Médico Especialista</option>
+							<option value="REGULADOR_SMS">Regulador SMS / Recepção</option>
+							<option value="ATENDENTE_UBS">Atendente Recepção</option>
+							<option value="COORDENADOR_UBS">Diretoria / Coordenação</option>
+							<option value="ADMIN">Administrador Geral</option>
+						</select>
+					</div>
+					<div class="flex flex-col gap-1">
+						<label for="ed-tipo-unidade" class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</label>
+						<select id="ed-tipo-unidade" bind:value={formTipoUnidade} class="border border-emerald-400 bg-emerald-50 text-emerald-950 p-2 text-xs font-bold">
+							<option value="CEO">Centro Odontológico (CEO)</option>
+							<option value="CEM">Centro Médico (CEM)</option>
+							<option value="UBS">Unidade Básica (UBS)</option>
+							<option value="SMS">Secretaria de Saúde (SMS)</option>
+							<option value="TFD">Logística TFD</option>
+						</select>
+					</div>
 				</div>
 			</div>
 

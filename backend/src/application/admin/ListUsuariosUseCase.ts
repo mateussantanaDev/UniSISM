@@ -46,6 +46,8 @@ export class ListUsuariosUseCase {
         email: true,
         cpf: true,
         role: true,
+        tipoUnidade: true,
+        unidadeId: true,
         ativo: true,
         criadoEm: true,
         ubs: { select: { id: true, nome: true, prefeitura: { select: { id: true, nome: true } } } },
@@ -54,6 +56,21 @@ export class ListUsuariosUseCase {
       orderBy: { nome: 'asc' },
       take: 200,
     });
-    return rows;
+
+    return rows.map((r) => ({
+      id: r.id,
+      nome: r.nome,
+      email: r.email,
+      cpf: r.cpf,
+      matricula: r.matricula,
+      role: r.role,
+      tipoUnidade: r.tipoUnidade ?? (r.ubs ? 'UBS' : null),
+      unidadeId: r.unidadeId ?? r.ubs?.id ?? null,
+      unidade: r.ubs?.nome ?? null,
+      ativo: r.ativo,
+      criadoEm: r.criadoEm,
+      ubs: r.ubs,
+      prefeitura: r.prefeitura,
+    }));
   }
 }

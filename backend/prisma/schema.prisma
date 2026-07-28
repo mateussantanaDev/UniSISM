@@ -28,6 +28,7 @@ enum RoleAtendente {
   ATENDENTE_TFD     // atendente TFD (terminal rodoviário) — apenas cadastra solicitações de viagem
   MOTORISTA_TFD     // motorista TFD com app mobile próprio (UNISISM-motorista) — vê só suas viagens
   REGULADOR_TFD     // regulador TFD — cadastro de passageiros e solicitações
+  MEDICO            // médico (CEO/CEM/UBS)
   MEDICO_ESPECIALISTA // médico especialista do Centro de Especialidades / CEO
   ATENDENTE_CENTRO    // atendente/recepcionista do Centro de Especialidades / CEO
 }
@@ -331,6 +332,10 @@ model Atendente {
 
   senhaAlteradaEm DateTime @default(now())
   deletadoEm      DateTime?
+
+  // Vinculação de Unidade (CEO / CEM / UBS / SMS / TFD)
+  tipoUnidade  String?   @map("tipo_unidade") @db.VarChar(20)
+  unidadeId    String?   @map("unidade_id")
 
   // Escopo: DESENVOLVEDOR não tem nem ubsId nem prefeituraId.
   //         ADMIN/REGULADOR_SMS têm prefeituraId (sem ubsId).

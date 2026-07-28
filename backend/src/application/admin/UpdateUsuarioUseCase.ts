@@ -4,19 +4,23 @@ import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger'
 import type { AccessScope } from '../../shared/scope';
 import { ensurePrefeituraAcessivel, ensureUbsAcessivel } from '../../shared/scope';
 
+import type { RoleAtendente } from '../../../generated/prisma';
+
 export interface UpdateUsuarioInput {
   nome?: string;
   email?: string;
   telefone?: string;
   cargo?: string;
   funcao?: string;
+  role?: RoleAtendente;
+  tipoUnidade?: string | null;
+  unidadeId?: string | null;
   ubsId?: string | null;
   prefeituraId?: string | null;
 }
 
 /**
- * Edita campos não-sensíveis de um usuário.
- * Não permite mudar: role, matrícula, CPF, senha — para isso há endpoints específicos.
+ * Edita campos de um usuário.
  */
 export class UpdateUsuarioUseCase {
   constructor(private readonly audit?: IAuditLogger) {}
@@ -64,6 +68,9 @@ export class UpdateUsuarioUseCase {
     if (input.telefone !== undefined) data['telefone'] = input.telefone || null;
     if (input.cargo !== undefined) data['cargo'] = input.cargo;
     if (input.funcao !== undefined) data['funcao'] = input.funcao;
+    if (input.role !== undefined) data['role'] = input.role;
+    if (input.tipoUnidade !== undefined) data['tipoUnidade'] = input.tipoUnidade;
+    if (input.unidadeId !== undefined) data['unidadeId'] = input.unidadeId;
     if (input.ubsId !== undefined) data['ubsId'] = input.ubsId;
     if (input.prefeituraId !== undefined) data['prefeituraId'] = input.prefeituraId;
 
@@ -87,6 +94,8 @@ export class UpdateUsuarioUseCase {
       matricula: atualizado.matricula,
       email: atualizado.email,
       role: atualizado.role,
+      tipoUnidade: atualizado.tipoUnidade,
+      unidadeId: atualizado.unidadeId ?? atualizado.ubsId ?? null,
       ativo: atualizado.ativo,
       ubs: atualizado.ubs ? { id: atualizado.ubs.id, nome: atualizado.ubs.nome } : null,
       prefeitura: atualizado.prefeitura ?? atualizado.ubs?.prefeitura ?? null,

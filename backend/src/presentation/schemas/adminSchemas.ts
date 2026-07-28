@@ -50,6 +50,8 @@ export const criarUbsSchema = z.object({
   observacoes: z.string().max(500).optional(),
 });
 
+export const tipoUnidadeEnum = z.enum(['CEO', 'CEM', 'UBS', 'SMS', 'TFD']);
+
 export const roleEnum = z.enum([
   'DESENVOLVEDOR',
   'ADMIN',
@@ -60,6 +62,9 @@ export const roleEnum = z.enum([
   'ATENDENTE_TFD',
   'MOTORISTA_TFD',
   'REGULADOR_TFD',
+  'MEDICO',
+  'MEDICO_ESPECIALISTA',
+  'ATENDENTE_CENTRO',
 ]);
 
 export const criarUsuarioSchema = z.object({
@@ -69,8 +74,10 @@ export const criarUsuarioSchema = z.object({
   cpf: z.string().min(11),
   senha: z.string().min(8),
   role: roleEnum,
-  ubsId: z.string().optional(),
-  prefeituraId: z.string().optional(),
+  tipoUnidade: tipoUnidadeEnum.optional().nullable(),
+  unidadeId: z.string().optional().nullable(),
+  ubsId: z.string().optional().nullable(),
+  prefeituraId: z.string().optional().nullable(),
   telefone: z.string().optional(),
   cargo: z.string().optional(),
   funcao: z.string().optional(),
@@ -97,6 +104,9 @@ export const atualizarUsuarioSchema = z.object({
   telefone: z.string().optional(),
   cargo: z.string().optional(),
   funcao: z.string().optional(),
+  role: roleEnum.optional(),
+  tipoUnidade: tipoUnidadeEnum.nullable().optional(),
+  unidadeId: z.string().nullable().optional(),
   ubsId: z.string().nullable().optional(),
   prefeituraId: z.string().nullable().optional(),
 });

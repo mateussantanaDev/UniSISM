@@ -222,15 +222,35 @@ export const rbac = {
 	},
 	/**
 	 * Face padrão pra onde redirecionar logo após o login.
-	 * DEV cai no SMS por ser o terminal mais amplo.
+	 * Usuários com unidade/tipoUnidade CEO → /ceo.
+	 * Usuários com unidade/tipoUnidade CEM → /cem.
 	 * Atendente/coordenador UBS → /ubs.
-	 * Regulador/Admin → /sms.
 	 * Gestor TFD → /tfd.
+	 * Regulador/Admin/DEV sem unidade específica → /sms.
 	 */
 	faceDestinoPadrao(
-		role: Role | undefined
-	): '/ubs/dashboard' | '/sms/dashboard' | '/tfd/dashboard' | '/login' {
+		role: Role | undefined,
+		me?: MeResponse | null
+	): string {
 		if (!role) return '/login';
+
+		const tipoUnidade = me?.tipoUnidade?.toUpperCase();
+		const nomeUnidade = me?.unidade?.toUpperCase() || '';
+		const ehCeo = tipoUnidade === 'CEO' || nomeUnidade.includes('CEO') || nomeUnidade.includes('ODONTOL');
+		const ehCem = tipoUnidade === 'CEM' || (nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO'));
+
+		if (ehCeo) {
+			if (role === 'MEDICO') return '/ceo/medico/agenda';
+			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS') return '/ceo/recepcao/fila';
+			return '/ceo/gestao/dashboard';
+		}
+
+		if (ehCem) {
+			if (role === 'MEDICO') return '/cem/medico/agenda';
+			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS') return '/cem/recepcao/fila';
+			return '/cem/gestao/dashboard';
+		}
+
 		if (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') return '/ubs/dashboard';
 		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD') return '/tfd/dashboard';
 		if (role === 'REGULADOR_SMS' || role === 'ADMIN') return '/sms/dashboard';

@@ -14,7 +14,7 @@
 		// api.auth.me() dispara 401 → onUnauthorized já redireciona pra /login.
 		try {
 			const me = await api.auth.me();
-			goto(rbac.faceDestinoPadrao(me.role), { replaceState: true });
+			goto(rbac.faceDestinoPadrao(me.role, me), { replaceState: true });
 		} catch {
 			api.tokens.set(null);
 			goto('/login', { replaceState: true });

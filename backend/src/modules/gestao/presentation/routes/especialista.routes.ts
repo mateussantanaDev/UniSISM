@@ -10,7 +10,7 @@ export function buildEspecialistaRoutes(
 ): Router {
   const router = Router();
   const authenticate = makeAuthenticate(tokens);
-  const onlyEspecialistaOrDev = requireRole('MEDICO_ESPECIALISTA', 'DESENVOLVEDOR');
+  const onlyEspecialistaOrDev = requireRole('MEDICO', 'MEDICO_ESPECIALISTA', 'DESENVOLVEDOR');
 
   router.get(
     '/especialista/agenda',

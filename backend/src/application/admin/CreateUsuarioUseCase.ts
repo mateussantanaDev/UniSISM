@@ -12,8 +12,10 @@ export interface CreateUsuarioInput {
   cpf: string;
   senha: string;
   role: RoleAtendente;
-  ubsId?: string;
-  prefeituraId?: string;
+  tipoUnidade?: string | null;
+  unidadeId?: string | null;
+  ubsId?: string | null;
+  prefeituraId?: string | null;
   telefone?: string;
   cargo?: string;
   funcao?: string;
@@ -31,7 +33,7 @@ export interface CreateUsuarioInput {
  *  - DESENVOLVEDOR: ignora ubsId/prefeituraId.
  *  - ADMIN / REGULADOR_SMS / GESTOR_TFD / ATENDENTE_TFD: exige prefeituraId,
  *    ubsId deve ser null.
- *  - ATENDENTE_UBS / COORDENADOR_UBS: exige ubsId; prefeituraId herdado da UBS.
+ *  - ATENDENTE_UBS / COORDENADOR_UBS: exige ubsId (ou unidadeId se tipoUnidade=UBS); prefeituraId herdado da UBS.
  *  - MOTORISTA_TFD: rejeitado aqui — usar POST /v1/tfd/motoristas, que cria
  *    MotoristaTFD + Atendente vinculado + senha provisória atomicamente.
  */
@@ -55,6 +57,7 @@ export class CreateUsuarioUseCase {
 
     let ubsId: string | null = null;
     let prefeituraId: string | null = null;
+    const requestedUbsId = input.ubsId || (input.tipoUnidade === 'UBS' ? input.unidadeId ?? undefined : undefined);
 
     switch (input.role) {
       case 'DESENVOLVEDOR':
@@ -66,6 +69,7 @@ export class CreateUsuarioUseCase {
       case 'GESTOR_TFD':
       case 'ATENDENTE_TFD':
       case 'REGULADOR_TFD':
+      case 'MEDICO':
       case 'MEDICO_ESPECIALISTA':
       case 'ATENDENTE_CENTRO': {
         if (!input.prefeituraId) {
@@ -79,10 +83,10 @@ export class CreateUsuarioUseCase {
       }
       case 'ATENDENTE_UBS':
       case 'COORDENADOR_UBS': {
-        if (!input.ubsId) {
-          throw Unprocessable('UBS_OBRIGATORIA', 'ubsId é obrigatório para esse role');
+        if (!requestedUbsId) {
+          throw Unprocessable('UBS_OBRIGATORIA', 'ubsId ou unidadeId é obrigatório para esse role');
         }
-        const ubs = await prisma.ubs.findUnique({ where: { id: input.ubsId } });
+        const ubs = await prisma.ubs.findUnique({ where: { id: requestedUbsId } });
         if (!ubs) throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
         ensureUbsAcessivel(criadorScope, { id: ubs.id, prefeituraId: ubs.prefeituraId });
         ubsId = ubs.id;
@@ -96,6 +100,17 @@ export class CreateUsuarioUseCase {
         );
     }
 
+    const tipoUnidade =
+      input.tipoUnidade ??
+      (() => {
+        if (['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO'].includes(input.role)) return 'CEO';
+        if (['ATENDENTE_UBS', 'COORDENADOR_UBS'].includes(input.role) || ubsId) return 'UBS';
+        if (['GESTOR_TFD', 'ATENDENTE_TFD', 'REGULADOR_TFD', 'MOTORISTA_TFD'].includes(input.role)) return 'TFD';
+        return 'SMS';
+      })();
+
+    const unidadeId = input.unidadeId ?? ubsId ?? null;
+
     let matricula = input.matricula?.trim().toUpperCase();
     if (!matricula) {
       const prefixMap: Record<RoleAtendente, string> = {
@@ -108,6 +123,7 @@ export class CreateUsuarioUseCase {
         ATENDENTE_TFD: 'ATF-',
         REGULADOR_TFD: 'RTF-',
         MOTORISTA_TFD: 'MOT-',
+        MEDICO: 'MED-',
         MEDICO_ESPECIALISTA: 'ESP-',
         ATENDENTE_CENTRO: 'ATC-',
       };
@@ -142,6 +158,8 @@ export class CreateUsuarioUseCase {
         cargo: input.cargo ?? 'ATENDENTE DE REGULAÇÃO',
         funcao: input.funcao ?? 'Operador do canal de ingestão de encaminhamentos',
         role: input.role,
+        tipoUnidade,
+        unidadeId,
         senhaHash,
         ubsId,
         prefeituraId,
@@ -158,6 +176,8 @@ export class CreateUsuarioUseCase {
       payload: {
         matricula: criado.matricula,
         role: criado.role,
+        tipoUnidade: criado.tipoUnidade,
+        unidadeId: criado.unidadeId,
         ubsId: criado.ubsId,
         prefeituraId: criado.prefeituraId ?? criado.ubs?.prefeituraId,
       },
@@ -169,6 +189,8 @@ export class CreateUsuarioUseCase {
       matricula: criado.matricula,
       email: criado.email,
       role: criado.role,
+      tipoUnidade: criado.tipoUnidade,
+      unidadeId: criado.unidadeId ?? criado.ubsId ?? null,
       ubs: criado.ubs ? { id: criado.ubs.id, nome: criado.ubs.nome } : null,
       prefeitura: criado.ubs?.prefeitura ?? criado.prefeitura,
     };

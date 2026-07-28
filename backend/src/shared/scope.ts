@@ -30,6 +30,7 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'ATENDENTE_TFD':
     case 'MOTORISTA_TFD':
     case 'REGULADOR_TFD':
+    case 'MEDICO':
     case 'MEDICO_ESPECIALISTA':
     case 'ATENDENTE_CENTRO':
       if (!ctx.prefeituraId) {

@@ -5,10 +5,13 @@ import { iniciais } from '../utils/iniciais';
 export interface MeOutput {
   id: string;
   nome: string;
+  email: string;
   matricula: string;
   iniciais: string;
   role: string;
+  tipoUnidade: string | null;
   unidade: string | null;
+  unidadeId: string | null;
   prefeitura: string | null;
   prefeituraInfo?: {
     id: string;
@@ -45,13 +48,30 @@ export class MeUseCase {
         }
       : null;
 
+    const tipoUnidade =
+      a.tipoUnidade ??
+      (a.ubs
+        ? 'UBS'
+        : ['GESTOR_TFD', 'ATENDENTE_TFD', 'REGULADOR_TFD', 'MOTORISTA_TFD'].includes(a.role)
+          ? 'TFD'
+          : ['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO'].includes(a.role)
+            ? 'CEO'
+            : a.role === 'DESENVOLVEDOR'
+              ? null
+              : 'SMS');
+
+    const unidadeId = a.unidadeId ?? a.ubsId ?? null;
+
     return {
       id: a.id,
       nome: a.nome,
+      email: a.email,
       matricula: a.matricula,
       iniciais: iniciais(a.nome),
       role: a.role,
+      tipoUnidade,
       unidade: a.ubs?.nome ?? null,
+      unidadeId,
       prefeitura,
       prefeituraInfo,
       cargo: a.cargo,

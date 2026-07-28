@@ -20,7 +20,7 @@
 			// Rotear pra Face correta com base na role autenticada.
 			// ATENDENTE_UBS / COORDENADOR_UBS → /ubs
 			// REGULADOR_SMS / ADMIN / DESENVOLVEDOR → /sms
-			goto(rbac.faceDestinoPadrao(me.role), { replaceState: true });
+			goto(rbac.faceDestinoPadrao(me.role, me), { replaceState: true });
 		} catch (e) {
 			if (e instanceof ApiError) {
 				switch (e.code) {

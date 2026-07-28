@@ -25,6 +25,7 @@ export function buildCentroRoutes(
   );
 
   const medicoRoles = requireRole(
+    'MEDICO',
     'MEDICO_ESPECIALISTA',
     'COORDENADOR_UBS',
     'REGULADOR_SMS',

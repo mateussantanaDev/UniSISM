@@ -22,6 +22,7 @@
 	let senhaConfirmar = $state('');
 	let cargo = $state('');
 	let role = $state<Role>('ATENDENTE_UBS');
+	let tipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEO');
 	let prefeituraId = $state('');
 	let ubsId = $state('');
 
@@ -103,6 +104,7 @@
 				cpf: cpf.trim(),
 				senha,
 				role,
+				tipoUnidade,
 				ubsId: exigeUbs ? ubsId : undefined,
 				prefeituraId: exigePrefeitura ? prefeituraId : undefined,
 				telefone: telefone.trim() || undefined,
@@ -238,6 +240,26 @@
 						{#each rolesPermitidas as r (r)}
 							<option value={r}>{r}</option>
 						{/each}
+					</select>
+				</div>
+
+				<div class="col-span-6 flex flex-col">
+					<label
+						for="tipoUnidade"
+						class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
+						Unidade / Face
+					</label>
+					<select
+						id="tipoUnidade"
+						bind:value={tipoUnidade}
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+					>
+						<option value="CEO">CEO · Centro Odontológico</option>
+						<option value="CEM">CEM · Centro Médico</option>
+						<option value="UBS">UBS · Unidade Básica</option>
+						<option value="SMS">SMS · Secretaria de Saúde</option>
+						<option value="TFD">TFD · Logística</option>
 					</select>
 				</div>
 

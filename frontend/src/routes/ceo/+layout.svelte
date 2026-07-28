@@ -56,8 +56,16 @@
 		}
 		try {
 			const sessao = await api.auth.me();
-			if (sessao.role !== 'REGULADOR_SMS' && sessao.role !== 'MEDICO' && sessao.role !== 'COORDENADOR_UBS' && sessao.role !== 'ADMIN' && sessao.role !== 'DESENVOLVEDOR') {
-				goto(rbac.faceDestinoPadrao(sessao.role), { replaceState: true });
+			const superUser = sessao.role === 'ADMIN' || sessao.role === 'DESENVOLVEDOR';
+			const ehCem = sessao.tipoUnidade === 'CEM' || (sessao.unidade?.toUpperCase().includes('CEM') && !sessao.unidade?.toUpperCase().includes('CEO'));
+
+			if (!superUser && ehCem) {
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
+				return;
+			}
+
+			if (sessao.role !== 'REGULADOR_SMS' && sessao.role !== 'MEDICO' && sessao.role !== 'COORDENADOR_UBS' && !superUser) {
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;
@@ -150,10 +158,12 @@
 			</div>
 
 			<div class="flex items-center gap-4 text-[11px] text-slate-600 font-mono">
-				<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline">
-					🔄 Alternar para Centro Médico (CEM) →
-				</a>
-				<span>|</span>
+				{#if me?.role === 'ADMIN' || me?.role === 'DESENVOLVEDOR'}
+					<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline">
+						🔄 Alternar para Centro Médico (CEM) →
+					</a>
+					<span>|</span>
+				{/if}
 				<span>{me?.prefeitura ?? 'Prefeitura Sede'}</span>
 				<span>|</span>
 				<span class="font-bold text-emerald-700">CONECTADO ON-LINE</span>
