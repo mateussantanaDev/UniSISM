@@ -55,8 +55,9 @@ export function buildApp(): BuiltApp {
     cors({
       origin: (origin, cb) => {
         const allow = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
-        if (!origin) return cb(null, true); // apps mobile não enviam Origin
+        if (!origin) return cb(null, true); // apps mobile / cURL / backend-to-backend
         if (allow.includes(origin)) return cb(null, true);
+        if (/\.vercel\.app$/i.test(origin)) return cb(null, true); // permite Vercel (produção e preview)
         if (allow.includes('*') && !env.isProd) return cb(null, true);
         if (
           !env.isProd

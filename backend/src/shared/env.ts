@@ -66,7 +66,10 @@ if (isProd && JWT_SECRET === JWT_REFRESH_SECRET) {
 }
 
 // ---------- CORS — sem '*' em PROD; lista explícita ----------
-const CORS_ORIGIN_RAW = opt('CORS_ORIGIN', 'http://localhost:5173');
+const CORS_ORIGIN_RAW = opt(
+  'CORS_ORIGIN',
+  'https://unisism.vercel.app,http://localhost:5173,http://localhost:3000,http://localhost:4173',
+);
 if (isProd) {
   const lista = CORS_ORIGIN_RAW.split(',').map((s) => s.trim()).filter(Boolean);
   if (lista.length === 0 || lista.includes('*')) {
