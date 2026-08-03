@@ -223,6 +223,7 @@
 						<th class="border-r border-slate-200 px-3 py-2">Data da Viagem</th>
 						<th class="border-r border-slate-200 px-3 py-2">Vagas</th>
 						<th class="border-r border-slate-200 px-3 py-2">Prioridade</th>
+						<th class="border-r border-slate-200 px-3 py-2">Regra de Alocação App</th>
 						<th class="px-3 py-2">Status</th>
 					</tr>
 				</thead>
@@ -230,7 +231,7 @@
 					{#if carregando}
 						{#each Array(5) as _, i (i)}
 							<tr class="border-b border-slate-100">
-								<td colspan="7" class="px-3 py-3">
+								<td colspan="8" class="px-3 py-3">
 									<div class="h-3 w-full animate-pulse bg-slate-100"></div>
 								</td>
 							</tr>
@@ -238,10 +239,10 @@
 					{:else if lista.length === 0}
 						<tr>
 							<td
-								colspan="7"
+								colspan="8"
 								class="px-3 py-12 text-center font-sans text-sm text-slate-500"
 							>
-								Nenhum pedido encontrado.
+								Nenhum pedido do App encontrado.
 							</td>
 						</tr>
 					{:else}
@@ -279,6 +280,18 @@
 									>
 										{s.prioridade}
 									</span>
+								</td>
+								<!-- Regra 5: Encaminhamento agendado com data ganha vaga automática; aguardando resposta exige gestor -->
+								<td class="border-r border-slate-100 px-3 py-2 text-center whitespace-nowrap">
+									{#if s.encaminhamentoProtocolo && (s as any).encaminhamentoComDataConfirmada !== false}
+										<span class="border border-emerald-700 bg-emerald-50 text-emerald-900 px-2 py-0.5 text-[9px] font-bold uppercase">
+											✓ Vaga Automática (Data Confirmada)
+										</span>
+									{:else}
+										<span class="border border-amber-600 bg-amber-50 text-amber-900 px-2 py-0.5 text-[9px] font-bold uppercase">
+											⏳ Exige Gestor (Aguardando Data)
+										</span>
+									{/if}
 								</td>
 								<td class="px-3 py-2">
 									<span

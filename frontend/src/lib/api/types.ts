@@ -292,6 +292,8 @@ export interface SolicitacaoMedica {
   justificativaClinica: string;
   prioridade: PrioridadeClinica;
   dataSolicitacao: string;  // YYYY-MM-DD
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimentoSolicitado?: string;
 }
 
 export interface AnexoDocumento {
@@ -1500,6 +1502,15 @@ export interface EspecialidadeSigtapCentro {
   documentosObrigatorios: string[];
   preparoRequerido: string;
   ativa: boolean;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+}
+
+export interface ProcedimentoRealizadoItem {
+  id: string;
+  codigoSigtap?: string;
+  nome: string;
+  quantidade: number;
+  observacao?: string;
 }
 
 

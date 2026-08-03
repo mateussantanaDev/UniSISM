@@ -66,7 +66,8 @@ export type TipoEventoTimeline =
   | 'AGENDADO'
   | 'OBSERVACAO'
   | 'RESPOSTA_SUS_RECEBIDA'
-  | 'EDITADO';
+  | 'EDITADO'
+  | 'REMARCACAO';
 
 export interface RespostaSUS {
   anexoId: string;

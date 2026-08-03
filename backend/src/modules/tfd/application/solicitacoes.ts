@@ -43,20 +43,34 @@ export interface CriarSolicitacaoInput {
   ubsId: string;
   encaminhamentoOrigemId?: string;
   destino: string;
-  unidadeDestino?: string;
+  unidadeDestino?: string | null;
   especialidade: string;
   motivo: string;
   dataDesejada: string; // YYYY-MM-DD
   acompanhanteNecessario?: boolean;
-  prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
+  acompanhante?: {
+    nome?: string;
+    cpf?: string;
+    dataNascimento?: string;
+    telefone?: string;
+    parentesco?: string;
+    rg?: string;
+  };
+  prioridade: 'ROUTINA' | 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
   observacoes?: string;
+
+  // Registro Tardio
+  isRegistroTardio?: boolean;
+  justificativaRegistroTardio?: string;
+  dataRealizadaRetroativa?: string;
+  comprovanteHospitalDestino?: string;
 }
 
 export interface AnexoUploadInput {
   nomeOriginal: string;
   mimeType: string;
   buffer: Buffer;
-  tipo: 'COMPROVANTE_ENCAMINHAMENTO' | 'EXAME' | 'LAUDO' | 'OUTRO';
+  tipo: 'ENCAMINHAMENTO' | 'COMPROVANTE_CONSULTA' | 'LAUDO_MEDICO' | 'DOCUMENTO_IDENTIDADE' | 'OUTRO' | 'COMPROVANTE_ENCAMINHAMENTO' | 'EXAME' | 'LAUDO';
 }
 
 function rowParaSolicitacao(r: any) {
@@ -64,8 +78,18 @@ function rowParaSolicitacao(r: any) {
     id: r.id,
     protocolo: r.protocolo,
     pacienteId: r.pacienteId,
-    pacienteNome: r.paciente?.nome ?? null,
-    pacienteCpf: r.paciente?.cpf ?? null,
+    pacienteNome: r.pacienteNome ?? r.paciente?.nome ?? null,
+    pacienteCpf: r.pacienteCpf ?? r.paciente?.cpf ?? null,
+    pacienteDataNasc: r.pacienteDataNasc ? r.pacienteDataNasc.toISOString().slice(0, 10) : (r.paciente?.dataNascimento ? r.paciente.dataNascimento.toISOString().slice(0, 10) : null),
+    pacienteTelefone: r.pacienteTelefone ?? r.paciente?.telefone ?? null,
+    pacienteEndereco: r.pacienteEndereco ?? r.paciente?.endereco ?? null,
+    pacienteCartaoSus: r.pacienteCartaoSus ?? r.paciente?.cartaoSus ?? null,
+    pacienteNomeMae: r.pacienteNomeMae ?? r.paciente?.nomeMae ?? null,
+    pacienteRg: r.pacienteRg ?? r.paciente?.rg ?? null,
+    pacienteBairro: r.pacienteBairro ?? r.paciente?.bairro ?? null,
+    pacienteMunicipio: r.pacienteMunicipio ?? r.paciente?.municipio ?? null,
+    pacienteUf: r.pacienteUf ?? r.paciente?.uf ?? null,
+    pacienteCep: r.pacienteCep ?? r.paciente?.cep ?? null,
     ubsId: r.ubsId,
     ubsNome: r.ubs?.nome ?? null,
     encaminhamentoOrigemId: r.encaminhamentoOrigemId,
@@ -73,8 +97,18 @@ function rowParaSolicitacao(r: any) {
     unidadeDestino: r.unidadeDestino,
     especialidade: r.especialidade,
     motivo: r.motivo,
-    dataDesejada: r.dataDesejada.toISOString().slice(0, 10),
-    acompanhanteNecessario: r.acompanhanteNecessario,
+    dataDesejada: r.dataDesejada ? r.dataDesejada.toISOString().slice(0, 10) : null,
+    acompanhanteNecessario: r.acompanhanteNecessario ?? false,
+    acompanhanteNome: r.acompanhanteNome,
+    acompanhanteCpf: r.acompanhanteCpf,
+    acompanhanteDataNasc: r.acompanhanteDataNasc ? r.acompanhanteDataNasc.toISOString().slice(0, 10) : null,
+    acompanhanteTelefone: r.acompanhanteTelefone,
+    acompanhanteParentesco: r.acompanhanteParentesco,
+    acompanhanteRg: r.acompanhanteRg,
+    isRegistroTardio: r.isRegistroTardio ?? false,
+    justificativaRegistroTardio: r.justificativaRegistroTardio,
+    dataRealizadaRetroativa: r.dataRealizadaRetroativa ? r.dataRealizadaRetroativa.toISOString().slice(0, 10) : null,
+    comprovanteHospitalDestino: r.comprovanteHospitalDestino,
     prioridade: r.prioridade,
     status: r.status,
     observacoes: r.observacoes,
@@ -85,9 +119,13 @@ function rowParaSolicitacao(r: any) {
     decididaPorId: r.decididaPorId,
     anexos: (r.anexos ?? []).map((a: any) => ({
       id: a.id,
-      nome: a.nome,
-      tipo: a.tipo,
+      nome: a.nomeArquivo ?? a.nome,
+      nomeArquivo: a.nomeArquivo ?? a.nome,
+      tipo: a.tipo ?? a.tipoLegado,
+      mimeType: a.mimeType,
+      tamanhoBytes: a.tamanhoBytes,
       tamanhoKb: a.tamanhoKb,
+      url: a.url,
       scanStatus: a.scanStatus,
       uploadEm: a.uploadEm.toISOString(),
     })),
@@ -261,11 +299,28 @@ export class SolicitacoesTfdUseCases {
     });
 
     const protocolo = await proximoProtocoloTfd('TFD');
+    const statusInicial = input.isRegistroTardio ? ('REALIZADA' as const) : ('PENDENTE' as const);
+    const prioridadeFinal = input.prioridade === 'ROUTINA' ? ('ELETIVA' as const) : (input.prioridade as 'ELETIVA' | 'PRIORITARIA' | 'URGENTE');
+
     const novo = await prisma.solicitacaoTFD.create({
       data: {
         protocolo,
         prefeituraId,
         pacienteId,
+
+        // Snapshot Paciente
+        pacienteCpf: pac.cpf,
+        pacienteNome: pac.nome,
+        pacienteDataNasc: pac.dataNascimento,
+        pacienteTelefone: pac.telefone,
+        pacienteEndereco: pac.endereco,
+        pacienteCartaoSus: pac.cartaoSus,
+        pacienteNomeMae: pac.nomeMae,
+        pacienteBairro: pac.bairro,
+        pacienteMunicipio: pac.municipio,
+        pacienteUf: pac.uf,
+        pacienteCep: pac.cep,
+
         ubsId: input.ubsId,
         encaminhamentoOrigemId: input.encaminhamentoOrigemId ?? null,
         destino: input.destino.trim(),
@@ -273,8 +328,24 @@ export class SolicitacoesTfdUseCases {
         especialidade: input.especialidade.trim(),
         motivo: input.motivo.trim(),
         dataDesejada: new Date(`${input.dataDesejada}T00:00:00.000Z`),
+
+        // Acompanhante
         acompanhanteNecessario: input.acompanhanteNecessario ?? false,
-        prioridade: input.prioridade,
+        acompanhanteNome: input.acompanhante?.nome?.trim() || null,
+        acompanhanteCpf: input.acompanhante?.cpf?.trim() || null,
+        acompanhanteDataNasc: input.acompanhante?.dataNascimento ? new Date(`${input.acompanhante.dataNascimento}T00:00:00.000Z`) : null,
+        acompanhanteTelefone: input.acompanhante?.telefone?.trim() || null,
+        acompanhanteParentesco: input.acompanhante?.parentesco?.trim() || null,
+        acompanhanteRg: input.acompanhante?.rg?.trim() || null,
+
+        // Registro Tardio
+        isRegistroTardio: input.isRegistroTardio ?? false,
+        justificativaRegistroTardio: input.justificativaRegistroTardio?.trim() || null,
+        dataRealizadaRetroativa: input.dataRealizadaRetroativa ? new Date(`${input.dataRealizadaRetroativa}T00:00:00.000Z`) : null,
+        comprovanteHospitalDestino: input.comprovanteHospitalDestino?.trim() || null,
+
+        prioridade: prioridadeFinal,
+        status: statusInicial,
         observacoes: input.observacoes?.trim() || null,
       },
       include: INCLUDE_FULL,
@@ -308,8 +379,9 @@ export class SolicitacoesTfdUseCases {
     autorId: string,
     id: string,
     observacoes: string | undefined,
-    /** Se informado, faz aprovar + alocar atomicamente. */
     alocacao?: { viagemId: string; numeroAssento?: number },
+    modoAlocacao?: 'AUTOMATICA' | 'MANUAL',
+    dataManual?: string,
   ) {
     const atual = await prisma.solicitacaoTFD.findUnique({ where: { id } });
     if (!atual || atual.deletadaEm) throw NotFound('SOLICITACAO_NAO_ENCONTRADA', 'Solicitação não encontrada');
@@ -361,6 +433,7 @@ export class SolicitacoesTfdUseCases {
           observacoes: observacoes?.trim() || atual.observacoes,
           decididaEm: new Date(),
           decididaPorId: autorId,
+          ...(dataManual ? { dataDesejada: new Date(`${dataManual}T00:00:00.000Z`) } : {}),
           ...(alocacao ? { viagemId: alocacao.viagemId } : {}),
         },
         include: INCLUDE_FULL,
@@ -470,12 +543,33 @@ export class SolicitacoesTfdUseCases {
       data: {
         solicitacaoId,
         nome: upload.nomeOriginal,
-        tipo: upload.tipo,
+        nomeArquivo: upload.nomeOriginal,
+        tipo: (['ENCAMINHAMENTO', 'COMPROVANTE_CONSULTA', 'LAUDO_MEDICO', 'DOCUMENTO_IDENTIDADE', 'OUTRO'].includes(upload.tipo)
+          ? upload.tipo
+          : 'OUTRO') as any,
+        tipoLegado: (['COMPROVANTE_ENCAMINHAMENTO', 'EXAME', 'LAUDO', 'OUTRO'].includes(upload.tipo)
+          ? upload.tipo
+          : 'OUTRO') as any,
+        mimeType: upload.mimeType,
+        tamanhoBytes: upload.buffer.length,
         tamanhoKb: arq.tamanhoKb,
         storageKey: arq.caminho,
+        url: arq.caminho,
         uploadPorId: autorId,
       },
     });
+
+    // Regra 2: COM ANEXO - Se a solicitação estava PENDENTE, é aprovada com prioridade para alocação automática imediata
+    if (sol.status === 'PENDENTE') {
+      await prisma.solicitacaoTFD.update({
+        where: { id: solicitacaoId },
+        data: {
+          status: 'APROVADA',
+          decididaEm: new Date(),
+          decididaPorId: autorId,
+        },
+      });
+    }
 
     await this.audit.registrar({
       prefeituraId: sol.prefeituraId,
@@ -488,7 +582,7 @@ export class SolicitacoesTfdUseCases {
       operadorMatricula: op.matricula,
       operadorRole: op.role,
       ...ctxAudit(req),
-      depois: { anexoId: anexo.id, nome: anexo.nome, tipo: anexo.tipo, tamanhoKb: anexo.tamanhoKb },
+      depois: { anexoId: anexo.id, nome: upload.nomeOriginal, tipo: upload.tipo, tamanhoKb: arq.tamanhoKb },
     });
 
     // Scan AV fire-and-forget
@@ -500,9 +594,13 @@ export class SolicitacoesTfdUseCases {
 
     return {
       id: anexo.id,
-      nome: anexo.nome,
-      tipo: anexo.tipo,
-      tamanhoKb: anexo.tamanhoKb,
+      nome: upload.nomeOriginal,
+      nomeArquivo: upload.nomeOriginal,
+      tipo: upload.tipo,
+      mimeType: upload.mimeType,
+      tamanhoBytes: upload.buffer.length,
+      tamanhoKb: arq.tamanhoKb,
+      url: arq.caminho,
       scanStatus: anexo.scanStatus,
       uploadEm: anexo.uploadEm.toISOString(),
     };
@@ -525,16 +623,19 @@ export class SolicitacoesTfdUseCases {
         scanStatus: anexo.scanStatus,
       });
     }
-    const mimeType = inferirMime(anexo.nome);
+    const nome = anexo.nomeArquivo ?? anexo.nome ?? 'anexo.bin';
+    const mimeType = anexo.mimeType ?? inferirMime(nome);
+    const storagePath = anexo.url ?? anexo.storageKey ?? '';
     return {
-      caminho: this.storage.caminhoAbsoluto(anexo.storageKey),
-      nome: anexo.nome,
+      caminho: this.storage.caminhoAbsoluto(storagePath),
+      nome,
       mimeType,
     };
   }
 }
 
-function inferirMime(nome: string): string {
+function inferirMime(nome?: string | null): string {
+  if (!nome) return 'application/octet-stream';
   const ext = nome.toLowerCase().split('.').pop();
   if (ext === 'pdf') return 'application/pdf';
   if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';

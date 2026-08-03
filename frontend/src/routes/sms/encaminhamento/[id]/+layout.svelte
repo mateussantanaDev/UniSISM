@@ -8,6 +8,8 @@
 	import SolicitarCorrecao from '$lib/presentation/components/SolicitarCorrecao.svelte';
 	import RejeitarEncaminhamento from '$lib/presentation/components/RejeitarEncaminhamento.svelte';
 	import RegistrarRespostaSUS from '$lib/presentation/components/RegistrarRespostaSUS.svelte';
+	import RemarcarEncaminhamento from '$lib/presentation/components/RemarcarEncaminhamento.svelte';
+	import ImprimirSolicitacaoEncaminhamento from '$lib/presentation/components/ImprimirSolicitacaoEncaminhamento.svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { Encaminhamento } from '$lib/api/types';
 	import { setEncaminhamentoContext } from '$lib/presentation/contexts/encaminhamentoContext';
@@ -21,6 +23,7 @@
 	let encaminhamento = $state<Encaminhamento | null>(null);
 	let carregando = $state(true);
 	let erro = $state(false);
+	let imprimirAberto = $state(false);
 
 	setEncaminhamentoContext({
 		get encaminhamento() {
@@ -68,6 +71,7 @@
 	let pendenciaAberto = $state(false);
 	let rejeitarAberto = $state(false);
 	let respostaSusAberto = $state(false);
+	let remarcarAberto = $state(false);
 
 	function onDecisao(atualizado: Encaminhamento) {
 		encaminhamento = atualizado;
@@ -75,6 +79,7 @@
 		pendenciaAberto = false;
 		rejeitarAberto = false;
 		respostaSusAberto = false;
+		remarcarAberto = false;
 	}
 
 	// ─────────── Tabs ───────────
@@ -161,9 +166,24 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<StatusBadge prioridade={encaminhamento.solicitacao.prioridade} />
 					<StatusBadge status={encaminhamento.status} />
-					<PrimaryButton label="Imprimir" variant="secondary" />
-					<PrimaryButton label="Baixar PDF" variant="secondary" />
+					<PrimaryButton
+						label="Imprimir"
+						variant="secondary"
+						onclick={() => (imprimirAberto = true)}
+					/>
+					<PrimaryButton
+						label="Baixar PDF"
+						variant="secondary"
+						onclick={() => (imprimirAberto = true)}
+					/>
 
+					{#if encaminhamento && (encaminhamento.status === 'AGUARDANDO_REGULACAO' || encaminhamento.status === 'APROVADO')}
+						<PrimaryButton
+							label="📅 Remarcar"
+							variant="secondary"
+							onclick={() => (remarcarAberto = true)}
+						/>
+					{/if}
 					{#if podeDecidir && auth.podeRegistrarPendencia}
 						<PrimaryButton
 							label="Solicitar Correção"
@@ -308,4 +328,28 @@
 			onRegistrado={onDecisao}
 		/>
 	</Modal>
+
+	<Modal
+		isOpen={remarcarAberto}
+		onClose={() => (remarcarAberto = false)}
+		title="📅 Remarcar Atendimento (Fila de Regulação)"
+		subtitle="Ajustar data e horário preservando a fila e prioridade clínica"
+		maxWidth="lg"
+	>
+		<RemarcarEncaminhamento
+			{encaminhamento}
+			onCancel={() => (remarcarAberto = false)}
+			onRemarcado={onDecisao}
+		/>
+	</Modal>
+
+	{#if imprimirAberto}
+		<ImprimirSolicitacaoEncaminhamento
+			{encaminhamento}
+			operador={auth.me?.nome}
+			prefeitura={auth.me?.prefeitura}
+			unidade={auth.me?.unidade}
+			onFechar={() => (imprimirAberto = false)}
+		/>
+	{/if}
 {/if}

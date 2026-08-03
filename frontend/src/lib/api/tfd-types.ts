@@ -168,6 +168,10 @@ export interface SolicitacaoTFD {
 	decididaEm: string | null;
 	decididaPorId: string | null;
 	anexos: AnexoSolicitacaoTFD[];
+	isRegistroTardio?: boolean;
+	dataRealizadaRetroativa?: string | null;
+	justificativaRegistroTardio?: string | null;
+	comprovanteHospitalDestino?: string | null;
 }
 
 /**
@@ -218,6 +222,11 @@ export interface CriarSolicitacaoRequest {
 	prioridade: PrioridadeTFD;
 	observacoes?: string;
 	prefeituraId?: string;
+	isRegistroTardio?: boolean;
+	dataRealizadaRetroativa?: string;
+	justificativaRegistroTardio?: string;
+	comprovanteHospitalDestino?: string;
+	statusDirect?: StatusSolicitacaoTFD;
 }
 
 export interface AprovarSolicitacaoRequest {
@@ -295,6 +304,8 @@ export interface ViagemFrota {
 	passageiros: PassageiroViagem[];
 	assentosOcupados: number[];
 	prefeituraId: string;
+	isRegistroTardio?: boolean;
+	justificativaTardia?: string | null;
 }
 
 export interface CriarViagemRequest {
@@ -311,6 +322,9 @@ export interface CriarViagemRequest {
 	vagasTotais?: number;
 	observacoes?: string;
 	prefeituraId?: string;
+	isRegistroTardio?: boolean;
+	justificativaTardia?: string;
+	statusDirect?: StatusViagem;
 }
 
 export interface AtualizarViagemRequest {

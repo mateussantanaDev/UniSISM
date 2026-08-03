@@ -92,7 +92,7 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     motivoRejeicao: r.motivoRejeicao ?? null,
     recomendacoes: Array.isArray(r.recomendacoes) ? (r.recomendacoes as string[]) : [],
     canalRoteamento: r.canalRoteamento ?? null,
-    filaDestino: r.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'CEO' : r.canalRoteamento ?? null,
+    filaDestino: (r.canalRoteamento === 'CENTRO_ODONTOLOGICO' || r.destinoRegulacao === 'CENTRO_ODONTOLOGICO') ? 'CEO' : (r.canalRoteamento ?? r.destinoRegulacao ?? null),
     destinoRegulacao: r.destinoRegulacao ?? null,
     dataDisponibilidade: r.dataDisponibilidade ? r.dataDisponibilidade.toISOString() : null,
     statusAtendimentoCentro: r.statusAtendimentoCentro ?? null,

@@ -20,4 +20,45 @@
 - possibilidade de passar pacientes na frente dos outros com base na urgencia sem alterar restante da sequencia da fila
 - cadastro de agendamentos no balcao do centro
  
-** 
+** CORRECOES TFD **
+- Precisa de todos os campos preenchidos para poder alocacao automatica da vaga
+- precisa de um anexo, seja foto do encaminhamento, da mensagem da consulta
+- colocar funcionalidade de registro tardio
+- ajustar forma de funcionamento de tfd de carro baixo devido irregularidade - o gestor registrar a quilometragem inves de esperar do motorista
+- no caso de carro baixo poder alocar passageiros manualmente e antes de finalziar viagem o gestor deve fornecer carro, motorista e quilometragem
+
+
+** ajustar especialidades do centro e de outros lugares **
+- [x] formulario dos centros nome da mae, etnia 
+- [x] o mesmo medico diversos procedimentos, deve ser possivel separar consulta de procedimentos
+- [x] existir possibilidade de cadastrar mais de um procedimento no paciente no momneto do atentimento
+- [x] poder cadastro de balcao com vagas retroativas
+- [x] poder disparar mensagem de aviso caso o medico falte ou mude o dia de atendimento
+- [x] na fila de regulacao após abrir os detalhes deve ser possivel remarcar o atendimento
+- [x] poder realocar paciente ou reagendar voltas sem cair na tabela automatica, escolher data manual
+
+
+
+** modulo de exames laboratoriais **
+
+
+
+
+** app dpo paciente deve ser possivel dar sinal de presenca, se vai poder vir, se vai faltar e passar uma justificativa **
+
+
+**CAPS e Casa Azul **
+
+- controle de entrada de atendimento, nao precisa de encaminhamento ou agenda prévia, servico de porta aberta
+- cadastro de pacientes que tem atencao continua
+- envio de encaminhamento para centro de especialidade
+- relatorios de atendimentos, producao, diarios, semanais e mensais
+- acesso de registro e leitura ao PEC municipal contribuindo no atendimentro
+- acesso ao médico para atendimento de paciente marcando presenca, falta, sistema de urgencia de atendimento
+- mapeamento de quantidade de atendimento de transtornos mentais no hospital
+
+
+
+
+
+ver com jhonatas exame de sangue e medicos corpo e mente

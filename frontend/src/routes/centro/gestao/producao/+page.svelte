@@ -29,12 +29,92 @@
 		ip: string;
 	}
 
+	interface AtendimentoProcedimentoGestor {
+		id: string;
+		protocolo: string;
+		dataAtendimento: string;
+		pacienteNome: string;
+		pacienteCpf: string;
+		medicoNome: string;
+		medicoCrm: string;
+		especialidade: string;
+		tipoOrigem: 'CONSULTA' | 'PROCEDIMENTO';
+		procedimentosAdicionados: {
+			id: string;
+			codigoSigtap: string;
+			nome: string;
+			quantidade: number;
+			valorUnitarioBrl: number;
+			adicionadoPor: 'MEDICO' | 'GESTOR';
+		}[];
+	}
+
 	// State
-	let abaAtiva = $state<'dashboard' | 'relatorios' | 'auditoria'>('dashboard');
+	let abaAtiva = $state<'dashboard' | 'relatorios' | 'ajustes' | 'auditoria'>('dashboard');
 	let periodoMes = $state('2026-07');
 	let filtroEspecialidade = $state('TODAS');
 	let gerandoRelatorio = $state(false);
 	let mensagemSucesso = $state('');
+
+	// Gestor Procedure Adjustment Modal State
+	let modalAjusteGestorAberto = $state(false);
+	let atendimentoSelecionadoAjuste = $state<AtendimentoProcedimentoGestor | null>(null);
+	let novoProcCodigo = $state('02.11.02.003-6');
+	let novoProcNome = $state('Eletrocardiograma (ECG)');
+	let novoProcQtd = $state(1);
+	let novoProcValor = $state(45.00);
+
+	const catalogoSigtapGestor = [
+		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)', valor: 45.00 },
+		{ codigo: '02.05.02.009-7', nome: 'Ecocardiograma Transtorácico', valor: 180.00 },
+		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo', valor: 95.00 },
+		{ codigo: '03.01.01.004-0', nome: 'Lavagem Otológica', valor: 35.00 },
+		{ codigo: '04.08.01.004-7', nome: 'Infiltração Articular / Bainha Tendinosa', valor: 110.00 },
+		{ codigo: '02.11.05.008-3', nome: 'Holter 24 Horas (3 Canais)', valor: 150.00 },
+		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento', valor: 40.00 },
+		{ codigo: '02.06.01.007-9', nome: 'Endoscopia Digestiva Alta', valor: 220.00 }
+	];
+
+	let listaAtendimentosAjustaveis = $state<AtendimentoProcedimentoGestor[]>([
+		{
+			id: 'atend-101',
+			protocolo: 'ENC20260731-001',
+			dataAtendimento: '2026-07-31',
+			pacienteNome: 'Maria Silva Sauro',
+			pacienteCpf: '123.456.789-00',
+			medicoNome: 'Dr. Roberto Medeiros',
+			medicoCrm: 'CRM 12345',
+			especialidade: 'Cardiologia',
+			tipoOrigem: 'CONSULTA',
+			procedimentosAdicionados: [
+				{ id: 'pa-1', codigoSigtap: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)', quantidade: 1, valorUnitarioBrl: 45.00, adicionadoPor: 'GESTOR' }
+			]
+		},
+		{
+			id: 'atend-102',
+			protocolo: 'ENC20260731-002',
+			dataAtendimento: '2026-07-31',
+			pacienteNome: 'João Pedro Santos',
+			pacienteCpf: '987.654.321-11',
+			medicoNome: 'Dra. Patricia Lima',
+			medicoCrm: 'CRM 67890',
+			especialidade: 'Dermatologia',
+			tipoOrigem: 'CONSULTA',
+			procedimentosAdicionados: []
+		},
+		{
+			id: 'atend-103',
+			protocolo: 'ENC20260730-044',
+			dataAtendimento: '2026-07-30',
+			pacienteNome: 'Carlos Eduardo Oliveira',
+			pacienteCpf: '456.789.123-55',
+			medicoNome: 'Dr. Roberto Medeiros',
+			medicoCrm: 'CRM 12345',
+			especialidade: 'Cardiologia',
+			tipoOrigem: 'CONSULTA',
+			procedimentosAdicionados: []
+		}
+	]);
 
 	// Report Generator State
 	let relatorioTipo = $state<'BPA_SUS' | 'ABSENTEISMO_UBS' | 'DEMANDA_REPRIMIDA' | 'TFD_INTERMUNICIPAL'>('BPA_SUS');
@@ -43,7 +123,11 @@
 	let relatorioDataFim = $state('2026-07-27');
 
 	// Real Data from API
-	let listaProducaoMedica = $state<ProducaoMedico[]>([]);
+	let listaProducaoMedica = $state<ProducaoMedico[]>([
+		{ medicoNome: 'Dr. Roberto Medeiros', crm: 'CRM 12345', especialidade: 'Cardiologia', atendimentosMes: 142, tempoMedioMinutos: 18, faltasPaciente: 12, taxaAbsenteismo: 7.8, encaminhamentosTFD: 4, valorBpaEstimadoBRL: 18450.00 },
+		{ medicoNome: 'Dra. Patricia Lima', crm: 'CRM 67890', especialidade: 'Dermatologia', atendimentosMes: 110, tempoMedioMinutos: 15, faltasPaciente: 8, taxaAbsenteismo: 6.7, encaminhamentosTFD: 1, valorBpaEstimadoBRL: 12100.00 },
+		{ medicoNome: 'Dr. Fernando Souza', crm: 'CRM 44821', especialidade: 'Neurologia', atendimentosMes: 95, tempoMedioMinutos: 25, faltasPaciente: 15, taxaAbsenteismo: 13.6, encaminhamentosTFD: 8, valorBpaEstimadoBRL: 13500.00 }
+	]);
 	let logsAuditoria = $state<LogAuditoriaOperacional[]>([]);
 
 	// Derived metrics
@@ -57,6 +141,72 @@
 	let producaoFiltrada = $derived(
 		listaProducaoMedica.filter(m => filtroEspecialidade === 'TODAS' || m.especialidade === filtroEspecialidade)
 	);
+
+	function abrirAjusteProcedimentoGestor(atend: AtendimentoProcedimentoGestor) {
+		atendimentoSelecionadoAjuste = atend;
+		novoProcCodigo = '02.11.02.003-6';
+		novoProcNome = 'Eletrocardiograma (ECG)';
+		novoProcQtd = 1;
+		novoProcValor = 45.00;
+		modalAjusteGestorAberto = true;
+	}
+
+	function selecionarSigtapPreset(item: { codigo: string; nome: string; valor: number }) {
+		novoProcCodigo = item.codigo;
+		novoProcNome = item.nome;
+		novoProcValor = item.valor;
+	}
+
+	function adicionarProcedimentoGestor() {
+		if (!atendimentoSelecionadoAjuste) return;
+		if (!novoProcNome.trim()) {
+			alert('Informe o nome do procedimento.');
+			return;
+		}
+
+		const item = {
+			id: 'pa-' + Date.now(),
+			codigoSigtap: novoProcCodigo.trim() || '00.00.00.000-0',
+			nome: novoProcNome.trim(),
+			quantidade: Math.max(1, novoProcQtd),
+			valorUnitarioBrl: novoProcValor,
+			adicionadoPor: 'GESTOR' as const
+		};
+
+		atendimentoSelecionadoAjuste.procedimentosAdicionados.push(item);
+		
+		// Recalculate doctor BPA production
+		const med = listaProducaoMedica.find(m => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome);
+		if (med) {
+			med.valorBpaEstimadoBRL += item.valorUnitarioBrl * item.quantidade;
+		}
+
+		// Log in auditoria
+		logsAuditoria.unshift({
+			id: 'log-' + Date.now(),
+			timestamp: new Date().toISOString(),
+			operador: auth.me?.nome || 'Diretor de Gestão',
+			papel: 'DIRETOR_GESTAO',
+			acao: 'LANÇAMENTO_RETROATIVO_PROCEDIMENTO',
+			detalhes: `Lançado procedimento ${item.nome} (${item.codigoSigtap}) no atendimento de ${atendimentoSelecionadoAjuste.pacienteNome} (${atendimentoSelecionadoAjuste.medicoNome})`,
+			ip: '192.168.10.15'
+		});
+
+		mensagemSucesso = `✓ Procedimento ${item.nome} lançado pelo Gestor no atendimento de ${atendimentoSelecionadoAjuste.pacienteNome}! Faturamento SIGTAP atualizado (+R$ ${(item.valorUnitarioBrl * item.quantidade).toFixed(2)}).`;
+		setTimeout(() => mensagemSucesso = '', 5000);
+	}
+
+	function removerProcedimentoGestor(procId: string) {
+		if (!atendimentoSelecionadoAjuste) return;
+		const removed = atendimentoSelecionadoAjuste.procedimentosAdicionados.find(p => p.id === procId);
+		if (removed) {
+			const med = listaProducaoMedica.find(m => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome);
+			if (med) {
+				med.valorBpaEstimadoBRL = Math.max(0, med.valorBpaEstimadoBRL - (removed.valorUnitarioBrl * removed.quantidade));
+			}
+		}
+		atendimentoSelecionadoAjuste.procedimentosAdicionados = atendimentoSelecionadoAjuste.procedimentosAdicionados.filter(p => p.id !== procId);
+	}
 
 	onMount(async () => {
 		try {
@@ -160,10 +310,17 @@
 		</button>
 		<button
 			type="button"
+			onclick={() => abaAtiva = 'ajustes'}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'ajustes' ? 'border-purple-900 bg-purple-50 text-purple-900 font-black' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+		>
+			03. Lançamento & Ajuste de Procedimentos (Gestor)
+		</button>
+		<button
+			type="button"
 			onclick={() => abaAtiva = 'auditoria'}
 			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'auditoria' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
-			03. Trilha de Auditoria & Compliance (Logs)
+			04. Trilha de Auditoria & Compliance (Logs)
 		</button>
 	</div>
 
@@ -342,10 +499,95 @@
 		</div>
 	{/if}
 
-	<!-- 5. ABA 3: Trilha de Auditoria & Compliance (Logs) -->
+	<!-- 5. ABA 3: Lançamento & Ajuste de Procedimentos pelo Gestor -->
+	{#if abaAtiva === 'ajustes'}
+		<div class="border border-slate-200 bg-white">
+			<PanelHeader title="Lançamento e Auditoria de Procedimentos por Atendimento (Ajuste da Gestão)" index="03" />
+
+			<div class="p-4 flex flex-col gap-4 font-sans text-xs">
+				<div class="border border-purple-300 bg-purple-50 p-4 text-purple-950 font-mono text-xs flex flex-col gap-1">
+					<div class="font-bold uppercase tracking-wider flex items-center gap-2">
+						<span>💡 AUDITORIA & REGISTRO RETROATIVO DE PROCEDIMENTOS</span>
+						<span class="bg-purple-900 text-white text-[9px] px-2 py-0.5 font-normal">GESTOR / FATURAMENTO</span>
+					</div>
+					<div>
+						Se durante uma consulta o médico realizou exames ou procedimentos (*ex: Eletrocardiograma, Biópsia, Curativo Especial, Infiltração, Lavagem Otológica*) mas não registrou no sistema, o gestor pode fazer a inserção direta aqui. O valor do procedimento será computado no faturamento SIA-SUS/BPA e na produção do médico.
+					</div>
+				</div>
+
+				<div class="overflow-x-auto border border-slate-200">
+					<table class="w-full text-left border-collapse font-mono text-xs">
+						<thead>
+							<tr class="bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
+								<th class="p-3">Data / Protocolo</th>
+								<th class="p-3">Paciente</th>
+								<th class="p-3">Médico / Especialidade</th>
+								<th class="p-3">Tipo Origem</th>
+								<th class="p-3">Procedimentos Registrados</th>
+								<th class="p-3 text-right">Valor Total SIGTAP</th>
+								<th class="p-3 text-center">Ações do Gestor</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-slate-200">
+							{#each listaAtendimentosAjustaveis as atend (atend.id)}
+								{@const totalAtendBrl = atend.procedimentosAdicionados.reduce((sum, p) => sum + (p.valorUnitarioBrl * p.quantidade), 0)}
+								<tr class="hover:bg-slate-50">
+									<td class="p-3">
+										<div class="font-bold text-slate-900">{atend.dataAtendimento}</div>
+										<div class="text-[10px] text-slate-500 font-mono">{atend.protocolo}</div>
+									</td>
+									<td class="p-3 font-sans">
+										<div class="font-bold text-slate-900">{atend.pacienteNome}</div>
+										<div class="text-[10px] text-slate-500 font-mono">CPF: {atend.pacienteCpf}</div>
+									</td>
+									<td class="p-3 font-sans">
+										<div class="font-semibold text-slate-900">{atend.medicoNome}</div>
+										<div class="text-[10px] text-slate-500 font-mono">{atend.medicoCrm} · {atend.especialidade}</div>
+									</td>
+									<td class="p-3">
+										<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-2 py-0.5 text-[10px]">
+											{atend.tipoOrigem}
+										</span>
+									</td>
+									<td class="p-3">
+										{#if atend.procedimentosAdicionados.length > 0}
+											<div class="flex flex-col gap-1">
+												{#each atend.procedimentosAdicionados as proc}
+													<div class="bg-purple-50 border border-purple-200 text-purple-950 px-2 py-1 text-[11px] flex justify-between items-center font-mono">
+														<span><strong>{proc.nome}</strong> ({proc.quantidade}x)</span>
+														<span class="font-bold text-emerald-800">R$ {(proc.valorUnitarioBrl * proc.quantidade).toFixed(2)}</span>
+													</div>
+												{/each}
+											</div>
+										{:else}
+											<span class="text-slate-400 italic text-[11px]">Nenhum procedimento extra registrado</span>
+										{/if}
+									</td>
+									<td class="p-3 text-right font-bold text-emerald-800 text-sm">
+										R$ {totalAtendBrl.toFixed(2)}
+									</td>
+									<td class="p-3 text-center whitespace-nowrap">
+										<button
+											type="button"
+											onclick={() => abrirAjusteProcedimentoGestor(atend)}
+											class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-3 py-1.5 font-bold text-xs uppercase font-mono tracking-wider shadow-xs"
+										>
+											+ Lançar / Ajustar Procedimento
+										</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 6. ABA 4: Trilha de Auditoria & Compliance (Logs) -->
 	{#if abaAtiva === 'auditoria'}
 		<div class="border border-slate-200 bg-white">
-			<PanelHeader title="Trilha de Auditoria Operacional (Audit Trail Compliance)" index="03" />
+			<PanelHeader title="Trilha de Auditoria Operacional (Audit Trail Compliance)" index="04" />
 
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse text-xs font-mono">
@@ -390,6 +632,117 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Modal: Gestor Lançamento de Procedimentos Retroativos -->
+{#if modalAjusteGestorAberto && atendimentoSelecionadoAjuste}
+	<Modal
+		isOpen={modalAjusteGestorAberto}
+		onClose={() => modalAjusteGestorAberto = false}
+		title="LANÇAMENTO DE PROCEDIMENTO PELO GESTOR"
+		subtitle="Inserção retroativa no atendimento para cálculo de custo e faturamento SIA-SUS"
+		maxWidth="md"
+	>
+		<div class="flex flex-col gap-4 font-mono text-xs">
+			<div class="bg-slate-100 border border-slate-300 p-3 font-sans">
+				<div class="font-bold text-slate-900 text-sm">{atendimentoSelecionadoAjuste.pacienteNome}</div>
+				<div class="text-[11px] text-slate-600 font-mono">
+					CPF: {atendimentoSelecionadoAjuste.pacienteCpf} · Médico: <strong>{atendimentoSelecionadoAjuste.medicoNome}</strong> ({atendimentoSelecionadoAjuste.especialidade})
+				</div>
+			</div>
+
+			<!-- Procedimentos Já Inseridos -->
+			<div class="flex flex-col gap-1">
+				<span class="font-bold text-slate-700 uppercase text-[10px]">Procedimentos Já Inseridos neste Atendimento:</span>
+				{#if atendimentoSelecionadoAjuste.procedimentosAdicionados.length > 0}
+					<div class="border border-slate-200 bg-white">
+						{#each atendimentoSelecionadoAjuste.procedimentosAdicionados as p}
+							<div class="p-2 border-b border-slate-100 last:border-b-0 flex justify-between items-center">
+								<div>
+									<div class="font-bold text-purple-950">{p.nome} ({p.quantidade}x)</div>
+									<div class="text-[10px] text-slate-500">SIGTAP: {p.codigoSigtap} · Por {p.adicionadoPor}</div>
+								</div>
+								<div class="flex items-center gap-3">
+									<span class="font-bold text-emerald-800">R$ {(p.valorUnitarioBrl * p.quantidade).toFixed(2)}</span>
+									<button
+										type="button"
+										onclick={() => removerProcedimentoGestor(p.id)}
+										class="text-red-700 font-bold hover:underline text-[10px]"
+									>
+										[Remover]
+									</button>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="text-slate-400 italic text-[11px] bg-slate-50 p-2 border border-slate-200">
+						Nenhum procedimento registrado ainda.
+					</div>
+				{/if}
+			</div>
+
+			<!-- Formulário para Inserção -->
+			<div class="flex flex-col gap-3 border-t border-slate-200 pt-3">
+				<span class="font-bold text-purple-950 uppercase text-[11px]">➕ Adicionar Novo Procedimento SIGTAP</span>
+				
+				<div class="flex flex-col gap-1">
+					<label for="gest-proc-name" class="text-[10px] font-bold text-slate-600 uppercase">Nome do Procedimento / Exame *</label>
+					<input id="gest-proc-name" type="text" bind:value={novoProcNome} class="border border-slate-300 p-2 text-xs font-sans" />
+				</div>
+
+				<div class="grid grid-cols-3 gap-3">
+					<div class="flex flex-col gap-1">
+						<label for="gest-proc-cod" class="text-[10px] font-bold text-slate-600 uppercase">Código SIGTAP</label>
+						<input id="gest-proc-cod" type="text" bind:value={novoProcCodigo} class="border border-slate-300 p-2 text-xs font-mono" />
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<label for="gest-proc-val" class="text-[10px] font-bold text-slate-600 uppercase">Valor Repasse (R$)</label>
+						<input id="gest-proc-val" type="number" step="0.01" bind:value={novoProcValor} class="border border-slate-300 p-2 text-xs font-bold text-emerald-800" />
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<label for="gest-proc-qtd" class="text-[10px] font-bold text-slate-600 uppercase">Quantidade</label>
+						<input id="gest-proc-qtd" type="number" min="1" bind:value={novoProcQtd} class="border border-slate-300 p-2 text-xs text-center font-bold" />
+					</div>
+				</div>
+
+				<!-- Sugestões da Tabela SIGTAP -->
+				<div class="flex flex-col gap-1 pt-1">
+					<span class="text-[10px] font-bold text-slate-500 uppercase">Tabela Frequente SUS:</span>
+					<div class="flex flex-wrap gap-1">
+						{#each catalogoSigtapGestor as sig}
+							<button
+								type="button"
+								onclick={() => selecionarSigtapPreset(sig)}
+								class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-950 px-2 py-1 text-[10px] font-mono text-left font-semibold"
+							>
+								+ {sig.nome} (R$ {sig.valor.toFixed(2)})
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<div class="flex items-center justify-end gap-2 border-t border-slate-200 pt-3 mt-2">
+				<button
+					type="button"
+					onclick={() => modalAjusteGestorAberto = false}
+					class="border border-slate-300 bg-white px-4 py-2 font-bold uppercase text-xs hover:bg-slate-100"
+				>
+					Fechar
+				</button>
+				<button
+					type="button"
+					onclick={adicionarProcedimentoGestor}
+					class="border border-purple-900 bg-purple-900 text-white px-5 py-2 font-bold uppercase text-xs hover:bg-purple-950"
+				>
+					✓ Confirmar Lançamento pelo Gestor
+				</button>
+			</div>
+		</div>
+	</Modal>
+{/if}
 
 <style>
 	select, input, button {

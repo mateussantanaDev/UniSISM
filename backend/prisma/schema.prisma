@@ -96,6 +96,7 @@ enum TipoEventoTimeline {
   OBSERVACAO
   RESPOSTA_SUS_RECEBIDA
   EDITADO
+  REMARCACAO
 }
 
 enum TipoNotificacaoPaciente {
@@ -516,6 +517,7 @@ model Paciente {
   solicitacoesTfd        SolicitacaoTFD[]
   viagemPassageiroLista  ViagemPassageiro[] @relation("PacienteViagemPassageiro")
   ajudasCusto            AjudaCusto[]       @relation("PacienteAjudaCusto")
+  agendamentosCentro     AgendamentoCentro[]
 
   cadastradoEm DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -580,6 +582,7 @@ model Atendimento {
   cid10                String
   conduta              String
   prescricaoResumo     String?
+  procedimentosRealizados AtendimentoProcedimentoRealizado[]
 
   @@index([pacienteId, data])
   @@map("atendimentos")
@@ -1351,6 +1354,14 @@ enum PrioridadeSolicTFD {
   URGENTE
 }
 
+enum TipoAnexoTFD {
+  ENCAMINHAMENTO
+  COMPROVANTE_CONSULTA
+  LAUDO_MEDICO
+  DOCUMENTO_IDENTIDADE
+  OUTRO
+}
+
 enum TipoAnexoSolicTFD {
   COMPROVANTE_ENCAMINHAMENTO
   EXAME
@@ -1525,6 +1536,20 @@ model SolicitacaoTFD {
   prefeitura               Prefeitura @relation("SolicTfdPrefeitura", fields: [prefeituraId], references: [id])
   pacienteId               String
   paciente                 Paciente   @relation(fields: [pacienteId], references: [id])
+
+  // Snapshot / Dados do Paciente
+  pacienteCpf              String?
+  pacienteNome             String?
+  pacienteDataNasc         DateTime?
+  pacienteTelefone         String?
+  pacienteEndereco         String?
+  pacienteCartaoSus        String?
+  pacienteNomeMae          String?
+  pacienteRg               String?
+  pacienteBairro           String?
+  pacienteMunicipio        String?
+  pacienteUf               String?
+  pacienteCep              String?
   ubsId                    String
   ubs                      Ubs        @relation("SolicTfdUbs", fields: [ubsId], references: [id])
   encaminhamentoOrigemId   String?
@@ -1534,6 +1559,19 @@ model SolicitacaoTFD {
   motivo                   String
   dataDesejada             DateTime
   acompanhanteNecessario   Boolean  @default(false)
+  acompanhanteNome         String?
+  acompanhanteCpf          String?
+  acompanhanteDataNasc     DateTime?
+  acompanhanteTelefone     String?
+  acompanhanteParentesco   String?
+  acompanhanteRg           String?
+
+  // Registro Tardio / Lançamento Retroativo
+  isRegistroTardio             Boolean   @default(false)
+  justificativaRegistroTardio   String?
+  dataRealizadaRetroativa      DateTime?
+  comprovanteHospitalDestino   String?
+
   prioridade               PrioridadeSolicTFD
   status                   StatusSolicitacaoTFD @default(PENDENTE)
   observacoes              String?
@@ -1543,6 +1581,7 @@ model SolicitacaoTFD {
   viagem                   ViagemFrota? @relation(fields: [viagemId], references: [id])
 
   criadaEm    DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
   decididaEm  DateTime?
   decididaPorId String?
   deletadaEm  DateTime?
@@ -1556,17 +1595,23 @@ model SolicitacaoTFD {
 }
 
 model AnexoSolicitacaoTFD {
-  id            String   @id @default(uuid())
+  id            String         @id @default(uuid())
   solicitacaoId String
   solicitacao   SolicitacaoTFD @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
-  nome          String
-  tipo          TipoAnexoSolicTFD
-  tamanhoKb     Int
-  storageKey    String
+  tipo          TipoAnexoTFD?
+  tipoLegado    TipoAnexoSolicTFD?
+  nome          String?
+  nomeArquivo   String?
+  mimeType      String?
+  tamanhoKb     Int?
+  tamanhoBytes  Int?
+  storageKey    String?
+  url           String?
   scanStatus    StatusScanAnexo @default(PENDENTE)
   scanEm        DateTime?
-  uploadEm      DateTime @default(now())
-  uploadPorId   String
+  uploadEm      DateTime       @default(now())
+  uploadPorId   String?
+  criadoEm      DateTime       @default(now())
 
   @@index([solicitacaoId])
   @@map("tfd_solicitacao_anexos")
@@ -1575,21 +1620,32 @@ model AnexoSolicitacaoTFD {
 // ----- Viagens -----
 model ViagemFrota {
   id                    String   @id @default(uuid())
+  codigoViagem          String?  @unique // Ex: VTFD-2026-0803-XXXX
   prefeituraId          String
   prefeitura            Prefeitura @relation("ViagemFrotaPrefeitura", fields: [prefeituraId], references: [id])
   data                  DateTime  // date only (YYYY-MM-DD UTC)
   horaSaida             String    // HH:mm
   horaPrevistaRetorno   String?
-  veiculoId             String
-  veiculo               VeiculoTFD @relation(fields: [veiculoId], references: [id])
-  motoristaId           String
-  motorista             MotoristaTFD @relation(fields: [motoristaId], references: [id])
+  veiculoId             String?
+  veiculo               VeiculoTFD? @relation(fields: [veiculoId], references: [id])
+  motoristaId           String?
+  motorista             MotoristaTFD? @relation(fields: [motoristaId], references: [id])
   destino               String
   unidadeDestino        String?
   rotaResumo            String?
   kmEstimados           Int?
   kmInicialHodometro    BigInt?
   kmFinalHodometro      BigInt?
+
+  // Controle e Auditoria de KM pelo Gestor (Carro Baixo / Frota)
+  kmGestorRegistradoPor String?        // UserId do Gestor
+  kmGestorDataRegistro DateTime?
+  justificativaKmGestor String?
+
+  // Registro Tardio de Viagem
+  isRegistroTardio     Boolean          @default(false)
+  justificativaTardia  String?
+
   vagasTotais           Int
   observacoes           String?
   status                StatusViagemFrota @default(AGENDADA)
@@ -1894,20 +1950,26 @@ model ConfiguracaoIntegracao {
 // ============================================================
 
 model EscalaEspecialista {
-  id             String   @id @default(uuid())
-  medicoNome     String
-  crm            String
-  especialidade  String
-  diasSemana     String[]
-  horarioInicio  String
-  horarioFim     String
-  duracaoMinutos Int      @default(20)
-  vagasPorTurno  Int      @default(12)
-  ativo          Boolean  @default(true)
-  prefeituraId   String?
+  id              String             @id @default(uuid())
+  prefeituraId    String?
+  medicoId        String?
+  medicoNome      String
+  crm             String
+  especialidade   String
+  tipoServico     TipoServicoCentro  @default(CONSULTA)
+  procedimentoId  String?            // ID opcional do catálogo SIGTAP se tipoServico == PROCEDIMENTO
+  diasSemana      String[]           // ["SEG", "TER", "QUA", "QUI", "SEX"]
+  horarioInicio   String             // "08:00"
+  horarioFim      String             // "12:00"
+  duracaoMinutos  Int                @default(20)
+  vagasPorTurno   Int                @default(12)
+  status          StatusAgendaMedica @default(ATIVA)
+  ativo           Boolean            @default(true)
 
-  criadoEm       DateTime @default(now())
-  atualizadoEm   DateTime @updatedAt
+  criadoEm        DateTime           @default(now())
+  atualizadoEm    DateTime           @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @default(now()) @updatedAt
 
   @@map("escalas_especialistas")
 }
@@ -1961,4 +2023,80 @@ model EspecialidadeCatalogo {
   atualizadoEm           DateTime @updatedAt
 
   @@map("especialidades_catalogo")
+}
+
+// ============================================================
+// CENTRO DE ESPECIALIDADES & REGULAÇÃO
+// ============================================================
+
+enum TipoServicoCentro {
+  CONSULTA
+  PROCEDIMENTO
+}
+
+enum StatusAgendaMedica {
+  ATIVA
+  FERIAS
+  LICENCA
+  BLOQUEADA
+}
+
+enum ModoDataAgendamento {
+  AUTODATA
+  MANUAL
+  RETROATIVO
+}
+
+enum StatusAgendamentoCentro {
+  AGUARDANDO
+  EM_ATENDIMENTO
+  CONCLUIDO
+  FALTOU
+  CANCELADO
+}
+
+model AtendimentoProcedimentoRealizado {
+  id              String             @id @default(uuid())
+  atendimentoId   String?
+  atendimento     Atendimento?       @relation(fields: [atendimentoId], references: [id], onDelete: Cascade)
+  agendamentoId   String?
+  agendamento     AgendamentoCentro? @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+
+  codigoSigtap    String?     // Ex: "02.11.02.003-6"
+  nome            String      // Ex: "Eletrocardiograma (ECG)"
+  quantidade      Int         @default(1)
+  valorUnitario   Float       @default(0.0)
+  observacao      String?
+
+  registradoPorId String?     // ID do Médico ou Atendente
+  registradoEm    DateTime    @default(now())
+
+  @@map("atendimento_procedimentos_realizados")
+}
+
+model AgendamentoCentro {
+  id                   String                  @id @default(uuid())
+  protocolo            String                  @unique // Ex: BALCAO-2026-XXXX
+  prefeituraId         String?
+  pacienteId           String
+  paciente             Paciente                @relation(fields: [pacienteId], references: [id])
+  medicoId             String?
+  medicoNome           String?
+  especialidade        String
+  tipoServico          TipoServicoCentro       @default(CONSULTA)
+  procedimentoNome     String?
+
+  // Datas & Modo Retroativo
+  modoData             ModoDataAgendamento     @default(AUTODATA)
+  dataAgendamento      DateTime
+  horaAgendamento      String
+  status               StatusAgendamentoCentro @default(AGUARDANDO)
+
+  // Procedimentos múltiplos efetuados no atendimento
+  procedimentos        AtendimentoProcedimentoRealizado[]
+
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  @@map("agendamentos_centro")
 }

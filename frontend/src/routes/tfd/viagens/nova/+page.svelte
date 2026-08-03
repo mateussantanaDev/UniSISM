@@ -31,6 +31,9 @@
 	let kmEstimados = $state('');
 	let observacoes = $state('');
 
+	let isRegistroTardio = $state(false);
+	let justificativaTardia = $state('Lançamento retroativo de viagem executada em caráter emergencial.');
+
 	const veiculosAtivos = $derived(veiculos.filter((v) => v.status === 'ATIVO'));
 	const motoristasAtivos = $derived(motoristas.filter((m) => m.status === 'ATIVO'));
 	const veiculoSelecionado = $derived(veiculosAtivos.find((v) => v.id === veiculoId) ?? null);
@@ -80,6 +83,10 @@
 
 		processando = true;
 		try {
+			const obsComposta = isRegistroTardio
+				? `[REGISTRO TARDIO / VIAGEM REALIZADA] Justificativa: ${justificativaTardia} | ${observacoes.trim()}`
+				: (observacoes.trim() || undefined);
+
 			const v = await api.tfd.viagens.create({
 				data,
 				horaSaida,
@@ -90,7 +97,10 @@
 				unidadeDestino: unidadeDestino.trim() || undefined,
 				rotaResumo: rotaResumo.trim() || undefined,
 				kmEstimados: kmEstimados.trim() ? Number(kmEstimados) : undefined,
-				observacoes: observacoes.trim() || undefined
+				observacoes: obsComposta,
+				isRegistroTardio,
+				justificativaTardia: isRegistroTardio ? justificativaTardia : undefined,
+				statusDirect: isRegistroTardio ? 'CONCLUIDA' : undefined
 			});
 			// Se viemos de uma solicitação aprovada, tenta alocar imediatamente
 			if (solicitacaoSemente && solicitacaoSemente.status === 'APROVADA') {
@@ -132,6 +142,50 @@
 			{/if}
 
 			<div class="grid grid-cols-12 gap-3 p-4">
+				<!-- Modo de Viagem: Regular vs Registro Tardio -->
+				<div class="col-span-12 border border-amber-300 bg-amber-50/60 p-3 font-mono text-xs flex flex-col gap-2">
+					<div class="flex items-center justify-between">
+						<span class="font-bold text-amber-950 uppercase tracking-wider text-[10px]">
+							⚡ MODO DE REGISTRO DA VIAGEM TFD
+						</span>
+						<span class="text-[9px] text-amber-800 font-bold uppercase">Planejada vs Retroativa</span>
+					</div>
+
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onclick={() => isRegistroTardio = false}
+							class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {!isRegistroTardio ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						>
+							<span>🚐 PROGRAMAR VIAGEM FUTURA</span>
+						</button>
+						<button
+							type="button"
+							onclick={() => isRegistroTardio = true}
+							class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {isRegistroTardio ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						>
+							<span>🔙 REGISTRO TARDIO (RETROATIVA)</span>
+						</button>
+					</div>
+
+					{#if isRegistroTardio}
+						<div class="flex flex-col gap-2 border-t border-amber-300 pt-2 font-sans text-xs">
+							<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950">
+								<strong>💡 Registro Tardio de Viagem:</strong> Registre as viagens de emergência já realizadas (*ex: transporte de final de semana, ambulância de suporte ou frota emergencial*). O status da viagem será salvo diretamente como <strong>CONCLUÍDA</strong>.
+							</div>
+							<div class="flex flex-col gap-1 font-mono">
+								<label for="just-via-tardia" class="text-[9px] font-bold text-amber-950 uppercase">Justificativa da Viagem Tardia *</label>
+								<input
+									id="just-via-tardia"
+									type="text"
+									bind:value={justificativaTardia}
+									class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-sans"
+								/>
+							</div>
+						</div>
+					{/if}
+				</div>
+
 				<!-- Identidade da viagem -->
 				<div
 					class="col-span-12 mb-1 border-b border-slate-200 pb-1.5 font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase"

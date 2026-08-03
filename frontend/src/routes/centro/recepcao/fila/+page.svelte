@@ -13,15 +13,19 @@
 	let busca = $state('');
 	let filtroEspecialidade = $state('TODAS');
 	let filtroPrioridade = $state('TODAS');
+	let filtroStatusAgendamento = $state<'AGUARDANDO' | 'AGENDADO' | 'TODOS'>('AGUARDANDO');
 
 	// Paginação
 	let paginaAtual = $state(1);
 	let itensPorPagina = $state(20);
 
-	// Estado do modal de agendamento
+	// Estado do modal de agendamento e remarcação
 	let modalAgendamento = $state(false);
 	let selecionado = $state<Encaminhamento | null>(null);
 	let notaAgendamento = $state('');
+	let modoSelecaoData = $state<'AUTO' | 'MANUAL'>('AUTO');
+	let dataAgendamentoManual = $state(new Date().toISOString().substring(0, 10));
+	let horaAgendamentoManual = $state('09:00');
 	let processandoAgendamento = $state(false);
 	let erroModal = $state('');
 
@@ -103,17 +107,16 @@
 		carregarFila();
 	});
 
-	let filaEspera = $derived(
-		encaminhamentos.filter(e => !e.agendamentoPrevisto)
-	);
-
 	let listaEspecialidades = $derived.by(() => {
-		const sets = new Set(filaEspera.map(e => e.solicitacao.especialidadeSolicitada).filter(Boolean));
+		const sets = new Set(encaminhamentos.map(e => e.solicitacao.especialidadeSolicitada).filter(Boolean));
 		return [...sets].sort();
 	});
 
 	let filtrados = $derived.by(() => {
-		return filaEspera.filter(e => {
+		return encaminhamentos.filter(e => {
+			if (filtroStatusAgendamento === 'AGUARDANDO' && e.agendamentoPrevisto) return false;
+			if (filtroStatusAgendamento === 'AGENDADO' && !e.agendamentoPrevisto) return false;
+
 			if (filtroEspecialidade !== 'TODAS' && e.solicitacao.especialidadeSolicitada !== filtroEspecialidade) {
 				return false;
 			}
@@ -164,8 +167,19 @@
 
 	function abrirAgendamento(enc: Encaminhamento) {
 		selecionado = enc;
-		notaAgendamento = '';
-		medicoSelecionado = null;
+		notaAgendamento = (enc as any).nota || '';
+		
+		if (enc.agendamentoPrevisto) {
+			modoSelecaoData = 'MANUAL';
+			dataAgendamentoManual = enc.agendamentoPrevisto.substring(0, 10);
+			horaAgendamentoManual = '09:00';
+		} else {
+			modoSelecaoData = 'AUTO';
+			dataAgendamentoManual = new Date().toISOString().substring(0, 10);
+			horaAgendamentoManual = '09:00';
+		}
+
+		medicoSelecionado = medicosEspecialistas.find(m => m.nome === (enc as any).profissionalAtribuido || m.especialidade === enc.solicitacao.especialidadeSolicitada) || null;
 		buscaMedico = '';
 		dropdownAberto = false;
 		erroModal = '';
@@ -186,17 +200,34 @@
 		processandoAgendamento = true;
 		erroModal = '';
 
-		// O algoritmo roda no backend. O frontend simula a otimização calculando a data/hora ideal localmente para salvar no banco
-		const { data: dataCalculada, hora: horaCalculada } = calcularMockDataOtimizada(selecionado.solicitacao.prioridade);
-		const notaCompleta = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | Obs: ${notaAgendamento.trim() || 'Nenhuma'}`;
+		let dataCalculada = '';
+		let horaCalculada = '';
+
+		if (modoSelecaoData === 'MANUAL') {
+			if (!dataAgendamentoManual) {
+				erroModal = 'Selecione uma data válida para a remarcação/agendamento.';
+				processandoAgendamento = false;
+				return;
+			}
+			dataCalculada = dataAgendamentoManual;
+			horaCalculada = horaAgendamentoManual || '09:00';
+		} else {
+			const otimizado = calcularMockDataOtimizada(selecionado.solicitacao.prioridade);
+			dataCalculada = otimizado.data;
+			horaCalculada = otimizado.hora;
+		}
+
+		const ehRemarcacao = !!selecionado.agendamentoPrevisto;
+		const notaCompleta = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | ${ehRemarcacao ? '[REMARCAÇÃO DE CONSULTA]' : ''} Obs: ${notaAgendamento.trim() || 'Nenhuma'}`;
 
 		try {
 			try {
 				await api.centroRecepcao.agendar(selecionado.id, {
 					profissional: medicoSelecionado.nome,
 					nota: notaCompleta,
-					localAgendamento: 'Centro Municipal de Especialidades'
-				});
+					localAgendamento: 'Centro Municipal de Especialidades',
+					agendamentoPrevisto: dataCalculada
+				} as any);
 			} catch (errAgendar) {
 				console.info('[UniSISM] Endpoint /v1/centro/recepcao/agendar/:id em transição — usando fallback aprovar', errAgendar);
 				await api.encaminhamentos.aprovar(selecionado.id, {
@@ -205,11 +236,16 @@
 					nota: notaCompleta
 				});
 			}
+
+			// Atualiza estado local imediatamente para refletir a remarcação
+			selecionado.agendamentoPrevisto = dataCalculada;
+			(selecionado as any).profissionalAtribuido = medicoSelecionado.nome;
+			
 			fecharAgendamento();
 			await carregarFila();
 			
-			// Alerta amigável sobre o agendamento otimizado
-			alert(`Consulta otimizada com sucesso!\n\nPaciente: ${selecionado.paciente.nome}\nData Calculada: ${new Date(dataCalculada + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaCalculada}\nMédico: ${medicoSelecionado.nome}`);
+			const dtFmt = dataCalculada.split('-').reverse().join('/');
+			alert(`✓ ${ehRemarcacao ? 'CONSULTA REMARCADA' : 'AGENDAMENTO CONCLUÍDO'} COM SUCESSO!\n\nPaciente: ${selecionado.paciente.nome}\nData Agendada: ${dtFmt} às ${horaCalculada}\nMédico Especialista: ${medicoSelecionado.nome}`);
 		} catch (e) {
 			console.error(e);
 			if (e instanceof ApiError) {
@@ -230,29 +266,36 @@
 		});
 	}
 
-	let totalFila = $derived(filaEspera.length);
-	let urgentesFila = $derived(filaEspera.filter(e => e.solicitacao.prioridade === 'URGENTE' || e.solicitacao.prioridade === 'EMERGENCIA').length);
+	let totalFila = $derived(encaminhamentos.filter(e => !e.agendamentoPrevisto).length);
+	let totalAgendados = $derived(encaminhamentos.filter(e => !!e.agendamentoPrevisto).length);
+	let urgentesFila = $derived(encaminhamentos.filter(e => e.solicitacao.prioridade === 'URGENTE' || e.solicitacao.prioridade === 'EMERGENCIA').length);
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-xs">
 	<!-- Painel de Métricas -->
-	<section class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-xs">
+	<section class="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[10px] tracking-widest text-slate-500 uppercase">Fila da Regulação</div>
+			<div class="text-[10px] tracking-widest text-slate-500 uppercase">Fila Aguardando</div>
 			<div class="mt-2 text-3xl font-bold text-slate-900">{carregando ? '—' : totalFila}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Pacientes liberados aguardando consulta</div>
+			<div class="text-[11px] text-slate-600 mt-1">Pacientes liberados sem data atribuída</div>
+		</div>
+
+		<div class="border border-slate-200 bg-white p-4">
+			<div class="text-[10px] tracking-widest text-slate-500 uppercase">Já Agendados (Remarcação)</div>
+			<div class="mt-2 text-3xl font-bold text-blue-900">{carregando ? '—' : totalAgendados}</div>
+			<div class="text-[11px] text-slate-600 mt-1">Consultas marcadas com opção de reagendamento</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
 			<div class="text-[10px] tracking-widest text-slate-500 uppercase">Casos Urgentes</div>
 			<div class="mt-2 text-3xl font-bold text-red-800">{carregando ? '—' : urgentesFila}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Pacientes com classificação prioritária de urgência</div>
+			<div class="text-[11px] text-slate-600 mt-1">Pacientes com classificação de urgência</div>
 		</div>
 	</section>
 
 	<!-- Filtros -->
 	<div class="border border-slate-200 bg-white">
-		<PanelHeader title="Filtros da Fila" index="01">
+		<PanelHeader title="Filtros da Fila & Regulação" index="01">
 			<button 
 				type="button" 
 				onclick={carregarFila}
@@ -263,7 +306,7 @@
 			</button>
 		</PanelHeader>
 
-		<div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+		<div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
 			<div class="flex flex-col gap-1">
 				<label for="busca-paciente" class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Buscar Paciente
@@ -275,6 +318,21 @@
 					placeholder="Nome, CPF ou Protocolo..."
 					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-sans text-sm"
 				/>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<label for="filtro-status-ag" class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+					Status na Regulação
+				</label>
+				<select
+					id="filtro-status-ag"
+					bind:value={filtroStatusAgendamento}
+					class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-mono font-bold"
+				>
+					<option value="AGUARDANDO">⏳ AGUARDANDO AGENDAMENTO ({totalFila})</option>
+					<option value="AGENDADO">📅 JÁ AGENDADOS / REMARCAR ({totalAgendados})</option>
+					<option value="TODOS">📋 TODOS OS REGISTROS ({encaminhamentos.length})</option>
+				</select>
 			</div>
 
 			<div class="flex flex-col gap-1">
@@ -370,13 +428,13 @@
 								<td class="border-r border-slate-100 px-3 py-2">
 									<StatusBadge prioridade={enc.solicitacao.prioridade} />
 								</td>
-								<td class="px-3 py-2 text-center">
+								<td class="px-3 py-2 text-center whitespace-nowrap">
 									<button
 										type="button"
 										onclick={() => abrirAgendamento(enc)}
-										class="bg-blue-900 hover:bg-blue-950 text-white border border-blue-900 px-2.5 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
+										class="{enc.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-2.5 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
 									>
-										Agendar
+										{enc.agendamentoPrevisto ? '🔄 Remarcar' : 'Agendar'}
 									</button>
 								</td>
 							</tr>
@@ -436,10 +494,62 @@
 					<div class="font-mono text-[9px] text-slate-500 font-bold tracking-widest uppercase">Paciente em Fila</div>
 					<div class="text-sm font-bold text-slate-900 mt-0.5">{selecionado.paciente.nome}</div>
 					<div class="font-mono text-[10px] text-slate-600 mt-1">CPF · {selecionado.paciente.cpf}</div>
+					{#if selecionado.paciente.nomeMae}
+						<div class="font-mono text-[10px] text-slate-600">Mãe · {selecionado.paciente.nomeMae}</div>
+					{/if}
+					{#if selecionado.paciente.racaCor}
+						<div class="font-mono text-[10px] text-slate-600">Etnia · {selecionado.paciente.racaCor}</div>
+					{/if}
 					<div class="font-mono text-[10px] text-slate-600">Especialidade · {selecionado.solicitacao.especialidadeSolicitada}</div>
 				</div>
 
 
+
+				<!-- Modo de Atribuição de Data (Automático vs Remarcação / Manual) -->
+				<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-2.5">
+					<span class="text-[9px] font-bold tracking-widest text-slate-700 uppercase">
+						Modo de Atribuição de Data
+					</span>
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onclick={() => modoSelecaoData = 'AUTO'}
+							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors {modoSelecaoData === 'AUTO' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+						>
+							⚡ Auto (Algoritmo)
+						</button>
+						<button
+							type="button"
+							onclick={() => modoSelecaoData = 'MANUAL'}
+							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors {modoSelecaoData === 'MANUAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+						>
+							📅 Remarcar / Data Manual
+						</button>
+					</div>
+
+					{#if modoSelecaoData === 'MANUAL'}
+						<div class="grid grid-cols-2 gap-2 border-t border-slate-300 pt-2 mt-1">
+							<div class="flex flex-col gap-1">
+								<label for="man-data" class="text-[9px] font-bold text-slate-700 uppercase">Nova Data *</label>
+								<input
+									id="man-data"
+									type="date"
+									bind:value={dataAgendamentoManual}
+									class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label for="man-hora" class="text-[9px] font-bold text-slate-700 uppercase">Horário *</label>
+								<input
+									id="man-hora"
+									type="time"
+									bind:value={horaAgendamentoManual}
+									class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+								/>
+							</div>
+						</div>
+					{/if}
+				</div>
 
 				<!-- Médico especialista dropdown com busca -->
 				<div class="flex flex-col gap-1 relative">
@@ -526,9 +636,9 @@
 						type="button"
 						onclick={salvarAgendamento}
 						disabled={processandoAgendamento}
-						class="bg-blue-900 text-white border border-blue-900 px-4 py-2 font-bold hover:bg-blue-950 uppercase"
+						class="{selecionado?.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-4 py-2 font-bold uppercase"
 					>
-						{processandoAgendamento ? 'Salvando...' : 'Confirmar e Otimizar'}
+						{processandoAgendamento ? 'Salvando...' : (selecionado?.agendamentoPrevisto ? '🔄 Confirmar Remarcação' : 'Confirmar e Agendar')}
 					</button>
 				</div>
 			</div>

@@ -39,6 +39,7 @@ import {
   criarVeiculoSchema,
   criarViagemSchema,
   iniciarViagemSchema,
+  kmGestorSchema,
   liberarAbastecimentoSchema,
   marcarPresencaSchema,
   negarAbastecimentoSchema,
@@ -195,7 +196,7 @@ export class TfdController {
     res.json(
       await this.uc.solicitacoes.aprovar(
         scopeFromRequest(req), req, req.auth!.sub, paramString(req, 'id'),
-        body.observacoes, body.alocacao,
+        body.observacoes, body.alocacao, body.modoAlocacao, body.dataManual,
       ),
     );
   };
@@ -211,7 +212,16 @@ export class TfdController {
     const file = req.file;
     if (!file) throw BadRequest('ARQUIVO_OBRIGATORIO', 'Anexe um arquivo');
     const tipo = String(req.body?.tipo ?? 'OUTRO');
-    const TIPOS = new Set(['COMPROVANTE_ENCAMINHAMENTO', 'EXAME', 'LAUDO', 'OUTRO']);
+    const TIPOS = new Set([
+      'ENCAMINHAMENTO',
+      'COMPROVANTE_CONSULTA',
+      'LAUDO_MEDICO',
+      'DOCUMENTO_IDENTIDADE',
+      'COMPROVANTE_ENCAMINHAMENTO',
+      'EXAME',
+      'LAUDO',
+      'OUTRO',
+    ]);
     if (!TIPOS.has(tipo)) throw BadRequest('TIPO_INVALIDO', 'Tipo de anexo inválido');
     res.status(201).json(
       await this.uc.solicitacoes.anexarComprovante(
@@ -270,12 +280,21 @@ export class TfdController {
       ),
     );
   };
+  postKmGestor = async (req: Request, res: Response): Promise<void> => {
+    const body = kmGestorSchema.parse(req.body ?? {});
+    res.json(
+      await this.uc.viagens.registrarKmGestor(
+        scopeFromRequest(req), req, req.auth!.sub, paramString(req, 'id'),
+        body.kmInicialHodometro, body.kmFinalHodometro, body.justificativa,
+      ),
+    );
+  };
   postConcluirViagem = async (req: Request, res: Response): Promise<void> => {
     const body = concluirViagemSchema.parse(req.body ?? {});
     res.json(
       await this.uc.viagens.concluir(
         scopeFromRequest(req), req, req.auth!.sub, paramString(req, 'id'),
-        body.kmFinalHodometro, body.observacoes,
+        body,
       ),
     );
   };

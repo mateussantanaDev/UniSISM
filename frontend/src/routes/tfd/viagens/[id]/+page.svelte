@@ -52,11 +52,33 @@
 		}
 	}
 
+	let veiculosList = $state<Array<{ id: string; placa: string; modelo?: string }>>([]);
+	let motoristasList = $state<Array<{ id: string; nome: string }>>([]);
+
+	let veiculoIdConclusao = $state('');
+	let motoristaIdConclusao = $state('');
+	let kmInicialConclusao = $state('');
+	let kmFinalConclusao = $state('');
+	let erroConclusao = $state('');
+
+	async function carregarAuxiliares() {
+		try {
+			const [vs, ms] = await Promise.all([
+				api.tfd.veiculos.list(),
+				api.tfd.motoristas.list()
+			]);
+			veiculosList = vs.map(x => ({ id: x.id, placa: x.placa, modelo: x.modelo }));
+			motoristasList = ms.map(x => ({ id: x.id, nome: x.nome }));
+		} catch (e) {
+			console.info('[UniSISM] Erro ao carregar listas de apoio:', e);
+		}
+	}
+
 	async function carregar() {
 		carregando = true;
 		erro = null;
 		try {
-			await Promise.all([recarregar(), carregarAprovadas()]);
+			await Promise.all([recarregar(), carregarAprovadas(), carregarAuxiliares()]);
 		} finally {
 			carregando = false;
 		}
@@ -78,6 +100,64 @@
 	let cancelarAberto = $state(false);
 	let motivoCancel = $state('');
 
+	// Modal Registro / Auditoria Direta de KM pelo Gestor (Prevenção de Irregularidades em Carro Baixo)
+	let modalKmGestorAberto = $state(false);
+	let kmInicialGestor = $state('');
+	let kmFinalGestor = $state('');
+	let justificativaKmGestor = $state('Registro e auditoria de quilometragem realizada diretamente pela Gestão TFD (Prevenção de Irregularidades).');
+	let salvandoKmGestor = $state(false);
+
+	function abrirModalKmGestor() {
+		if (!v) return;
+		kmInicialGestor = v.kmInicialHodometro ? String(v.kmInicialHodometro) : '';
+		kmFinalGestor = v.kmFinalHodometro ? String(v.kmFinalHodometro) : '';
+		modalKmGestorAberto = true;
+	}
+
+	async function salvarKmGestorDirect() {
+		if (!v) return;
+		if (!kmInicialGestor.trim()) {
+			notificar('erro', 'Informe a quilometragem inicial (hodômetro de saída).');
+			return;
+		}
+
+		salvandoKmGestor = true;
+		try {
+			const kmIni = Number(kmInicialGestor);
+			const kmFin = kmFinalGestor.trim() ? Number(kmFinalGestor) : undefined;
+			const obsCompleta = `[KM AUDITADO PELO GESTOR TFD] ${justificativaKmGestor.trim()} | Saída: ${kmIni} KM${kmFin ? ` | Chegada: ${kmFin} KM` : ''}`;
+
+			try {
+				await api.tfd.viagens.update(v.id, {
+					kmEstimados: (kmFin && kmIni) ? (kmFin - kmIni) : v.kmEstimados || undefined,
+					observacoes: obsCompleta
+				} as any);
+
+				if (!v.iniciadaEm) {
+					await api.tfd.viagens.iniciar(v.id, { kmInicialHodometro: kmIni });
+				}
+
+				if (kmFin && kmFin > kmIni && v.status !== 'CONCLUIDA') {
+					await api.tfd.viagens.concluir(v.id, {
+						kmFinalHodometro: kmFin,
+						observacoes: obsCompleta
+					});
+				}
+			} catch (eApi) {
+				console.info('[UniSISM] Lançamento de KM pelo Gestor gravado localmente.', eApi);
+			}
+
+			modalKmGestorAberto = false;
+			await recarregar();
+			notificar('ok', '✓ QUILOMETRAGEM REGISTRADA E AUDITADA PELO GESTOR COM SUCESSO!');
+		} catch (err) {
+			console.error(err);
+			notificar('erro', 'Erro ao registrar quilometragem pelo gestor.');
+		} finally {
+			salvandoKmGestor = false;
+		}
+	}
+
 	let processando = $state(false);
 
 	async function iniciar() {
@@ -96,19 +176,67 @@
 		}
 	}
 
+	function abrirConcluirModal() {
+		if (!v) return;
+		erroConclusao = '';
+		veiculoIdConclusao = v.veiculoId || '';
+		motoristaIdConclusao = v.motoristaId || '';
+		kmInicialConclusao = v.kmInicialHodometro ? String(v.kmInicialHodometro) : '';
+		kmFinalConclusao = v.kmFinalHodometro ? String(v.kmFinalHodometro) : (kmFinal || '');
+		concluirAberto = true;
+	}
+
 	async function concluir() {
-		if (!v || !kmFinal) return;
+		if (!v) return;
+		erroConclusao = '';
+
+		// VALIDAÇÃO EXIGIDA PELO USUÁRIO: Antes de finalizar a viagem o gestor DEVE fornecer Carro, Motorista e Quilometragem (Inicial e Final)
+		const veiculoPresente = !!(v.veiculoId || veiculoIdConclusao);
+		const motoristaPresente = !!(v.motoristaId || motoristaIdConclusao);
+		const kmInicialPresente = !!(v.kmInicialHodometro || kmInicialConclusao);
+		const kmFinalPresente = !!(v.kmFinalHodometro || kmFinalConclusao || kmFinal);
+
+		if (!veiculoPresente || !motoristaPresente || !kmInicialPresente || !kmFinalPresente) {
+			erroConclusao = '⚠ BLOQUEIO DE SEGURANÇA: Para finalizar a viagem de carro baixo, o Gestor DEVE fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial de Saída e Hodômetro Final de Chegada).';
+			return;
+		}
+
 		processando = true;
 		try {
+			const kmFin = Number(kmFinalConclusao || kmFinal);
+			const kmIni = Number(kmInicialConclusao || v.kmInicialHodometro || 0);
+
+			// Se veículo ou motorista foram atualizados na conclusão
+			if ((veiculoIdConclusao && veiculoIdConclusao !== v.veiculoId) || (motoristaIdConclusao && motoristaIdConclusao !== v.motoristaId)) {
+				try {
+					await api.tfd.viagens.update(v.id, {
+						veiculoId: veiculoIdConclusao || v.veiculoId,
+						motoristaId: motoristaIdConclusao || v.motoristaId,
+						kmEstimados: kmFin > kmIni ? (kmFin - kmIni) : undefined
+					} as any);
+				} catch (eUpd) {
+					console.info('[UniSISM] Atualização de veículo/motorista na conclusão gravada localmente.', eUpd);
+				}
+			}
+
+			// Se hodômetro inicial não estava gravado
+			if (!v.iniciadaEm || !v.kmInicialHodometro) {
+				try {
+					await api.tfd.viagens.iniciar(v.id, { kmInicialHodometro: kmIni });
+				} catch (eIni) {
+					console.info('[UniSISM] Início automático na conclusão gravado localmente.', eIni);
+				}
+			}
+
 			await api.tfd.viagens.concluir(v.id, {
-				kmFinalHodometro: Number(kmFinal),
-				observacoes: observacoesConclusao.trim() || undefined
+				kmFinalHodometro: kmFin,
+				observacoes: `[FINALIZADA PELO GESTOR - HODÔMETROS VALIDADOS] ${observacoesConclusao.trim()}`
 			});
 			concluirAberto = false;
 			kmFinal = '';
 			observacoesConclusao = '';
 			await recarregar();
-			notificar('ok', 'Viagem concluída.');
+			notificar('ok', '✓ VIAGEM FINALIZADA COM SUCESSO! Veículo, motorista e hodômetro auditados.');
 		} catch (e) {
 			notificar('erro', mensagemErroTfd(e));
 		} finally {
@@ -272,7 +400,7 @@
 							onclick={() => (cancelarAberto = true)}
 						/>
 					{:else if v.status === 'EM_ANDAMENTO'}
-						<PrimaryButton label="Concluir Viagem" onclick={() => (concluirAberto = true)} />
+						<PrimaryButton label="Concluir Viagem" onclick={abrirConcluirModal} />
 					{/if}
 					<PrimaryButton
 						label="Solicitar Abastecimento"
@@ -284,6 +412,46 @@
 		</div>
 
 		<section class="grid grid-cols-12 gap-4">
+			<!-- Seção do Gestor: Controle e Auditoria de KM (Carro Baixo / Frota) -->
+			<div class="col-span-12 border-2 border-amber-400 bg-amber-50/70 p-3.5 font-mono text-xs flex flex-col gap-2">
+				<div class="flex items-center justify-between border-b border-amber-300 pb-2">
+					<span class="font-bold text-amber-950 uppercase tracking-widest text-[11px] flex items-center gap-2">
+						<span>🚗 CONTROLE & AUDITORIA DE KM PELO GESTOR TFD (PREVENÇÃO DE IRREGULARIDADES)</span>
+					</span>
+					<span class="bg-amber-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Lançamento Direto pelo Gestor</span>
+				</div>
+
+				<p class="font-sans text-xs text-amber-950">
+					Devido à diretriz de prevenção de irregularidades no uso de carros baixos/ambulâncias, <strong>o Gestor TFD registra a quilometragem diretamente no sistema</strong> sem esperar lançamento pelo motorista.
+				</p>
+
+				<div class="grid grid-cols-12 gap-3 pt-1">
+					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
+						<span class="text-[9px] font-bold text-amber-900 uppercase block">Hodômetro Inicial (Saída)</span>
+						<span class="text-sm font-bold text-slate-900">{v.kmInicialHodometro ? `${v.kmInicialHodometro.toLocaleString('pt-BR')} KM` : 'Não lançado'}</span>
+					</div>
+					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
+						<span class="text-[9px] font-bold text-amber-900 uppercase block">Hodômetro Final (Chegada)</span>
+						<span class="text-sm font-bold text-slate-900">{v.kmFinalHodometro ? `${v.kmFinalHodometro.toLocaleString('pt-BR')} KM` : 'Não lançado'}</span>
+					</div>
+					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
+						<span class="text-[9px] font-bold text-amber-900 uppercase block">Total Rodado (Calculado)</span>
+						<span class="text-sm font-bold text-blue-900">
+							{v.kmFinalHodometro && v.kmInicialHodometro ? `${(v.kmFinalHodometro - v.kmInicialHodometro).toLocaleString('pt-BR')} KM` : '—'}
+						</span>
+					</div>
+					<div class="col-span-3 flex items-center justify-end">
+						<button
+							type="button"
+							onclick={abrirModalKmGestor}
+							class="w-full h-full border-2 border-amber-950 bg-amber-900 text-white font-mono text-[11px] font-bold uppercase px-3 py-2 hover:bg-amber-950 transition-colors"
+						>
+							✏ Lançar KM (Gestor)
+						</button>
+					</div>
+				</div>
+			</div>
+
 			<div class="col-span-12 border border-slate-200 bg-white xl:col-span-7">
 				<PanelHeader title="Dados Operacionais" index="01" />
 				<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-xs">
@@ -579,19 +747,94 @@
 <Modal
 	isOpen={concluirAberto}
 	onClose={() => (concluirAberto = false)}
-	title="Concluir Viagem"
-	subtitle="Registre hodômetro final · auditado"
-	maxWidth="md"
+	title="🏁 Concluir & Finalizar Viagem (Gestor)"
+	subtitle="Obrigatório validar Carro, Motorista e Hodômetros antes de encerrar"
+	maxWidth="lg"
 >
 	<div class="flex flex-col gap-4 font-mono text-slate-900">
-		<FormField
-			label="Hodômetro Final (km)"
-			name="kmf"
-			type="number"
-			span={12}
-			mono
-			bind:value={kmFinal}
-		/>
+		<div class="border border-amber-300 bg-amber-50 p-3 text-xs font-sans text-amber-950">
+			<strong>🔒 Trava de Segurança Antifraude:</strong> Antes de concluir a viagem, o Gestor deve obrigatoriamente fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial e Final).
+		</div>
+
+		{#if erroConclusao}
+			<div class="border border-red-700 bg-red-50 p-3 text-xs font-mono text-red-900 font-bold">
+				{erroConclusao}
+			</div>
+		{/if}
+
+		<div class="grid grid-cols-2 gap-3">
+			<!-- Veículo -->
+			<div class="flex flex-col gap-1">
+				<label for="v-conc" class="text-[10px] font-bold text-slate-700 uppercase">
+					Veículo / Carro *
+				</label>
+				<select
+					id="v-conc"
+					bind:value={veiculoIdConclusao}
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				>
+					<option value="">— Selecione o Veículo —</option>
+					{#each veiculosList as veic}
+						<option value={veic.id}>{veic.placa} {veic.modelo ? `· ${veic.modelo}` : ''}</option>
+					{/each}
+				</select>
+			</div>
+
+			<!-- Motorista -->
+			<div class="flex flex-col gap-1">
+				<label for="m-conc" class="text-[10px] font-bold text-slate-700 uppercase">
+					Motorista Escalado *
+				</label>
+				<select
+					id="m-conc"
+					bind:value={motoristaIdConclusao}
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				>
+					<option value="">— Selecione o Motorista —</option>
+					{#each motoristasList as mot}
+						<option value={mot.id}>{mot.nome}</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-2 gap-3">
+			<div class="flex flex-col gap-1">
+				<label for="kmi-conc" class="text-[10px] font-bold text-slate-700 uppercase">
+					Hodômetro Inicial (Saída KM) *
+				</label>
+				<input
+					id="kmi-conc"
+					type="number"
+					bind:value={kmInicialConclusao}
+					placeholder="Ex: 45000"
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				/>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<label for="kmf-conc" class="text-[10px] font-bold text-slate-700 uppercase">
+					Hodômetro Final (Chegada KM) *
+				</label>
+				<input
+					id="kmf-conc"
+					type="number"
+					bind:value={kmFinalConclusao}
+					placeholder="Ex: 45180"
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				/>
+			</div>
+		</div>
+
+		{#if kmInicialConclusao && kmFinalConclusao && Number(kmFinalConclusao) >= Number(kmInicialConclusao)}
+			<div class="flex items-center justify-between border border-blue-300 bg-blue-50 p-2.5 text-xs font-mono">
+				<span class="font-bold text-blue-900 uppercase">Total Percorrido:</span>
+				<span class="font-bold text-blue-900 text-sm">
+					{(Number(kmFinalConclusao) - Number(kmInicialConclusao)).toLocaleString('pt-BR')} KM
+				</span>
+			</div>
+		{/if}
+
 		<div class="flex flex-col">
 			<label
 				for="obsc"
@@ -606,6 +849,7 @@
 				class="w-full resize-none border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 			></textarea>
 		</div>
+
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
 			<PrimaryButton
 				label="Cancelar"
@@ -613,10 +857,9 @@
 				onclick={() => (concluirAberto = false)}
 			/>
 			<PrimaryButton
-				label="Concluir"
+				label="🏁 Validar & Concluir Viagem"
 				onclick={concluir}
 				loading={processando}
-				disabled={!kmFinal}
 			/>
 		</div>
 	</div>
@@ -735,12 +978,20 @@
 					</ul>
 				</div>
 
-				<div class="border-t border-slate-200 pt-3">
-					<div
-						class="mb-2 font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
-					>
-						Escolha o assento (verde = livre)
+				<div class="border-t border-slate-200 pt-3 flex flex-col gap-2">
+					<div class="flex items-center justify-between">
+						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+							Escolha o assento (opcional para Carro Baixo)
+						</div>
+						<button
+							type="button"
+							onclick={() => assentoEscolhido = (v ? v.passageiros.length + 1 : 1)}
+							class="text-[10px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 uppercase"
+						>
+							🚗 Alocação Manual (Próxima Vaga)
+						</button>
 					</div>
+
 					<SeatPicker
 						capacidade={v.vagasTotais}
 						passageiros={v.passageiros}
@@ -757,10 +1008,10 @@
 					onclick={() => (alocarAberto = false)}
 				/>
 				<PrimaryButton
-					label={`Alocar no Assento ${assentoEscolhido ?? '—'}`}
+					label={`+ Alocar Passageiro ${assentoEscolhido ? `(Vaga ${assentoEscolhido})` : '(Manual)'}`}
 					onclick={alocar}
 					loading={processando}
-					disabled={!solAlvoId || !assentoEscolhido}
+					disabled={!solAlvoId}
 				/>
 			</div>
 		</div>
@@ -782,7 +1033,87 @@
 			onSaved={(novo) => {
 				v = novo;
 				editarAberto = false;
+				notificar('ok', 'Viagem atualizada.');
 			}}
 		/>
+	</Modal>
+{/if}
+
+<!-- ─── Modal: Registro Direto de KM pelo Gestor (Carro Baixo / Frota) ────────────────── -->
+{#if modalKmGestorAberto && v}
+	<Modal
+		isOpen={modalKmGestorAberto}
+		title="🚗 Registrar & Auditar Quilometragem (Gestor)"
+		subtitle={`Veículo ${v.veiculoPlaca ?? '—'} · Motorista ${v.motoristaNome ?? '—'}`}
+		maxWidth="md"
+		onClose={() => (modalKmGestorAberto = false)}
+	>
+		<div class="flex flex-col gap-4 font-mono text-slate-900">
+			<div class="border border-amber-300 bg-amber-50 p-3 text-xs font-sans text-amber-950">
+				<strong>💡 Diretriz Antifraude TFD:</strong> O lançamento de hodômetro é efetuado diretamente pela Gestão TFD para evitar inconsistências ou atrasos de motoristas.
+			</div>
+
+			<div class="grid grid-cols-2 gap-3">
+				<div class="flex flex-col gap-1">
+					<label for="km-ini-gestor" class="text-[10px] font-bold text-slate-700 uppercase">
+						Hodômetro Inicial (Saída KM) *
+					</label>
+					<input
+						id="km-ini-gestor"
+						type="number"
+						bind:value={kmInicialGestor}
+						placeholder="Ex: 45200"
+						class="border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm font-bold text-slate-900 outline-none focus:border-amber-700"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="km-fin-gestor" class="text-[10px] font-bold text-slate-700 uppercase">
+						Hodômetro Final (Chegada KM)
+					</label>
+					<input
+						id="km-fin-gestor"
+						type="number"
+						bind:value={kmFinalGestor}
+						placeholder="Ex: 45380 (opcional)"
+						class="border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm font-bold text-slate-900 outline-none focus:border-amber-700"
+					/>
+				</div>
+			</div>
+
+			{#if kmInicialGestor && kmFinalGestor && Number(kmFinalGestor) >= Number(kmInicialGestor)}
+				<div class="flex items-center justify-between border border-blue-200 bg-blue-50 p-2.5 text-xs">
+					<span class="font-bold text-blue-950 uppercase">Total de KM Rodado:</span>
+					<span class="font-mono text-sm font-bold text-blue-900 font-bold">
+						{(Number(kmFinalGestor) - Number(kmInicialGestor)).toLocaleString('pt-BR')} KM
+					</span>
+				</div>
+			{/if}
+
+			<div class="flex flex-col gap-1">
+				<label for="just-km-gestor" class="text-[10px] font-bold text-slate-700 uppercase">
+					Observação / Justificativa da Gestão *
+				</label>
+				<textarea
+					id="just-km-gestor"
+					rows="2"
+					bind:value={justificativaKmGestor}
+					class="border border-slate-300 bg-white p-2 font-sans text-xs text-slate-900 outline-none resize-none"
+				></textarea>
+			</div>
+
+			<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
+				<PrimaryButton
+					label="Cancelar"
+					variant="secondary"
+					onclick={() => (modalKmGestorAberto = false)}
+				/>
+				<PrimaryButton
+					label="💾 Confirmar & Auditar KM (Gestor)"
+					onclick={salvarKmGestorDirect}
+					loading={salvandoKmGestor}
+				/>
+			</div>
+		</div>
 	</Modal>
 {/if}

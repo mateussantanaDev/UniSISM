@@ -23,6 +23,7 @@ import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
+  proximoProtocoloTfd,
   resolverOperador,
   resolverPrefeituraIdEfetiva,
   resolverVeiculoPorPlaca,
@@ -35,7 +36,7 @@ export interface CriarViagemInput {
   /** Use `veiculoId` OU `placa` (UX BlaBlaCar — placa é resolvida no backend). */
   veiculoId?: string;
   placa?: string;
-  motoristaId: string;
+  motoristaId?: string;
   destino: string;
   unidadeDestino?: string;
   rotaResumo?: string;
@@ -43,6 +44,8 @@ export interface CriarViagemInput {
   /** Número de assentos (vagas totais). Se omitido, usa capacidade do veículo. */
   vagasTotais?: number;
   observacoes?: string;
+  isRegistroTardio?: boolean;
+  justificativaTardia?: string;
 }
 
 export interface AtualizarViagemInput {
@@ -209,46 +212,51 @@ export class ViagensTfdUseCases {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const op = await resolverOperador(this.atendentes, autorId, prefeituraId);
 
-    // Resolve veiculoId — aceita ID direto OU placa (UX BlaBlaCar)
-    if (!input.veiculoId && !input.placa) {
-      throw Unprocessable('VEICULO_REQUERIDO', 'Informe veiculoId ou placa');
-    }
-    const veiculoId = input.veiculoId
-      ?? (await resolverVeiculoPorPlaca(input.placa!, prefeituraId));
-
-    const veiculo = await prisma.veiculoTFD.findUnique({ where: { id: veiculoId } });
-    if (!veiculo || veiculo.deletadoEm || veiculo.prefeituraId !== prefeituraId) {
-      throw NotFound('VEICULO_NAO_ENCONTRADO', 'Veículo não encontrado');
-    }
-    const motorista = await prisma.motoristaTFD.findUnique({ where: { id: input.motoristaId } });
-    if (!motorista || motorista.deletadoEm || motorista.prefeituraId !== prefeituraId) {
-      throw NotFound('MOTORISTA_NAO_ENCONTRADO', 'Motorista não encontrado');
+    // Resolve veiculoId — opcional para carro baixo / alocação manual prévia
+    let veiculoId: string | null = null;
+    let veiculoCapacidade = 4;
+    if (input.veiculoId || input.placa) {
+      veiculoId = input.veiculoId
+        ?? (await resolverVeiculoPorPlaca(input.placa!, prefeituraId));
+      const veiculo = await prisma.veiculoTFD.findUnique({ where: { id: veiculoId } });
+      if (!veiculo || veiculo.deletadoEm || veiculo.prefeituraId !== prefeituraId) {
+        throw NotFound('VEICULO_NAO_ENCONTRADO', 'Veículo não encontrado');
+      }
+      veiculoCapacidade = veiculo.capacidade;
     }
 
-    // Vagas: default = capacidade do veículo (UX BlaBlaCar)
-    const vagasTotais = input.vagasTotais ?? veiculo.capacidade;
+    let motoristaId: string | null = null;
+    if (input.motoristaId) {
+      const motorista = await prisma.motoristaTFD.findUnique({ where: { id: input.motoristaId } });
+      if (!motorista || motorista.deletadoEm || motorista.prefeituraId !== prefeituraId) {
+        throw NotFound('MOTORISTA_NAO_ENCONTRADO', 'Motorista não encontrado');
+      }
+      motoristaId = input.motoristaId;
+    }
+
+    // Vagas: default = capacidade do veículo ou 4
+    const vagasTotais = input.vagasTotais ?? veiculoCapacidade;
     if (vagasTotais < 1) {
       throw Unprocessable('VAGAS_INVALIDAS', 'vagasTotais deve ser >= 1');
     }
-    if (vagasTotais > veiculo.capacidade) {
-      throw Unprocessable(
-        'VAGAS_EXCEDEM_CAPACIDADE',
-        `Vagas (${vagasTotais}) excedem capacidade do veículo (${veiculo.capacidade})`,
-      );
-    }
+
+    const codigoViagem = await proximoProtocoloTfd('VTFD');
 
     const novo = await prisma.viagemFrota.create({
       data: {
+        codigoViagem,
         prefeituraId,
         data: new Date(`${input.data}T00:00:00.000Z`),
         horaSaida: input.horaSaida,
         horaPrevistaRetorno: input.horaPrevistaRetorno || null,
         veiculoId,
-        motoristaId: input.motoristaId,
+        motoristaId,
         destino: input.destino.trim(),
         unidadeDestino: input.unidadeDestino?.trim() || null,
         rotaResumo: input.rotaResumo?.trim() || null,
         kmEstimados: input.kmEstimados ?? null,
+        isRegistroTardio: input.isRegistroTardio ?? false,
+        justificativaTardia: input.justificativaTardia?.trim() || null,
         vagasTotais,
         observacoes: input.observacoes?.trim() || null,
         criadaPorId: autorId,
@@ -281,7 +289,7 @@ export class ViagensTfdUseCases {
     req: Request,
     autorId: string,
     id: string,
-    input: AtualizarViagemInput,
+    input: AtualizarViagemInput & { veiculoId?: string; motoristaId?: string },
   ) {
     const atual = await prisma.viagemFrota.findUnique({ where: { id } });
     if (!atual) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
@@ -300,6 +308,8 @@ export class ViagensTfdUseCases {
     if (input.rotaResumo !== undefined) data['rotaResumo'] = input.rotaResumo?.trim() || null;
     if (input.kmEstimados !== undefined) data['kmEstimados'] = input.kmEstimados ?? null;
     if (input.observacoes !== undefined) data['observacoes'] = input.observacoes?.trim() || null;
+    if (input.veiculoId !== undefined) data['veiculoId'] = input.veiculoId || null;
+    if (input.motoristaId !== undefined) data['motoristaId'] = input.motoristaId || null;
 
     const updated = await prisma.viagemFrota.update({ where: { id }, data, include: INCLUDE_FULL });
     await this.audit.registrar({
@@ -334,8 +344,14 @@ export class ViagensTfdUseCases {
     if (atual.status !== 'AGENDADA') {
       throw Conflict('STATUS_INVALIDO', `Só pode iniciar viagem AGENDADA (atual: ${atual.status})`);
     }
+    if (!atual.veiculo) {
+      throw Unprocessable('VEICULO_REQUERIDO', 'Veículo é obrigatório para iniciar a viagem');
+    }
     if (atual.veiculo.status !== 'ATIVO') {
       throw Unprocessable('VEICULO_INDISPONIVEL', `Veículo está ${atual.veiculo.status}`);
+    }
+    if (!atual.motorista) {
+      throw Unprocessable('MOTORISTA_REQUERIDO', 'Motorista é obrigatório para iniciar a viagem');
     }
     if (atual.motorista.validadeCnh.getTime() < Date.now()) {
       throw Unprocessable('CNH_VENCIDA', 'CNH do motorista está vencida');
@@ -376,49 +392,115 @@ export class ViagensTfdUseCases {
     return rowParaViagem(updated);
   }
 
+  async registrarKmGestor(
+    scope: AccessScope,
+    req: Request,
+    autorId: string,
+    id: string,
+    kmInicialHodometro: number,
+    kmFinalHodometro: number,
+    justificativa: string,
+  ) {
+    const atual = await prisma.viagemFrota.findUnique({ where: { id } });
+    if (!atual) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
+    assertMesmaPrefeitura(scope, atual.prefeituraId);
+    const kmIni = BigInt(kmInicialHodometro);
+    const kmFin = BigInt(kmFinalHodometro);
+    if (kmFin <= kmIni) {
+      throw Unprocessable('HODOMETRO_INVALIDO', 'Hodômetro final deve ser maior que o inicial');
+    }
+    const op = await resolverOperador(this.atendentes, autorId, atual.prefeituraId);
+
+    const updated = await prisma.viagemFrota.update({
+      where: { id },
+      data: {
+        kmInicialHodometro: kmIni,
+        kmFinalHodometro: kmFin,
+        kmGestorRegistradoPor: autorId,
+        kmGestorDataRegistro: new Date(),
+        justificativaKmGestor: justificativa.trim(),
+      },
+      include: INCLUDE_FULL,
+    });
+
+    await this.audit.registrar({
+      prefeituraId: atual.prefeituraId,
+      acao: 'VIAGEM_ATUALIZADA',
+      recursoTipo: 'VIAGEM',
+      recursoId: id,
+      operadorId: op.id,
+      operadorNome: op.nome,
+      operadorMatricula: op.matricula,
+      operadorRole: op.role,
+      ...ctxAudit(req),
+      depois: { kmInicialHodometro, kmFinalHodometro, justificativa },
+    });
+    return rowParaViagem(updated);
+  }
+
   async concluir(
     scope: AccessScope,
     req: Request,
     autorId: string,
     id: string,
-    kmFinalHodometro: number,
-    observacoes?: string,
+    dados: {
+      veiculoId?: string;
+      motoristaId?: string;
+      kmInicialHodometro?: number;
+      kmFinalHodometro?: number;
+      observacoes?: string;
+    },
   ) {
     const atual = await prisma.viagemFrota.findUnique({ where: { id } });
     if (!atual) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
     assertMesmaPrefeitura(scope, atual.prefeituraId);
-    if (atual.status !== 'EM_ANDAMENTO') {
-      throw Conflict('STATUS_INVALIDO', `Só pode concluir viagem EM_ANDAMENTO (atual: ${atual.status})`);
+
+    const effectiveVeiculoId = dados.veiculoId ?? atual.veiculoId;
+    const effectiveMotoristaId = dados.motoristaId ?? atual.motoristaId;
+    const effectiveKmInicial = dados.kmInicialHodometro ?? (atual.kmInicialHodometro !== null ? Number(atual.kmInicialHodometro) : null);
+    const effectiveKmFinal = dados.kmFinalHodometro ?? (atual.kmFinalHodometro !== null ? Number(atual.kmFinalHodometro) : null);
+
+    // Trava Antifraude de Conclusão (Regra 5)
+    if (!effectiveVeiculoId || !effectiveMotoristaId || effectiveKmInicial === null || effectiveKmFinal === null) {
+      throw Unprocessable(
+        'TRAVA_ANTIFRAUDE_CONCLUSAO',
+        'Para finalizar a viagem de carro baixo, o Gestor DEVE fornecer Veículo, Motorista e Quilometragem (Hodômetro Inicial e Final).',
+      );
     }
-    const kmFin = BigInt(kmFinalHodometro);
-    if (atual.kmInicialHodometro && kmFin <= atual.kmInicialHodometro) {
+
+    const kmIni = BigInt(effectiveKmInicial);
+    const kmFin = BigInt(effectiveKmFinal);
+    if (kmFin <= kmIni) {
       throw Unprocessable(
         'HODOMETRO_INVALIDO',
-        `Hodômetro final (${kmFinalHodometro}) deve ser maior que o inicial`,
+        `Hodômetro final (${effectiveKmFinal}) deve ser maior que o inicial (${effectiveKmInicial})`,
       );
     }
     const op = await resolverOperador(this.atendentes, autorId, atual.prefeituraId);
-    const kmRodados = kmFin - (atual.kmInicialHodometro ?? 0n);
+    const kmRodados = kmFin - kmIni;
 
     const updated = await prisma.$transaction(async (tx) => {
       const v = await tx.viagemFrota.update({
         where: { id },
         data: {
           status: 'CONCLUIDA',
+          veiculoId: effectiveVeiculoId,
+          motoristaId: effectiveMotoristaId,
+          kmInicialHodometro: kmIni,
           kmFinalHodometro: kmFin,
           concluidaEm: new Date(),
-          observacoes: observacoes?.trim() || atual.observacoes,
+          observacoes: dados.observacoes?.trim() || atual.observacoes,
         },
         include: INCLUDE_FULL,
       });
       // Atualiza hodômetro do veículo
       await tx.veiculoTFD.update({
-        where: { id: atual.veiculoId },
+        where: { id: effectiveVeiculoId },
         data: { hodometroAtualKm: kmFin },
       });
       // Soma KM e contagem ao motorista
       await tx.motoristaTFD.update({
-        where: { id: atual.motoristaId },
+        where: { id: effectiveMotoristaId },
         data: {
           totalViagens: { increment: 1 },
           totalKmRodados: { increment: kmRodados },
@@ -449,7 +531,7 @@ export class ViagensTfdUseCases {
       operadorRole: op.role,
       ...ctxAudit(req),
       antes: { kmInicialHodometro: atual.kmInicialHodometro?.toString() },
-      depois: { kmFinalHodometro, kmRodados: kmRodados.toString() },
+      depois: { kmFinalHodometro: effectiveKmFinal, kmRodados: kmRodados.toString() },
     });
     return rowParaViagem(updated);
   }
@@ -541,24 +623,40 @@ export class ViagensTfdUseCases {
     if (totalOcupadas >= viagem.vagasTotais) {
       throw Conflict('CAPACIDADE_EXCEDIDA', `Viagem cheia (${viagem.vagasTotais} vagas)`);
     }
-    if (numeroAssento !== undefined) {
-      if (numeroAssento < 1 || numeroAssento > viagem.vagasTotais) {
-        throw Unprocessable(
-          'ASSENTO_INVALIDO',
-          `Assento ${numeroAssento} fora do intervalo [1..${viagem.vagasTotais}]`,
-        );
-      }
-      // Coleta assentos ocupados de AMBAS as fontes (numeroAssento UBS é number,
-      // app envia string como "A1"). Compara como string pra cobrir os dois.
-      const assentoStr = String(numeroAssento);
-      const ocupadoUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === assentoStr);
-      const ocupadoApp = viagem.solicitacoesPaciente.some(
-        (s: any) => String(s.numeroAssento) === assentoStr,
+    let assentoFinal = numeroAssento;
+    if (assentoFinal === undefined || assentoFinal === null) {
+      assentoFinal = totalOcupadas + 1;
+    }
+
+    if (assentoFinal < 1 || assentoFinal > viagem.vagasTotais) {
+      throw Unprocessable(
+        'ASSENTO_INVALIDO',
+        `Assento ${assentoFinal} fora do intervalo [1..${viagem.vagasTotais}]`,
       );
-      if (ocupadoUbs || ocupadoApp) {
+    }
+
+    const assentoStr = String(assentoFinal);
+    const ocupadoUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === assentoStr);
+    const ocupadoApp = viagem.solicitacoesPaciente.some(
+      (s: any) => String(s.numeroAssento) === assentoStr,
+    );
+    if (ocupadoUbs || ocupadoApp) {
+      if (numeroAssento !== undefined && numeroAssento !== null) {
         throw Conflict('ASSENTO_OCUPADO', `Assento ${numeroAssento} já está ocupado`);
+      } else {
+        // Encontra o próximo assento livre dinamicamente
+        for (let a = 1; a <= viagem.vagasTotais; a++) {
+          const str = String(a);
+          const oUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === str);
+          const oApp = viagem.solicitacoesPaciente.some((s: any) => String(s.numeroAssento) === str);
+          if (!oUbs && !oApp) {
+            assentoFinal = a;
+            break;
+          }
+        }
       }
     }
+
     const sol = await prisma.solicitacaoTFD.findUnique({ where: { id: solicitacaoId } });
     if (!sol || sol.deletadaEm || sol.prefeituraId !== viagem.prefeituraId) {
       throw NotFound('SOLICITACAO_NAO_ENCONTRADA', 'Solicitação não encontrada');
@@ -578,7 +676,7 @@ export class ViagensTfdUseCases {
           solicitacaoId,
           pacienteId: sol.pacienteId,
           acompanhante: sol.acompanhanteNecessario,
-          numeroAssento: numeroAssento ?? null,
+          numeroAssento: assentoFinal,
         },
       });
       await tx.solicitacaoTFD.update({

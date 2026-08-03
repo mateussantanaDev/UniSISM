@@ -16,10 +16,42 @@ export interface ListarFilaCentroInput {
 export class ListarFilaEsperaCentroRecepcaoUseCase {
   async exec(input: ListarFilaCentroInput, scope: AccessScope): Promise<Encaminhamento[]> {
     const centroTarget = input.centro ?? 'CENTRO_ESPECIALIDADES';
-    const canal = centroTarget === 'CENTRO_ODONTOLOGICO' ? CanalRoteamento.CENTRO_ODONTOLOGICO : CanalRoteamento.CENTRO_ESPECIALIDADES;
+    const conditions: Prisma.EncaminhamentoWhereInput[] = [];
+
+    if (centroTarget === 'CENTRO_ODONTOLOGICO') {
+      conditions.push({
+        OR: [
+          { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+          { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+          { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Periodont', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } },
+        ],
+      });
+    } else {
+      conditions.push({
+        OR: [
+          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+          {
+            AND: [
+              { canalRoteamento: null, destinoRegulacao: null },
+              { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
+              { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
+              { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+            ],
+          },
+        ],
+      });
+    }
 
     const where: Prisma.EncaminhamentoWhereInput = {
-      canalRoteamento: canal,
+      AND: conditions,
     };
 
     if (input.status === 'APROVADO') {
@@ -53,11 +85,13 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
 
     if (input.busca && input.busca.trim().length > 0) {
       const b = input.busca.trim();
-      where.OR = [
-        { pacienteNome: { contains: b, mode: 'insensitive' } },
-        { pacienteCpf: { contains: b } },
-        { protocolo: { contains: b, mode: 'insensitive' } },
-      ];
+      conditions.push({
+        OR: [
+          { pacienteNome: { contains: b, mode: 'insensitive' } },
+          { pacienteCpf: { contains: b } },
+          { protocolo: { contains: b, mode: 'insensitive' } },
+        ],
+      });
     }
 
     // Apply AccessScope

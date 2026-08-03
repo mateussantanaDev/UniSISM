@@ -3,14 +3,18 @@ import type { AccessScope } from '../../../../shared/scope';
 
 export interface EscalaEspecialistaDTO {
   id?: string;
+  medicoId?: string;
   medicoNome: string;
   crm: string;
   especialidade: string;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimentoId?: string;
   diasSemana: string[];
   horarioInicio: string;
   horarioFim: string;
   duracaoMinutos: number;
   vagasPorTurno: number;
+  status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA';
   ativo?: boolean;
 }
 
@@ -28,14 +32,18 @@ export class GestaoEscalasUseCase {
 
     return escalas.map((e) => ({
       id: e.id,
+      medicoId: e.medicoId ?? undefined,
       medicoNome: e.medicoNome,
       crm: e.crm,
       especialidade: e.especialidade,
+      tipoServico: (e.tipoServico as 'CONSULTA' | 'PROCEDIMENTO') || 'CONSULTA',
+      procedimentoId: e.procedimentoId ?? undefined,
       diasSemana: e.diasSemana,
       horarioInicio: e.horarioInicio,
       horarioFim: e.horarioFim,
       duracaoMinutos: e.duracaoMinutos,
       vagasPorTurno: e.vagasPorTurno,
+      status: (e.status as any) || 'ATIVA',
       ativo: e.ativo,
     }));
   }
@@ -45,14 +53,18 @@ export class GestaoEscalasUseCase {
 
     const res = await prisma.escalaEspecialista.create({
       data: {
+        medicoId: data.medicoId,
         medicoNome: data.medicoNome,
         crm: data.crm,
         especialidade: data.especialidade,
+        tipoServico: data.tipoServico || 'CONSULTA',
+        procedimentoId: data.procedimentoId,
         diasSemana: data.diasSemana,
         horarioInicio: data.horarioInicio,
         horarioFim: data.horarioFim,
         duracaoMinutos: data.duracaoMinutos || 20,
         vagasPorTurno: data.vagasPorTurno || 12,
+        status: data.status || 'ATIVA',
         prefeituraId,
       },
     });
@@ -69,14 +81,18 @@ export class GestaoEscalasUseCase {
 
     return {
       id: res.id,
+      medicoId: res.medicoId ?? undefined,
       medicoNome: res.medicoNome,
       crm: res.crm,
       especialidade: res.especialidade,
+      tipoServico: (res.tipoServico as 'CONSULTA' | 'PROCEDIMENTO') || 'CONSULTA',
+      procedimentoId: res.procedimentoId ?? undefined,
       diasSemana: res.diasSemana,
       horarioInicio: res.horarioInicio,
       horarioFim: res.horarioFim,
       duracaoMinutos: res.duracaoMinutos,
       vagasPorTurno: res.vagasPorTurno,
+      status: (res.status as any) || 'ATIVA',
       ativo: res.ativo,
     };
   }
@@ -85,14 +101,18 @@ export class GestaoEscalasUseCase {
     const res = await prisma.escalaEspecialista.update({
       where: { id },
       data: {
+        ...(data.medicoId !== undefined && { medicoId: data.medicoId }),
         ...(data.medicoNome && { medicoNome: data.medicoNome }),
         ...(data.crm && { crm: data.crm }),
         ...(data.especialidade && { especialidade: data.especialidade }),
+        ...(data.tipoServico && { tipoServico: data.tipoServico }),
+        ...(data.procedimentoId !== undefined && { procedimentoId: data.procedimentoId }),
         ...(data.diasSemana && { diasSemana: data.diasSemana }),
         ...(data.horarioInicio && { horarioInicio: data.horarioInicio }),
         ...(data.horarioFim && { horarioFim: data.horarioFim }),
         ...(data.duracaoMinutos && { duracaoMinutos: data.duracaoMinutos }),
         ...(data.vagasPorTurno && { vagasPorTurno: data.vagasPorTurno }),
+        ...(data.status && { status: data.status as any }),
         ...(data.ativo !== undefined && { ativo: data.ativo }),
       },
     });
@@ -109,14 +129,18 @@ export class GestaoEscalasUseCase {
 
     return {
       id: res.id,
+      medicoId: res.medicoId ?? undefined,
       medicoNome: res.medicoNome,
       crm: res.crm,
       especialidade: res.especialidade,
+      tipoServico: (res.tipoServico as 'CONSULTA' | 'PROCEDIMENTO') || 'CONSULTA',
+      procedimentoId: res.procedimentoId ?? undefined,
       diasSemana: res.diasSemana,
       horarioInicio: res.horarioInicio,
       horarioFim: res.horarioFim,
       duracaoMinutos: res.duracaoMinutos,
       vagasPorTurno: res.vagasPorTurno,
+      status: (res.status as any) || 'ATIVA',
       ativo: res.ativo,
     };
   }

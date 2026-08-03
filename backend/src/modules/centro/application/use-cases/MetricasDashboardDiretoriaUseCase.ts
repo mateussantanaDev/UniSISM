@@ -35,7 +35,7 @@ export class MetricasDashboardDiretoriaUseCase {
     const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
 
     const whereBase: any = {
-      canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
+      canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
     };
 
     if (scope.kind === 'PREFEITURA') {

@@ -48,7 +48,11 @@ export function buildCentroRoutes(
   router.post('/centro/recepcao/presenca/:id', authenticate, recepcaoRoles, recepcaoController.postPresenca);
   router.get('/centro/recepcao/pacientes/por-cpf/:cpf', authenticate, recepcaoRoles, recepcaoController.getPacientePorCpf);
   router.post('/centro/recepcao/balcao', authenticate, recepcaoRoles, recepcaoController.postBalcao);
+  router.post('/centro/balcao/agendar', authenticate, recepcaoRoles, recepcaoController.postBalcaoRetroativo);
   router.post('/centro/recepcao/desmarcar-reagendar/:id', authenticate, recepcaoRoles, recepcaoController.postDesmarcarReagendar);
+  router.post('/encaminhamentos/:id/remarcar', authenticate, recepcaoRoles, recepcaoController.postRemarcar);
+  router.post('/centro/notificacoes/ausencia-medica', authenticate, gestaoRoles, recepcaoController.postAusenciaMedica);
+  router.post('/centro/atendimentos/:id/procedimentos', authenticate, medicoRoles, recepcaoController.postProcedimentos);
 
   // ───── Médico Especialista & Consultório Digital ERP (Fase 2 / ERP v3.1.0) ─────
   router.get('/centro/medico/agenda', authenticate, medicoRoles, medicoController.getAgenda);

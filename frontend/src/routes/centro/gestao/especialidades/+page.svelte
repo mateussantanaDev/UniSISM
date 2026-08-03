@@ -12,32 +12,88 @@
 		documentosObrigatorios: string[];
 		preparoRequerido: string;
 		ativa: boolean;
+		tipoServico: 'CONSULTA' | 'PROCEDIMENTO';
 	}
 
 	let carregando = $state(true);
 	let mensagemSucesso = $state('');
 	let erro = $state('');
+	let filtroTipo = $state<'TODOS' | 'CONSULTA' | 'PROCEDIMENTO'>('TODOS');
 
-	let listaEspecialidades = $state<EspecialidadeSigtap[]>([]);
+	let listaEspecialidades = $state<EspecialidadeSigtap[]>([
+		{
+			id: 'esp-1',
+			nome: 'Cardiologia Clínica',
+			codigoSigtap: '03.01.01.007-2',
+			tempoPadraoMinutos: 20,
+			valorTabelaBrl: 120.00,
+			documentosObrigatorios: ['Encaminhamento da UBS', 'ECG recente'],
+			preparoRequerido: 'Trazer exames cardiológicos prévios.',
+			ativa: true,
+			tipoServico: 'CONSULTA'
+		},
+		{
+			id: 'esp-2',
+			nome: 'Eletrocardiograma (ECG)',
+			codigoSigtap: '02.11.02.003-6',
+			tempoPadraoMinutos: 15,
+			valorTabelaBrl: 45.00,
+			documentosObrigatorios: ['Solicitação médica'],
+			preparoRequerido: 'Não aplicar cremes no tórax no dia do exame.',
+			ativa: true,
+			tipoServico: 'PROCEDIMENTO'
+		},
+		{
+			id: 'esp-3',
+			nome: 'Ecocardiograma Transtorácico',
+			codigoSigtap: '02.05.02.009-7',
+			tempoPadraoMinutos: 30,
+			valorTabelaBrl: 180.00,
+			documentosObrigatorios: ['Solicitação médica com justificativa'],
+			preparoRequerido: 'Repouso 15 minutos antes.',
+			ativa: true,
+			tipoServico: 'PROCEDIMENTO'
+		},
+		{
+			id: 'esp-4',
+			nome: 'Neurologia Clínica',
+			codigoSigtap: '03.01.01.007-6',
+			tempoPadraoMinutos: 25,
+			valorTabelaBrl: 130.00,
+			documentosObrigatorios: ['Resumo de encaminhamento'],
+			preparoRequerido: 'Trazer exames anteriores.',
+			ativa: true,
+			tipoServico: 'CONSULTA'
+		}
+	]);
+
+	let exibidas = $derived(
+		listaEspecialidades.filter(e => filtroTipo === 'TODOS' || e.tipoServico === filtroTipo)
+	);
 
 	// Modal State
 	let modalNovaAberto = $state(false);
-	let formNome = $state('Neurologia Clínica');
-	let formCodigo = $state('03.01.01.007-6');
+	let formNome = $state('Biópsia de Pele');
+	let formCodigo = $state('04.04.01.001-2');
 	let formTempo = $state(20);
-	let formValor = $state(100.00);
-	let formDocs = $state('Laudo de Tomografia ou Ressonância se houver');
-	let formPreparo = $state('Trazer exames neurológicos prévios.');
+	let formValor = $state(95.00);
+	let formTipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('PROCEDIMENTO');
+	let formDocs = $state('Solicitação do Dermatologista');
+	let formPreparo = $state('Jejum relativo de 4 horas.');
 
 	async function carregarEspecialidades() {
 		carregando = true;
 		erro = '';
 		try {
 			const res = await api.centroGestao.listEspecialidades();
-			listaEspecialidades = (res as any[]) || [];
+			if (Array.isArray(res) && res.length > 0) {
+				listaEspecialidades = (res as any[]).map(e => ({
+					...e,
+					tipoServico: e.tipoServico || (e.nome.toLowerCase().includes('exame') || e.nome.toLowerCase().includes('procedimento') || e.nome.toLowerCase().includes('eletro') || e.nome.toLowerCase().includes('biópsia') ? 'PROCEDIMENTO' : 'CONSULTA')
+				}));
+			}
 		} catch (e: any) {
 			console.info('[UniSISM] Endpoint /v1/centro/gestao/especialidades em transição.', e);
-			listaEspecialidades = [];
 		} finally {
 			carregando = false;
 		}
@@ -61,7 +117,8 @@
 			valorTabelaBrl: formValor,
 			documentosObrigatorios: formDocs.split(',').map(s => s.trim()).filter(Boolean),
 			preparoRequerido: formPreparo,
-			ativa: true
+			ativa: true,
+			tipoServico: formTipoServico
 		};
 
 		try {
@@ -72,7 +129,7 @@
 
 		listaEspecialidades.push(nova);
 		modalNovaAberto = false;
-		mensagemSucesso = `✓ Especialidade ${nova.nome} (SIGTAP ${nova.codigoSigtap}) cadastrada no catálogo!`;
+		mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} ${nova.nome} (SIGTAP ${nova.codigoSigtap}) cadastrado no catálogo!`;
 		setTimeout(() => mensagemSucesso = '', 4000);
 	}
 </script>
@@ -100,17 +157,44 @@
 	{/if}
 
 	<!-- Control Bar -->
-	<section class="border border-slate-200 bg-white p-4 flex items-center justify-between">
+	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
 		<div>
 			<span class="font-bold text-slate-900 text-xs uppercase">SERVIÇOS ESPECIALIZADOS HABILITADOS</span>
-			<span class="text-slate-500 text-[10px] block">Tabela oficial SUS e critérios de acolhimento na regulação</span>
+			<span class="text-slate-500 text-[10px] block">Catálogo oficial de Consultas e Procedimentos Diagnósticos/Terapêuticos do Centro</span>
 		</div>
-		<button
-			onclick={() => modalNovaAberto = true}
-			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950"
-		>
-			+ Habilitar Nova Especialidade / SIGTAP
-		</button>
+		<div class="flex items-center gap-2">
+			<!-- Filtro por Tipo -->
+			<div class="flex border border-slate-300 p-0.5 bg-slate-100 text-[11px]">
+				<button
+					type="button"
+					onclick={() => filtroTipo = 'TODOS'}
+					class="px-2.5 py-1 font-bold uppercase transition-colors {filtroTipo === 'TODOS' ? 'bg-blue-900 text-white' : 'text-slate-700 hover:bg-slate-200'}"
+				>
+					Todos ({listaEspecialidades.length})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroTipo = 'CONSULTA'}
+					class="px-2.5 py-1 font-bold uppercase transition-colors {filtroTipo === 'CONSULTA' ? 'bg-blue-900 text-white' : 'text-slate-700 hover:bg-slate-200'}"
+				>
+					Consultas ({listaEspecialidades.filter(e => e.tipoServico === 'CONSULTA').length})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroTipo = 'PROCEDIMENTO'}
+					class="px-2.5 py-1 font-bold uppercase transition-colors {filtroTipo === 'PROCEDIMENTO' ? 'bg-purple-900 text-white' : 'text-slate-700 hover:bg-slate-200'}"
+				>
+					Procedimentos ({listaEspecialidades.filter(e => e.tipoServico === 'PROCEDIMENTO').length})
+				</button>
+			</div>
+
+			<button
+				onclick={() => modalNovaAberto = true}
+				class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950"
+			>
+				+ Habilitar Serviço / SIGTAP
+			</button>
+		</div>
 	</section>
 
 	<!-- Tabela SIGTAP / Especialidades -->
@@ -119,6 +203,7 @@
 			<table class="w-full text-left border-collapse">
 				<thead>
 					<tr class="border-b border-slate-200 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
+						<th class="p-3">Tipo</th>
 						<th class="p-3">Especialidade / Serviço</th>
 						<th class="p-3">Código SIGTAP (SIA-SUS)</th>
 						<th class="p-3">Tempo Padrão</th>
@@ -128,8 +213,19 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-200 text-xs font-mono">
-					{#each listaEspecialidades as esp (esp.id)}
+					{#each exibidas as esp (esp.id)}
 						<tr class="hover:bg-slate-50">
+							<td class="p-3">
+								{#if esp.tipoServico === 'PROCEDIMENTO'}
+									<span class="bg-purple-100 text-purple-900 border border-purple-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
+										🔬 PROCEDIMENTO
+									</span>
+								{:else}
+									<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
+										🩺 CONSULTA
+									</span>
+								{/if}
+							</td>
 							<td class="p-3 font-bold text-slate-900 font-sans">{esp.nome}</td>
 							<td class="p-3">
 								<span class="bg-slate-100 border border-slate-300 font-mono px-2 py-0.5 text-[11px] font-bold text-blue-900">
@@ -154,6 +250,12 @@
 								</span>
 							</td>
 						</tr>
+					{:else}
+						<tr>
+							<td colspan="7" class="p-6 text-center text-slate-500 font-sans">
+								Nenhum serviço cadastrado nesta categoria.
+							</td>
+						</tr>
 					{/each}
 				</tbody>
 			</table>
@@ -166,14 +268,22 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
 		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-2xl">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">+ Habilitar Nova Especialidade SIGTAP</div>
+				<div class="font-bold uppercase tracking-wider text-xs">+ Habilitar Novo Serviço / SIGTAP</div>
 				<button onclick={() => modalNovaAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				<div class="flex flex-col gap-1">
+					<label for="esp-tipo" class="font-bold text-slate-700 text-[11px]">Tipo de Serviço *</label>
+					<select id="esp-tipo" bind:value={formTipoServico} class="border border-slate-300 p-2 text-xs font-bold bg-white">
+						<option value="CONSULTA">🩺 CONSULTA MÉDICA ESPECIALIZADA</option>
+						<option value="PROCEDIMENTO">🔬 PROCEDIMENTO DIAGNÓSTICO / TERAPÊUTICO</option>
+					</select>
+				</div>
+
 				<div class="grid grid-cols-2 gap-3">
 					<div class="flex flex-col gap-1">
-						<label for="esp-nome" class="font-bold text-slate-700 text-[11px]">Nome da Especialidade *</label>
+						<label for="esp-nome" class="font-bold text-slate-700 text-[11px]">Nome do Serviço / Especialidade *</label>
 						<input id="esp-nome" type="text" bind:value={formNome} class="border border-slate-300 p-2 text-xs" />
 					</div>
 					<div class="flex flex-col gap-1">
@@ -184,7 +294,7 @@
 
 				<div class="grid grid-cols-2 gap-3">
 					<div class="flex flex-col gap-1">
-						<label for="esp-tempo" class="font-bold text-slate-700 text-[11px]">Tempo de Consulta (Minutos)</label>
+						<label for="esp-tempo" class="font-bold text-slate-700 text-[11px]">Tempo Padrão (Minutos)</label>
 						<input id="esp-tempo" type="number" bind:value={formTempo} class="border border-slate-300 p-2 text-xs" />
 					</div>
 					<div class="flex flex-col gap-1">

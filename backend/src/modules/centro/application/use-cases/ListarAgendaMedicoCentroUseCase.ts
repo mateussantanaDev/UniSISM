@@ -19,7 +19,7 @@ export class ListarAgendaMedicoCentroUseCase {
     const endOfDay = new Date(`${targetDateStr}T23:59:59.999Z`);
 
     const where: Prisma.EncaminhamentoWhereInput = {
-      canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
+      canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
       status: StatusEncaminhamento.APROVADO,
       agendamentoPrevisto: {
         gte: startOfDay,

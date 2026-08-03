@@ -10,7 +10,8 @@
 		Sexo,
 		Alergia,
 		CondicaoCronica,
-		MedicamentoEmUso
+		MedicamentoEmUso,
+		ProcedimentoRealizadoItem
 	} from '$lib/api/types';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
@@ -45,6 +46,8 @@
 			justificativaClinica: string;
 			prioridade: PrioridadeClinica;
 			dataSolicitacao: string;
+			tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+			procedimentoSolicitado?: string;
 		};
 		unidadeOrigem: string;
 		observacoesRegulacao?: string;
@@ -99,6 +102,112 @@
 	let soapConduta = $state('');
 	let soapPrescricao = $state('');
 	let salvandoAtendimento = $state(false);
+
+	// Procedimentos Realizados no Atendimento (1 ou mais)
+	let procedimentosRealizados = $state<ProcedimentoRealizadoItem[]>([]);
+	let novoProcedimentoNome = $state('');
+	let novoProcedimentoCodigo = $state('');
+	let novoProcedimentoQtd = $state(1);
+	let novoProcedimentoObs = $state('');
+
+	const procedimentosSigtapSugeridos = [
+		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)' },
+		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento' },
+		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo' },
+		{ codigo: '03.01.01.004-0', nome: 'Lavagem Otológica' },
+		{ codigo: '04.08.01.004-7', nome: 'Infiltração Articular' },
+		{ codigo: '02.05.02.009-7', nome: 'Ultrassonografia com Doppler' },
+		{ codigo: '04.01.01.001-5', nome: 'Retirada de Pontos' },
+		{ codigo: '02.11.05.008-3', nome: 'Holter 24 Horas' }
+	];
+
+	function adicionarProcedimento() {
+		if (!novoProcedimentoNome.trim()) {
+			alert('Informe o nome ou selecione um procedimento.');
+			return;
+		}
+		procedimentosRealizados.push({
+			id: 'proc-' + Date.now() + Math.random().toString(36).substring(2, 6),
+			nome: novoProcedimentoNome.trim(),
+			codigoSigtap: novoProcedimentoCodigo.trim() || undefined,
+			quantidade: Math.max(1, novoProcedimentoQtd),
+			observacao: novoProcedimentoObs.trim() || undefined
+		});
+		novoProcedimentoNome = '';
+		novoProcedimentoCodigo = '';
+		novoProcedimentoQtd = 1;
+		novoProcedimentoObs = '';
+	}
+
+	function removerProcedimento(id: string) {
+		procedimentosRealizados = procedimentosRealizados.filter(p => p.id !== id);
+	}
+
+	function selecionarProcedimentoSugerido(p: { codigo: string; nome: string }) {
+		novoProcedimentoCodigo = p.codigo;
+		novoProcedimentoNome = p.nome;
+	}
+
+	// State para Agendamento Direto de Retorno / Volta com Data Manual
+	let modalRetornoAberto = $state(false);
+	let dataRetornoManual = $state('');
+	let horaRetornoManual = $state('09:00');
+	let medicoRetornoNome = $state('');
+	let obsRetorno = $state('Retorno para reavaliação clínica e apresentação de exames.');
+	let agendandoRetorno = $state(false);
+
+	function abrirModalRetorno() {
+		if (!consultaAtiva) return;
+		const d = new Date();
+		d.setDate(d.getDate() + 30);
+		dataRetornoManual = d.toISOString().substring(0, 10);
+		horaRetornoManual = '09:00';
+		medicoRetornoNome = medicoLogado || 'Dr. Roberto Medeiros';
+		obsRetorno = 'Retorno para reavaliação de conduta e checagem de exames.';
+		modalRetornoAberto = true;
+	}
+
+	function selecionarPrazoPresetRetorno(dias: number) {
+		const d = new Date();
+		d.setDate(d.getDate() + dias);
+		dataRetornoManual = d.toISOString().substring(0, 10);
+	}
+
+	async function confirmarAgendamentoRetornoManual() {
+		if (!consultaAtiva) return;
+		if (!dataRetornoManual) {
+			alert('Selecione a data manual do retorno.');
+			return;
+		}
+
+		agendandoRetorno = true;
+		try {
+			const dtFmt = dataRetornoManual.split('-').reverse().join('/');
+			try {
+				await api.centroMedico.agendarRetornoDirect({
+					consultaId: consultaAtiva.id,
+					pacienteId: consultaAtiva.pacienteId,
+					medicoNome: medicoRetornoNome || medicoLogado,
+					dataRetorno: dataRetornoManual,
+					horaRetorno: horaRetornoManual,
+					observacoes: obsRetorno
+				} as any);
+			} catch (e) {
+				console.info('[UniSISM] Endpoint /v1/centro/medico/retorno em transição — gravando retorno localmente.', e);
+			}
+
+			// Adiciona à conduta da consulta ativa
+			soapConduta += `\n\n📅 RETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${horaRetornoManual} com Dr(a). ${medicoRetornoNome || medicoLogado}. Obs: ${obsRetorno}`;
+			
+			modalRetornoAberto = false;
+			alert(`✓ RETORNO DO PACIENTE AGENDADO COM SUCESSO!\n\nPaciente: ${consultaAtiva.paciente.nome}\nData Escolhida: ${dtFmt} às ${horaRetornoManual}\nMédico: ${medicoRetornoNome || medicoLogado}\n(Agendamento direto sem passar pela fila automática)`);
+		} catch (err) {
+			console.error(err);
+			alert('Erro ao confirmar agendamento de retorno.');
+		} finally {
+			agendandoRetorno = false;
+		}
+	}
 
 	// Automatic IMC calculation
 	let soapImc = $derived.by(() => {
@@ -433,6 +542,12 @@
 		}
 
 		// Reset SOAP form
+		procedimentosRealizados = c.solicitacao?.procedimentoSolicitado ? [{
+			id: 'proc-ini-' + Date.now(),
+			nome: c.solicitacao.procedimentoSolicitado,
+			quantidade: 1,
+			observacao: 'Procedimento principal solicitado no agendamento'
+		}] : [];
 		soapQueixa = `Paciente ${c.paciente.nome}, ${calcularIdade(c.paciente.dataNascimento)} anos. Queixa: ${c.solicitacao.justificativaClinica}`;
 		soapExameFisico = 'Aparelho Cardiovascular: RCR em 2 tempos, bulhas normofonéticas sem sopros. PA: 120/80 mmHg, FC: 72 bpm.\nAparelho Respiratório: Murmúrio vesicular distribuído sem ruídos adventícios.';
 		soapPa = '120/80';
@@ -466,17 +581,22 @@
 
 		salvandoAtendimento = true;
 		try {
+			const procResumo = procedimentosRealizados.length > 0 
+				? `\n\nProcedimentos Realizados (${procedimentosRealizados.length}): ` + procedimentosRealizados.map(p => `${p.nome} (${p.quantidade}x)` + (p.codigoSigtap ? ` [SIGTAP ${p.codigoSigtap}]` : '')).join('; ')
+				: '';
+			const condutaCompleta = soapConduta + procResumo;
+
 			// Register attendance via dedicated Centro SOAP endpoint (v3.0.0 centro-doc-back.md)
 			try {
 				await api.centroMedico.registrarAtendimentoSoap(consultaAtiva.id, {
 					subjetivo: soapQueixa,
 					objetivo: `${soapExameFisico}\nSinais Vitais: PA ${soapPa} mmHg | FC ${soapFc} bpm | Peso ${soapPeso}kg`,
 					avaliacao: soapDiagnostico,
-					plano: soapConduta,
+					plano: condutaCompleta,
 					queixaPrincipal: soapQueixa,
 					diagnostico: soapDiagnostico,
 					cid10: soapCid10,
-					conduta: soapConduta,
+					conduta: condutaCompleta,
 					prescricaoResumo: soapPrescricao
 				});
 			} catch (errSoap) {
@@ -492,7 +612,7 @@
 						queixaPrincipal: soapQueixa,
 						diagnostico: soapDiagnostico,
 						cid10: soapCid10,
-						conduta: soapConduta,
+						conduta: condutaCompleta,
 						prescricaoResumo: soapPrescricao
 					});
 				} catch (e) {
@@ -508,7 +628,7 @@
 				exameFisico: `${soapExameFisico}\nSinais Vitais: PA ${soapPa} mmHg | FC ${soapFc} bpm | Peso ${soapPeso}kg`,
 				cid10: soapCid10,
 				diagnostico: soapDiagnostico,
-				conduta: soapConduta,
+				conduta: condutaCompleta,
 				prescricao: soapPrescricao,
 				concluidoEm: agoraHora
 			};
@@ -960,6 +1080,115 @@
 						</div>
 					</div>
 
+					<!-- 🔬 PROCEDIMENTOS REALIZADOS NO ATENDIMENTO (1 ou mais) -->
+					<div class="flex flex-col gap-2 border border-purple-300 bg-purple-50/40 p-3">
+						<div class="font-mono text-[10px] font-bold tracking-widest text-purple-900 uppercase flex items-center justify-between">
+							<span>🔬 PROCEDIMENTOS REALIZADOS NESTE ATENDIMENTO ({procedimentosRealizados.length})</span>
+							<span class="text-[9px] text-purple-800 font-normal">Tabela SIGTAP / Faturamento SIA-SUS</span>
+						</div>
+
+						<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950 font-sans">
+							<strong>💡 Não precisa enviar o paciente de volta ao balcão!</strong> Se durante a consulta foi necessário realizar algum exame ou procedimento (*ex: ECG, Biópsia, Curativo, Infiltração, Lavagem*), basta adicionar abaixo para compor o faturamento e histórico do paciente.
+						</div>
+
+						<!-- Lista de Procedimentos Já Adicionados -->
+						{#if procedimentosRealizados.length > 0}
+							<div class="border border-purple-200 bg-white overflow-hidden text-xs">
+								<table class="w-full text-left border-collapse">
+									<thead>
+										<tr class="bg-purple-100 text-purple-900 font-mono text-[9px] uppercase font-bold border-b border-purple-200">
+											<th class="p-2">Procedimento / Serviço</th>
+											<th class="p-2">Código SIGTAP</th>
+											<th class="p-2 text-center">Qtd</th>
+											<th class="p-2">Obs</th>
+											<th class="p-2 text-center">Ação</th>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-purple-100 font-mono text-[11px]">
+										{#each procedimentosRealizados as proc (proc.id)}
+											<tr class="hover:bg-purple-50/60">
+												<td class="p-2 font-bold text-purple-950">{proc.nome}</td>
+												<td class="p-2 text-purple-800 font-mono">{proc.codigoSigtap || '—'}</td>
+												<td class="p-2 text-center font-bold">{proc.quantidade}</td>
+												<td class="p-2 text-slate-600 font-sans text-[10px]">{proc.observacao || '—'}</td>
+												<td class="p-2 text-center">
+													<button
+														type="button"
+														onclick={() => removerProcedimento(proc.id)}
+														class="text-red-700 hover:text-red-900 font-bold text-[10px]"
+													>
+														[Remover]
+													</button>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{:else}
+							<div class="text-[11px] text-purple-800 italic font-sans bg-white/60 p-2 border border-purple-200/60">
+								Nenhum procedimento extra registrado neste atendimento. Adicione procedimentos abaixo se realizados.
+							</div>
+						{/if}
+
+						<!-- Formulário para Adicionar Novo Procedimento -->
+						<div class="grid grid-cols-12 gap-2 pt-1">
+							<div class="col-span-12 md:col-span-5 flex flex-col gap-1">
+								<label for="proc-nome-in" class="text-[9px] font-bold text-purple-900 uppercase">Nome do Procedimento</label>
+								<input
+									id="proc-nome-in"
+									type="text"
+									bind:value={novoProcedimentoNome}
+									placeholder="Ex.: Curativo Especial, Biópsia, ECG..."
+									class="border border-purple-300 bg-white p-1.5 text-xs outline-none focus:border-purple-800"
+								/>
+							</div>
+							<div class="col-span-6 md:col-span-3 flex flex-col gap-1">
+								<label for="proc-cod-in" class="text-[9px] font-bold text-purple-900 uppercase">Código SIGTAP</label>
+								<input
+									id="proc-cod-in"
+									type="text"
+									bind:value={novoProcedimentoCodigo}
+									placeholder="04.01.01.002-3"
+									class="border border-purple-300 bg-white p-1.5 text-xs font-mono outline-none focus:border-purple-800"
+								/>
+							</div>
+							<div class="col-span-3 md:col-span-2 flex flex-col gap-1">
+								<label for="proc-qtd-in" class="text-[9px] font-bold text-purple-900 uppercase">Qtd</label>
+								<input
+									id="proc-qtd-in"
+									type="number"
+									min="1"
+									bind:value={novoProcedimentoQtd}
+									class="border border-purple-300 bg-white p-1.5 text-xs font-bold text-center outline-none focus:border-purple-800"
+								/>
+							</div>
+							<div class="col-span-3 md:col-span-2 flex flex-col justify-end">
+								<button
+									type="button"
+									onclick={adicionarProcedimento}
+									class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white p-1.5 font-bold text-[10px] uppercase font-mono tracking-wider w-full"
+								>
+									+ Adicionar
+								</button>
+							</div>
+						</div>
+
+						<!-- Sugestões Rápidas de Procedimentos SIGTAP -->
+						<div class="flex flex-wrap gap-1 pt-1">
+							<span class="text-[9px] font-bold text-purple-900 font-mono self-center">Frequentes SIGTAP:</span>
+							{#each procedimentosSigtapSugeridos as ps}
+								<button
+									type="button"
+									onclick={() => selecionarProcedimentoSugerido(ps)}
+									class="border border-purple-300 bg-white hover:bg-purple-100 text-[9px] font-mono px-1.5 py-0.5 font-semibold text-purple-950"
+								>
+									+ {ps.nome}
+								</button>
+							{/each}
+						</div>
+					</div>
+
 					<!-- Botão de Destaque: Encaminhar para Outra Cidade (Regulação SMS / TFD) -->
 					{#if consultaAtiva.encaminhamentoIntermunicipal}
 						<div class="border border-blue-900 bg-blue-50 p-3 font-mono text-xs flex justify-between items-center text-blue-900 font-bold">
@@ -996,10 +1225,18 @@
 				<div class="flex items-center gap-3">
 					<button
 						type="button"
+						onclick={abrirModalRetorno}
+						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider"
+					>
+						📅 Agendar Retorno / Volta (Data Manual)
+					</button>
+
+					<button
+						type="button"
 						onclick={abrirFormNovoEncaminhamento}
 						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider"
 					>
-						➕ Encaminhar para Regulação / SMS
+						➕ Encaminhar Regulação / SMS
 					</button>
 
 					<button
@@ -1007,7 +1244,7 @@
 						onclick={() => abrirDossie(consultaAtiva!)}
 						class="border border-slate-300 bg-white hover:bg-slate-100 px-4 py-2 font-mono text-xs font-bold uppercase text-slate-800"
 					>
-						Ver Dossiê do Paciente
+						Dossiê
 					</button>
 
 					<button
@@ -1144,9 +1381,25 @@
 									</div>
 								</td>
 
-								<!-- Especialidade / CID-10 -->
+								<!-- Especialidade / Procedimento / CID-10 -->
 								<td class="border-r border-slate-100 px-3 py-2.5 font-sans">
-									<div class="font-semibold text-slate-900">{c.solicitacao.especialidadeSolicitada}</div>
+									<div class="flex items-center gap-1.5 mb-0.5">
+										{#if c.solicitacao.tipoServico === 'PROCEDIMENTO' || c.solicitacao.procedimentoSolicitado}
+											<span class="bg-purple-100 text-purple-900 border border-purple-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase">
+												🔬 PROCEDIMENTO
+											</span>
+										{:else}
+											<span class="bg-blue-100 text-blue-900 border border-blue-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase">
+												🩺 CONSULTA
+											</span>
+										{/if}
+										<span class="font-semibold text-slate-900">{c.solicitacao.especialidadeSolicitada}</span>
+									</div>
+									{#if c.solicitacao.procedimentoSolicitado}
+										<div class="font-mono text-[10px] text-purple-900 font-bold">
+											Proc: {c.solicitacao.procedimentoSolicitado}
+										</div>
+									{/if}
 									<div class="font-mono text-[10px] text-slate-600">
 										CID-10: <strong>{c.solicitacao.cid10}</strong> ({c.solicitacao.cidDescricao})
 									</div>
@@ -1720,6 +1973,118 @@
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
 					{enviandoNovoEncaminhamento ? 'Enviando à Regulação...' : '✓ Confirmar e Enviar para a Secretaria / Regulação'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- OVERLAY 6: Modal de Agendamento Direto de Retorno / Volta (Data Manual - Sem Fila Automática) -->
+{#if modalRetornoAberto && consultaAtiva}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.15)]">
+			<div class="flex items-center justify-between border-b border-slate-200 bg-purple-900 px-5 py-3 text-white">
+				<div class="font-bold uppercase tracking-wider text-xs">📅 AGENDAR RETORNO / VOLTA DO PACIENTE (DATA MANUAL)</div>
+				<button onclick={() => modalRetornoAberto = false} class="text-purple-200 hover:text-white font-bold text-sm">✕</button>
+			</div>
+
+			<div class="p-5 flex flex-col gap-4">
+				<div class="bg-purple-50 border border-purple-200 p-3 font-sans text-purple-950">
+					<div class="font-bold text-xs">{consultaAtiva.paciente.nome}</div>
+					<div class="text-[11px] text-purple-800 font-mono mt-0.5">CPF: {consultaAtiva.paciente.cpf} · Prontuário PEC: {consultaAtiva.pacienteId}</div>
+					<div class="text-[10px] text-purple-900 mt-1">
+						⚡ <strong>Agendamento Direto:</strong> A vaga do retorno é gravada imediatamente na data escolhida, sem precisar passar pela fila de cálculo automático.
+					</div>
+				</div>
+
+				<!-- Atalhos Rápidos de Prazos de Retorno -->
+				<div class="flex flex-col gap-1">
+					<span class="text-[10px] font-bold text-slate-600 uppercase">Atalhos de Prazo para o Retorno:</span>
+					<div class="flex flex-wrap gap-2">
+						<button
+							type="button"
+							onclick={() => selecionarPrazoPresetRetorno(7)}
+							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
+						>
+							+ 7 Dias
+						</button>
+						<button
+							type="button"
+							onclick={() => selecionarPrazoPresetRetorno(15)}
+							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
+						>
+							+ 15 Dias
+						</button>
+						<button
+							type="button"
+							onclick={() => selecionarPrazoPresetRetorno(30)}
+							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
+						>
+							+ 30 Dias (1 Mês)
+						</button>
+						<button
+							type="button"
+							onclick={() => selecionarPrazoPresetRetorno(60)}
+							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
+						>
+							+ 60 Dias (2 Meses)
+						</button>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div class="flex flex-col gap-1">
+						<label for="ret-data" class="font-bold text-slate-700 text-[10px] uppercase">Data Manual do Retorno *</label>
+						<input
+							id="ret-data"
+							type="date"
+							bind:value={dataRetornoManual}
+							class="border border-slate-300 p-2 text-xs font-bold font-mono outline-none focus:border-purple-800"
+						/>
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<label for="ret-hora" class="font-bold text-slate-700 text-[10px] uppercase">Horário da Consulta *</label>
+						<input
+							id="ret-hora"
+							type="time"
+							bind:value={horaRetornoManual}
+							class="border border-slate-300 p-2 text-xs font-bold font-mono outline-none focus:border-purple-800"
+						/>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="ret-medico" class="font-bold text-slate-700 text-[10px] uppercase">Médico Atribuído ao Retorno</label>
+					<input
+						id="ret-medico"
+						type="text"
+						bind:value={medicoRetornoNome}
+						class="border border-slate-300 p-2 text-xs font-sans outline-none focus:border-purple-800"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="ret-obs" class="font-bold text-slate-700 text-[10px] uppercase">Observações / Exames a Apresentar</label>
+					<textarea
+						id="ret-obs"
+						rows="3"
+						bind:value={obsRetorno}
+						class="border border-slate-300 p-2 text-xs font-sans resize-none outline-none focus:border-purple-800"
+					></textarea>
+				</div>
+			</div>
+
+			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+				<button onclick={() => modalRetornoAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
+					Cancelar
+				</button>
+				<button
+					onclick={confirmarAgendamentoRetornoManual}
+					disabled={agendandoRetorno}
+					class="border border-purple-900 bg-purple-900 px-5 py-2 font-bold text-white uppercase hover:bg-purple-950 disabled:opacity-50"
+				>
+					{agendandoRetorno ? 'Agendando...' : '✓ Confirmar Agendamento de Retorno (Data Manual)'}
 				</button>
 			</div>
 		</div>

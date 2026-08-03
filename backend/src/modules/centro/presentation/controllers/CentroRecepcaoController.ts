@@ -9,6 +9,10 @@ import type { ObterAgendaDiaRecepcaoUseCase } from '../../application/use-cases/
 import type { RegistrarPresencaPacienteUseCase } from '../../application/use-cases/RegistrarPresencaPacienteUseCase';
 import type { AgendamentoBalcaoRecepcaoUseCase } from '../../application/use-cases/AgendamentoBalcaoRecepcaoUseCase';
 import type { DesmarcarReagendarConsultaUseCase } from '../../application/use-cases/DesmarcarReagendarConsultaUseCase';
+import type { AgendamentoBalcaoRetroativoUseCase } from '../../application/use-cases/AgendamentoBalcaoRetroativoUseCase';
+import type { RemarcarEncaminhamentoRegulacaoUseCase } from '../../application/use-cases/RemarcarEncaminhamentoRegulacaoUseCase';
+import type { RegistrarProcedimentosAtendimentoUseCase } from '../../application/use-cases/RegistrarProcedimentosAtendimentoUseCase';
+import type { NotificacaoAusenciaMedicaUseCase } from '../../application/use-cases/NotificacaoAusenciaMedicaUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
 
@@ -53,6 +57,53 @@ const desmarcarReagendarSchema = z.object({
   motivo: z.string().min(1),
 });
 
+const balcaoRetroativoSchema = z.object({
+  pacienteId: z.string().min(1),
+  especialidade: z.string().min(2),
+  tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
+  procedimentoSolicitado: z.string().optional(),
+  modoData: z.enum(['AUTODATA', 'MANUAL', 'RETROATIVO']).optional(),
+  dataRetroativa: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  horaRetroativa: z.string().min(2),
+  statusRetroativo: z.enum(['CONCLUIDO', 'AGUARDANDO', 'FALTOU']).optional(),
+  medicoId: z.string().optional(),
+  medicoNome: z.string().optional(),
+});
+
+const remarcarSchema = z.object({
+  novaData: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  novoHorario: z.string().min(2),
+  unidadeDestino: z.string().optional(),
+  motivo: z.string().min(5, 'Descreva o motivo da remarcação (mínimo 5 caracteres).'),
+});
+
+const procedimentosSchema = z.object({
+  procedimentos: z.array(
+    z.object({
+      codigoSigtap: z.string().optional(),
+      nome: z.string().min(2),
+      quantidade: z.number().int().positive().optional(),
+      valorUnitario: z.number().optional(),
+      observacao: z.string().optional(),
+    }),
+  ).min(1),
+});
+
+const ausenciaMedicaSchema = z.object({
+  medicoNome: z.string().min(2),
+  dataAfetada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  tipoMotivo: z.enum(['FALTA_MEDICA', 'MUDANCA_DIA', 'FERIAS_LICENCA']),
+  novaData: z.string().optional(),
+  mensagem: z.string().min(5),
+  canais: z
+    .object({
+      app: z.boolean().optional(),
+      sms: z.boolean().optional(),
+      whatsapp: z.boolean().optional(),
+    })
+    .optional(),
+});
+
 export class CentroRecepcaoController {
   constructor(
     private readonly atendentes: IAtendenteRepository,
@@ -62,6 +113,10 @@ export class CentroRecepcaoController {
     private readonly presencaUC: RegistrarPresencaPacienteUseCase,
     private readonly balcaoUC: AgendamentoBalcaoRecepcaoUseCase,
     private readonly desmarcarReagendarUC: DesmarcarReagendarConsultaUseCase,
+    private readonly balcaoRetroativoUC: AgendamentoBalcaoRetroativoUseCase,
+    private readonly remarcarUC: RemarcarEncaminhamentoRegulacaoUseCase,
+    private readonly procedimentosUC: RegistrarProcedimentosAtendimentoUseCase,
+    private readonly ausenciaMedicaUC: NotificacaoAusenciaMedicaUseCase,
   ) {}
 
   getFilaEspera = async (req: Request, res: Response): Promise<void> => {
@@ -232,5 +287,59 @@ export class CentroRecepcaoController {
     );
 
     res.json({ encaminhamento: result });
+  };
+
+  postBalcaoRetroativo = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = balcaoRetroativoSchema.parse(req.body);
+    const result = await this.balcaoRetroativoUC.exec(body, scope, req.auth!.sub);
+    res.status(201).json(result);
+  };
+
+  postRemarcar = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const scope = scopeFromRequest(req);
+    const body = remarcarSchema.parse(req.body);
+
+    const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
+    if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
+
+    const result = await this.remarcarUC.exec(
+      {
+        encaminhamentoId: id,
+        novaData: body.novaData,
+        novoHorario: body.novoHorario,
+        unidadeDestino: body.unidadeDestino,
+        motivo: body.motivo,
+        atendente: { id: atendente.id, nome: atendente.nome },
+      },
+      scope,
+    );
+
+    res.json({ encaminhamento: result });
+  };
+
+  postProcedimentos = async (req: Request, res: Response): Promise<void> => {
+    const id = paramString(req, 'id');
+    const scope = scopeFromRequest(req);
+    const body = procedimentosSchema.parse(req.body);
+
+    const result = await this.procedimentosUC.exec(
+      {
+        atendimentoId: id,
+        procedimentos: body.procedimentos,
+      },
+      scope,
+      req.auth!.sub,
+    );
+
+    res.status(201).json(result);
+  };
+
+  postAusenciaMedica = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = ausenciaMedicaSchema.parse(req.body);
+    const result = await this.ausenciaMedicaUC.exec(body, scope, req.auth!.sub);
+    res.json(result);
   };
 }

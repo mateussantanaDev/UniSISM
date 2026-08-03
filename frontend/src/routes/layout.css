@@ -35,3 +35,36 @@ select {
 	background-color: rgb(30 58 138);
 	color: white;
 }
+
+@media print {
+	/* Esconde toda a interface da aplicação web e mantém apenas a folha de impressão */
+	body > *:not(.print-overlay) {
+		display: none !important;
+	}
+	body {
+		background: #ffffff !important;
+		color: #0f172a !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		-webkit-print-color-adjust: exact !important;
+		print-color-adjust: exact !important;
+	}
+	.print-overlay {
+		position: static !important;
+		inset: auto !important;
+		background: #ffffff !important;
+		overflow: visible !important;
+		backdrop-filter: none !important;
+	}
+	.print-toolbar {
+		display: none !important;
+	}
+	.print-scope {
+		margin: 0 !important;
+		padding: 0 !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		border: none !important;
+		box-shadow: none !important;
+	}
+}

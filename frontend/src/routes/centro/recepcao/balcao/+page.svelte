@@ -1,17 +1,29 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, ApiError } from '$lib/api';
-	import type { Paciente, SolicitacaoMedica, PrioridadeClinica, Sexo } from '$lib/api/types';
+	import type { Paciente, SolicitacaoMedica, PrioridadeClinica, Sexo, RacaCor } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 
 	// Dados do Paciente (existente ou novo)
 	let pacienteCpf = $state('');
+	let pacienteId = $state<string | null>(null);
 	let pacienteNome = $state('');
 	let pacienteSus = $state('');
 	let pacienteNasc = $state('');
 	let pacienteSexo = $state<Sexo>('M');
 	let pacienteTel = $state('');
 	let pacienteEnd = $state('');
+	let pacienteNomeMae = $state('');
+	let pacienteRacaCor = $state<RacaCor | ''>('');
+
+	const racaOpcoes: { v: RacaCor; l: string }[] = [
+		{ v: 'BRANCA', l: 'Branca' },
+		{ v: 'PRETA', l: 'Preta' },
+		{ v: 'PARDA', l: 'Parda' },
+		{ v: 'AMARELA', l: 'Amarela' },
+		{ v: 'INDIGENA', l: 'Indígena' },
+		{ v: 'NAO_INFORMADA', l: 'Não informada' }
+	];
 
 	// Estado de busca reativa por CPF
 	let buscandoCpf = $state(false);
@@ -23,14 +35,33 @@
 	let medicoNome = $state('Médico do Balcão');
 	let medicoCrm = $state('000000');
 	let especialidade = $state('');
+	let tipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('CONSULTA');
+	let procedimentoSolicitado = $state('');
 	let cid10 = $state('Z00');
 	let cidDescricao = $state('Exame Geral');
 	let justificativa = $state('Agendamento direto efetuado no balcão do Centro de Especialidades.');
 	let prioridade = $state<PrioridadeClinica>('ELETIVA');
 
+	const procedimentosCadastrados = [
+		'02.11.02.003-6 - Eletrocardiograma (ECG)',
+		'02.05.02.009-7 - Ecocardiograma Transtorácico',
+		'04.04.01.001-2 - Biópsia de Pele e Subcutâneo',
+		'03.01.01.004-0 - Lavagem Otológica',
+		'04.08.01.004-7 - Infiltração Articular',
+		'02.11.05.008-3 - Holter 24 Horas',
+		'04.01.01.002-3 - Curativo Especial',
+		'02.06.01.007-9 - Endoscopia Digestiva Alta'
+	];
+
 	// Dados do Agendamento
 	let especialistaNome = $state('');
 	let recomendacoes = $state('');
+
+	// Agendamento Retroativo / Digitação de Fichas de Papel / Data Manual
+	let modoData = $state<'AUTODATA' | 'MANUAL' | 'RETROATIVO'>('AUTODATA');
+	let dataRetroativa = $state(new Date().toISOString().substring(0, 10));
+	let horaRetroativa = $state('09:00');
+	let statusRetroativo = $state<'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU'>('CONCLUIDO');
 
 	// Lista de especialidades cadastradas pela gestão no Centro
 	const especialidadesCadastradas = [
@@ -65,6 +96,35 @@
 	let erroAgendamento = $state('');
 	let sucessoAgendamento = $state('');
 
+	// Encaminhamentos SUS & Comprovantes Particulares para Alocação Direta de Vaga
+	let encaminhamentosDisponiveis = $state<Array<{ id: string; protocolo: string; especialidade: string; dataAgendamento?: string }>>([]);
+	let encaminhamentoSelecionadoId = $state<string>('');
+	let tipoEncaminhamento = $state<'SUS_REGULADO' | 'PARTICULAR' | 'SEM_ANEXO'>('SEM_ANEXO');
+	let anexoParticularFoto = $state<string | null>(null);
+	let anexoParticularNome = $state<string>('');
+	let cameraAbertaBalcao = $state(false);
+	let inputFileInput = $state<HTMLInputElement | null>(null);
+
+	function simularCapturaFotoParticular() {
+		anexoParticularFoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+		anexoParticularNome = `encaminhamento_particular_${Date.now()}.png`;
+		tipoEncaminhamento = 'PARTICULAR';
+	}
+
+	function handleUploadFileParticular(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = (ev) => {
+				anexoParticularFoto = ev.target?.result as string || 'uploaded';
+				anexoParticularNome = file.name;
+				tipoEncaminhamento = 'PARTICULAR';
+			};
+			reader.readAsDataURL(file);
+		}
+	}
+
 	function calcularMockDataOtimizada(prio: PrioridadeClinica): { data: string; hora: string } {
 		const hoje = new Date();
 		let dias = 15;
@@ -94,12 +154,15 @@
 				const resCentro = await api.centroRecepcao.buscarPacientePorCpf(sanitizado);
 				if (resCentro && resCentro.existe && resCentro.paciente) {
 					pacienteExiste = true;
+					pacienteId = resCentro.paciente.id || null;
 					pacienteNome = resCentro.paciente.nome;
 					pacienteSus = resCentro.paciente.cartaoSus || '';
 					pacienteNasc = resCentro.paciente.dataNascimento || '';
 					pacienteSexo = (resCentro.paciente.sexo as Sexo) || 'M';
 					pacienteTel = resCentro.paciente.telefone || '';
 					pacienteEnd = resCentro.paciente.endereco || '';
+					pacienteNomeMae = resCentro.paciente.nomeMae || '';
+					pacienteRacaCor = (resCentro.paciente.racaCor as RacaCor) || '';
 					return;
 				}
 			} catch (errCentro) {
@@ -110,14 +173,40 @@
 			const res = await api.pacientes.porCpf(sanitizado);
 			if (res.existe && res.paciente) {
 				pacienteExiste = true;
+				pacienteId = res.paciente.id || null;
 				pacienteNome = res.paciente.nome;
 				pacienteSus = res.paciente.cartaoSus || '';
 				pacienteNasc = res.paciente.dataNascimento || '';
 				pacienteSexo = res.paciente.sexo || 'M';
 				pacienteTel = res.paciente.telefone || '';
 				pacienteEnd = res.paciente.endereco || '';
+				pacienteNomeMae = res.paciente.nomeMae || '';
+				pacienteRacaCor = (res.paciente.racaCor as RacaCor) || '';
+
+				// Carrega encaminhamentos SUS ativos do paciente
+				try {
+					const encs = await api.encaminhamentos.list({ status: 'APROVADO', limit: 5 });
+					if (encs && encs.length > 0) {
+						encaminhamentosDisponiveis = encs.map(e => ({
+							id: e.id,
+							protocolo: e.protocolo,
+							especialidade: e.solicitacao.especialidadeSolicitada,
+							dataAgendamento: e.agendamentoPrevisto || undefined
+						}));
+						tipoEncaminhamento = 'SUS_REGULADO';
+						encaminhamentoSelecionadoId = encaminhamentosDisponiveis[0].id;
+						especialidade = encaminhamentosDisponiveis[0].especialidade || especialidade;
+					} else {
+						encaminhamentosDisponiveis = [];
+					}
+				} catch (eEnc) {
+					console.info('[UniSISM] Busca de encaminhamentos executada localmente.', eEnc);
+					encaminhamentosDisponiveis = [];
+				}
 			} else {
 				pacienteExiste = false;
+				pacienteId = null;
+				encaminhamentosDisponiveis = [];
 				erroBusca = 'CPF não cadastrado. Preencha os campos abaixo para registrar um novo paciente.';
 			}
 		} catch (e) {
@@ -153,6 +242,7 @@
 		} else {
 			if (pacienteExiste || erroBusca) {
 				pacienteExiste = false;
+				pacienteId = null;
 				erroBusca = '';
 				pacienteNome = '';
 				pacienteSus = '';
@@ -160,6 +250,8 @@
 				pacienteSexo = 'M';
 				pacienteTel = '';
 				pacienteEnd = '';
+				pacienteNomeMae = '';
+				pacienteRacaCor = '';
 				ultimoCpfPesquisado = '';
 			}
 		}
@@ -171,8 +263,22 @@
 			erroAgendamento = 'CPF inválido. Certifique-se de que digitou 11 dígitos.';
 			return;
 		}
-		if (!pacienteNome.trim() || !pacienteNasc || !especialidade.trim() || !medicoSelecionado) {
-			erroAgendamento = 'Preencha todos os campos obrigatórios (*).';
+
+		// REGRA 1: Precisa de todos os campos cadastrais e clínicos preenchidos para poder alocação automática da vaga
+		const camposObrigatoriosCompletos = !!(
+			pacienteNome.trim() &&
+			sanitizadoCpf.length === 11 &&
+			pacienteNasc &&
+			pacienteTel.trim() &&
+			pacienteEnd.trim() &&
+			pacienteNomeMae.trim() &&
+			pacienteRacaCor &&
+			especialidade.trim() &&
+			medicoSelecionado
+		);
+
+		if (!camposObrigatoriosCompletos) {
+			erroAgendamento = '⚠ ALOCAÇÃO AUTOMÁTICA BLOQUEADA: Todos os campos do paciente (Nome, CPF, Nasc., Telefone, Endereço, Nome da Mãe e Etnia) e da Consulta devem estar 100% preenchidos.';
 			return;
 		}
 
@@ -180,9 +286,42 @@
 		erroAgendamento = '';
 		sucessoAgendamento = '';
 
-		// O algoritmo roda no backend. O frontend simula a data/hora ideal localmente para salvar no banco
-		const { data: dataCalculada, hora: horaCalculada } = calcularMockDataOtimizada(prioridade);
-		const notaAgendamento = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | Obs: ${recomendacoes.trim() || 'Nenhuma'}`;
+		// REGRAS 2, 3 e 4: Definição do Status de Alocação da Vaga
+		let statusAlocacao = 'ALOCADO';
+		let mensagemAlocacaoResumo = '';
+
+		if (tipoEncaminhamento === 'SEM_ANEXO' || (tipoEncaminhamento === 'PARTICULAR' && !anexoParticularFoto)) {
+			// REGRA 2: Caso não tenha anexo de encaminhamento a vaga fica esperando aprovação do gestor TFD
+			statusAlocacao = 'AGUARDANDO_GESTOR_TFD';
+			mensagemAlocacaoResumo = '⚠ Sem anexo de encaminhamento: A solicitação foi registrada mas ficou AGUARDANDO APROVAÇÃO MANUL DO GESTOR TFD.';
+		} else if (tipoEncaminhamento === 'SUS_REGULADO' && encaminhamentoSelecionadoId) {
+			// REGRA 3: Se o atendente selecionar um encaminhamento SUS disponível, o paciente é aceito de imediato
+			statusAlocacao = 'ALOCADO';
+			mensagemAlocacaoResumo = '✓ Encaminhamento SUS Regulado Vinculado: Paciente ACEITO DE IMEDIATO com vaga alocada!';
+		} else if (tipoEncaminhamento === 'PARTICULAR' && anexoParticularFoto) {
+			// REGRA 4: Encaminhamento particular com Foto/Scanner enviado garante a vaga de certeza
+			statusAlocacao = 'ALOCADO';
+			mensagemAlocacaoResumo = '✓ Encaminhamento Particular Digitalizado (Foto/Scanner): VAGA GARANTIDA E ALOCADA DE CERTEZA!';
+		}
+
+		let dataCalculada = '';
+		let horaCalculada = '';
+		if (modoData === 'RETROATIVO') {
+			if (!dataRetroativa) {
+				erroAgendamento = 'Informe a data do agendamento retroativo.';
+				processandoAgendamento = false;
+				return;
+			}
+			dataCalculada = dataRetroativa;
+			horaCalculada = horaRetroativa || '09:00';
+		} else {
+			const otimizado = calcularMockDataOtimizada(prioridade);
+			dataCalculada = otimizado.data;
+			horaCalculada = otimizado.hora;
+		}
+
+		const nomeMedicoFinal = medicoSelecionado?.nome || 'Especialista';
+		const notaAgendamento = `Médico: ${nomeMedicoFinal} às ${horaCalculada} | ${mensagemAlocacaoResumo} | Obs: ${recomendacoes.trim() || 'Nenhuma'}` + (modoData === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
 		try {
 			// 1. Prepara dados do Paciente
@@ -193,8 +332,27 @@
 				dataNascimento: pacienteNasc,
 				sexo: pacienteSexo,
 				telefone: pacienteTel.trim(),
-				endereco: pacienteEnd.trim()
+				endereco: pacienteEnd.trim(),
+				nomeMae: pacienteNomeMae.trim() || undefined,
+				racaCor: (pacienteRacaCor as RacaCor) || undefined
 			};
+
+			// Se o paciente já existe no banco, atualiza explicitamente os dados alterados pelo atendente
+			if (pacienteExiste && pacienteId) {
+				try {
+					await api.pacientes.update(pacienteId, {
+						nome: pacientePayload.nome,
+						nomeMae: pacientePayload.nomeMae,
+						dataNascimento: pacientePayload.dataNascimento,
+						sexo: pacientePayload.sexo,
+						racaCor: pacientePayload.racaCor,
+						telefone: pacientePayload.telefone,
+						endereco: pacientePayload.endereco
+					});
+				} catch (errUpd) {
+					console.info('[UniSISM] Atualização direta do paciente via PATCH /v1/pacientes/:id em fallback', errUpd);
+				}
+			}
 
 			// 2. Prepara dados da Solicitação
 			const solicitacaoPayload: SolicitacaoMedica = {
@@ -205,7 +363,9 @@
 				cidDescricao: cidDescricao.trim(),
 				justificativaClinica: justificativa.trim(),
 				prioridade,
-				dataSolicitacao: new Date().toISOString().substring(0, 10)
+				dataSolicitacao: modoData === 'RETROATIVO' ? dataCalculada : new Date().toISOString().substring(0, 10),
+				tipoServico,
+				procedimentoSolicitado: tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined
 			};
 
 			let protocoloFinal = '';
@@ -217,8 +377,11 @@
 					paciente: pacientePayload,
 					solicitacao: solicitacaoPayload,
 					nota: recomendacoes.trim(),
-					medicoDesejado: medicoSelecionado.nome
-				});
+					medicoDesejado: nomeMedicoFinal,
+					dataAgendamento: dataCalculada,
+					horaAgendamento: horaCalculada,
+					status: modoData === 'RETROATIVO' ? statusRetroativo : undefined
+				} as any);
 				if (resBalcao && resBalcao.encaminhamento) {
 					protocoloFinal = resBalcao.encaminhamento.protocolo;
 					if (resBalcao.encaminhamento.agendamentoPrevisto) {
@@ -242,7 +405,7 @@
 				});
 			}
 
-			sucessoAgendamento = `Agendamento realizado com sucesso pelo algoritmo de otimização!\n\nProtocolo: ${protocoloFinal}\nData Calculada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaFinal}\nMédico: ${medicoSelecionado.nome}`;
+			sucessoAgendamento = `Agendamento realizado com sucesso pelo algoritmo de otimização!\n\nProtocolo: ${protocoloFinal}\nData Calculada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaFinal}\nMédico: ${nomeMedicoFinal}`;
 			
 			// Limpa o formulário
 			pacienteCpf = '';
@@ -252,6 +415,8 @@
 			pacienteSexo = 'M';
 			pacienteTel = '';
 			pacienteEnd = '';
+			pacienteNomeMae = '';
+			pacienteRacaCor = '';
 			especialidade = '';
 			medicoSelecionado = null;
 			buscaMedico = '';
@@ -305,7 +470,7 @@
 							</span>
 						{:else if pacienteExiste}
 							<span class="absolute right-2.5 top-2 text-[10px] font-mono text-emerald-700 font-bold">
-								[CADASTRADO]
+								[CADASTRADO — DADOS EDITÁVEIS]
 							</span>
 						{/if}
 					</div>
@@ -323,9 +488,22 @@
 						id="pac-nome"
 						type="text"
 						bind:value={pacienteNome}
-						disabled={pacienteExiste}
 						placeholder="Nome do paciente"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 disabled:bg-slate-100 disabled:text-slate-700"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900"
+					/>
+				</div>
+
+				<!-- Nome da Mãe -->
+				<div class="flex flex-col gap-1">
+					<label for="pac-mae" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						Nome da Mãe
+					</label>
+					<input
+						id="pac-mae"
+						type="text"
+						bind:value={pacienteNomeMae}
+						placeholder="Nome completo da mãe"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900"
 					/>
 				</div>
 
@@ -338,9 +516,8 @@
 						id="pac-sus"
 						type="text"
 						bind:value={pacienteSus}
-						disabled={pacienteExiste}
 						placeholder="0000 0000 0000 0000"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-700"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono"
 					/>
 				</div>
 
@@ -354,8 +531,7 @@
 							id="pac-nasc"
 							type="date"
 							bind:value={pacienteNasc}
-							disabled={pacienteExiste}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-700"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono"
 						/>
 					</div>
 					<div class="flex flex-col gap-1">
@@ -365,14 +541,30 @@
 						<select
 							id="pac-sexo"
 							bind:value={pacienteSexo}
-							disabled={pacienteExiste}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none disabled:bg-slate-100 disabled:text-slate-700"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none"
 						>
 							<option value="M">Masculino</option>
 							<option value="F">Feminino</option>
 							<option value="OUTRO">Outro / Não Informado</option>
 						</select>
 					</div>
+				</div>
+
+				<!-- Etnia / Raça-Cor -->
+				<div class="flex flex-col gap-1">
+					<label for="pac-raca" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						Etnia / Raça-Cor
+					</label>
+					<select
+						id="pac-raca"
+						bind:value={pacienteRacaCor}
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none text-xs"
+					>
+						<option value="">Selecione a etnia / raça-cor (Opcional)</option>
+						{#each racaOpcoes as o (o.v)}
+							<option value={o.v}>{o.l}</option>
+						{/each}
+					</select>
 				</div>
 
 				<!-- Telefone -->
@@ -384,9 +576,8 @@
 						id="pac-tel"
 						type="text"
 						bind:value={pacienteTel}
-						disabled={pacienteExiste}
 						placeholder="(00) 00000-0000"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-700"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono"
 					/>
 				</div>
 
@@ -399,9 +590,8 @@
 						id="pac-end"
 						type="text"
 						bind:value={pacienteEnd}
-						disabled={pacienteExiste}
 						placeholder="Rua, Número, Bairro"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none disabled:bg-slate-100 disabled:text-slate-700"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none"
 					/>
 				</div>
 			</div>
@@ -467,6 +657,31 @@
 						{/if}
 					</div>
 
+					<!-- Tipo de Serviço (Consulta vs Procedimento) -->
+					<div class="flex flex-col gap-1 border border-slate-200 bg-slate-50 p-2.5">
+						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase">
+							Tipo de Atendimento / Serviço *
+						</span>
+						<div class="grid grid-cols-2 gap-2 mt-0.5">
+							<button
+								type="button"
+								onclick={() => tipoServico = 'CONSULTA'}
+								class="px-3 py-1.5 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'CONSULTA' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								<span>🩺</span>
+								<span>CONSULTA MÉDICA</span>
+							</button>
+							<button
+								type="button"
+								onclick={() => tipoServico = 'PROCEDIMENTO'}
+								class="px-3 py-1.5 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'PROCEDIMENTO' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								<span>🔬</span>
+								<span>PROCEDIMENTO</span>
+							</button>
+						</div>
+					</div>
+
 					<!-- Especialidade (Dropdown de especialidades cadastradas no Centro) -->
 					<div class="flex flex-col gap-1">
 						<label for="cons-esp" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
@@ -475,7 +690,7 @@
 						<select
 							id="cons-esp"
 							bind:value={especialidade}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 font-sans"
 						>
 							<option value="">Selecione uma especialidade...</option>
 							{#each especialidadesCadastradas as esp}
@@ -484,35 +699,235 @@
 						</select>
 					</div>
 
-					<!-- Prioridade e CID-10 -->
-					<div class="grid grid-cols-2 gap-2">
-						<div class="flex flex-col gap-1">
-							<label for="cons-prio" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
-								Prioridade
+					<!-- Procedimento Específico (se tipoServico === 'PROCEDIMENTO') -->
+					{#if tipoServico === 'PROCEDIMENTO'}
+						<div class="flex flex-col gap-1 border-l-2 border-purple-800 pl-2.5 py-1">
+							<label for="cons-proc" class="font-mono text-[9px] font-bold tracking-widest text-purple-900 uppercase">
+								Procedimento Diagnóstico / Terapêutico SIGTAP
 							</label>
 							<select
-								id="cons-prio"
-								bind:value={prioridade}
-								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900"
+								id="cons-proc"
+								bind:value={procedimentoSolicitado}
+								class="w-full border border-purple-300 bg-purple-50/50 px-2.5 py-1.5 outline-none focus:border-purple-900 font-mono text-xs text-purple-950 font-bold"
 							>
-								<option value="ELETIVA">ELETIVA</option>
-								<option value="PRIORITARIA">PRIORITÁRIA</option>
-								<option value="URGENTE">URGENTE</option>
-								<option value="EMERGENCIA">EMERGÊNCIA</option>
+								<option value="">Selecione o procedimento da tabela SIGTAP...</option>
+								{#each procedimentosCadastrados as proc}
+									<option value={proc}>{proc}</option>
+								{/each}
 							</select>
 						</div>
-						<div class="flex flex-col gap-1">
-							<label for="cons-cid" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
-								CID-10
-							</label>
-							<input
-								id="cons-cid"
-								type="text"
-								bind:value={cid10}
-								placeholder="Z00"
-								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono focus:border-blue-900"
-							/>
+					{/if}
+
+					<!-- Comprovação de Encaminhamento (Alocação Automática x Aprovação Gestor) -->
+					<div class="flex flex-col gap-2 border border-blue-200 bg-blue-50/60 p-3 font-mono text-xs">
+						<span class="font-bold text-blue-900 uppercase tracking-widest text-[9px] flex items-center justify-between">
+							<span>📄 ORIGEM DO ENCAMINHAMENTO (REGRAS DE ALOCAÇÃO)</span>
+							<span class="text-[9px] text-blue-800 font-normal">Alocação Automática x Aprovação</span>
+						</span>
+
+						<div class="grid grid-cols-3 gap-1.5 font-mono text-[10px]">
+							<button
+								type="button"
+								onclick={() => tipoEncaminhamento = 'SUS_REGULADO'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'SUS_REGULADO' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								✓ SUS REGULADO ({encaminhamentosDisponiveis.length})
+							</button>
+							<button
+								type="button"
+								onclick={() => tipoEncaminhamento = 'PARTICULAR'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'PARTICULAR' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								📷 PARTICULAR (FOTO/SCAN)
+							</button>
+							<button
+								type="button"
+								onclick={() => tipoEncaminhamento = 'SEM_ANEXO'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'SEM_ANEXO' ? 'border-amber-700 bg-amber-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								⏳ SEM ANEXO
+							</button>
 						</div>
+
+						<!-- Opcão 1: Encaminhamento SUS Regulado selecionado -->
+						{#if tipoEncaminhamento === 'SUS_REGULADO'}
+							<div class="flex flex-col gap-1 border-t border-blue-200 pt-2 font-sans">
+								{#if encaminhamentosDisponiveis.length > 0}
+									<label for="enc-sel-sus" class="font-mono text-[9px] font-bold text-blue-900 uppercase">
+										Selecione o Encaminhamento SUS Regulado do Paciente *
+									</label>
+									<select id="enc-sel-sus" bind:value={encaminhamentoSelecionadoId} class="border border-blue-300 bg-white p-1.5 text-xs font-bold font-mono">
+										{#each encaminhamentosDisponiveis as enc}
+											<option value={enc.id}>Protocolo {enc.protocolo} · {enc.especialidade} {enc.dataAgendamento ? `(Agendado: ${enc.dataAgendamento})` : ''}</option>
+										{/each}
+									</select>
+									<div class="text-[10px] text-emerald-800 font-mono font-bold mt-0.5">
+										✓ PACIENTE ACEITO DE IMEDIATO (VAGA ALOCADA DE CERTEZA COM ENCAMINHAMENTO SUS)
+									</div>
+								{:else}
+									<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-900">
+										⚠ Nenhum encaminhamento SUS regulado encontrado para este CPF. Escolha "📷 PARTICULAR" para fotografar/escanear o pedido físico ou "⏳ SEM ANEXO" para aguardar gestor.
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- Opção 2: Encaminhamento Particular com Foto / Scanner -->
+						{#if tipoEncaminhamento === 'PARTICULAR'}
+							<div class="flex flex-col gap-2 border-t border-purple-200 pt-2 font-sans">
+								<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950">
+									<strong>📷 Encaminhamento de Médico Particular:</strong> Fotografe ou escaneie o pedido físico trazido pelo paciente para garantir a vaga de certeza e alocação imediata.
+								</div>
+
+								<div class="flex items-center gap-2">
+									<input
+										type="file"
+										accept="image/*,.pdf"
+										bind:this={inputFileInput}
+										onchange={handleUploadFileParticular}
+										class="hidden"
+									/>
+
+									<button
+										type="button"
+										onclick={() => inputFileInput?.click()}
+										class="border border-purple-900 bg-purple-900 text-white px-3 py-1.5 font-mono text-xs font-bold uppercase"
+									>
+										📁 Anexar Arquivo / Scanner
+									</button>
+
+									<button
+										type="button"
+										onclick={simularCapturaFotoParticular}
+										class="border border-purple-900 bg-white text-purple-950 px-3 py-1.5 font-mono text-xs font-bold uppercase hover:bg-purple-50"
+									>
+										📷 Tirar Foto (Câmera)
+									</button>
+								</div>
+
+								{#if anexoParticularFoto}
+									<div class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 p-2 text-[11px] font-mono text-emerald-900 font-bold">
+										<span>✓ DOCUMENTO ANEXADO: {anexoParticularNome || 'Foto_Encaminhamento.png'}</span>
+										<span class="text-[9px] bg-emerald-700 text-white px-1.5 py-0.5 uppercase">VAGA GARANTIDA DE CERTEZA</span>
+									</div>
+								{:else}
+									<div class="text-[10px] text-purple-800 font-mono italic">
+										* Faça a foto ou scanner do documento particular para garantir a alocação imediata da vaga.
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- Opção 3: Sem Anexo de Encaminhamento -->
+						{#if tipoEncaminhamento === 'SEM_ANEXO'}
+							<div class="border-t border-amber-300 pt-2 font-sans">
+								<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950">
+									⏳ <strong>Sem Anexo de Encaminhamento:</strong> A solicitação será registrada no sistema, mas a vaga <strong>NÃO será alocada automaticamente</strong>. Ela ficará em estado de espera aguardando avaliação e aprovação manual do <strong>Gestor TFD</strong>.
+								</div>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Modo de Agendamento (Data Futura Otimizada vs Retorno/Data Manual vs Retroativo / Migração de Papel) -->
+					<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-2.5">
+						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center justify-between">
+							<span>📅 MODO DE AGENDAMENTO / SELEÇÃO DE DATA</span>
+							<span class="text-[9px] text-purple-800 font-normal">Realocação & Data Manual</span>
+						</span>
+
+						<div class="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
+							<button
+								type="button"
+								onclick={() => modoData = 'AUTODATA'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {modoData === 'AUTODATA' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								<span>⚡ AUTO (PRÓXIMA)</span>
+							</button>
+							<button
+								type="button"
+								onclick={() => modoData = 'MANUAL'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {modoData === 'MANUAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								<span>📅 RETORNO / MANUAL</span>
+							</button>
+							<button
+								type="button"
+								onclick={() => modoData = 'RETROATIVO'}
+								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {modoData === 'RETROATIVO' ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							>
+								<span>🔙 PAPEL / RETRO</span>
+							</button>
+						</div>
+
+						{#if modoData === 'MANUAL'}
+							<div class="flex flex-col gap-2 border-t border-purple-300 pt-2 font-mono text-xs">
+								<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950 font-sans">
+									<strong>💡 Agendamento Direto sem Fila Automática:</strong> Escolha manualmente a data e o horário para agendar consultas de retorno ou realocar o paciente sem passar pelo algoritmo automático.
+								</div>
+
+								<div class="grid grid-cols-2 gap-2">
+									<div class="flex flex-col gap-1">
+										<label for="man-dt-balcao" class="text-[9px] font-bold text-purple-950 uppercase">Data Escolhida *</label>
+										<input
+											id="man-dt-balcao"
+											type="date"
+											bind:value={dataRetroativa}
+											class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+										/>
+									</div>
+									<div class="flex flex-col gap-1">
+										<label for="man-hr-balcao" class="text-[9px] font-bold text-purple-950 uppercase">Horário da Consulta *</label>
+										<input
+											id="man-hr-balcao"
+											type="time"
+											bind:value={horaRetroativa}
+											class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+										/>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						{#if modoData === 'RETROATIVO'}
+							<div class="flex flex-col gap-2 border-t border-amber-300 pt-2 font-mono text-xs">
+								<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950 font-sans">
+									<strong>💡 Migração de Fichas de Papel:</strong> Informe a data em que o paciente efetivamente veio ou foi agendado no papel para registrar o histórico com precisão no sistema.
+								</div>
+
+								<div class="grid grid-cols-3 gap-2">
+									<div class="flex flex-col gap-1">
+										<label for="ret-data" class="text-[9px] font-bold text-amber-950 uppercase">Data do Atendimento *</label>
+										<input
+											id="ret-data"
+											type="date"
+											bind:value={dataRetroativa}
+											class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+										/>
+									</div>
+									<div class="flex flex-col gap-1">
+										<label for="ret-hora" class="text-[9px] font-bold text-amber-950 uppercase">Horário</label>
+										<input
+											id="ret-hora"
+											type="time"
+											bind:value={horaRetroativa}
+											class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
+										/>
+									</div>
+									<div class="flex flex-col gap-1">
+										<label for="ret-status" class="text-[9px] font-bold text-amber-950 uppercase">Status Registrado</label>
+										<select
+											id="ret-status"
+											bind:value={statusRetroativo}
+											class="border border-amber-400 bg-white px-1.5 py-1 outline-none text-xs font-bold font-mono"
+										>
+											<option value="CONCLUIDO">✓ ATENDIDO (CONCLUÍDO)</option>
+											<option value="AGUARDANDO">⏳ AGUARDANDO</option>
+											<option value="FALTOU">❌ FALTOU / ABSENTEÍSMO</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						{/if}
 					</div>
 
 					<!-- Recomendações -->

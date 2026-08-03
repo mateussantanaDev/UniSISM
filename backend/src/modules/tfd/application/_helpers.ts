@@ -82,7 +82,7 @@ export async function resolverOperador(
 
 /** Gera próximo protocolo com prefixo + ano + sequencial 6 dígitos. */
 export async function proximoProtocoloTfd(
-  prefixo: 'TFD' | 'ABT' | 'AJC',
+  prefixo: 'TFD' | 'ABT' | 'AJC' | 'VTFD',
 ): Promise<string> {
   const ano = new Date().getUTCFullYear();
   const chave = `${prefixo}-${ano}`;

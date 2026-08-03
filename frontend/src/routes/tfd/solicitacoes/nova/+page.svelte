@@ -52,6 +52,13 @@
 	let motivo = $state('');
 	let observacoes = $state('');
 
+	// ─── Registro Tardio / Lançamento Retroativo ───
+	let isRegistroTardio = $state(false);
+	let dataRealizadaRetroativa = $state(new Date().toISOString().substring(0, 10));
+	let justificativaRegistroTardio = $state('Viagem / atendimento emergencial de TFD executado sem expedição prévia.');
+	let comprovanteHospitalDestino = $state('');
+	let medicoAtendenteDestino = $state('');
+
 	// ─── Acompanhante ───
 	let temAcompanhante = $state(false);
 	let acompanhanteNome = $state('');
@@ -103,7 +110,7 @@
 	let totalAnexosEnviar = $state(0);
 	let atualAnexoEnviar = $state(0);
 	let erro = $state('');
-	let sucesso = $state<{ protocolo: string; id: string } | null>(null);
+	let sucesso = $state<{ protocolo: string; id: string; temAnexo: boolean; isRegistroTardio: boolean } | null>(null);
 
 	const especialidadesComuns = [
 		'CARDIOLOGIA',
@@ -553,15 +560,21 @@
 				unidadeDestino: unidadeDestino.trim() || undefined,
 				especialidade,
 				motivo: motivo.trim(),
-				dataDesejada,
+				dataDesejada: isRegistroTardio ? dataRealizadaRetroativa : dataDesejada,
 				prioridade,
 				acompanhanteNecessario: temAcompanhante,
 				acompanhante,
-				observacoes: observacoes.trim() || undefined
+				observacoes: isRegistroTardio ? `[REGISTRO TARDIO / RETROATIVO] Justificativa: ${justificativaRegistroTardio} | Hosp: ${comprovanteHospitalDestino || 'N/A'} | Méd: ${medicoAtendenteDestino || 'N/A'} | Obs: ${observacoes.trim()}` : (observacoes.trim() || undefined),
+				isRegistroTardio,
+				dataRealizadaRetroativa: isRegistroTardio ? dataRealizadaRetroativa : undefined,
+				justificativaRegistroTardio: isRegistroTardio ? justificativaRegistroTardio : undefined,
+				comprovanteHospitalDestino: isRegistroTardio ? comprovanteHospitalDestino : undefined,
+				statusDirect: isRegistroTardio ? 'REALIZADA' : undefined
 			});
 
+			const temAnexo = anexos.length > 0;
 			// 2. Envia anexos se houver
-			if (anexos.length > 0) {
+			if (temAnexo) {
 				enviandoAnexos = true;
 				totalAnexosEnviar = anexos.length;
 				for (let i = 0; i < anexos.length; i++) {
@@ -578,7 +591,7 @@
 			// Reseta anexos
 			anexos = [];
 
-			sucesso = { protocolo: r.protocolo, id: r.id };
+			sucesso = { protocolo: r.protocolo, id: r.id, temAnexo, isRegistroTardio };
 		} catch (e) {
 			if (e instanceof ApiError) {
 				erro = mensagemErroTfd(e);
@@ -686,16 +699,30 @@
 		</p>
 	</div>
 {:else if sucesso}
-	<div class="border-2 border-emerald-700 bg-emerald-50 p-6">
-		<div class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
-			✓ SOLICITAÇÃO CADASTRADA
+	<div class="border-2 border-emerald-700 bg-emerald-50 p-6 font-mono">
+		<div class="flex items-center justify-between border-b border-emerald-300 pb-3">
+			<div class="text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
+				✓ SOLICITAÇÃO CADASTRADA COM SUCESSO
+			</div>
+			{#if sucesso.isRegistroTardio}
+				<span class="bg-amber-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Lançamento Tardio / Retroativo</span>
+			{:else if sucesso.temAnexo}
+				<span class="bg-emerald-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Com Anexo · Alocação Automática</span>
+			{:else}
+				<span class="bg-slate-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Sem Anexo · Fila Regulação</span>
+			{/if}
 		</div>
-		<div class="mt-2 font-mono text-2xl font-bold text-emerald-900">
+		<div class="mt-3 text-2xl font-bold text-emerald-900">
 			{sucesso.protocolo}
 		</div>
-		<p class="mt-2 font-sans text-xs text-emerald-900">
-			A gestão TFD será notificada e fará a aprovação. Você pode acompanhar pelo
-			<strong>Dashboard</strong>.
+		<p class="mt-2 font-sans text-xs text-emerald-900 leading-relaxed">
+			{#if sucesso.isRegistroTardio}
+				<strong>✓ Registro Tardio:</strong> Atendimento TFD emergencial/retroativo gravado diretamente como <strong>CONCLUÍDO</strong> no histórico do paciente.
+			{:else if sucesso.temAnexo}
+				<strong>✓ Encaminhamento/Comprovante Anexado:</strong> Solicitação enviada com prioridade para <strong>alocação automática</strong> do veículo, data e número do assento!
+			{:else}
+				<strong>⚠ Sem Anexo de Encaminhamento:</strong> Solicitação gravada com sucesso, porém encaminhada para a <strong>Fila de Espera da Regulação TFD</strong> para aprovação e conferência manual do gestor.
+			{/if}
 		</p>
 		<div class="mt-4 flex flex-wrap gap-2">
 			<PrimaryButton label="Cadastrar Outra" onclick={novaOutra} />
@@ -792,11 +819,88 @@
 		<!-- Solicitação clínica -->
 		<div class="border border-slate-200 bg-white">
 			<PanelHeader
-				title="Detalhes da Viagem"
-				subtitle="Especialidade · destino · prioridade · motivo"
+				title="Detalhes da Viagem & Modo de Registro"
+				subtitle="Especialidade · destino · prioridade · lançamento tardio"
 				index="02"
 			/>
-			<div class="p-4">
+			<div class="p-4 flex flex-col gap-4">
+				<!-- Modo de Registro: Regular vs Tardio -->
+				<div class="border border-amber-300 bg-amber-50/60 p-3.5 flex flex-col gap-2 font-mono text-xs">
+					<div class="flex items-center justify-between">
+						<span class="font-bold text-amber-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+							<span>⚡ MODO DE EMBARQUE / TIPO DE REGISTRO TFD</span>
+						</span>
+						<span class="text-[10px] text-amber-800 font-bold uppercase">Emergência & Retroativo</span>
+					</div>
+
+					<div class="grid grid-cols-2 gap-2 font-mono text-xs">
+						<button
+							type="button"
+							onclick={() => isRegistroTardio = false}
+							class="px-3 py-2 font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {!isRegistroTardio ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						>
+							<span>⚡ SOLICITAÇÃO REGULAR (PRÉVIA)</span>
+						</button>
+						<button
+							type="button"
+							onclick={() => isRegistroTardio = true}
+							class="px-3 py-2 font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {isRegistroTardio ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						>
+							<span>🔙 REGISTRO TARDIO (VIAGEM JÁ REALIZADA)</span>
+						</button>
+					</div>
+
+					{#if isRegistroTardio}
+						<div class="flex flex-col gap-3 border-t border-amber-300 pt-3 font-sans text-xs">
+							<div class="bg-amber-100 border border-amber-300 p-2.5 text-[11px] text-amber-950">
+								<strong>💡 Registro Tardio TFD:</strong> Utilize esta funcionalidade quando o paciente já viajou para atendimento de urgência/emergência (*ex: final de semana, transporte emergencial/SAMU ou transporte próprio*) sem abertura prévia de protocolo no sistema. A solicitação será gravada diretamente como concluída no histórico do paciente.
+							</div>
+
+							<div class="grid grid-cols-12 gap-3 font-mono">
+								<div class="col-span-4 flex flex-col gap-1">
+									<label for="dt-tardia" class="text-[10px] font-bold text-amber-950 uppercase">Data em que a viagem ocorreu *</label>
+									<input
+										id="dt-tardia"
+										type="date"
+										bind:value={dataRealizadaRetroativa}
+										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-bold"
+									/>
+								</div>
+								<div class="col-span-4 flex flex-col gap-1">
+									<label for="hosp-dest" class="text-[10px] font-bold text-amber-950 uppercase">Hospital / Unidade no Destino</label>
+									<input
+										id="hosp-dest"
+										type="text"
+										bind:value={comprovanteHospitalDestino}
+										placeholder="Ex: Hospital das Clínicas Recife"
+										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-sans"
+									/>
+								</div>
+								<div class="col-span-4 flex flex-col gap-1">
+									<label for="med-dest" class="text-[10px] font-bold text-amber-950 uppercase">Médico Atendente no Destino</label>
+									<input
+										id="med-dest"
+										type="text"
+										bind:value={medicoAtendenteDestino}
+										placeholder="Dr. Roberto Silva (CRM 1234)"
+										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-sans"
+									/>
+								</div>
+
+								<div class="col-span-12 flex flex-col gap-1">
+									<label for="just-tardia" class="text-[10px] font-bold text-amber-950 uppercase">Justificativa do Registro Tardio *</label>
+									<textarea
+										id="just-tardia"
+										rows="2"
+										bind:value={justificativaRegistroTardio}
+										placeholder="Descreva o motivo do envio de emergência sem protocolo prévio..."
+										class="border border-amber-400 bg-white p-2 text-xs font-sans resize-none outline-none"
+									></textarea>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
 				<div class="grid grid-cols-12 gap-3">
 					<div class="col-span-6 flex flex-col">
 						<label

@@ -3,6 +3,7 @@
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import NominalJustificativa from '$lib/presentation/components/NominalJustificativa.svelte';
+	import ImprimirRelatorioPDF from '$lib/presentation/components/ImprimirRelatorioPDF.svelte';
 	import { api, ApiError } from '$lib/api';
 	import type {
 		CriarRelatorioRequest,
@@ -38,6 +39,7 @@
 	let historico = $state<Relatorio[]>([]);
 	let carregandoHistorico = $state(true);
 	let erroGerar = $state('');
+	let relatorioPreview = $state<Relatorio | null>(null);
 
 	// Rate limit — bloqueio por 60s após 429.
 	let bloqueadoAte = $state<number>(0);
@@ -142,6 +144,10 @@
 
 	async function baixar(r: Relatorio) {
 		if (r.status !== 'DISPONIVEL') return;
+		if (r.formato === 'PDF') {
+			relatorioPreview = r;
+			return;
+		}
 		try {
 			const { blob, filename } = await api.relatorios.download(r.id);
 			const url = URL.createObjectURL(blob);
@@ -453,7 +459,7 @@
 										<button
 											type="button"
 											onclick={() => baixar(r)}
-											class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
+											class="border border-slate-300 bg-white px-3 py-1 text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
 										>
 											Baixar
 										</button>
@@ -494,3 +500,12 @@
 		{gerando}
 	/>
 </Modal>
+
+{#if relatorioPreview}
+	<ImprimirRelatorioPDF
+		relatorio={relatorioPreview}
+		operador={auth.me?.nome}
+		prefeitura={auth.me?.prefeitura}
+		onFechar={() => (relatorioPreview = null)}
+	/>
+{/if}

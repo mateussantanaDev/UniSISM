@@ -165,6 +165,11 @@
 	let processandoNova = $state(false);
 	let erroNova = $state('');
 
+	// Registro Tardio / Reembolso Retroativo de Ajuda de Custo
+	let isRegistroTardioAjuda = $state(false);
+	let dataConcessaoRetroativa = $state(new Date().toISOString().substring(0, 10));
+	let justificativaTardiaAjuda = $state('Reembolso retroativo concedido após apresentação de recibos e atestado de comparecimento.');
+
 	const categorias: Array<{ value: CategoriaAjuda; label: string }> = [
 		{ value: 'ALIMENTACAO', label: 'Alimentação' },
 		{ value: 'HOSPEDAGEM', label: 'Hospedagem' },
@@ -233,12 +238,14 @@
 				pacienteId: novaPacienteId,
 				itens: novosItens.map((it) => ({
 					categoria: it.categoria,
-					descricao: it.descricao.trim(),
+					descricao: isRegistroTardioAjuda
+						? `[REEMBOLSO RETROATIVO - ${dataConcessaoRetroativa.split('-').reverse().join('/')}] ${it.descricao.trim()} · Justificativa: ${justificativaTardiaAjuda}`
+						: it.descricao.trim(),
 					valorBRL: Number(it.valorBRL)
 				}))
 			});
 			novaAberto = false;
-			notificar('ok', 'Ajuda de custo criada · pendente de autorização.');
+			notificar('ok', isRegistroTardioAjuda ? '✓ Reembolso tardio registrado com sucesso no histórico TFD.' : 'Ajuda de custo criada · pendente de autorização.');
 			await carregar();
 		} catch (e) {
 			erroNova = mensagemErroTfd(e);
@@ -430,8 +437,63 @@
 	maxWidth="lg"
 >
 	<div class="flex flex-col gap-4 font-mono text-slate-900">
-		<div class="grid grid-cols-12 gap-3">
-			<div class="col-span-6 flex flex-col">
+		<div class="flex flex-col gap-3">
+			<!-- Registro Tardio / Reembolso Retroativo -->
+			<div class="border border-amber-300 bg-amber-50/60 p-3 flex flex-col gap-2 font-mono text-xs">
+				<div class="flex items-center justify-between">
+					<span class="font-bold text-amber-950 uppercase tracking-wider text-[10px]">
+						⚡ TIPO DE SOLICITAÇÃO DE AJUDA DE CUSTO
+					</span>
+					<span class="text-[9px] text-amber-800 font-bold uppercase">Prévia vs Reembolso Tardio</span>
+				</div>
+
+				<div class="grid grid-cols-2 gap-2">
+					<button
+						type="button"
+						onclick={() => isRegistroTardioAjuda = false}
+						class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {!isRegistroTardioAjuda ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					>
+						<span>💰 PRÉVIA REGULAR</span>
+					</button>
+					<button
+						type="button"
+						onclick={() => isRegistroTardioAjuda = true}
+						class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {isRegistroTardioAjuda ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					>
+						<span>🔙 REEMBOLSO TARDIO</span>
+					</button>
+				</div>
+
+				{#if isRegistroTardioAjuda}
+					<div class="flex flex-col gap-2 border-t border-amber-300 pt-2 font-sans text-xs">
+						<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950">
+							<strong>💡 Reembolso Retroativo:</strong> Registre ajudas de custo reembolsadas ao paciente após a apresentação dos comprovantes/comprovantes de comparecimento de viagens emergenciais já realizadas.
+						</div>
+						<div class="grid grid-cols-2 gap-2 font-mono">
+							<div class="flex flex-col gap-1">
+								<label for="dt-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase">Data do Reembolso/Viagem *</label>
+								<input
+									id="dt-aj-tardia"
+									type="date"
+									bind:value={dataConcessaoRetroativa}
+									class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-mono font-bold"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label for="just-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase">Justificativa do Reembolso *</label>
+								<input
+									id="just-aj-tardia"
+									type="text"
+									bind:value={justificativaTardiaAjuda}
+									class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-sans"
+								/>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<div class="flex flex-col">
 				<label
 					for="vid"
 					class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"

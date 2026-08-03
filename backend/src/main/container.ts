@@ -94,6 +94,10 @@ import { ObterAgendaDiaRecepcaoUseCase } from '../modules/centro/application/use
 import { RegistrarPresencaPacienteUseCase } from '../modules/centro/application/use-cases/RegistrarPresencaPacienteUseCase';
 import { AgendamentoBalcaoRecepcaoUseCase } from '../modules/centro/application/use-cases/AgendamentoBalcaoRecepcaoUseCase';
 import { DesmarcarReagendarConsultaUseCase } from '../modules/centro/application/use-cases/DesmarcarReagendarConsultaUseCase';
+import { AgendamentoBalcaoRetroativoUseCase } from '../modules/centro/application/use-cases/AgendamentoBalcaoRetroativoUseCase';
+import { RemarcarEncaminhamentoRegulacaoUseCase } from '../modules/centro/application/use-cases/RemarcarEncaminhamentoRegulacaoUseCase';
+import { RegistrarProcedimentosAtendimentoUseCase } from '../modules/centro/application/use-cases/RegistrarProcedimentosAtendimentoUseCase';
+import { NotificacaoAusenciaMedicaUseCase } from '../modules/centro/application/use-cases/NotificacaoAusenciaMedicaUseCase';
 import { GestaoCotasUseCase } from '../modules/centro/application/use-cases/GestaoCotasUseCase';
 import { GestaoEscalasUseCase } from '../modules/centro/application/use-cases/GestaoEscalasUseCase';
 import { RemanejamentoLoteUseCase } from '../modules/centro/application/use-cases/RemanejamentoLoteUseCase';
@@ -408,6 +412,10 @@ export function buildContainer() {
     new RegistrarPresencaPacienteUseCase(),
     new AgendamentoBalcaoRecepcaoUseCase(),
     new DesmarcarReagendarConsultaUseCase(),
+    new AgendamentoBalcaoRetroativoUseCase(),
+    new RemarcarEncaminhamentoRegulacaoUseCase(),
+    new RegistrarProcedimentosAtendimentoUseCase(),
+    new NotificacaoAusenciaMedicaUseCase(),
   );
 
   const centroGestaoController = new CentroGestaoController(

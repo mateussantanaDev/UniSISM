@@ -6,6 +6,7 @@
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import ResolverPendencia from '$lib/presentation/components/ResolverPendencia.svelte';
 	import EditarEncaminhamento from '$lib/presentation/components/EditarEncaminhamento.svelte';
+	import ImprimirSolicitacaoEncaminhamento from '$lib/presentation/components/ImprimirSolicitacaoEncaminhamento.svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { Encaminhamento } from '$lib/domain/models/Encaminhamento';
 	import { setEncaminhamentoContext } from '$lib/presentation/contexts/encaminhamentoContext';
@@ -20,6 +21,7 @@
 	let erro = $state(false);
 	let resolverAberto = $state(false);
 	let editarAberto = $state(false);
+	let imprimirAberto = $state(false);
 
 	setEncaminhamentoContext({
 		get encaminhamento() {
@@ -132,8 +134,16 @@
 				<div class="flex items-center gap-2">
 					<StatusBadge prioridade={encaminhamento.solicitacao.prioridade} />
 					<StatusBadge status={encaminhamento.status} />
-					<PrimaryButton label="Imprimir" variant="secondary" />
-					<PrimaryButton label="Baixar PDF" variant="secondary" />
+					<PrimaryButton
+						label="Imprimir"
+						variant="secondary"
+						onclick={() => (imprimirAberto = true)}
+					/>
+					<PrimaryButton
+						label="Baixar PDF"
+						variant="secondary"
+						onclick={() => (imprimirAberto = true)}
+					/>
 					{#if encaminhamento.status === 'AGUARDANDO_REGULACAO' && auth.podeConsolidarEncaminhamento}
 						<PrimaryButton
 							label="Editar"
@@ -239,4 +249,14 @@
 			onSaved={handleEditado}
 		/>
 	</Modal>
+
+	{#if imprimirAberto}
+		<ImprimirSolicitacaoEncaminhamento
+			{encaminhamento}
+			operador={auth.me?.nome}
+			prefeitura={auth.me?.prefeitura}
+			unidade={auth.me?.unidade}
+			onFechar={() => (imprimirAberto = false)}
+		/>
+	{/if}
 {/if}

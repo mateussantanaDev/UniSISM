@@ -29,7 +29,7 @@ export class ConcluirViagemMotoristaUseCase {
     if (!exists) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
 
     const scope: AccessScope = { kind: 'PREFEITURA', prefeituraId: auth.prefeituraId };
-    await this.viagensTfd.concluir(scope, req, auth.atendenteId, viagemId, kmFinalHodometro);
+    await this.viagensTfd.concluir(scope, req, auth.atendenteId, viagemId, { kmFinalHodometro });
 
     const v = await prisma.viagemFrota.findUnique({
       where: { id: viagemId },

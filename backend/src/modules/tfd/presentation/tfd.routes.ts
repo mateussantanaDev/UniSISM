@@ -64,7 +64,7 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
   router.post('/solicitacoes/:id/anexos', ...rwSolic, single, c.postAnexarSolicitacao);
   router.get('/anexos/:id/download', ...rwSolic, c.getDownloadAnexo);
 
-  // ----- Viagens (10) -----
+  // ----- Viagens -----
   router.get('/viagens', ...rwGestor, c.getViagens);
   router.post('/viagens', ...rwGestor, c.postViagem);
   router.get('/viagens/:id', ...rwGestor, c.getViagemById);
@@ -72,6 +72,8 @@ export function buildTfdRoutes(c: TfdController, authenticate: RequestHandler): 
   router.post('/viagens/:id/iniciar', ...rwGestor, c.postIniciarViagem);
   router.post('/viagens/:id/concluir', ...rwGestor, c.postConcluirViagem);
   router.post('/viagens/:id/cancelar', ...rwGestor, c.postCancelarViagem);
+  router.post('/viagens/:id/km-gestor', ...rwGestor, c.postKmGestor);
+  router.post('/viagens/:id/alocar', ...rwGestor, c.postAlocarPassageiro);
   router.post('/viagens/:id/passageiros', ...rwGestor, c.postAlocarPassageiro);
   router.delete('/viagens/:id/passageiros/:pid', ...rwGestor, c.deletePassageiro);
   router.post('/viagens/:id/passageiros/:pid/presenca', ...rwGestor, c.postPresenca);

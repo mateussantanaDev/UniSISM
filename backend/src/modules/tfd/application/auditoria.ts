@@ -141,7 +141,7 @@ export class AuditoriaTfdUseCases {
         .map((v) => {
           const kmI = v.kmInicialHodometro ? Number(v.kmInicialHodometro) : 0;
           const kmF = v.kmFinalHodometro ? Number(v.kmFinalHodometro) : 0;
-          return [v.id, v.data.toISOString().slice(0, 10), v.veiculo.placa, v.motorista.nome,
+          return [v.id, v.data.toISOString().slice(0, 10), v.veiculo?.placa ?? '', v.motorista?.nome ?? '',
                   v.destino, kmI, kmF, kmF - kmI, v.status].map(csvEscape).join(',');
         })
         .join('\n');

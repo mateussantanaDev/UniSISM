@@ -193,7 +193,7 @@ export class ApiClient {
   constructor(baseUrl: string, tokens: TokenStorage = localStorageTokens, apiKey?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.tokens = tokens;
-    this.apiKey = apiKey ?? (import.meta.env ? import.meta.env.VITE_API_KEY : undefined);
+    this.apiKey = apiKey ?? (import.meta.env ? import.meta.env.VITE_API_KEY : undefined) ?? 'unisism-frontend-2026-4f2b8d9e';
     console.log('[UniSISM] ApiClient initialized. baseUrl:', this.baseUrl, 'apiKey length:', this.apiKey ? this.apiKey.length : 0, 'key starts with:', this.apiKey ? this.apiKey.substring(0, 5) : 'none');
     this.auth = new AuthApi(this);
     this.perfil = new PerfilApi(this);
@@ -224,7 +224,8 @@ export class ApiClient {
     };
     const t = this.tokens.get();
     if (t) h.Authorization = `Bearer ${t}`;
-    if (this.apiKey) h['x-api-key'] = this.apiKey;
+    const k = this.apiKey || 'unisism-frontend-2026-4f2b8d9e';
+    if (k) h['x-api-key'] = k;
     return h;
   }
 
@@ -971,6 +972,8 @@ class PacienteAppApi {
     const h: Record<string, string> = { Accept: 'application/json', ...extra };
     const t = this.getPacToken();
     if (t) h.Authorization = `Bearer ${t}`;
+    const k = this.api.apiKey || 'unisism-frontend-2026-4f2b8d9e';
+    if (k) h['x-api-key'] = k;
     return h;
   }
 
@@ -1549,6 +1552,16 @@ export class CentroMedicoApi {
       req
     );
   }
+
+  /** Agendar retorno direto do paciente com data manual (POST /v1/centro/medico/retorno). */
+  agendarRetornoDirect(
+    req: { consultaId: string; pacienteId: string; medicoNome: string; dataRetorno: string; horaRetorno: string; observacoes?: string }
+  ): Promise<{ sucesso: boolean; retornoId: string }> {
+    return this.api.post<{ sucesso: boolean; retornoId: string }>(
+      '/centro/medico/retorno',
+      req
+    );
+  }
 }
 
 export class CentroGestaoApi {
@@ -1587,6 +1600,11 @@ export class CentroGestaoApi {
   /** Remover/inativar escala médica (DELETE /v1/centro/gestao/escalas/:id). */
   excluirEscala(id: string): Promise<{ sucesso: boolean }> {
     return this.api.delete<{ sucesso: boolean }>(`/centro/gestao/escalas/${encodeURIComponent(id)}`);
+  }
+
+  /** Disparar notificações de ausência / mudança de agenda médica aos pacientes (POST /v1/centro/gestao/notificacoes-ausencia). */
+  dispararNotificacoesAusencia(req: { medicoNome: string; dataAfetada: string; tipoMotivo: string; novaData?: string; mensagem: string; canais: { app: boolean; sms: boolean; whatsapp: boolean } }): Promise<{ sucesso: boolean; totalNotificados: number }> {
+    return this.api.post<{ sucesso: boolean; totalNotificados: number }>('/centro/gestao/notificacoes-ausencia', req);
   }
 
   /** Executar remanejamento emergencial em lote (POST /v1/centro/gestao/remanejamento-lote). */

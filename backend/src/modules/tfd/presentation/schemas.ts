@@ -41,39 +41,62 @@ export const criarSolicitacaoSchema = z.object({
   pacienteId: z.string().min(1).optional(),
   paciente: z
     .object({
-      nome: z.string().min(2).max(150),
-      cpf: z.string().length(11),
+      nome: z.string({ required_error: 'Nome do paciente é obrigatório' }).min(2).max(150),
+      cpf: z.string({ required_error: 'CPF do paciente é obrigatório' }).length(11, 'CPF deve conter 11 dígitos'),
       dataNascimento: ymd,
-      sexo: z.enum(['M', 'F', 'OUTRO']),
-      telefone: z.string().min(8).max(20),
-      endereco: z.string().min(2).max(200),
-      bairro: z.string().min(2).max(100),
-      municipio: z.string().min(2).max(100),
-      uf: z.string().length(2),
+      sexo: z.enum(['M', 'F', 'OUTRO']).default('M'),
+      telefone: z.string({ required_error: 'Telefone do paciente é obrigatório' }).min(8).max(20),
+      endereco: z.string({ required_error: 'Endereço é obrigatório' }).min(2).max(200),
+      bairro: z.string({ required_error: 'Bairro é obrigatório' }).min(2).max(100),
+      municipio: z.string({ required_error: 'Município é obrigatório' }).min(2).max(100),
+      uf: z.string({ required_error: 'UF é obrigatória' }).length(2),
       cartaoSus: z.string().max(20).optional().nullable(),
       nomeMae: z.string().max(150).optional().nullable(),
       rg: z.string().max(30).optional().nullable(),
       cep: z.string().max(10).optional().nullable(),
     })
     .optional(),
-  ubsId: z.string().min(1),
+  ubsId: z.string({ required_error: 'UBS é obrigatória' }).min(1),
   encaminhamentoOrigemId: z.string().optional(),
-  destino: z.string().min(2).max(200),
-  unidadeDestino: z.string().max(200).optional(),
-  especialidade: z.string().min(2).max(100),
-  motivo: z.string().min(5).max(2000),
+  destino: z.string({ required_error: 'Destino é obrigatório' }).min(2).max(200),
+  unidadeDestino: z.string().max(200).optional().nullable(),
+  especialidade: z.string({ required_error: 'Especialidade é obrigatória' }).min(2).max(100),
+  motivo: z.string({ required_error: 'Motivo é obrigatório' }).min(5).max(2000),
   dataDesejada: ymd,
-  acompanhanteNecessario: z.boolean().optional(),
-  prioridade: z.enum(['ELETIVA', 'PRIORITARIA', 'URGENTE']),
+  prioridade: z.enum(['ROUTINA', 'ELETIVA', 'PRIORITARIA', 'URGENTE']).default('ROUTINA'),
   observacoes: z.string().max(1000).optional(),
   prefeituraId: z.string().optional(),
+
+  // Acompanhante
+  acompanhanteNecessario: z.boolean().optional().default(false),
+  acompanhante: z
+    .object({
+      nome: z.string().max(150).optional(),
+      cpf: z.string().max(14).optional(),
+      dataNascimento: ymd.optional(),
+      telefone: z.string().max(20).optional(),
+      parentesco: z.string().max(50).optional(),
+      rg: z.string().max(30).optional(),
+    })
+    .optional(),
+
+  // Registro Tardio / Retroativo
+  isRegistroTardio: z.boolean().optional().default(false),
+  justificativaRegistroTardio: z.string().max(2000).optional(),
+  dataRealizadaRetroativa: ymd.optional(),
+  comprovanteHospitalDestino: z.string().max(500).optional(),
 }).refine(data => data.pacienteId || data.paciente, {
   message: "Informe o pacienteId ou o objeto paciente completo",
-  path: ["pacienteId"]
+  path: ["paciente"]
+}).refine(data => !data.acompanhanteNecessario || (data.acompanhante && data.acompanhante.nome && data.acompanhante.cpf), {
+  message: "Quando acompanhante for necessário, os dados do acompanhante (Nome e CPF) devem estar preenchidos",
+  path: ["acompanhante"]
 });
 
 export const aprovarSolicitacaoSchema = z.object({
   observacoes: z.string().max(1000).optional(),
+  modoAlocacao: z.enum(['AUTOMATICA', 'MANUAL']).optional(),
+  dataManual: ymd.optional(),
   /**
    * Se informado, faz aprovar + alocar atomicamente — UX "aprova e já joga
    * na viagem X no assento Y", reduzindo cliques no painel do gestor.
@@ -99,20 +122,17 @@ export const criarViagemSchema = z
     // veiculoId OU placa (UX BlaBlaCar)
     veiculoId: z.string().min(1).optional(),
     placa: z.string().min(7).max(10).optional(),
-    motoristaId: z.string().min(1),
+    motoristaId: z.string().min(1).optional(),
     destino: z.string().min(2).max(200),
     unidadeDestino: z.string().max(200).optional(),
     rotaResumo: z.string().max(500).optional(),
     kmEstimados: z.number().int().positive().optional(),
-    // Default = capacidade do veículo (resolvido no use case)
     vagasTotais: z.number().int().positive().max(100).optional(),
     observacoes: z.string().max(1000).optional(),
     prefeituraId: z.string().optional(),
-  })
-  .refine(
-    (v) => v.veiculoId !== undefined || v.placa !== undefined,
-    { message: 'Informe veiculoId ou placa', path: ['veiculoId'] },
-  );
+    isRegistroTardio: z.boolean().optional().default(false),
+    justificativaTardia: z.string().max(2000).optional(),
+  });
 
 export const atualizarViagemSchema = z
   .object({
@@ -124,6 +144,8 @@ export const atualizarViagemSchema = z
     rotaResumo: z.string().max(500).optional(),
     kmEstimados: z.number().int().positive().optional(),
     observacoes: z.string().max(1000).optional(),
+    veiculoId: z.string().optional(),
+    motoristaId: z.string().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, 'Informe pelo menos um campo');
 
@@ -131,8 +153,17 @@ export const iniciarViagemSchema = z.object({
   kmInicialHodometro: z.number().int().nonnegative(),
 });
 
+export const kmGestorSchema = z.object({
+  kmInicialHodometro: z.number({ required_error: 'Hodômetro inicial é obrigatório' }).int().nonnegative(),
+  kmFinalHodometro: z.number({ required_error: 'Hodômetro final é obrigatório' }).int().positive(),
+  justificativa: z.string().min(5, 'Justificativa deve conter no mínimo 5 caracteres').max(2000),
+});
+
 export const concluirViagemSchema = z.object({
-  kmFinalHodometro: z.number().int().positive(),
+  veiculoId: z.string().optional(),
+  motoristaId: z.string().optional(),
+  kmInicialHodometro: z.number().int().nonnegative().optional(),
+  kmFinalHodometro: z.number().int().positive().optional(),
   observacoes: z.string().max(1000).optional(),
 });
 

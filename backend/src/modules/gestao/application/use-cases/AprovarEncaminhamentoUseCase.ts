@@ -65,8 +65,8 @@ export interface AprovarInput {
   /** UF do agendamento. Default "BA". 2 chars. */
   ufAgendamento?: string;
   canalRoteamento?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
-  filaDestino?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO' | null;
-  destinoRegulacao?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null;
+  filaDestino?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEM' | 'CEO' | 'CENTRO_ODONTOLOGICO' | null;
+  destinoRegulacao?: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEM' | 'CEO' | 'CENTRO_ODONTOLOGICO' | null;
   dataDisponibilidade?: string | null; // YYYY-MM-DD
 }
 
@@ -133,22 +133,52 @@ export class AprovarEncaminhamentoUseCase {
       }
     }
 
-    let resolvedCanal = input.canalRoteamento;
-    if (input.filaDestino !== undefined) {
-      if (input.filaDestino === 'CEO') {
+    let resolvedCanal: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null | undefined = input.canalRoteamento;
+    const rawFila = input.filaDestino;
+    if (rawFila) {
+      if (rawFila === 'CEO' || rawFila === 'CENTRO_ODONTOLOGICO') {
         resolvedCanal = 'CENTRO_ODONTOLOGICO';
-      } else if (input.filaDestino === 'CENTRO_ESPECIALIDADES' || input.filaDestino === 'SUS') {
-        resolvedCanal = input.filaDestino;
-      } else {
-        resolvedCanal = null;
+      } else if (rawFila === 'CENTRO_ESPECIALIDADES' || rawFila === 'CEM' || rawFila === 'SUS') {
+        resolvedCanal = rawFila === 'CEM' ? 'CENTRO_ESPECIALIDADES' : rawFila;
       }
     }
 
-    let resolvedDestino = input.destinoRegulacao;
-    if (resolvedDestino !== undefined) {
-      resolvedCanal = resolvedDestino;
-    } else if (resolvedCanal !== undefined) {
+    let resolvedDestino: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null | undefined = undefined;
+    const rawDestino = input.destinoRegulacao;
+    if (rawDestino) {
+      if (rawDestino === 'CEO' || rawDestino === 'CENTRO_ODONTOLOGICO') {
+        resolvedDestino = 'CENTRO_ODONTOLOGICO';
+        resolvedCanal = 'CENTRO_ODONTOLOGICO';
+      } else if (rawDestino === 'CENTRO_ESPECIALIDADES' || rawDestino === 'CEM') {
+        resolvedDestino = 'CENTRO_ESPECIALIDADES';
+        resolvedCanal = 'CENTRO_ESPECIALIDADES';
+      } else if (rawDestino === 'SUS') {
+        resolvedDestino = 'SUS';
+        resolvedCanal = 'SUS';
+      }
+    } else if (resolvedCanal) {
       resolvedDestino = resolvedCanal;
+    }
+
+    // Auto-detect CEO vs CEM se canal/destino não for definido explicitamente
+    const isDental =
+      /odont|bucomaxilo|endodont|periodont|prótese|protese|estomatol|dente|dentista/i.test(atual.especialidadeSolicitada || '') ||
+      /ceo|odontol/i.test(input.localAgendamento || '');
+
+    if (!resolvedCanal && !resolvedDestino) {
+      if (isDental) {
+        resolvedCanal = 'CENTRO_ODONTOLOGICO';
+        resolvedDestino = 'CENTRO_ODONTOLOGICO';
+      } else {
+        resolvedCanal = 'CENTRO_ESPECIALIDADES';
+        resolvedDestino = 'CENTRO_ESPECIALIDADES';
+      }
+    } else if (resolvedCanal === 'CENTRO_ODONTOLOGICO' || resolvedDestino === 'CENTRO_ODONTOLOGICO') {
+      resolvedCanal = 'CENTRO_ODONTOLOGICO';
+      resolvedDestino = 'CENTRO_ODONTOLOGICO';
+    } else if (resolvedCanal === 'CENTRO_ESPECIALIDADES' || resolvedDestino === 'CENTRO_ESPECIALIDADES') {
+      resolvedCanal = 'CENTRO_ESPECIALIDADES';
+      resolvedDestino = 'CENTRO_ESPECIALIDADES';
     }
 
     let localAg = input.localAgendamento?.trim();
