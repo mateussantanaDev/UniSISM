@@ -55,6 +55,7 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
     }
 
     const where: Prisma.EncaminhamentoWhereInput = {
+      deletadoEm: null,
       AND: conditions,
     };
 

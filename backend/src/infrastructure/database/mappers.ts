@@ -33,11 +33,27 @@ export function grupoSanguineoToPrisma(g: GrupoDominio): GrupoPrisma {
   return sangueDominioParaPrisma[g];
 }
 
-export function isoOrEmpty(d: Date | null | undefined): string {
-  return d ? d.toISOString() : '';
+export function safeIsoString(d: any): string {
+  if (!d) return '';
+  if (d instanceof Date) return isNaN(d.getTime()) ? '' : d.toISOString();
+  try {
+    const parsed = new Date(d);
+    return isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+  } catch {
+    return '';
+  }
 }
 
-export function ymd(d: Date | null | undefined): string {
-  if (!d) return '';
-  return d.toISOString().slice(0, 10);
+export function safeIsoOrNull(d: any): string | null {
+  const iso = safeIsoString(d);
+  return iso ? iso : null;
+}
+
+export function isoOrEmpty(d: any): string {
+  return safeIsoString(d);
+}
+
+export function ymd(d: any): string {
+  const iso = safeIsoString(d);
+  return iso ? iso.slice(0, 10) : '';
 }

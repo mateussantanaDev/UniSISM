@@ -16,7 +16,7 @@ import type {
   RespostaSUS,
   SolicitacaoMedica,
 } from '../../domain/entities/Encaminhamento';
-import { ymd } from './mappers';
+import { safeIsoString, safeIsoOrNull, ymd } from './mappers';
 
 export type EncaminhamentoFull = EncaminhamentoRow & {
   anexos: AnexoRow[];
@@ -27,6 +27,17 @@ export const INCLUDE_ENCAMINHAMENTO_FULL = {
   anexos: true,
   timeline: true,
 } satisfies Prisma.EncaminhamentoInclude;
+
+function safeTime(d: any): number {
+  if (!d) return 0;
+  if (d instanceof Date) return isNaN(d.getTime()) ? 0 : d.getTime();
+  try {
+    const parsed = new Date(d);
+    return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  } catch {
+    return 0;
+  }
+}
 
 export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
   const paciente: Paciente = {
@@ -48,20 +59,20 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     prioridade: r.prioridade,
     dataSolicitacao: ymd(r.dataSolicitacao),
   };
-  const anexos: AnexoDocumento[] = r.anexos
+  const anexos: AnexoDocumento[] = (r.anexos ?? [])
     .slice()
-    .sort((a, b) => a.uploadEm.getTime() - b.uploadEm.getTime())
+    .sort((a, b) => safeTime(a.uploadEm) - safeTime(b.uploadEm))
     .map((a) => ({
       id: a.id,
       nome: a.nome,
       tipo: a.tipo,
       tamanhoKb: a.tamanhoKb,
-      uploadEm: a.uploadEm.toISOString(),
+      uploadEm: safeIsoString(a.uploadEm) || new Date().toISOString(),
       scanStatus: a.scanStatus,
     }));
-  const timeline: EventoTimeline[] = r.timeline
+  const timeline: EventoTimeline[] = (r.timeline ?? [])
     .slice()
-    .sort((a, b) => a.em.getTime() - b.em.getTime())
+    .sort((a, b) => safeTime(a.em) - safeTime(b.em))
     .map((e) => ({
       id: e.id,
       tipo: e.tipo,
@@ -69,7 +80,7 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
       descricao: e.descricao,
       autor: e.autor,
       autorPapel: e.autorPapel,
-      em: e.em.toISOString(),
+      em: safeIsoString(e.em) || new Date().toISOString(),
     }));
 
   const enc: Encaminhamento = {
@@ -79,12 +90,12 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     solicitacao,
     anexos,
     status: r.status,
-    criadoEm: r.criadoEm.toISOString(),
-    atualizadoEm: r.atualizadoEm.toISOString(),
+    criadoEm: safeIsoString(r.criadoEm) || new Date().toISOString(),
+    atualizadoEm: safeIsoString(r.atualizadoEm) || new Date().toISOString(),
     unidadeOrigem: r.unidadeOrigem,
     atendenteResponsavel: r.atendenteResponsavel,
     timeline,
-    agendamentoPrevisto: r.agendamentoPrevisto ? r.agendamentoPrevisto.toISOString() : null,
+    agendamentoPrevisto: safeIsoOrNull(r.agendamentoPrevisto),
     localAgendamento: r.localAgendamento ?? null,
     profissionalAgendado: r.profissionalAgendado ?? null,
     cidadeAgendamento: r.cidadeAgendamento ?? null,
@@ -94,11 +105,11 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     canalRoteamento: r.canalRoteamento ?? null,
     filaDestino: (r.canalRoteamento === 'CENTRO_ODONTOLOGICO' || r.destinoRegulacao === 'CENTRO_ODONTOLOGICO') ? 'CEO' : (r.canalRoteamento ?? r.destinoRegulacao ?? null),
     destinoRegulacao: r.destinoRegulacao ?? null,
-    dataDisponibilidade: r.dataDisponibilidade ? r.dataDisponibilidade.toISOString() : null,
+    dataDisponibilidade: safeIsoOrNull(r.dataDisponibilidade),
     statusAtendimentoCentro: r.statusAtendimentoCentro ?? null,
-    presencaRegistradaEm: r.presencaRegistradaEm ? r.presencaRegistradaEm.toISOString() : null,
-    atendimentoIniciadoEm: r.atendimentoIniciadoEm ? r.atendimentoIniciadoEm.toISOString() : null,
-    atendimentoConcluidoEm: r.atendimentoConcluidoEm ? r.atendimentoConcluidoEm.toISOString() : null,
+    presencaRegistradaEm: safeIsoOrNull(r.presencaRegistradaEm),
+    atendimentoIniciadoEm: safeIsoOrNull(r.atendimentoIniciadoEm),
+    atendimentoConcluidoEm: safeIsoOrNull(r.atendimentoConcluidoEm),
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 
@@ -112,7 +123,7 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     const respostaSUS: RespostaSUS = {
       anexoId: r.respostaSusAnexoId,
       observacao: r.respostaSusObservacao ?? '',
-      registradoEm: r.respostaSusRegistradoEm.toISOString(),
+      registradoEm: safeIsoString(r.respostaSusRegistradoEm) || new Date().toISOString(),
       registradoPor: {
         id: r.respostaSusRegistradoPorId,
         nome: r.respostaSusRegistradoPorNome,
