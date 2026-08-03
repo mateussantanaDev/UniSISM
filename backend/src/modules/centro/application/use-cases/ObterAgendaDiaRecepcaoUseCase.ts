@@ -9,6 +9,7 @@ export interface ObterAgendaDiaInput {
   especialidade?: string;
   medico?: string;
   statusAtendimento?: string; // AGENDADO, AGUARDANDO_ATENDIMENTO, etc.
+  centro?: 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
 }
 
 export class ObterAgendaDiaRecepcaoUseCase {
@@ -17,13 +18,31 @@ export class ObterAgendaDiaRecepcaoUseCase {
     const startOfDay = new Date(`${targetDateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${targetDateStr}T23:59:59.999Z`);
 
+    const isOdonto = input.centro === 'CENTRO_ODONTOLOGICO';
     const where: Prisma.EncaminhamentoWhereInput = {
-      canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
       status: StatusEncaminhamento.APROVADO,
       agendamentoPrevisto: {
         gte: startOfDay,
         lte: endOfDay,
       },
+      OR: isOdonto
+        ? [
+            { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+            { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+            { especialidadeSolicitada: { contains: 'Odont', mode: 'insensitive' } },
+            { especialidadeSolicitada: { contains: 'CEO', mode: 'insensitive' } },
+            { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } },
+          ]
+        : [
+            { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+            { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+            {
+              AND: [
+                { canalRoteamento: { not: CanalRoteamento.CENTRO_ODONTOLOGICO } },
+                { destinoRegulacao: { not: 'CENTRO_ODONTOLOGICO' as any } },
+              ],
+            },
+          ],
     };
 
     if (input.especialidade) {

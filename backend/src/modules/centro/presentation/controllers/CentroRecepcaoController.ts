@@ -172,6 +172,7 @@ export class CentroRecepcaoController {
   getAgendaDia = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const data = req.query.data as string | undefined;
+    const centro = req.query.centro as 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | undefined;
     const especialidade = req.query.especialidade as string | undefined;
     const medico = req.query.medico as string | undefined;
     const statusAtendimento = req.query.statusAtendimento as string | undefined;
@@ -179,6 +180,7 @@ export class CentroRecepcaoController {
     const agendamentos = await this.agendaDiaUC.exec(
       {
         data,
+        centro,
         especialidade,
         medico,
         statusAtendimento,

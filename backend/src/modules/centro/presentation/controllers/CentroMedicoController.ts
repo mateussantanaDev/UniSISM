@@ -77,6 +77,7 @@ export class CentroMedicoController {
 
     const data = (req.query.data as string | undefined) || new Date().toISOString().substring(0, 10);
     const especialidade = req.query.especialidade as string | undefined;
+    const centro = req.query.centro as 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | undefined;
     const statusAtendimento = req.query.statusAtendimento as string | undefined;
 
     const agendaRaw = await this.agendaUC.exec(
@@ -86,6 +87,7 @@ export class CentroMedicoController {
         data,
         especialidade,
         statusAtendimento,
+        centro,
       },
       scope,
     );

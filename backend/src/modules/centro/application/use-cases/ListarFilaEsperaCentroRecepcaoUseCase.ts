@@ -16,9 +16,11 @@ export interface ListarFilaCentroInput {
 export class ListarFilaEsperaCentroRecepcaoUseCase {
   async exec(input: ListarFilaCentroInput, scope: AccessScope): Promise<Encaminhamento[]> {
     const centroTarget = input.centro ?? 'CENTRO_ESPECIALIDADES';
+    const isOdonto = centroTarget === 'CENTRO_ODONTOLOGICO';
+
     const conditions: Prisma.EncaminhamentoWhereInput[] = [];
 
-    if (centroTarget === 'CENTRO_ODONTOLOGICO') {
+    if (isOdonto) {
       conditions.push({
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
