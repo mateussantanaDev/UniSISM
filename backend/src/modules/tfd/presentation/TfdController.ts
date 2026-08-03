@@ -174,11 +174,13 @@ export class TfdController {
 
   // ==================== SOLICITAÇÕES ====================
   getSolicitacoes = async (req: Request, res: Response): Promise<void> => {
+    const criadaPorMim = req.query['criadaPorMim'] === 'true' || req.query['criadaPorMim'] === '1';
     res.json(
       await this.uc.solicitacoes.listar(scopeFromRequest(req), req, {
         status: typeof req.query['status'] === 'string' ? req.query['status'] : undefined,
         prioridade: typeof req.query['prioridade'] === 'string' ? req.query['prioridade'] : undefined,
         q: typeof req.query['q'] === 'string' ? req.query['q'] : undefined,
+        criadaPorMim,
       }),
     );
   };

@@ -35,6 +35,12 @@ export interface UpdateEncaminhamentoInput {
   cidDescricao?: string;
   especialidadeSolicitada?: string;
   cid10?: string;
+  agendamentoPrevisto?: string | Date | null;
+  dataDisponibilidade?: string | Date | null;
+  localAgendamento?: string | null;
+  profissionalAgendado?: string | null;
+  cidadeAgendamento?: string | null;
+  ufAgendamento?: string | null;
 }
 
 export class UpdateEncaminhamentoUseCase {
@@ -56,9 +62,18 @@ export class UpdateEncaminhamentoUseCase {
     if (existe.deletadoEm) {
       throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
     }
-    // Por padrão, só edita em AGUARDANDO_REGULACAO. ADMIN/DEV podem passar `bypassGateDeStatus`
-    // para edições administrativas/correcionais em qualquer status.
-    if (!opts.bypassGateDeStatus && existe.status !== 'AGUARDANDO_REGULACAO') {
+    // Regulação, Centro, Admin e Dev podem editar encaminhamentos em qualquer status (ex: APROVADO)
+    const isRegulacaoOuAdminOuCentro =
+      scope.kind !== 'UBS' ||
+      ['REGULADOR_SMS', 'ADMIN', 'DESENVOLVEDOR', 'ATENDENTE_CENTRO'].some((r) =>
+        (editorPapel || '').toUpperCase().includes(r),
+      );
+
+    if (
+      !opts.bypassGateDeStatus &&
+      !isRegulacaoOuAdminOuCentro &&
+      existe.status !== 'AGUARDANDO_REGULACAO'
+    ) {
       throw Conflict(
         'EDICAO_NAO_PERMITIDA',
         'Encaminhamento só pode ser editado em AGUARDANDO_REGULACAO',
@@ -109,6 +124,38 @@ export class UpdateEncaminhamentoUseCase {
     if (input.cid10 !== undefined && input.cid10 !== existe.cid10) {
       data.cid10 = input.cid10;
       camposAlterados.push('solicitacao.cid10');
+    }
+    if (input.agendamentoPrevisto !== undefined) {
+      if (!input.agendamentoPrevisto) {
+        data.agendamentoPrevisto = null;
+      } else {
+        data.agendamentoPrevisto = new Date(input.agendamentoPrevisto);
+      }
+      camposAlterados.push('agendamentoPrevisto');
+    }
+    if (input.dataDisponibilidade !== undefined) {
+      if (!input.dataDisponibilidade) {
+        data.dataDisponibilidade = null;
+      } else {
+        data.dataDisponibilidade = new Date(input.dataDisponibilidade);
+      }
+      camposAlterados.push('dataDisponibilidade');
+    }
+    if (input.localAgendamento !== undefined && input.localAgendamento !== existe.localAgendamento) {
+      data.localAgendamento = input.localAgendamento;
+      camposAlterados.push('localAgendamento');
+    }
+    if (input.profissionalAgendado !== undefined && input.profissionalAgendado !== existe.profissionalAgendado) {
+      data.profissionalAgendado = input.profissionalAgendado;
+      camposAlterados.push('profissionalAgendado');
+    }
+    if (input.cidadeAgendamento !== undefined && input.cidadeAgendamento !== existe.cidadeAgendamento) {
+      data.cidadeAgendamento = input.cidadeAgendamento;
+      camposAlterados.push('cidadeAgendamento');
+    }
+    if (input.ufAgendamento !== undefined && input.ufAgendamento !== existe.ufAgendamento) {
+      data.ufAgendamento = input.ufAgendamento;
+      camposAlterados.push('ufAgendamento');
     }
 
     if (camposAlterados.length === 0) {

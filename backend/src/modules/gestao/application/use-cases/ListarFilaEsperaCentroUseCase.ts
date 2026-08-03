@@ -13,24 +13,29 @@ export class ListarFilaEsperaCentroUseCase {
     const isOdonto = centro === 'CENTRO_ODONTOLOGICO';
 
     const where: Prisma.EncaminhamentoWhereInput = {
-      status: StatusEncaminhamento.APROVADO,
+      status: {
+        in: [StatusEncaminhamento.APROVADO, StatusEncaminhamento.AGUARDANDO_REGULACAO],
+      },
       agendamentoPrevisto: null,
       ...whereByScopeViaUbs(scope),
       OR: isOdonto
         ? [
             { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
             { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+            { destinoRegulacao: 'CEO' as any },
             { especialidadeSolicitada: { contains: 'Odont', mode: 'insensitive' } },
             { especialidadeSolicitada: { contains: 'CEO', mode: 'insensitive' } },
             { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } },
+            { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
           ]
         : [
             { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
             { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+            { destinoRegulacao: 'CEM' as any },
             {
               AND: [
                 { canalRoteamento: { not: CanalRoteamento.CENTRO_ODONTOLOGICO } },
-                { destinoRegulacao: { not: 'CENTRO_ODONTOLOGICO' as any } },
+                { destinoRegulacao: { notIn: ['CENTRO_ODONTOLOGICO' as any, 'CEO' as any] } },
               ],
             },
           ],

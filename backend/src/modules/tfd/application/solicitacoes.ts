@@ -73,6 +73,22 @@ export interface AnexoUploadInput {
   tipo: 'ENCAMINHAMENTO' | 'COMPROVANTE_CONSULTA' | 'LAUDO_MEDICO' | 'DOCUMENTO_IDENTIDADE' | 'OUTRO' | 'COMPROVANTE_ENCAMINHAMENTO' | 'EXAME' | 'LAUDO';
 }
 
+function safeIsoDate(d: any): string | null {
+  if (!d) return null;
+  if (d instanceof Date) return isNaN(d.getTime()) ? null : d.toISOString();
+  try {
+    const parsed = new Date(d);
+    return isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+function safeDateSlice10(d: any): string | null {
+  const iso = safeIsoDate(d);
+  return iso ? iso.slice(0, 10) : null;
+}
+
 function rowParaSolicitacao(r: any) {
   return {
     id: r.id,
@@ -80,7 +96,7 @@ function rowParaSolicitacao(r: any) {
     pacienteId: r.pacienteId,
     pacienteNome: r.pacienteNome ?? r.paciente?.nome ?? null,
     pacienteCpf: r.pacienteCpf ?? r.paciente?.cpf ?? null,
-    pacienteDataNasc: r.pacienteDataNasc ? r.pacienteDataNasc.toISOString().slice(0, 10) : (r.paciente?.dataNascimento ? r.paciente.dataNascimento.toISOString().slice(0, 10) : null),
+    pacienteDataNasc: safeDateSlice10(r.pacienteDataNasc ?? r.paciente?.dataNascimento),
     pacienteTelefone: r.pacienteTelefone ?? r.paciente?.telefone ?? null,
     pacienteEndereco: r.pacienteEndereco ?? r.paciente?.endereco ?? null,
     pacienteCartaoSus: r.pacienteCartaoSus ?? r.paciente?.cartaoSus ?? null,
@@ -97,25 +113,25 @@ function rowParaSolicitacao(r: any) {
     unidadeDestino: r.unidadeDestino,
     especialidade: r.especialidade,
     motivo: r.motivo,
-    dataDesejada: r.dataDesejada ? r.dataDesejada.toISOString().slice(0, 10) : null,
+    dataDesejada: safeDateSlice10(r.dataDesejada),
     acompanhanteNecessario: r.acompanhanteNecessario ?? false,
     acompanhanteNome: r.acompanhanteNome,
     acompanhanteCpf: r.acompanhanteCpf,
-    acompanhanteDataNasc: r.acompanhanteDataNasc ? r.acompanhanteDataNasc.toISOString().slice(0, 10) : null,
+    acompanhanteDataNasc: safeDateSlice10(r.acompanhanteDataNasc),
     acompanhanteTelefone: r.acompanhanteTelefone,
     acompanhanteParentesco: r.acompanhanteParentesco,
     acompanhanteRg: r.acompanhanteRg,
     isRegistroTardio: r.isRegistroTardio ?? false,
     justificativaRegistroTardio: r.justificativaRegistroTardio,
-    dataRealizadaRetroativa: r.dataRealizadaRetroativa ? r.dataRealizadaRetroativa.toISOString().slice(0, 10) : null,
+    dataRealizadaRetroativa: safeDateSlice10(r.dataRealizadaRetroativa),
     comprovanteHospitalDestino: r.comprovanteHospitalDestino,
     prioridade: r.prioridade,
     status: r.status,
     observacoes: r.observacoes,
     motivoNegacao: r.motivoNegacao,
     viagemId: r.viagemId,
-    criadaEm: r.criadaEm.toISOString(),
-    decididaEm: r.decididaEm?.toISOString() ?? null,
+    criadaEm: safeIsoDate(r.criadaEm) ?? new Date().toISOString(),
+    decididaEm: safeIsoDate(r.decididaEm),
     decididaPorId: r.decididaPorId,
     anexos: (r.anexos ?? []).map((a: any) => ({
       id: a.id,
@@ -127,7 +143,7 @@ function rowParaSolicitacao(r: any) {
       tamanhoKb: a.tamanhoKb,
       url: a.url,
       scanStatus: a.scanStatus,
-      uploadEm: a.uploadEm.toISOString(),
+      uploadEm: safeIsoDate(a.uploadEm ?? a.criadoEm) ?? new Date().toISOString(),
     })),
   };
 }
@@ -152,10 +168,17 @@ export class SolicitacoesTfdUseCases {
   async listar(
     scope: AccessScope,
     req: Request,
-    filtros: { status?: string; prioridade?: string; q?: string },
+    filtros: { status?: string; prioridade?: string; q?: string; criadaPorMim?: boolean },
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const where: any = { prefeituraId, deletadaEm: null };
+
+    if (scope.kind === 'UBS') {
+      where.ubsId = scope.ubsId;
+    } else if (filtros.criadaPorMim && req.auth?.ubsId) {
+      where.ubsId = req.auth.ubsId;
+    }
+
     if (filtros.status) where.status = filtros.status;
     if (filtros.prioridade) where.prioridade = filtros.prioridade;
     if (filtros.q && filtros.q.trim()) {

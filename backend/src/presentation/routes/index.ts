@@ -128,13 +128,13 @@ export function buildRoutes(deps: Deps): Router {
   router.patch(
     '/encaminhamentos/:id',
     authenticate,
-    requireRole('ATENDENTE_UBS', 'COORDENADOR_UBS', 'ADMIN', 'DESENVOLVEDOR'),
+    requireRole('ATENDENTE_UBS', 'COORDENADOR_UBS', 'REGULADOR_SMS', 'ATENDENTE_CENTRO', 'ADMIN', 'DESENVOLVEDOR'),
     deps.encaminhamentos.patch,
   );
   router.delete(
     '/encaminhamentos/:id',
     authenticate,
-    requireRole('ADMIN', 'DESENVOLVEDOR'),
+    requireRole('REGULADOR_SMS', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ADMIN', 'DESENVOLVEDOR'),
     deps.encaminhamentos.delete,
   );
   router.post(

@@ -25,6 +25,7 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
           { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+          { destinoRegulacao: 'CEO' as any },
           { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
@@ -40,6 +41,7 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
           { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+          { destinoRegulacao: 'CEM' as any },
           {
             AND: [
               { canalRoteamento: null, destinoRegulacao: null },

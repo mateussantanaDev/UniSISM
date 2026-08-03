@@ -39,9 +39,25 @@ export class GestaoCotasUseCase {
         prisma.encaminhamento.count({
           where: {
             ubsId: ubs.id,
-            canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
             status: StatusEncaminhamento.APROVADO,
-            agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth },
+            OR: [
+              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+              { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+              { destinoRegulacao: 'CEM' as any },
+            ],
+            AND: [
+              {
+                OR: [
+                  { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
+                  {
+                    AND: [
+                      { agendamentoPrevisto: null },
+                      { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
+                    ],
+                  },
+                ],
+              },
+            ],
           },
         }),
       ]);
@@ -110,9 +126,25 @@ export class GestaoCotasUseCase {
     const countAlocadas = await prisma.encaminhamento.count({
       where: {
         ubsId,
-        canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
         status: StatusEncaminhamento.APROVADO,
-        agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth },
+        OR: [
+          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+          { destinoRegulacao: 'CEM' as any },
+        ],
+        AND: [
+          {
+            OR: [
+              { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
+              {
+                AND: [
+                  { agendamentoPrevisto: null },
+                  { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
 

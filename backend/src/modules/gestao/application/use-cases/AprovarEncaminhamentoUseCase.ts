@@ -131,6 +131,14 @@ export class AprovarEncaminhamentoUseCase {
           throw Unprocessable('DATA_DISPONIBILIDADE_NO_PASSADO', 'dataDisponibilidade deve ser hoje ou no futuro');
         }
       }
+    } else {
+      // Auto-calcula dataDisponibilidade com base na prioridade do atendimento
+      const prio = atual.prioridade;
+      const days = prio === 'URGENTE' || (prio as string) === 'EMERGENCIA' ? 1 : prio === 'PRIORITARIA' ? 7 : 15;
+      const target = new Date();
+      target.setDate(target.getDate() + days);
+      target.setUTCHours(0, 0, 0, 0);
+      dataDisp = target;
     }
 
     let resolvedCanal: 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | null | undefined = input.canalRoteamento;
@@ -186,22 +194,6 @@ export class AprovarEncaminhamentoUseCase {
     let cidadeAg = input.cidadeAgendamento?.trim();
     let ufAg = input.ufAgendamento?.trim().toUpperCase();
     let notaTexto = input.nota;
-
-    if (!agendamento && (resolvedCanal === 'CENTRO_ESPECIALIDADES' || resolvedDestino === 'CENTRO_ESPECIALIDADES')) {
-      const otimizado = await calcularOtimizacaoAgendamento({
-        profissional: profAg,
-        nota: notaTexto,
-        especialidade: atual.especialidadeSolicitada,
-        prioridade: atual.prioridade,
-      });
-      agendamento = otimizado.dateTime;
-      profAg = otimizado.doctor.nome;
-      localAg = localAg || 'Centro Municipal de Especialidades';
-      cidadeAg = cidadeAg || atual.cidadeAgendamento || 'Município Sede';
-      ufAg = ufAg || 'PE';
-      const timeInfo = `Médico: ${otimizado.doctor.nome} às ${otimizado.timeStr}`;
-      notaTexto = notaTexto ? `${timeInfo} | ${notaTexto}` : timeInfo;
-    }
 
     const notaLimpa = notaTexto?.trim();
 
