@@ -6,18 +6,19 @@ import { randomUUID } from 'crypto';
 
 export interface ChamarPacienteUbsInput {
   atendimentoId: string;
-  doctor: {
-    id: string;
-    nome: string;
+  doctor?: {
+    id?: string;
+    nome?: string;
     crm?: string;
   };
   consultorio?: string;
+  crm?: string;
 }
 
 export class ChamarPacienteUbsUseCase {
   constructor(private readonly repo: FilaUbsRepository = filaUbsRepository) {}
 
-  async exec(input: ChamarPacienteUbsInput, scope: AccessScope): Promise<{
+  async exec(input: ChamarPacienteUbsInput, scope?: AccessScope): Promise<{
     atendimento: AtendimentoUbsItem;
     chamada: ChamadaPainelUbs;
   }> {
@@ -28,13 +29,16 @@ export class ChamarPacienteUbsUseCase {
 
     const nowIso = new Date().toISOString();
     const consultorioFinal = input.consultorio || item.consultorio || 'Consultório 01';
+    const medicoNomeFinal = input.doctor?.nome || item.medicoNome || 'Dr(a). Médico da Família';
+    const medicoIdFinal = input.doctor?.id || item.medicoId || undefined;
+    const crmFinal = input.crm || input.doctor?.crm || item.crm || undefined;
 
     const atualizado = await this.repo.atualizar(item.id, {
       status: 'CHAMADO',
       chamadoEm: nowIso,
-      medicoId: input.doctor.id,
-      medicoNome: input.doctor.nome,
-      crm: input.doctor.crm || item.crm,
+      medicoId: medicoIdFinal,
+      medicoNome: medicoNomeFinal,
+      crm: crmFinal,
       consultorio: consultorioFinal,
     });
 
@@ -43,8 +47,8 @@ export class ChamarPacienteUbsUseCase {
       atendimentoId: item.id,
       senha: item.senha,
       pacienteNome: item.pacienteNome,
-      medicoNome: input.doctor.nome,
-      crm: input.doctor.crm || item.crm || undefined,
+      medicoNome: medicoNomeFinal,
+      crm: crmFinal,
       consultorio: consultorioFinal,
       tipoAtendimento: item.tipoAtendimento,
       prioridade: item.prioridade,

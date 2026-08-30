@@ -16,7 +16,7 @@ async function runUbsAtendimentoTests() {
   const dataHoje = new Date().toISOString().slice(0, 10);
   const ubsId = 'ubs-central-01';
 
-  const at1 = await repo.criar({
+  const at1 = await repo.adicionar({
     ubsId,
     ubsNome: 'UBS Central de Saúde da Família',
     data: dataHoje,
@@ -32,7 +32,7 @@ async function runUbsAtendimentoTests() {
   assert.ok(at1.senha.startsWith('GER-'), `Senha normal deve iniciar com GER-: ${at1.senha}`);
   console.log(`✅ Senha Normal gerada corretamente: ${at1.senha}`);
 
-  const at2 = await repo.criar({
+  const at2 = await repo.adicionar({
     ubsId,
     ubsNome: 'UBS Central de Saúde da Família',
     data: dataHoje,
@@ -48,7 +48,7 @@ async function runUbsAtendimentoTests() {
   assert.ok(at2.senha.startsWith('80-'), `Senha 80+ deve iniciar com 80-: ${at2.senha}`);
   console.log(`✅ Senha 80+ gerada corretamente: ${at2.senha}`);
 
-  const at3 = await repo.criar({
+  const at3 = await repo.adicionar({
     ubsId,
     ubsNome: 'UBS Central de Saúde da Família',
     data: dataHoje,

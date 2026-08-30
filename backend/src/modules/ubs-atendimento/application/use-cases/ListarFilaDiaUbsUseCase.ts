@@ -23,9 +23,9 @@ export interface ListarFilaDiaUbsOutput {
 export class ListarFilaDiaUbsUseCase {
   constructor(private readonly repo: FilaUbsRepository = filaUbsRepository) {}
 
-  async exec(input: ListarFilaDiaUbsInput, scope: AccessScope): Promise<ListarFilaDiaUbsOutput> {
+  async exec(input: ListarFilaDiaUbsInput, scope?: AccessScope): Promise<ListarFilaDiaUbsOutput> {
     let ubsId = input.ubsId;
-    if (!ubsId && scope.kind === 'UBS') {
+    if (!ubsId && scope && scope.kind === 'UBS') {
       ubsId = scope.ubsId;
     }
 
