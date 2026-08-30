@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api-proxy/:path*",
+      "destination": "http://184.107.179.209:3333/v1/:path*"
+    }
+  ]
+}

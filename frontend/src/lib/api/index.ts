@@ -2,10 +2,20 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { ApiClient, ApiError } from './client';
 
-const DEFAULT_BASE = 'http://localhost:3333/v1';
+const VPS_BASE = 'http://184.107.179.209:3333/v1';
 const DEFAULT_KEY = 'unisism-frontend-2026-4f2b8d9e';
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE;
+function getBaseUrl(): string {
+	if (import.meta.env.VITE_API_BASE_URL) {
+		return import.meta.env.VITE_API_BASE_URL;
+	}
+	if (browser && location.protocol === 'https:' && !location.hostname.includes('localhost') && !location.hostname.includes('127.0.0.1')) {
+		return '/api-proxy';
+	}
+	return VPS_BASE;
+}
+
+const baseUrl = getBaseUrl();
 const apiKey = import.meta.env.VITE_API_KEY ?? DEFAULT_KEY;
 
 /** Cliente HTTP singleton. */
