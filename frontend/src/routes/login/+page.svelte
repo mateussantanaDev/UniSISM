@@ -21,7 +21,8 @@
 			// ATENDENTE_UBS / COORDENADOR_UBS → /ubs
 			// REGULADOR_SMS / ADMIN / DESENVOLVEDOR → /sms
 			goto(rbac.faceDestinoPadrao(me.role, me), { replaceState: true });
-		} catch (e) {
+		} catch (e: any) {
+			console.error('[Login] Falha na autenticação:', e);
 			if (e instanceof ApiError) {
 				switch (e.code) {
 					case 'CREDENCIAIS_INVALIDAS':
@@ -41,7 +42,7 @@
 						erro = e.message || 'Falha ao autenticar.';
 				}
 			} else {
-				erro = 'Falha de conexão com o servidor.';
+				erro = e?.message ? `Erro: ${e.message}` : 'Falha de conexão com o servidor.';
 			}
 		} finally {
 			entrando = false;

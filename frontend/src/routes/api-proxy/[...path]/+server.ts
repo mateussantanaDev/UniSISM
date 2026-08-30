@@ -4,7 +4,8 @@ const VPS_API_BASE = 'http://184.107.179.209:3333/v1';
 
 async function handleProxy({ request, params, url }: any) {
 	const path = params.path || '';
-	const targetUrl = `${VPS_API_BASE}/${path}${url.search}`;
+	const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+	const targetUrl = `${VPS_API_BASE}/${cleanPath}${url.search}`;
 
 	const headers = new Headers(request.headers);
 	headers.delete('host');
@@ -20,8 +21,17 @@ async function handleProxy({ request, params, url }: any) {
 	}
 
 	try {
-		const response = await fetch(targetUrl, init);
-		return response;
+		const res = await fetch(targetUrl, init);
+		const responseHeaders = new Headers(res.headers);
+		responseHeaders.delete('content-encoding');
+		responseHeaders.delete('content-length');
+
+		const body = await res.arrayBuffer();
+		return new Response(body, {
+			status: res.status,
+			statusText: res.statusText,
+			headers: responseHeaders
+		});
 	} catch (err: any) {
 		return new Response(
 			JSON.stringify({

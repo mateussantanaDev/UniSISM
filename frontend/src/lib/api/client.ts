@@ -240,7 +240,19 @@ export class ApiClient {
   }
 
   private buildUrl(path: string, query?: Record<string, unknown>): string {
-    const url = new URL(this.baseUrl + path);
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    let url: URL;
+    if (this.baseUrl.startsWith('http://') || this.baseUrl.startsWith('https://')) {
+      const base = this.baseUrl.replace(/\/$/, '');
+      url = new URL(base + cleanPath);
+    } else if (typeof window !== 'undefined' && window.location) {
+      const base = this.baseUrl.startsWith('/') ? this.baseUrl : `/${this.baseUrl}`;
+      url = new URL(base + cleanPath, window.location.origin);
+    } else {
+      const base = this.baseUrl.startsWith('/') ? this.baseUrl : `/${this.baseUrl}`;
+      url = new URL(base + cleanPath, 'http://localhost');
+    }
+
     if (query) {
       for (const [k, v] of Object.entries(query)) {
         if (v === undefined || v === null || v === '') continue;
