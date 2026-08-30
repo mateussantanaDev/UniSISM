@@ -411,8 +411,8 @@
 
 <!-- Modal 1: Novo Profissional / Usuário -->
 {#if modalNovoAberto}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
-		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
 				<div class="font-bold uppercase tracking-wider text-xs">+ Cadastrar Novo Profissional / Usuário</div>
 				<button onclick={() => modalNovoAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
@@ -496,8 +496,8 @@
 
 <!-- Modal 2: Editar Usuário -->
 {#if modalEditarAberto && usuarioEdicao}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
-		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
 				<div class="font-bold uppercase tracking-wider text-xs">Editar Cadastro: {usuarioEdicao.nome}</div>
 				<button onclick={() => modalEditarAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
@@ -559,8 +559,8 @@
 
 <!-- Modal 3: Reset de Senha -->
 {#if modalResetSenhaAberto && usuarioEdicao}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
-		<div class="w-full max-w-md border-2 border-slate-900 bg-white shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-amber-900 px-4 py-3 text-white">
 				<div class="font-bold uppercase tracking-wider text-xs">🔑 Redefinir Senha do Usuário</div>
 				<button onclick={() => modalResetSenhaAberto = false} class="text-amber-200 hover:text-white font-bold text-sm">✕</button>

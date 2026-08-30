@@ -296,29 +296,29 @@
 		     TELA DE PAREAMENTO / AUTENTICAÇÃO DA SMART TV
 		     ═══════════════════════════════════════════════════════════════ -->
 		<div class="flex-1 flex flex-col items-center justify-center p-6 md:p-12">
-			<div class="w-full max-w-xl border border-slate-800 bg-slate-900/90 shadow-2xl p-8 md:p-10 backdrop-blur-sm">
+			<div class="w-full max-w-xl border-2 border-slate-800 bg-slate-900 shadow-[8px_8px_0_rgba(15,23,42,0.6)] p-8 md:p-10">
 				<!-- Header institucional -->
 				<div class="flex items-center gap-4 border-b border-slate-800 pb-6">
-					<div class="flex h-14 w-14 items-center justify-center border-2 border-blue-400 bg-blue-950 font-mono text-2xl font-black text-blue-300">
+					<div class="flex h-12 w-12 items-center justify-center border-2 border-white bg-blue-900 font-mono text-xl font-bold text-white">
 						U
 					</div>
 					<div>
-						<div class="font-mono text-xs font-bold tracking-widest text-blue-400 uppercase">
+						<div class="font-mono text-[10px] font-bold tracking-widest text-blue-400 uppercase">
 							SISTEMA UNIFICADO DE SAÚDE · UNISISM
 						</div>
-						<h1 class="font-mono text-2xl font-bold tracking-tight text-white">
+						<h1 class="font-mono text-xl font-bold tracking-tight text-white uppercase mt-0.5">
 							Terminal de Sala de Espera
 						</h1>
 						<p class="font-mono text-[11px] text-slate-400">
-							Conexão de Smart TV & Painel de Chamadas Ambulatoriais
+							Pareamento de Smart TV & Painel Ambulatorial
 						</p>
 					</div>
 				</div>
 
 				<!-- Formulário de Senha -->
 				<div class="mt-8">
-					<label for="senha-tv" class="block font-mono text-xs font-bold tracking-wider text-slate-300 uppercase mb-2">
-						Digite a Senha ou Código do Centro
+					<label for="senha-tv" class="block font-mono text-[10px] font-semibold tracking-widest text-slate-300 uppercase mb-2">
+						Senha ou Código de Acesso da Unidade
 					</label>
 					<div class="relative">
 						<input
@@ -327,52 +327,52 @@
 							placeholder="Ex.: CEM-2026 ou CEO-2026"
 							bind:value={senhaInput}
 							onkeydown={(e) => e.key === 'Enter' && parearComSenha(senhaInput)}
-							class="w-full border-2 border-slate-700 bg-slate-950 px-4 py-3.5 font-mono text-lg font-bold tracking-widest text-white uppercase outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="w-full border-2 border-slate-700 bg-slate-950 px-4 py-3 font-mono text-base font-bold tracking-widest text-white uppercase outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
 						/>
 					</div>
 
 					{#if erroAutenticacao}
-						<div class="mt-3 border border-red-500/60 bg-red-950/60 px-4 py-2.5 font-mono text-xs font-bold text-red-300">
+						<div class="mt-3 border border-red-700 bg-red-950/80 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-300 uppercase">
 							⚠ {erroAutenticacao}
 						</div>
 					{/if}
 
 					<button
 						onclick={() => parearComSenha(senhaInput)}
-						class="mt-6 w-full border-2 border-blue-600 bg-blue-600 py-3.5 font-mono text-sm font-bold tracking-widest text-white uppercase hover:bg-blue-500 active:bg-blue-700 transition-all flex items-center justify-center gap-2"
+						class="mt-6 w-full border border-blue-900 bg-blue-900 py-3 font-mono text-xs font-bold tracking-widest text-white uppercase hover:bg-blue-950 active:bg-blue-950 transition-colors flex items-center justify-center gap-2"
 					>
-						<span>Conectar Painel da TV</span>
-						<kbd class="border border-white/40 px-1.5 py-0.5 text-[10px]">↵</kbd>
+						<span>Conectar Terminal TV</span>
+						<kbd class="border border-white/40 px-1 py-0.5 text-[9px]">↵</kbd>
 					</button>
 
 					<!-- Conexão Rápida em 1 Clique -->
 					<div class="mt-8 border-t border-slate-800 pt-6">
 						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-400 uppercase text-center mb-4">
-							Ou selecione o centro correspondente:
+							Ou conecte diretamente ao órgão:
 						</div>
 						<div class="grid grid-cols-2 gap-3">
 							<button
 								onclick={() => parearComSenha('CEM-2026')}
-								class="border border-blue-900/60 bg-blue-950/40 p-4 text-left hover:border-blue-500 hover:bg-blue-900/40 transition-all group"
+								class="border border-slate-800 bg-slate-950 p-4 text-left hover:border-blue-500 hover:bg-blue-950/40 transition-colors group"
 							>
 								<div class="flex items-center justify-between">
-									<span class="font-mono text-sm font-bold text-blue-300 group-hover:text-white">CEM</span>
-									<span class="inline-block h-2 w-2 rounded-full bg-blue-400"></span>
+									<span class="font-mono text-xs font-bold text-blue-300 group-hover:text-white uppercase">CEM</span>
+									<span class="inline-block h-1.5 w-1.5 bg-blue-400"></span>
 								</div>
-								<div class="font-mono text-[10px] text-slate-400 mt-1">Especialidades Médicas</div>
-								<div class="font-mono text-[9px] text-blue-400 mt-2 font-bold">SENHA: CEM-2026</div>
+								<div class="font-sans text-xs text-slate-300 mt-1">Especialidades Médicas</div>
+								<div class="font-mono text-[10px] text-blue-400 mt-2 font-bold uppercase">SENHA: CEM-2026</div>
 							</button>
 
 							<button
 								onclick={() => parearComSenha('CEO-2026')}
-								class="border border-emerald-900/60 bg-emerald-950/40 p-4 text-left hover:border-emerald-500 hover:bg-emerald-900/40 transition-all group"
+								class="border border-slate-800 bg-slate-950 p-4 text-left hover:border-emerald-500 hover:bg-emerald-950/40 transition-colors group"
 							>
 								<div class="flex items-center justify-between">
-									<span class="font-mono text-sm font-bold text-emerald-300 group-hover:text-white">CEO</span>
-									<span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+									<span class="font-mono text-xs font-bold text-emerald-300 group-hover:text-white uppercase">CEO</span>
+									<span class="inline-block h-1.5 w-1.5 bg-emerald-400"></span>
 								</div>
-								<div class="font-mono text-[10px] text-slate-400 mt-1">Especialidades Odonto</div>
-								<div class="font-mono text-[9px] text-emerald-400 mt-2 font-bold">SENHA: CEO-2026</div>
+								<div class="font-sans text-xs text-slate-300 mt-1">Especialidades Odonto</div>
+								<div class="font-mono text-[10px] text-emerald-400 mt-2 font-bold uppercase">SENHA: CEO-2026</div>
 							</button>
 						</div>
 					</div>
@@ -385,22 +385,22 @@
 		     ═══════════════════════════════════════════════════════════════ -->
 		
 		<!-- TOPO INSTITUCIONAL / HEADER -->
-		<header class="border-b border-slate-800 bg-slate-900/80 px-6 py-4 flex items-center justify-between backdrop-blur-md">
+		<header class="border-b border-slate-800 bg-slate-900 px-6 py-4 flex items-center justify-between">
 			<div class="flex items-center gap-4">
-				<div class="flex h-12 w-12 items-center justify-center border-2 {centroPareado.corTema === 'blue' ? 'border-blue-400 bg-blue-950 text-blue-300' : 'border-emerald-400 bg-emerald-950 text-emerald-300'} font-mono text-xl font-bold">
+				<div class="flex h-12 w-12 items-center justify-center border-2 border-white {centroPareado.corTema === 'blue' ? 'bg-blue-900 text-white' : 'bg-emerald-900 text-white'} font-mono text-lg font-bold">
 					{centroPareado.sigla}
 				</div>
 				<div>
 					<div class="flex items-center gap-2">
-						<span class="font-mono text-xs font-bold tracking-widest text-slate-400 uppercase">
+						<span class="font-mono text-[10px] font-bold tracking-widest text-slate-400 uppercase">
 							SISTEMA UNIFICADO DE SAÚDE · SALA DE ESPERA
 						</span>
-						<span class="inline-flex items-center gap-1.5 border border-emerald-500/40 bg-emerald-950/60 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
-							<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>
+						<span class="inline-flex items-center gap-1.5 border border-emerald-700 bg-emerald-950 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
+							<span class="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-400"></span>
 							SINAL AO VIVO
 						</span>
 					</div>
-					<h1 class="font-mono text-lg md:text-xl font-bold tracking-tight text-white">
+					<h1 class="font-mono text-lg font-bold tracking-tight text-white uppercase mt-0.5">
 						{centroPareado.nome}
 					</h1>
 				</div>
@@ -409,41 +409,39 @@
 			<!-- RELÓGIO & DATA & CONTROLES -->
 			<div class="flex items-center gap-6">
 				<div class="text-right font-mono">
-					<div class="text-2xl md:text-3xl font-bold tracking-widest text-white">
+					<div class="text-2xl md:text-3xl font-bold tracking-tight text-white">
 						{horarioAtual}
 					</div>
-					<div class="text-[10px] md:text-xs font-semibold tracking-wider text-slate-400 uppercase">
+					<div class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
 						{dataAtual}
 					</div>
 				</div>
 
-				<div class="flex items-center gap-2 border-l border-slate-800 pl-6">
+				<div class="flex items-center gap-2 border-l border-slate-800 pl-6 font-mono text-[10px] uppercase">
 					<button
 						onclick={dispararChamadaTeste}
-						title="Testar áudio e chamada"
-						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-300 uppercase hover:bg-slate-700 transition-colors"
+						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-bold tracking-wider text-slate-200 hover:bg-slate-700 transition-colors"
 					>
 						🔊 Testar Som
 					</button>
 
 					<button
 						onclick={() => { audioHabilitado = !audioHabilitado; vozHabilitada = !vozHabilitada; }}
-						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-300 uppercase hover:bg-slate-700 transition-colors"
+						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-bold tracking-wider text-slate-200 hover:bg-slate-700 transition-colors"
 					>
 						{audioHabilitado ? 'Áudio: ON' : 'Áudio: OFF'}
 					</button>
 
 					<button
 						onclick={alternarFullscreen}
-						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-300 uppercase hover:bg-slate-700 transition-colors"
+						class="border border-slate-700 bg-slate-800 px-3 py-1.5 font-bold tracking-wider text-slate-200 hover:bg-slate-700 transition-colors"
 					>
 						{isFullscreen ? 'Tela Normal' : 'Tela Cheia'}
 					</button>
 
 					<button
 						onclick={desparear}
-						title="Desconectar da TV"
-						class="border border-red-900/60 bg-red-950/40 px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-red-300 uppercase hover:bg-red-900/60 transition-colors"
+						class="border border-red-800 bg-red-950 px-3 py-1.5 font-bold tracking-wider text-red-300 hover:bg-red-900 transition-colors"
 					>
 						Desconectar
 					</button>
@@ -456,14 +454,14 @@
 			
 			<!-- COLUNA PRINCIPAL: PACIENTE CHAMADO EM DESTAQUE (COL-8) -->
 			<div class="col-span-12 lg:col-span-8 flex flex-col justify-between">
-				<div class="relative flex-1 border-2 {piscarDestaque ? (centroPareado.corTema === 'blue' ? 'border-blue-400 bg-blue-950/60 shadow-[0_0_50px_rgba(59,130,246,0.5)]' : 'border-emerald-400 bg-emerald-950/60 shadow-[0_0_50px_rgba(16,185,129,0.5)]') : 'border-slate-800 bg-slate-900/60'} p-8 md:p-12 flex flex-col justify-between transition-all duration-500 rounded-none">
+				<div class="relative flex-1 border-2 {piscarDestaque ? (centroPareado.corTema === 'blue' ? 'border-blue-400 bg-blue-950/80' : 'border-emerald-400 bg-emerald-950/80') : 'border-slate-800 bg-slate-900'} p-8 md:p-12 flex flex-col justify-between transition-colors duration-300">
 					
 					<!-- Tag de status de chamada -->
-					<div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+					<div class="flex items-center justify-between border-b border-slate-800 pb-4">
 						<div class="flex items-center gap-3">
-							<span class="inline-flex items-center gap-2 border {piscarDestaque ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-blue-500/50 bg-blue-950 text-blue-300'} px-3 py-1 font-mono text-xs md:text-sm font-black uppercase tracking-widest">
+							<span class="inline-flex items-center gap-2 border {piscarDestaque ? 'border-amber-600 bg-amber-50 text-amber-900' : 'border-blue-700 bg-blue-950 text-blue-300'} px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest">
 								{#if piscarDestaque}
-									<span class="inline-block h-2.5 w-2.5 animate-ping bg-slate-950"></span>
+									<span class="inline-block h-2 w-2 bg-amber-600"></span>
 									NOVA CHAMADA
 								{:else}
 									<span class="inline-block h-2 w-2 bg-blue-400"></span>
@@ -471,41 +469,41 @@
 								{/if}
 							</span>
 							<span class="font-mono text-xs tracking-wider text-slate-400 uppercase">
-								Horário: <strong class="text-white">{chamadaAtual?.horario || horarioAtual}</strong>
+								Horário: <strong class="text-white font-mono">{chamadaAtual?.horario || horarioAtual}</strong>
 							</span>
 						</div>
 
-						<div class="font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
+						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-400 uppercase">
 							PAINEL DE SENHAS ELETRÔNICO
 						</div>
 					</div>
 
 					<!-- NOME DO PACIENTE EM TIPOGRAFIA MONUMENTAL -->
 					<div class="my-auto py-6">
-						<div class="font-mono text-xs md:text-sm font-bold tracking-widest text-blue-400 uppercase mb-2">
+						<div class="font-mono text-[11px] font-bold tracking-widest text-blue-400 uppercase mb-2">
 							PACIENTE CONVOCADO:
 						</div>
-						<div class="text-4xl md:text-6xl xl:text-7xl font-black font-mono tracking-tight text-white leading-none break-words uppercase">
+						<div class="text-4xl md:text-6xl xl:text-7xl font-bold font-sans tracking-tight text-white leading-tight uppercase">
 							{chamadaAtual?.pacienteNome || 'AGUARDANDO PRÓXIMA CHAMADA'}
 						</div>
 					</div>
 
 					<!-- LOCAL / CONSULTÓRIO / CADEIRA EM DESTAQUE GIGANTE -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800/80 pt-6">
-						<div class="border-2 {centroPareado.corTema === 'blue' ? 'border-blue-500/80 bg-blue-900/50' : 'border-emerald-500/80 bg-emerald-900/50'} p-6">
-							<div class="font-mono text-[11px] font-bold tracking-widest {centroPareado.corTema === 'blue' ? 'text-blue-200' : 'text-emerald-200'} uppercase">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800 pt-6">
+						<div class="border-2 {centroPareado.corTema === 'blue' ? 'border-blue-800 bg-blue-950' : 'border-emerald-800 bg-emerald-950'} p-6">
+							<div class="font-mono text-[10px] font-bold tracking-widest {centroPareado.corTema === 'blue' ? 'text-blue-300' : 'text-emerald-300'} uppercase">
 								DIRIJA-SE AO LOCAL:
 							</div>
-							<div class="font-mono text-2xl md:text-4xl font-black text-white tracking-wide mt-1">
+							<div class="font-mono text-2xl md:text-3xl font-bold text-white tracking-wide mt-1 uppercase">
 								{chamadaAtual?.consultorio || 'SALA DE ATENDIMENTO'}
 							</div>
 						</div>
 
-						<div class="border border-slate-800 bg-slate-950/60 p-6 flex flex-col justify-center">
-							<div class="font-mono text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+						<div class="border border-slate-800 bg-slate-950 p-6 flex flex-col justify-center">
+							<div class="font-mono text-[10px] font-bold tracking-widest text-slate-400 uppercase">
 								PROFISSIONAL / ESPECIALIDADE:
 							</div>
-							<div class="font-mono text-lg md:text-xl font-bold text-white mt-1">
+							<div class="font-sans text-lg font-bold text-white mt-1">
 								{chamadaAtual?.medicoNome || 'Corpo Clínico'}
 							</div>
 							<div class="font-mono text-xs font-semibold text-blue-400 uppercase mt-0.5">
@@ -517,35 +515,35 @@
 			</div>
 
 			<!-- COLUNA LATERAL: ÚLTIMAS 5 CHAMADAS (COL-4) -->
-			<div class="col-span-12 lg:col-span-4 flex flex-col border border-slate-800 bg-slate-900/60 p-6">
+			<div class="col-span-12 lg:col-span-4 flex flex-col border border-slate-800 bg-slate-900 p-6">
 				<div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
 					<div class="font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
 						Últimas Chamadas
 					</div>
-					<span class="font-mono text-[10px] text-slate-500">HISTÓRICO RECENTE</span>
+					<span class="font-mono text-[10px] text-slate-500 uppercase tracking-widest">HISTÓRICO</span>
 				</div>
 
 				<div class="flex-1 flex flex-col gap-3 overflow-hidden">
 					{#if ultimasChamadas.length === 0}
-						<div class="flex-1 flex items-center justify-center font-mono text-xs text-slate-600 uppercase text-center p-6 border border-dashed border-slate-800">
+						<div class="flex-1 flex items-center justify-center font-sans text-xs text-slate-500 uppercase text-center p-6 border border-slate-800">
 							Aguardando chamadas anteriores nesta sessão...
 						</div>
 					{:else}
 						{#each ultimasChamadas as uc}
-							<div class="border border-slate-800 bg-slate-950/70 p-3.5 hover:border-slate-700 transition-colors">
+							<div class="border border-slate-800 bg-slate-950 p-3.5 hover:border-slate-700 transition-colors">
 								<div class="flex items-center justify-between">
-									<span class="font-mono text-xs font-bold text-white truncate max-w-[200px] uppercase">
+									<span class="font-sans text-xs font-bold text-white truncate max-w-[200px] uppercase">
 										{uc.pacienteNome}
 									</span>
 									<span class="font-mono text-[10px] font-bold text-slate-400">
 										{uc.horario}
 									</span>
 								</div>
-								<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/60 font-mono text-[10px]">
-									<span class="font-bold {centroPareado.corTema === 'blue' ? 'text-blue-400' : 'text-emerald-400'}">
+								<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800 font-mono text-[10px]">
+									<span class="font-bold {centroPareado.corTema === 'blue' ? 'text-blue-400' : 'text-emerald-400'} uppercase">
 										{uc.consultorio}
 									</span>
-									<span class="text-slate-400 truncate max-w-[120px]">
+									<span class="text-slate-400 truncate max-w-[120px] uppercase">
 										{uc.especialidade}
 									</span>
 								</div>
@@ -555,13 +553,13 @@
 				</div>
 
 				<!-- AVISO DE ORIENTAÇÃO -->
-				<div class="mt-4 border border-blue-900/40 bg-blue-950/30 p-3 font-mono text-[10px] text-blue-200">
-					<div class="font-bold uppercase flex items-center gap-1.5 mb-1">
+				<div class="mt-4 border-l-4 border-blue-900 bg-slate-950 p-3 font-mono text-[10px] text-slate-300">
+					<div class="font-bold text-blue-300 uppercase flex items-center gap-1.5 mb-1">
 						<span class="inline-block h-1.5 w-1.5 bg-blue-400"></span>
 						ORIENTAÇÃO AO USUÁRIO
 					</div>
-					<p class="leading-relaxed text-slate-300">
-						Ao ser anunciado no painel, dirija-se imediatamente à porta do consultório indicado portando documento de identificação.
+					<p class="leading-relaxed font-sans text-[11px] text-slate-300">
+						Ao ser anunciado no painel, dirija-se à porta do consultório indicado portando documento oficial de identificação.
 					</p>
 				</div>
 			</div>
@@ -574,11 +572,11 @@
 					INFORME SUS
 				</span>
 				<div class="text-slate-300 text-[11px] truncate tracking-wider uppercase">
-					Secretaria Municipal de Saúde · Mantenha seus documentos em mãos · Vacinação e preventivos disponíveis na sua UBS de referência · Dúvidas, procure a recepção.
+					Secretaria Municipal de Saúde · Mantenha seus documentos em mãos · Vacinação disponível na UBS · Dúvidas, procure a recepção.
 				</div>
 			</div>
 
-			<div class="font-mono text-[10px] text-slate-500 whitespace-nowrap pl-4">
+			<div class="font-mono text-[10px] text-slate-500 whitespace-nowrap pl-4 uppercase">
 				UNISISM TV v1.0
 			</div>
 		</footer>

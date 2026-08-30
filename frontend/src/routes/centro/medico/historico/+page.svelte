@@ -232,8 +232,8 @@
 
 <!-- Modal: Visualização PEP Completo Assinado -->
 {#if modalPepAberto && atendimentoSelecionado}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
-		<div class="w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 border-slate-900 bg-white shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-5 py-3 text-white sticky top-0 z-10">
 				<div class="font-bold uppercase tracking-wider text-xs flex items-center gap-2">
 					<span>📄 PRONTUÁRIO ELETRÔNICO DO PACIENTE (PEP)</span>

@@ -1117,8 +1117,8 @@
 <!-- MODAL: COMPROVANTE OFICIAL DE AGENDAMENTO (IMPRESSÃO NATIVA)              -->
 <!-- ========================================================================= -->
 {#if modalComprovanteAberto && comprovanteSelecionado}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs font-sans">
-		<div class="w-full max-w-lg border border-slate-300 bg-white p-6 shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-sans">
+		<div class="w-full max-w-lg border-2 border-slate-900 bg-white p-6 shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b-2 border-slate-900 pb-3">
 				<div class="flex items-center gap-2">
 					<div class="bg-blue-900 px-2 py-0.5 font-mono text-xs font-bold text-white uppercase">UNISISM</div>

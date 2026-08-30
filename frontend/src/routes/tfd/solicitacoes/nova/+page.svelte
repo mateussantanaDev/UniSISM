@@ -1172,29 +1172,29 @@
 									</button>
 								</div>
 							{:else if fotoCapturada}
-								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex items-center justify-center shadow-lg">
+								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-900 border-2 border-slate-800 overflow-hidden flex items-center justify-center">
 									<img src={fotoCapturada} alt="Preview da Câmera" class="w-full h-full object-cover" />
 									
-									<!-- Premium action overlay -->
-									<div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-6 flex gap-3 justify-center">
+									<!-- Action overlay -->
+									<div class="absolute inset-x-0 bottom-0 bg-black/80 border-t border-slate-700 p-4 flex gap-3 justify-center">
 										<button
 											type="button"
 											onclick={descartarFoto}
-											class="px-5 py-2 border border-slate-500 bg-slate-800/80 backdrop-blur text-white hover:bg-slate-700 rounded font-mono text-[10px] font-bold tracking-wider uppercase transition-all"
+											class="px-5 py-2 border border-slate-500 bg-slate-800 text-white hover:bg-slate-700 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors"
 										>
 											✕ DESCARTAR
 										</button>
 										<button
 											type="button"
 											onclick={confirmarFoto}
-											class="px-5 py-2 border border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500 rounded font-mono text-[10px] font-bold tracking-wider uppercase transition-all shadow-lg shadow-emerald-950/20"
+											class="px-5 py-2 border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors"
 										>
 											✓ CONFIRMAR E ADICIONAR
 										</button>
 									</div>
 								</div>
 							{:else}
-								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex items-center justify-center shadow-inner">
+								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-950 border-2 border-slate-800 overflow-hidden flex items-center justify-center">
 									<!-- svelte-ignore a11y_media_has_caption -->
 									<video
 										bind:this={videoEl}
@@ -1205,9 +1205,9 @@
 									></video>
 
 									<!-- Document framing overlay -->
-									<div class="absolute inset-0 border-[36px] border-black/45 pointer-events-none flex items-center justify-center">
-										<div class="w-[90%] h-[90%] border-2 border-dashed border-white/45 rounded flex items-center justify-center">
-											<div class="font-mono text-[9px] text-white/90 bg-black/60 px-4 py-2 rounded tracking-widest uppercase pointer-events-auto shadow backdrop-blur-sm">
+									<div class="absolute inset-0 border-[36px] border-black/50 pointer-events-none flex items-center justify-center">
+										<div class="w-[90%] h-[90%] border-2 border-dashed border-white/50 flex items-center justify-center">
+											<div class="font-mono text-[9px] text-white bg-black/80 px-4 py-2 tracking-widest uppercase pointer-events-auto border border-white/20">
 												Centralize o documento nesta área
 											</div>
 										</div>
@@ -1215,12 +1215,12 @@
 
 									<!-- Camera selector overlay -->
 									{#if cameraDispositivos.length > 1}
-										<div class="absolute top-4 right-4 bg-slate-900/85 backdrop-blur border border-slate-700 px-3 py-1.5 rounded shadow flex items-center gap-2 text-[9px] font-mono text-white">
+										<div class="absolute top-4 right-4 bg-slate-900 border border-slate-700 px-3 py-1.5 flex items-center gap-2 text-[9px] font-mono text-white">
 											<span>CÂMERA ATIVA:</span>
 											<select
 												bind:value={cameraSelecionadaId}
 												onchange={iniciarCamera}
-												class="bg-slate-800 text-white border border-slate-700 px-2 py-0.5 rounded outline-none cursor-pointer"
+												class="bg-slate-800 text-white border border-slate-700 px-2 py-0.5 outline-none cursor-pointer"
 											>
 												{#each cameraDispositivos as dev}
 													<option value={dev.deviceId}>{dev.label || `Câmera ${dev.deviceId.slice(0, 4)}`}</option>
@@ -1229,15 +1229,16 @@
 										</div>
 									{/if}
 
-									<!-- Circular shutter button overlay -->
+									<!-- Shutter button overlay -->
 									<div class="absolute bottom-6 flex justify-center w-full">
 										<button
 											type="button"
 											onclick={tirarFoto}
-											class="h-16 w-16 rounded-full border-4 border-white bg-red-600 shadow-2xl active:scale-95 transition-transform flex items-center justify-center group"
+											class="border-2 border-white bg-red-700 px-6 py-2.5 font-mono text-xs font-bold text-white uppercase tracking-widest hover:bg-red-800 flex items-center gap-2"
 											title="Capturar Foto"
 										>
-											<span class="h-6 w-6 rounded-full bg-white opacity-0 group-hover:opacity-30 transition-opacity"></span>
+											<span>📷 CAPTURAR FOTO</span>
+											<kbd class="border border-white/40 px-1 py-0.5 text-[9px]">Espaço</kbd>
 										</button>
 									</div>
 								</div>

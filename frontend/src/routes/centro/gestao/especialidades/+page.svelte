@@ -324,8 +324,8 @@
 
 <!-- Modal: Habilitar Especialidade -->
 {#if modalNovaAberto}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 font-mono text-xs backdrop-blur-xs">
-		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-2xl">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
 				<div class="font-bold uppercase tracking-wider text-xs">+ Habilitar Novo Serviço / SIGTAP</div>
 				<button onclick={() => modalNovaAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>

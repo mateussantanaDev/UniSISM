@@ -151,12 +151,12 @@
 		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 			<div>
 				<div class="flex items-center gap-2">
-					<span class="inline-block h-2 w-2 rounded-full {ehCeo ? 'bg-emerald-600' : 'bg-blue-600'}"></span>
+					<span class="inline-block h-1.5 w-1.5 {ehCeo ? 'bg-emerald-600' : 'bg-blue-900'}"></span>
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						SISTEMA UNIFICADO DE SAÚDE · MÓDULO DE RECEPÇÃO & SALA DE ESPERA
 					</span>
 				</div>
-				<h1 class="mt-1 font-mono text-xl font-bold tracking-tight text-slate-900 uppercase">
+				<h1 class="mt-1 font-mono text-lg font-bold tracking-tight text-slate-900 uppercase">
 					Painel de Chamada TV · {centroAtivo}
 				</h1>
 				<p class="mt-1 text-xs text-slate-600">
@@ -168,14 +168,14 @@
 				<button
 					onclick={testarSomLocal}
 					disabled={testandoAudio}
-					class="inline-flex items-center justify-center gap-2 border border-slate-300 bg-slate-100 px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-200 transition-colors"
+					class="inline-flex items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 transition-colors"
 				>
 					<span>{testandoAudio ? '🔊 Emitindo Teste...' : '🔊 Testar Som Local'}</span>
 				</button>
 
 				<button
 					onclick={abrirPainelNovaAba}
-					class="inline-flex items-center justify-center gap-2 border {ehCeo ? 'border-emerald-700 bg-emerald-700 hover:bg-emerald-800 text-white' : 'border-blue-900 bg-blue-900 hover:bg-blue-950 text-white'} px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-all shadow-sm"
+					class="inline-flex items-center justify-center gap-2 border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
 				>
 					<span>Abrir Painel TV Nesta Tela</span>
 					<kbd class="border border-white/40 px-1 py-0.5 text-[9px]">↗</kbd>
@@ -196,7 +196,7 @@
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						1. URL DE ACESSO NA TV
 					</span>
-					<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+					<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
 				</div>
 				<div class="mt-2 font-mono text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 p-2.5 break-all select-all">
 					{urlTv}
@@ -221,11 +221,11 @@
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						2. SENHA DE PAREAMENTO
 					</span>
-					<span class="border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue-800 uppercase">
+					<span class="border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue-900 uppercase">
 						CENTRO ATIVO
 					</span>
 				</div>
-				<div class="mt-2 font-mono text-2xl font-black {ehCeo ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-blue-900 bg-blue-50 border-blue-200'} border p-2 text-center tracking-widest select-all">
+				<div class="mt-2 font-mono text-2xl font-bold text-blue-900 bg-blue-50 border border-blue-200 p-2 text-center tracking-widest select-all">
 					{senhaPareamento}
 				</div>
 				<p class="mt-2 text-[11px] text-slate-600">
@@ -248,7 +248,7 @@
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						3. TRANSMISSÃO EM TEMPO REAL
 					</span>
-					<span class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-emerald-700 uppercase">
+					<span class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-emerald-800 uppercase">
 						<span class="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-600"></span>
 						ONLINE
 					</span>
@@ -264,14 +264,14 @@
 					</div>
 					<div class="flex justify-between pb-1">
 						<span class="text-slate-500">Sintetizador Voz:</span>
-						<strong class="text-emerald-700">Português (BR)</strong>
+						<strong class="text-emerald-800">Português (BR)</strong>
 					</div>
 				</div>
 			</div>
 
 			<button
 				onclick={abrirPainelNovaAba}
-				class="mt-4 w-full border {ehCeo ? 'border-emerald-700 bg-emerald-700 hover:bg-emerald-800' : 'border-blue-900 bg-blue-900 hover:bg-blue-950'} text-white py-2 font-mono text-xs font-bold tracking-widest uppercase transition-all shadow-sm"
+				class="mt-4 w-full border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
 			>
 				Abrir Painel em Nova Aba ↗
 			</button>
