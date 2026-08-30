@@ -159,6 +159,34 @@
 	async function sincronizarChamadas() {
 		if (!centroPareado) return;
 		try {
+			// 1. Tenta o endpoint direto de TV do backend (/v1/centro/tv/chamadas)
+			const tvRes = await api.centro.recepcao.getTvChamadas(centroPareado.sigla).catch(() => null);
+			
+			if (tvRes && tvRes.chamadaAtual) {
+				const maisRecente = tvRes.chamadaAtual;
+				if (maisRecente.id !== ultimaChamadaIdProcessada) {
+					ultimaChamadaIdProcessada = maisRecente.id;
+					chamadaAtual = {
+						id: maisRecente.id,
+						pacienteNome: maisRecente.pacienteNome,
+						consultorio: maisRecente.consultorio,
+						medicoNome: maisRecente.medicoNome,
+						especialidade: maisRecente.especialidade,
+						horario: maisRecente.horario,
+						tipo: 'CONSULTA',
+						chamadoEm: new Date(maisRecente.chamadoEm),
+					};
+					ultimasChamadas = tvRes.ultimasChamadas || [];
+					
+					piscarDestaque = true;
+					setTimeout(() => { piscarDestaque = false; }, 4000);
+					
+					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio);
+				}
+				return;
+			}
+
+			// 2. Fallback: listagem de encaminhamentos ativos
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 50 }).catch(() => []);
 			
 			// Filtra chamadas pelo escopo do centro pareado

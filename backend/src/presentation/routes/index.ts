@@ -33,6 +33,8 @@ import type { ProntuarioController } from '../../modules/prontuario/presentation
 import { buildProntuarioRoutes } from '../../modules/prontuario/presentation/prontuario.routes';
 import type { TfdController } from '../../modules/tfd/presentation/TfdController';
 import { buildTfdRoutes } from '../../modules/tfd/presentation/tfd.routes';
+import type { UbsAtendimentoController } from '../../modules/ubs-atendimento/presentation/controllers/UbsAtendimentoController';
+import { buildUbsAtendimentoRoutes } from '../../modules/ubs-atendimento/presentation/routes/ubs-atendimento.routes';
 import { validateBody } from '../middlewares/validate';
 import { makeAuthenticate } from '../middlewares/authenticate';
 import { memoryUpload } from '../middlewares/uploads';
@@ -63,6 +65,7 @@ interface Deps {
   centroRecepcao: CentroRecepcaoController;
   centroGestao: CentroGestaoController;
   centroMedico: CentroMedicoController;
+  ubsAtendimento: UbsAtendimentoController;
   pacienteApp: PacienteAppController;
   passwordRecoveryRateLimiter: PasswordRecoveryRateLimiter;
   downloadAnexoRateLimiter: DownloadAnexoRateLimiter;
@@ -104,6 +107,7 @@ export function buildRoutes(deps: Deps): Router {
   router.use(buildRegulacaoRoutes(deps.tokens, deps.regulacao));
   router.use(buildEspecialistaRoutes(deps.tokens, deps.especialista));
   router.use(buildCentroRoutes(deps.tokens, deps.centroRecepcao, deps.centroGestao, deps.centroMedico));
+  router.use(buildUbsAtendimentoRoutes(deps.tokens, deps.ubsAtendimento));
 
   // ----- Encaminhamentos -----
   // consolidar/resolver requer UBS — DESENVOLVEDOR e ADMIN não podem (eles não são de uma UBS)

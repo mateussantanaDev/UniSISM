@@ -91,6 +91,13 @@ import { buildEspecialistaRoutes } from '../modules/gestao/presentation/routes/e
 import { ListarFilaEsperaCentroRecepcaoUseCase } from '../modules/centro/application/use-cases/ListarFilaEsperaCentroRecepcaoUseCase';
 import { AgendarConsultaCentroUseCase } from '../modules/centro/application/use-cases/AgendarConsultaCentroUseCase';
 import { ObterAgendaDiaRecepcaoUseCase } from '../modules/centro/application/use-cases/ObterAgendaDiaRecepcaoUseCase';
+import { AdicionarFilaUbsUseCase } from '../modules/ubs-atendimento/application/use-cases/AdicionarFilaUbsUseCase';
+import { ListarFilaDiaUbsUseCase } from '../modules/ubs-atendimento/application/use-cases/ListarFilaDiaUbsUseCase';
+import { ChamarPacienteUbsUseCase } from '../modules/ubs-atendimento/application/use-cases/ChamarPacienteUbsUseCase';
+import { AtualizarStatusAtendimentoUbsUseCase } from '../modules/ubs-atendimento/application/use-cases/AtualizarStatusAtendimentoUbsUseCase';
+import { ObterUltimasChamadasPainelUbsUseCase } from '../modules/ubs-atendimento/application/use-cases/ObterUltimasChamadasPainelUbsUseCase';
+import { UbsAtendimentoController } from '../modules/ubs-atendimento/presentation/controllers/UbsAtendimentoController';
+
 import { RegistrarPresencaPacienteUseCase } from '../modules/centro/application/use-cases/RegistrarPresencaPacienteUseCase';
 import { AgendamentoBalcaoRecepcaoUseCase } from '../modules/centro/application/use-cases/AgendamentoBalcaoRecepcaoUseCase';
 import { DesmarcarReagendarConsultaUseCase } from '../modules/centro/application/use-cases/DesmarcarReagendarConsultaUseCase';
@@ -557,6 +564,15 @@ export function buildContainer() {
     downloadAnexo: new DownloadAnexoPacienteUseCase(audit),
   });
 
+  const ubsAtendimentoController = new UbsAtendimentoController(
+    new AdicionarFilaUbsUseCase(),
+    new ListarFilaDiaUbsUseCase(),
+    new ChamarPacienteUbsUseCase(),
+    new AtualizarStatusAtendimentoUbsUseCase(),
+    new ObterUltimasChamadasPainelUbsUseCase(),
+    atendentes,
+  );
+
   return {
     tokens,
     audit,
@@ -579,6 +595,7 @@ export function buildContainer() {
     centroRecepcao: centroRecepcaoController,
     centroGestao: centroGestaoController,
     centroMedico: centroMedicoController,
+    ubsAtendimento: ubsAtendimentoController,
     pacienteApp: pacienteAppController,
     passwordRecoveryRateLimiter,
     downloadAnexoRateLimiter,

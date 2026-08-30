@@ -15,6 +15,7 @@ import type { RegistrarProcedimentosAtendimentoUseCase } from '../../application
 import type { NotificacaoAusenciaMedicaUseCase } from '../../application/use-cases/NotificacaoAusenciaMedicaUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 
 const agendarSchema = z.object({
   profissional: z.string().optional(),
@@ -347,5 +348,98 @@ export class CentroRecepcaoController {
     const body = ausenciaMedicaSchema.parse(req.body);
     const result = await this.ausenciaMedicaUC.exec(body, req.auth!.sub, scope);
     res.json(result);
+  };
+
+  getTvChamadas = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const centroQuery = ((req.query.centro as string) || 'CEM').toUpperCase();
+      const ehCeo = centroQuery === 'CEO';
+
+      const rows = await prisma.encaminhamento.findMany({
+        where: {
+          status: 'APROVADO',
+          statusAtendimentoCentro: {
+            in: ['EM_ATENDIMENTO', 'AGUARDANDO_ATENDIMENTO'],
+          },
+        },
+        include: INCLUDE_ENCAMINHAMENTO_FULL,
+        orderBy: { atualizadoEm: 'desc' },
+        take: 30,
+      });
+
+      const fullList = rows.map((r) => rowParaEncaminhamento(r as any));
+
+      const filtrados = fullList.filter((r) => {
+        const esp = (r.solicitacao?.especialidadeSolicitada || '').toLowerCase();
+        const eOdonto =
+          esp.includes('odonto') ||
+          esp.includes('bucal') ||
+          esp.includes('canal') ||
+          esp.includes('periodontia') ||
+          esp.includes('bucomaxilo');
+        return ehCeo ? eOdonto : !eOdonto;
+      });
+
+      const chamadas = filtrados.map((r, idx) => {
+        const num = ((idx % 8) + 1).toString().padStart(2, '0');
+        const local = ehCeo ? `CADEIRA ODONTOLÓGICA ${num} — SETOR B` : `CONSULTÓRIO ${num} — ALA A`;
+        return {
+          id: r.id,
+          protocolo: r.protocolo,
+          pacienteNome: r.paciente?.nome || 'Paciente Identificado',
+          consultorio: local,
+          medicoNome: r.profissionalAgendado || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
+          especialidade: r.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
+          horario: new Date(r.atualizadoEm || r.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          status: r.statusAtendimentoCentro,
+          chamadoEm: r.atendimentoIniciadoEm || r.atualizadoEm || r.criadoEm,
+        };
+      });
+
+      const chamadaAtual = chamadas.length > 0 ? chamadas[0] : null;
+      const ultimasChamadas = chamadas.slice(1, 6);
+
+      res.json({
+        centro: ehCeo ? 'CEO' : 'CEM',
+        nomeCentro: ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)',
+        tipoLocal: ehCeo ? 'CADEIRA ODONTOLÓGICA' : 'CONSULTÓRIO',
+        chamadaAtual,
+        ultimasChamadas,
+        totalChamadas: chamadas.length,
+        servidorHorario: new Date().toISOString(),
+      });
+    } catch (err) {
+      res.status(500).json({ error: { code: 'ERRO_TV_CHAMADAS', message: 'Falha ao buscar chamadas da TV' } });
+    }
+  };
+
+  postTvParear = async (req: Request, res: Response): Promise<void> => {
+    const pin = (req.body.pin || req.body.senha || '').trim().toUpperCase();
+    if (pin === 'CEM' || pin === 'CEM-2026' || pin === '7492') {
+      res.json({
+        valido: true,
+        centro: 'CEM',
+        nome: 'CENTRO DE ESPECIALIDADES MÉDICAS (CEM)',
+        subtitulo: 'AMBULATÓRIO DE ESPECIALIDADES MÉDICAS · SALA DE ESPERA',
+        tipoLocal: 'CONSULTÓRIO',
+        corTema: 'blue',
+      });
+      return;
+    }
+    if (pin === 'CEO' || pin === 'CEO-2026' || pin === '8301') {
+      res.json({
+        valido: true,
+        centro: 'CEO',
+        nome: 'CENTRO DE ESPECIALIDADES ODONTOLÓGICAS (CEO)',
+        subtitulo: 'SAÚDE BUCAL ESPECIALIZADA · SALA DE ESPERA',
+        tipoLocal: 'CADEIRA ODONTOLÓGICA',
+        corTema: 'emerald',
+      });
+      return;
+    }
+    res.status(401).json({
+      valido: false,
+      error: { code: 'SENHA_INVALIDA', message: 'Senha ou código do centro incorreto.' },
+    });
   };
 }

@@ -41,6 +41,10 @@ export function buildCentroRoutes(
     'ATENDENTE_CENTRO',
   );
 
+  // ───── Terminal Smart TV (Sala de Espera) ─────
+  router.get('/centro/tv/chamadas', recepcaoController.getTvChamadas);
+  router.post('/centro/tv/parear', recepcaoController.postTvParear);
+
   // ───── Recepção & Regulação do Centro (Fase 1) ─────
   router.get('/centro/recepcao/fila-espera', authenticate, recepcaoRoles, recepcaoController.getFilaEspera);
   router.post('/centro/recepcao/agendar/:id', authenticate, recepcaoRoles, recepcaoController.postAgendar);

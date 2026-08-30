@@ -1622,6 +1622,120 @@ export interface ProcedimentoRealizadoItem {
   observacao?: string;
 }
 
+// ============================================================
+// ATENDIMENTO & FILA DIÁRIA UBS (FACE 1)
+// ============================================================
 
+export type TipoAtendimentoUbs =
+  | 'CONSULTA_MEDICA'
+  | 'ENFERMAGEM'
+  | 'ACOLHIMENTO_TRIAGEM'
+  | 'PRE_NATAL'
+  | 'HIPERDIA'
+  | 'PUERICULTURA'
+  | 'VACINACAO'
+  | 'CURATIVO'
+  | 'ODONTOLOGIA';
 
+export type PrioridadeUbs =
+  | 'URGENCIA'
+  | 'SUPER_PRIORIDADE_80'
+  | 'GESTANTE_LACTANTE'
+  | 'PCD'
+  | 'TEA'
+  | 'IDOSO_60'
+  | 'NORMAL';
 
+export type StatusAtendimentoUbs =
+  | 'AGUARDANDO'
+  | 'CHAMADO'
+  | 'EM_ATENDIMENTO'
+  | 'CONCLUIDO'
+  | 'FALTOU'
+  | 'CANCELADO';
+
+export interface AtendimentoUbsItem {
+  id: string;
+  senha: string;
+  ubsId: string;
+  ubsNome?: string;
+  prefeituraId?: string;
+  data: string; // YYYY-MM-DD
+  horarioChegada: string; // ISO string
+  pacienteId: string;
+  pacienteNome: string;
+  pacienteCpf: string;
+  pacienteCartaoSus?: string;
+  pacienteDataNasc?: string;
+  pacienteSexo?: string;
+  pacienteTelefone?: string;
+  tipoAtendimento: TipoAtendimentoUbs;
+  prioridade: PrioridadeUbs;
+  medicoId?: string | null;
+  medicoNome?: string | null;
+  crm?: string | null;
+  consultorio: string;
+  queixaBreve?: string;
+  status: StatusAtendimentoUbs;
+  chamadoEm?: string | null;
+  iniciadoEm?: string | null;
+  finalizadoEm?: string | null;
+  criadoPorId?: string;
+  criadoPorNome?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface ChamadaPainelUbs {
+  id: string;
+  atendimentoId: string;
+  senha: string;
+  pacienteNome: string;
+  medicoNome: string;
+  crm?: string;
+  consultorio: string;
+  tipoAtendimento: TipoAtendimentoUbs;
+  prioridade: PrioridadeUbs;
+  chamadoEm: string;
+  ubsId: string;
+  ubsNome?: string;
+}
+
+export interface ListarFilaUbsResponse {
+  itens: AtendimentoUbsItem[];
+  total: number;
+  aguardando: number;
+  chamados: number;
+  emAtendimento: number;
+  concluidos: number;
+  faltas: number;
+}
+
+export interface PainelChamadasUbsResponse {
+  chamadaAtual: ChamadaPainelUbs | null;
+  ultimasChamadas: ChamadaPainelUbs[];
+  ubsNome?: string;
+  prefeituraNome?: string;
+}
+
+export interface AdicionarFilaUbsRequest {
+  pacienteId?: string;
+  paciente?: {
+    nome: string;
+    cpf: string;
+    cartaoSus?: string;
+    dataNascimento?: string;
+    sexo?: 'M' | 'F' | 'OUTRO';
+    telefone?: string;
+    endereco?: string;
+  };
+  tipoAtendimento: TipoAtendimentoUbs;
+  prioridade: PrioridadeUbs;
+  medicoId?: string;
+  medicoNome?: string;
+  crm?: string;
+  consultorio?: string;
+  queixaBreve?: string;
+  data?: string;
+  ubsId?: string;
+}

@@ -193,6 +193,7 @@ export class ApiClient {
   readonly admin: AdminApi;
   readonly pacienteApp: PacienteAppApi;
   readonly tfd: TfdApi;
+  readonly ubs: UbsApi;
   readonly centro: CentroApi;
   readonly centroRecepcao: CentroRecepcaoApi;
   readonly centroMedico: CentroMedicoApi;
@@ -214,6 +215,7 @@ export class ApiClient {
     this.admin = new AdminApi(this);
     this.pacienteApp = new PacienteAppApi(this);
     this.tfd = new TfdApi(this);
+    this.ubs = new UbsApi(this);
     this.centro = new CentroApi(this);
     this.centroRecepcao = this.centro.recepcao;
     this.centroMedico = this.centro.medico;
@@ -1460,6 +1462,31 @@ class TfdApi {
 
 export class CentroRecepcaoApi {
   constructor(private readonly api: ApiClient) {}
+
+  /** Obter chamadas em tempo real para a Smart TV (GET /v1/centro/tv/chamadas). */
+  getTvChamadas(centro: 'CEM' | 'CEO'): Promise<{
+    centro: string;
+    nomeCentro: string;
+    tipoLocal: string;
+    chamadaAtual: any;
+    ultimasChamadas: any[];
+    totalChamadas: number;
+    servidorHorario: string;
+  }> {
+    return this.api.get('/centro/tv/chamadas', { centro });
+  }
+
+  /** Validar pareamento de Smart TV por PIN/Senha (POST /v1/centro/tv/parear). */
+  parearTv(pin: string): Promise<{
+    valido: boolean;
+    centro: 'CEM' | 'CEO';
+    nome: string;
+    subtitulo: string;
+    tipoLocal: string;
+    corTema: 'blue' | 'emerald';
+  }> {
+    return this.api.post('/centro/tv/parear', { pin });
+  }
 
   /** Listar fila de espera do Centro (GET /v1/centro/recepcao/fila-espera). */
   listFilaEspera(query?: ListFilaEsperaQuery): Promise<ListFilaEsperaResponse> {
