@@ -16,13 +16,30 @@
 	let items = $derived<NavItem[]>([
 		{ label: 'Dashboard', href: '/ubs/dashboard', shortcut: 'D' },
 		{
+			label: 'Recepção & Fila',
+			href: '/ubs/recepcao/fila',
+			shortcut: 'F',
+			quando: () => auth.me?.escopo === 'UBS' || auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN'
+		},
+		{
+			label: 'Consultório Médico',
+			href: '/ubs/medico/agenda',
+			shortcut: 'C',
+			quando: () => auth.podeConsolidarEncaminhamento || auth.me?.role === 'MEDICO' || auth.me?.role === 'MEDICO_ESPECIALISTA' || auth.me?.role === 'DESENVOLVEDOR'
+		},
+		{
+			label: 'Painel TV (Chamada)',
+			href: '/ubs/recepcao/painel',
+			shortcut: 'T'
+		},
+		{
 			label: 'Novo Encaminhamento',
 			href: '/ubs/novo-encaminhamento',
 			shortcut: 'N',
 			quando: () => auth.podeConsolidarEncaminhamento
 		},
 		{
-			label: 'Pacientes',
+			label: 'Pacientes (PEC)',
 			href: '/ubs/pacientes',
 			shortcut: 'P',
 			quando: () => auth.me?.escopo === 'UBS' || auth.me?.role === 'DESENVOLVEDOR'

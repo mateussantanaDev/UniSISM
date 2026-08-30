@@ -1751,5 +1751,53 @@ export class CentroApi {
   }
 }
 
+export class UbsApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Adicionar paciente à fila diária da UBS (POST /v1/ubs/fila-dia). */
+  adicionarFila(req: import('./types').AdicionarFilaUbsRequest): Promise<import('./types').AtendimentoUbsItem> {
+    return this.api.post<import('./types').AtendimentoUbsItem>('/ubs/fila-dia', req);
+  }
+
+  /** Listar fila diária da UBS com filtros e métricas (GET /v1/ubs/fila-dia). */
+  listarFila(query?: {
+    data?: string;
+    ubsId?: string;
+    medicoId?: string;
+    status?: import('./types').StatusAtendimentoUbs;
+    busca?: string;
+  }): Promise<import('./types').ListarFilaUbsResponse> {
+    return this.api.get<import('./types').ListarFilaUbsResponse>('/ubs/fila-dia', query as Record<string, unknown>);
+  }
+
+  /** Chamar paciente no consultório / disparar na TV (POST /v1/ubs/fila-dia/:id/chamar). */
+  chamarPaciente(id: string, req?: { consultorio?: string; crm?: string }): Promise<{
+    atendimento: import('./types').AtendimentoUbsItem;
+    chamada: import('./types').ChamadaPainelUbs;
+  }> {
+    return this.api.post<{ atendimento: import('./types').AtendimentoUbsItem; chamada: import('./types').ChamadaPainelUbs }>(
+      `/ubs/fila-dia/${encodeURIComponent(id)}/chamar`,
+      req || {}
+    );
+  }
+
+  /** Atualizar status do atendimento (POST /v1/ubs/fila-dia/:id/status). */
+  atualizarStatus(
+    id: string,
+    req: { status: import('./types').StatusAtendimentoUbs; observacao?: string; consultorio?: string }
+  ): Promise<import('./types').AtendimentoUbsItem> {
+    return this.api.post<import('./types').AtendimentoUbsItem>(
+      `/ubs/fila-dia/${encodeURIComponent(id)}/status`,
+      req
+    );
+  }
+
+  /** Obter chamadas ativas para a TV da sala de espera da UBS (GET /v1/ubs/painel/chamadas). */
+  getPainelChamadas(query?: { ubsId?: string; limite?: number }): Promise<import('./types').PainelChamadasUbsResponse> {
+    return this.api.get<import('./types').PainelChamadasUbsResponse>('/ubs/painel/chamadas', query as Record<string, unknown>);
+  }
+}
+
+
 
 

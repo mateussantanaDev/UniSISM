@@ -77,6 +77,18 @@
 
 	const pageTitles: Record<string, { label: string; crumb: string }> = {
 		'/ubs/dashboard': { label: 'VISÃO GERAL', crumb: 'UBS / DASHBOARD / VISÃO GERAL' },
+		'/ubs/recepcao/fila': {
+			label: 'RECEPÇÃO · FILA DIÁRIA & ACOLHIMENTO',
+			crumb: 'UBS / RECEPÇÃO / FILA'
+		},
+		'/ubs/medico/agenda': {
+			label: 'CONSULTÓRIO · AGENDA & ATENDIMENTO CLÍNICO',
+			crumb: 'UBS / CONSULTÓRIO / AGENDA'
+		},
+		'/ubs/recepcao/painel': {
+			label: 'SALA DE ESPERA · PAINEL TV DE CHAMADAS',
+			crumb: 'UBS / PAINEL TV / CHAMADA'
+		},
 		'/ubs/dashboard/producao': {
 			label: 'DASHBOARD · MINHA PRODUÇÃO',
 			crumb: 'UBS / DASHBOARD / PRODUÇÃO'
