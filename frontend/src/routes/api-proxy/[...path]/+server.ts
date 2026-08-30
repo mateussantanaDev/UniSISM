@@ -2,9 +2,9 @@ import type { RequestHandler } from './$types';
 
 const VPS_API_BASE = 'http://184.107.179.209:3333/v1';
 
-export const fallback: RequestHandler = async ({ request, params, url }) => {
+async function handleProxy({ request, params, url }: any) {
 	const path = params.path || '';
-	const targetUrl = new URL(`${VPS_API_BASE}/${path}${url.search}`);
+	const targetUrl = `${VPS_API_BASE}/${path}${url.search}`;
 
 	const headers = new Headers(request.headers);
 	headers.delete('host');
@@ -20,7 +20,7 @@ export const fallback: RequestHandler = async ({ request, params, url }) => {
 	}
 
 	try {
-		const response = await fetch(targetUrl.toString(), init);
+		const response = await fetch(targetUrl, init);
 		return response;
 	} catch (err: any) {
 		return new Response(
@@ -36,4 +36,13 @@ export const fallback: RequestHandler = async ({ request, params, url }) => {
 			}
 		);
 	}
-};
+}
+
+export const GET: RequestHandler = handleProxy;
+export const POST: RequestHandler = handleProxy;
+export const PUT: RequestHandler = handleProxy;
+export const PATCH: RequestHandler = handleProxy;
+export const DELETE: RequestHandler = handleProxy;
+export const OPTIONS: RequestHandler = handleProxy;
+export const HEAD: RequestHandler = handleProxy;
+export const fallback: RequestHandler = handleProxy;
