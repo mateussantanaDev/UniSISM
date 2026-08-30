@@ -17,6 +17,11 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import ImprimirProntuario from '$lib/presentation/components/prontuario/ImprimirProntuario.svelte';
+	import ModalSolicitacaoOrigem from '$lib/presentation/components/centro/ModalSolicitacaoOrigem.svelte';
+	import ModalDossiePaciente from '$lib/presentation/components/centro/ModalDossiePaciente.svelte';
+	import ModalReferenciaIntermunicipal from '$lib/presentation/components/centro/ModalReferenciaIntermunicipal.svelte';
+	import ModalNovoEncaminhamentoRegulacao from '$lib/presentation/components/centro/ModalNovoEncaminhamentoRegulacao.svelte';
+	import ModalAgendarRetornoManual from '$lib/presentation/components/centro/ModalAgendarRetornoManual.svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
@@ -90,18 +95,22 @@
 	let tabAtendimento = $state<'SOAP' | 'PRESCRICAO' | 'EXAMES' | 'ATESTADO' | 'CONTRA_REFERENCIA'>('SOAP');
 	let soapQueixa = $state('');
 	let soapExameFisico = $state('');
-	let soapPa = $state('120/80');
-	let soapFc = $state('72');
-	let soapPeso = $state('70.5');
-	let soapAltura = $state('170');
-	let soapSpo2 = $state('98');
-	let soapTemp = $state('36.5');
-	let soapGlicemia = $state('95');
-	let soapCid10 = $state('I10');
-	let soapDiagnostico = $state('Hipertensão arterial essencial');
+	let soapPa = $state('');
+	let soapFc = $state('');
+	let soapPeso = $state('');
+	let soapAltura = $state('');
+	let soapSpo2 = $state('');
+	let soapTemp = $state('');
+	let soapGlicemia = $state('');
+	let soapCid10 = $state('');
+	let soapDiagnostico = $state('');
 	let soapConduta = $state('');
 	let soapPrescricao = $state('');
 	let salvandoAtendimento = $state(false);
+	let erroSoapForm = $state('');
+	let erroModalRetorno = $state('');
+	let erroModalInter = $state('');
+	let erroModalNovoEnc = $state('');
 
 	// Procedimentos Realizados no Atendimento (1 ou mais)
 	let procedimentosRealizados = $state<ProcedimentoRealizadoItem[]>([]);
@@ -123,7 +132,7 @@
 
 	function adicionarProcedimento() {
 		if (!novoProcedimentoNome.trim()) {
-			alert('Informe o nome ou selecione um procedimento.');
+			erroSoapForm = 'Informe o nome ou selecione um procedimento.';
 			return;
 		}
 		procedimentosRealizados.push({
@@ -137,6 +146,7 @@
 		novoProcedimentoCodigo = '';
 		novoProcedimentoQtd = 1;
 		novoProcedimentoObs = '';
+		erroSoapForm = '';
 	}
 
 	function removerProcedimento(id: string) {
@@ -173,37 +183,40 @@
 		dataRetornoManual = d.toISOString().substring(0, 10);
 	}
 
-	async function confirmarAgendamentoRetornoManual() {
+	async function confirmarAgendamentoRetornoManual(dados: {
+		dataRetorno: string;
+		horaRetorno: string;
+		medicoRetornoNome: string;
+		obsRetorno: string;
+	}) {
 		if (!consultaAtiva) return;
-		if (!dataRetornoManual) {
-			alert('Selecione a data manual do retorno.');
-			return;
-		}
 
 		agendandoRetorno = true;
+		erroModalRetorno = '';
 		try {
-			const dtFmt = dataRetornoManual.split('-').reverse().join('/');
+			const dtFmt = dados.dataRetorno.split('-').reverse().join('/');
 			try {
 				await api.centroMedico.agendarRetornoDirect({
 					consultaId: consultaAtiva.id,
 					pacienteId: consultaAtiva.pacienteId,
-					medicoNome: medicoRetornoNome || medicoLogado,
-					dataRetorno: dataRetornoManual,
-					horaRetorno: horaRetornoManual,
-					observacoes: obsRetorno
+					medicoNome: dados.medicoRetornoNome || medicoLogado,
+					dataRetorno: dados.dataRetorno,
+					horaRetorno: dados.horaRetorno,
+					observacoes: dados.obsRetorno
 				} as any);
 			} catch (e) {
 				console.info('[UniSISM] Endpoint /v1/centro/medico/retorno em transição — gravando retorno localmente.', e);
 			}
 
 			// Adiciona à conduta da consulta ativa
-			soapConduta += `\n\n📅 RETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${horaRetornoManual} com Dr(a). ${medicoRetornoNome || medicoLogado}. Obs: ${obsRetorno}`;
+			soapConduta += `\n\n📅 RETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${dados.horaRetorno} com Dr(a). ${dados.medicoRetornoNome || medicoLogado}. Obs: ${dados.obsRetorno}`;
 			
 			modalRetornoAberto = false;
-			alert(`✓ RETORNO DO PACIENTE AGENDADO COM SUCESSO!\n\nPaciente: ${consultaAtiva.paciente.nome}\nData Escolhida: ${dtFmt} às ${horaRetornoManual}\nMédico: ${medicoRetornoNome || medicoLogado}\n(Agendamento direto sem passar pela fila automática)`);
-		} catch (err) {
+			mensagemSucesso = `✓ RETORNO DO PACIENTE AGENDADO COM SUCESSO!\nPaciente: ${consultaAtiva.paciente.nome}\nData Escolhida: ${dtFmt} às ${dados.horaRetorno}\nMédico: ${dados.medicoRetornoNome || medicoLogado}`;
+			setTimeout(() => { mensagemSucesso = ''; }, 6000);
+		} catch (err: any) {
 			console.error(err);
-			alert('Erro ao confirmar agendamento de retorno.');
+			erroModalRetorno = `Falha ao agendar retorno: ${err?.message || 'Erro do servidor'}`;
 		} finally {
 			agendandoRetorno = false;
 		}
@@ -267,47 +280,40 @@
 
 	function abrirFormNovoEncaminhamento() {
 		if (!consultaAtiva) return;
-		formNovoEncJustificativa = `Paciente avaliado em consulta de especialidade. Necessita de encaminhamento para ${formNovoEncEspecialidade}. Diagnóstico: ${soapCid10} — ${soapDiagnostico}.`;
 		modalNovoEncaminhamentoAberto = true;
 	}
 
-	async function enviarNovoEncaminhamentoRegulacao() {
-		if (!consultaAtiva || !formNovoEncJustificativa.trim()) {
-			alert('Informe a justificativa clínica da solicitação de encaminhamento.');
-			return;
-		}
+	async function enviarNovoEncaminhamentoRegulacao(dados: {
+		especialidade: string;
+		prioridade: PrioridadeClinica;
+		cid10: string;
+		diagnostico: string;
+		justificativa: string;
+	}) {
+		if (!consultaAtiva) return;
 
 		enviandoNovoEncaminhamento = true;
+		erroModalNovoEnc = '';
 		try {
-			const res = await api.encaminhamentos.create({
-				paciente: {
-					nome: consultaAtiva.paciente.nome,
-					cpf: consultaAtiva.paciente.cpf,
-					cartaoSus: consultaAtiva.paciente.cartaoSus,
-					dataNascimento: consultaAtiva.paciente.dataNascimento,
-					sexo: consultaAtiva.paciente.sexo,
-					telefone: consultaAtiva.paciente.telefone,
-					endereco: consultaAtiva.paciente.endereco
-				},
-				solicitacao: {
-					medicoSolicitante: medicoLogado,
-					crm: medicoCrm,
-					especialidadeSolicitada: formNovoEncEspecialidade,
-					cid10: soapCid10 || 'I10',
-					cidDescricao: soapDiagnostico || 'Consulta Especializada',
-					justificativaClinica: formNovoEncJustificativa.trim(),
-					prioridade: formNovoEncPrioridade,
-					dataSolicitacao: new Date().toISOString().substring(0, 10)
-				}
+			const res = await api.centroMedico.solicitarEncaminhamento({
+				encaminhamentoId: consultaAtiva.id,
+				pacienteId: consultaAtiva.pacienteId,
+				especialidadeSolicitada: dados.especialidade,
+				cid10: dados.cid10 || soapCid10 || 'I10',
+				cidDescricao: dados.diagnostico || soapDiagnostico || 'Consulta Especializada',
+				justificativaClinica: dados.justificativa,
+				prioridade: dados.prioridade,
+				observacao: `Solicitado em consulta pelo especialista ${medicoLogado}`
 			});
 
 			const prot = res.protocolo || ('ENC' + Date.now().toString().substring(3, 11));
 			mensagemSucesso = `✓ SOLICITAÇÃO DE ENCAMINHAMENTO REGISTRADA COM SUCESSO!\nProtocolo ${prot} enviado diretamente à Fila de Regulação da Secretaria Municipal de Saúde.`;
 			modalNovoEncaminhamentoAberto = false;
-			setTimeout(() => mensagemSucesso = '', 8000);
+			if (timerMensagem) clearTimeout(timerMensagem);
+			timerMensagem = setTimeout(() => (mensagemSucesso = ''), 8000);
 		} catch (e: any) {
 			console.error(e);
-			alert(`Falha ao enviar solicitação para a regulação: ${e?.message || 'Erro do servidor'}`);
+			erroModalNovoEnc = `Falha ao enviar solicitação para a regulação: ${e?.message || 'Erro do servidor'}`;
 		} finally {
 			enviandoNovoEncaminhamento = false;
 		}
@@ -371,6 +377,28 @@
 		'Transplante de Órgãos'
 	];
 
+	function extrairHorarioReal(enc: any, idx: number): string {
+		if (enc.observacoesRegulacao) {
+			const match = enc.observacoesRegulacao.match(/(\d{2}:\d{2})/);
+			if (match) return match[1];
+		}
+		if (enc.horaAgendamento && typeof enc.horaAgendamento === 'string') {
+			return enc.horaAgendamento.substring(0, 5);
+		}
+		if (enc.agendamentoPrevisto && typeof enc.agendamentoPrevisto === 'string' && enc.agendamentoPrevisto.includes('T')) {
+			const d = new Date(enc.agendamentoPrevisto);
+			if (!isNaN(d.getTime())) {
+				const h = d.getUTCHours().toString().padStart(2, '0');
+				const m = d.getUTCMinutes().toString().padStart(2, '0');
+				if (h !== '00' || m !== '00') {
+					return `${h}:${m}`;
+				}
+			}
+		}
+		const horasPadrao = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '13:30', '14:00', '14:30', '15:00', '15:30'];
+		return horasPadrao[idx % horasPadrao.length];
+	}
+
 	// Initial dataset generator / API loader
 	async function carregarAgendaDoDia() {
 		carregando = true;
@@ -383,7 +411,7 @@
 					consultas = resCentro.agenda.map((enc, idx) => ({
 						id: enc.id,
 						protocolo: enc.protocolo,
-						horario: `0${8 + (idx % 4)}:${(idx * 20) % 60 === 0 ? '00' : (idx * 20) % 60}`,
+						horario: extrairHorarioReal(enc, idx),
 						status: (enc.statusAtendimentoCentro || 'AGUARDANDO') as any,
 						pacienteId: (enc.paciente as any).id || enc.id,
 						paciente: {
@@ -417,14 +445,13 @@
 			// Consulta via API de encaminhamentos aprovados
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
 			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
-			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto === dataAgenda);
+			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda);
 
 			consultas = agendados.map((enc, idx) => {
-				const horas = ['08:00', '08:45', '09:30', '10:15', '11:00', '13:30', '14:15', '15:00'];
 				return {
 					id: enc.id,
 					protocolo: enc.protocolo,
-					horario: horas[idx % horas.length],
+					horario: extrairHorarioReal(enc, idx),
 					status: ((enc as any).statusAtendimentoCentro || 'AGUARDANDO') as any,
 					pacienteId: (enc.paciente as any).id || enc.id,
 					paciente: {
@@ -473,8 +500,11 @@
 		carregarAgendaDoDia();
 	});
 
+	let timerMensagem: any = null;
+
 	onDestroy(() => {
 		if (timerInterval) clearInterval(timerInterval);
+		if (timerMensagem) clearTimeout(timerMensagem);
 	});
 
 	// Filtered schedule list
@@ -541,22 +571,29 @@
 			console.info('[UniSISM] Endpoint /v1/centro/medico/chamar em transição — usando estado local.', errChamar);
 		}
 
-		// Reset SOAP form
+		// Reset SOAP form com dados reais da solicitação
 		procedimentosRealizados = c.solicitacao?.procedimentoSolicitado ? [{
 			id: 'proc-ini-' + Date.now(),
 			nome: c.solicitacao.procedimentoSolicitado,
 			quantidade: 1,
-			observacao: 'Procedimento principal solicitado no agendamento'
+			observacao: 'Procedimento solicitado no encaminhamento'
 		}] : [];
-		soapQueixa = `Paciente ${c.paciente.nome}, ${calcularIdade(c.paciente.dataNascimento)} anos. Queixa: ${c.solicitacao.justificativaClinica}`;
-		soapExameFisico = 'Aparelho Cardiovascular: RCR em 2 tempos, bulhas normofonéticas sem sopros. PA: 120/80 mmHg, FC: 72 bpm.\nAparelho Respiratório: Murmúrio vesicular distribuído sem ruídos adventícios.';
-		soapPa = '120/80';
-		soapFc = '75';
-		soapPeso = '72.0';
-		soapCid10 = c.solicitacao.cid10 || 'I10';
-		soapDiagnostico = c.solicitacao.cidDescricao || 'Avaliação Cardiológica Especializada';
-		soapConduta = 'Orientada mudança no estilo de vida, dieta hipossódica e atividade física moderada. Mantida medicação de uso contínuo.';
-		soapPrescricao = '1. Enalapril 10mg — Tomar 1 comprimido por via oral a cada 12 horas.\n2. Controle diário de PA por 14 dias.';
+		soapQueixa = c.solicitacao?.justificativaClinica
+			? `Queixa informada na solicitação: ${c.solicitacao.justificativaClinica}`
+			: '';
+		soapExameFisico = '';
+		soapPa = '';
+		soapFc = '';
+		soapPeso = '';
+		soapAltura = '';
+		soapSpo2 = '';
+		soapTemp = '';
+		soapGlicemia = '';
+		soapCid10 = c.solicitacao?.cid10 || '';
+		soapDiagnostico = c.solicitacao?.cidDescricao || '';
+		soapConduta = '';
+		soapPrescricao = '';
+		erroSoapForm = '';
 
 		// Start Timer
 		timerSegundos = 0;
@@ -575,11 +612,12 @@
 	async function concluirAtendimento() {
 		if (!consultaAtiva) return;
 		if (!soapCid10.trim() || !soapDiagnostico.trim() || !soapConduta.trim()) {
-			alert('Preencha os campos obrigatórios da consulta (CID-10, Diagnóstico e Conduta).');
+			erroSoapForm = 'Preencha os campos obrigatórios da consulta (CID-10, Diagnóstico e Conduta).';
 			return;
 		}
 
 		salvandoAtendimento = true;
+		erroSoapForm = '';
 		try {
 			const procResumo = procedimentosRealizados.length > 0 
 				? `\n\nProcedimentos Realizados (${procedimentosRealizados.length}): ` + procedimentosRealizados.map(p => `${p.nome} (${p.quantidade}x)` + (p.codigoSigtap ? ` [SIGTAP ${p.codigoSigtap}]` : '')).join('; ')
@@ -590,7 +628,7 @@
 			try {
 				await api.centroMedico.registrarAtendimentoSoap(consultaAtiva.id, {
 					subjetivo: soapQueixa,
-					objetivo: `${soapExameFisico}\nSinais Vitais: PA ${soapPa} mmHg | FC ${soapFc} bpm | Peso ${soapPeso}kg`,
+					objetivo: `${soapExameFisico}\nSinais Vitais: PA ${soapPa || '—'} mmHg | FC ${soapFc || '—'} bpm | Peso ${soapPeso || '—'}kg`,
 					avaliacao: soapDiagnostico,
 					plano: condutaCompleta,
 					queixaPrincipal: soapQueixa,
@@ -620,12 +658,27 @@
 				}
 			}
 
+			if (procedimentosRealizados.length > 0) {
+				try {
+					await api.centroMedico.registrarProcedimentos(consultaAtiva.id, {
+						procedimentos: procedimentosRealizados.map(p => ({
+							codigoSigtap: p.codigoSigtap,
+							nome: p.nome,
+							quantidade: p.quantidade,
+							valorUnitario: p.valorUnitario
+						}))
+					});
+				} catch (eProc) {
+					console.info('[UniSISM] Registro de procedimentos faturáveis:', eProc);
+				}
+			}
+
 			// Update consultation in list
 			const agoraHora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 			consultaAtiva.status = 'CONCLUIDO';
 			consultaAtiva.atendimentoSOAP = {
 				queixaPrincipal: soapQueixa,
-				exameFisico: `${soapExameFisico}\nSinais Vitais: PA ${soapPa} mmHg | FC ${soapFc} bpm | Peso ${soapPeso}kg`,
+				exameFisico: `${soapExameFisico}\nSinais Vitais: PA ${soapPa || '—'} mmHg | FC ${soapFc || '—'} bpm | Peso ${soapPeso || '—'}kg`,
 				cid10: soapCid10,
 				diagnostico: soapDiagnostico,
 				conduta: condutaCompleta,
@@ -639,12 +692,13 @@
 			if (timerInterval) clearInterval(timerInterval);
 			consultaAtiva = null;
 
-			setTimeout(() => {
+			if (timerMensagem) clearTimeout(timerMensagem);
+			timerMensagem = setTimeout(() => {
 				mensagemSucesso = '';
 			}, 6000);
-		} catch (e) {
+		} catch (e: any) {
 			console.error(e);
-			alert('Falha ao concluir atendimento.');
+			erroSoapForm = `Falha ao concluir atendimento: ${e?.message || 'Erro no servidor'}`;
 		} finally {
 			salvandoAtendimento = false;
 		}
@@ -684,7 +738,7 @@
 			pacienteDossie = p;
 		} catch (e: any) {
 			console.error('Erro ao obter prontuário do servidor:', e);
-			alert('Prontuário do paciente não encontrado no servidor.');
+			erroGlobal = 'Prontuário do paciente não encontrado no servidor.';
 			modalDossieAberto = false;
 		} finally {
 			carregandoDossie = false;
@@ -695,6 +749,7 @@
 	function abrirFormularioReferencia() {
 		if (!consultaAtiva) return;
 		protocoloReferenciaGerado = '';
+		erroModalInter = '';
 		refMunicipioDestino = 'Porto Alegre';
 		refEspecialidade = 'Cirurgia Cardiovascular / Alta Complexidade';
 		refCid10 = soapCid10 || consultaAtiva.solicitacao.cid10;
@@ -704,14 +759,20 @@
 		modalReferenciaAberto = true;
 	}
 
-	async function submeterReferenciaIntermunicipal() {
+	async function submeterReferenciaIntermunicipal(dados: {
+		municipioDestino: string;
+		especialidade: string;
+		cid10: string;
+		diagnostico: string;
+		justificativa: string;
+		prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' | 'EMERGENCIA';
+		transporte: string;
+		acompanhante: boolean;
+	}) {
 		if (!consultaAtiva) return;
-		if (!refMunicipioDestino || !refEspecialidade || !refJustificativa.trim()) {
-			alert('Preencha os campos obrigatórios do encaminhamento intermunicipal.');
-			return;
-		}
 
 		enviandoReferencia = true;
+		erroModalInter = '';
 		try {
 			let protocoloObtido = '';
 			// Send intermunicipal referral via dedicated Centro TFD endpoint (v3.0.0 centro-doc-back.md)
@@ -719,11 +780,11 @@
 				const resTfd = await api.centroMedico.criarEncaminhamentoIntermunicipal({
 					pacienteId: consultaAtiva.pacienteId,
 					solicitacao: {
-						especialidadeSolicitada: `${refEspecialidade} (${refMunicipioDestino})`,
-						cid10: refCid10,
-						cidDescricao: refDiagnostico,
-						justificativaClinica: `[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: ${refMunicipioDestino}\nTransporte: ${refTransporte} | Acompanhante: ${refAcompanhante ? 'Sim' : 'Não'}\n\nLaudo Médico:\n${refJustificativa.trim()}`,
-						prioridade: refPrioridade
+						especialidadeSolicitada: `${dados.especialidade} (${dados.municipioDestino})`,
+						cid10: dados.cid10,
+						cidDescricao: dados.diagnostico,
+						justificativaClinica: `[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: ${dados.municipioDestino}\nTransporte: ${dados.transporte} | Acompanhante: ${dados.acompanhante ? 'Sim' : 'Não'}\n\nLaudo Médico:\n${dados.justificativa.trim()}`,
+						prioridade: dados.prioridade
 					}
 				});
 				if (resTfd && resTfd.encaminhamento) {
@@ -744,11 +805,11 @@
 					solicitacao: {
 						medicoSolicitante: medicoLogado,
 						crm: 'CRM 12345',
-						especialidadeSolicitada: `${refEspecialidade} (${refMunicipioDestino})`,
-						cid10: refCid10,
-						cidDescricao: refDiagnostico,
-						justificativaClinica: `[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: ${refMunicipioDestino}\nTransporte: ${refTransporte} | Acompanhante: ${refAcompanhante ? 'Sim' : 'Não'}\n\nLaudo Médico:\n${refJustificativa.trim()}`,
-						prioridade: refPrioridade,
+						especialidadeSolicitada: `${dados.especialidade} (${dados.municipioDestino})`,
+						cid10: dados.cid10,
+						cidDescricao: dados.diagnostico,
+						justificativaClinica: `[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: ${dados.municipioDestino}\nTransporte: ${dados.transporte} | Acompanhante: ${dados.acompanhante ? 'Sim' : 'Não'}\n\nLaudo Médico:\n${dados.justificativa.trim()}`,
+						prioridade: dados.prioridade,
 						dataSolicitacao: new Date().toISOString().substring(0, 10)
 					}
 				});
@@ -758,20 +819,20 @@
 			protocoloReferenciaGerado = protocoloObtido;
 			consultaAtiva.encaminhamentoIntermunicipal = {
 				protocolo: protocoloObtido,
-				municipioDestino: refMunicipioDestino,
-				especialidade: refEspecialidade,
+				municipioDestino: dados.municipioDestino,
+				especialidade: dados.especialidade,
 				criadoEm: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 			};
 
 			// Add note to SOAP conduct
-			soapConduta += `\n\n[ENCAMINHAMENTO INTERMUNICIPAL GERADO: Protocolo ${protocoloObtido} para ${refEspecialidade} em ${refMunicipioDestino} — Enviado à Regulação SMS]`;
+			soapConduta += `\n\n[ENCAMINHAMENTO INTERMUNICIPAL GERADO: Protocolo ${protocoloObtido} para ${dados.especialidade} em ${dados.municipioDestino} — Enviado à Regulação SMS]`;
 
 			setTimeout(() => {
 				modalReferenciaAberto = false;
 			}, 3500);
-		} catch (e) {
+		} catch (e: any) {
 			console.error(e);
-			alert('Falha ao enviar encaminhamento para a regulação da SMS.');
+			erroModalInter = `Falha ao enviar encaminhamento para a regulação: ${e?.message || 'Erro do servidor'}`;
 		} finally {
 			enviandoReferencia = false;
 		}
@@ -1213,6 +1274,13 @@
 							</button>
 						</div>
 					{/if}
+
+					{#if erroSoapForm}
+						<div class="border-2 border-red-700 bg-red-50 p-3 font-mono text-xs font-bold text-red-900 flex items-center gap-2">
+							<span>⚠</span>
+							<span>{erroSoapForm}</span>
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -1478,406 +1546,30 @@
 </div>
 
 <!-- MODAL 1: Detalhes da Solicitação Médica Original -->
-<Modal
+<ModalSolicitacaoOrigem
 	isOpen={modalSolicitacaoAberto}
-	onClose={() => modalSolicitacaoAberto = false}
-	title="SOLICITAÇÃO MÉDICA DE ORIGEM"
-	subtitle={consultaSolicitacao ? `Protocolo: ${consultaSolicitacao.protocolo} · Unidade: ${consultaSolicitacao.unidadeOrigem}` : ''}
-	maxWidth="lg"
->
-	{#if consultaSolicitacao}
-		<div class="flex flex-col gap-4 font-mono text-xs">
-			<!-- Dados do Paciente e Origem -->
-			<div class="border border-slate-200 bg-slate-50 p-4 grid grid-cols-2 gap-4">
-				<div>
-					<div class="text-[9px] font-bold text-slate-500 uppercase">PACIENTE</div>
-					<div class="font-bold text-slate-900 text-sm font-sans">{consultaSolicitacao.paciente.nome}</div>
-					<div class="text-[11px] text-slate-600">CPF: {consultaSolicitacao.paciente.cpf} · SUS: {consultaSolicitacao.paciente.cartaoSus}</div>
-				</div>
-				<div>
-					<div class="text-[9px] font-bold text-slate-500 uppercase">MÉDICO SOLICITANTE DA UBS</div>
-					<div class="font-bold text-slate-900 font-sans">{consultaSolicitacao.solicitacao.medicoSolicitante}</div>
-					<div class="text-[11px] text-slate-600">{consultaSolicitacao.solicitacao.crm} · Data: {consultaSolicitacao.solicitacao.dataSolicitacao}</div>
-				</div>
-			</div>
-
-			<!-- Detalhes Clínicos da Solicitação -->
-			<div class="border border-slate-200 p-4 flex flex-col gap-3 font-sans">
-				<div class="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3 font-mono">
-					<div>
-						<span class="text-[10px] text-slate-500 uppercase block">Especialidade Solicitada</span>
-						<span class="font-bold text-blue-900 text-sm">{consultaSolicitacao.solicitacao.especialidadeSolicitada}</span>
-					</div>
-					<div>
-						<span class="text-[10px] text-slate-500 uppercase block">CID-10 e Diagnóstico</span>
-						<span class="font-bold text-slate-900">{consultaSolicitacao.solicitacao.cid10} — {consultaSolicitacao.solicitacao.cidDescricao}</span>
-					</div>
-				</div>
-
-				<div>
-					<div class="font-mono text-[10px] font-bold text-slate-500 uppercase">JUSTIFICATIVA CLÍNICA ORIGINAL DA UBS</div>
-					<div class="mt-1 bg-slate-50 border border-slate-200 p-3 text-xs text-slate-800 leading-relaxed font-sans whitespace-pre-wrap">
-						{consultaSolicitacao.solicitacao.justificativaClinica}
-					</div>
-				</div>
-
-				{#if consultaSolicitacao.observacoesRegulacao}
-					<div>
-						<div class="font-mono text-[10px] font-bold text-slate-500 uppercase">NOTAS DE REGULAÇÃO / RECEPÇÃO</div>
-						<div class="mt-1 bg-blue-50 border border-blue-200 p-2.5 text-xs text-blue-900 font-mono">
-							{consultaSolicitacao.observacoesRegulacao}
-						</div>
-					</div>
-				{/if}
-			</div>
-
-			<div class="flex justify-end pt-2 border-t border-slate-200">
-				<button
-					type="button"
-					onclick={() => modalSolicitacaoAberto = false}
-					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
-				>
-					Fechar
-				</button>
-			</div>
-		</div>
-	{/if}
-</Modal>
+	consulta={consultaSolicitacao}
+	onClose={() => (modalSolicitacaoAberto = false)}
+/>
 
 <!-- MODAL 2: Dossiê Completo do Paciente (Prontuário PEC) -->
-<Modal
+<ModalDossiePaciente
 	isOpen={modalDossieAberto}
-	onClose={() => modalDossieAberto = false}
-	title="DOSSIÊ COMPLETO DO PACIENTE (PEC)"
-	subtitle={pacienteDossie ? `${pacienteDossie.nome} · CPF: ${pacienteDossie.cpf}` : ''}
-	maxWidth="xl"
->
-	{#if carregandoDossie}
-		<div class="p-8 text-center font-mono text-xs text-slate-500">
-			Carregando prontuário eletrônico completo...
-		</div>
-	{:else if pacienteDossie}
-		<div class="flex flex-col gap-4 font-mono text-xs">
-			<!-- Header Resumo com Impressão -->
-			<div class="border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<div class="text-base font-bold text-slate-900 font-sans">{pacienteDossie.nome}</div>
-					<div class="text-xs text-slate-600">
-						Cartão SUS: {pacienteDossie.cartaoSus} · {pacienteDossie.sexo === 'M' ? 'Masculino' : 'Feminino'} · Nascimento: {pacienteDossie.dataNascimento}
-					</div>
-				</div>
-
-				<button
-					type="button"
-					onclick={() => modalImprimirAberto = true}
-					class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950"
-				>
-					🖨️ Imprimir Prontuário Completo
-				</button>
-			</div>
-
-			<!-- Abas do Dossiê -->
-			<div class="flex border-b border-slate-200 bg-slate-100 overflow-x-auto">
-				<button
-					type="button"
-					onclick={() => abaDossieAtiva = 'resumo'}
-					class="px-4 py-2.5 font-bold uppercase text-xs border-b-2 transition-colors {abaDossieAtiva === 'resumo' ? 'border-blue-900 bg-white text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-200'}"
-				>
-					Resumo
-				</button>
-				<button
-					type="button"
-					onclick={() => abaDossieAtiva = 'quadro'}
-					class="px-4 py-2.5 font-bold uppercase text-xs border-b-2 transition-colors {abaDossieAtiva === 'quadro' ? 'border-blue-900 bg-white text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-200'}"
-				>
-					Alergias & Crônicas
-				</button>
-				<button
-					type="button"
-					onclick={() => abaDossieAtiva = 'atendimentos'}
-					class="px-4 py-2.5 font-bold uppercase text-xs border-b-2 transition-colors {abaDossieAtiva === 'atendimentos' ? 'border-blue-900 bg-white text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-200'}"
-				>
-					Histórico de Consultas
-				</button>
-				<button
-					type="button"
-					onclick={() => abaDossieAtiva = 'exames'}
-					class="px-4 py-2.5 font-bold uppercase text-xs border-b-2 transition-colors {abaDossieAtiva === 'exames' ? 'border-blue-900 bg-white text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-200'}"
-				>
-					Exames Realizados
-				</button>
-				<button
-					type="button"
-					onclick={() => abaDossieAtiva = 'vacinas'}
-					class="px-4 py-2.5 font-bold uppercase text-xs border-b-2 transition-colors {abaDossieAtiva === 'vacinas' ? 'border-blue-900 bg-white text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-200'}"
-				>
-					Vacinação
-				</button>
-			</div>
-
-			<!-- Conteúdo das Abas -->
-			<div class="p-4 border border-slate-200 bg-white min-h-[250px]">
-				{#if abaDossieAtiva === 'resumo'}
-					<div class="grid grid-cols-2 gap-4 font-sans text-xs">
-						<div>
-							<h4 class="font-mono font-bold text-slate-500 text-[10px] uppercase border-b pb-1 mb-2">Dados Cadastrais</h4>
-							<p><strong>Mãe:</strong> {pacienteDossie.nomeMae}</p>
-							<p><strong>Endereço:</strong> {pacienteDossie.endereco}, {pacienteDossie.bairro} - {pacienteDossie.municipio}/{pacienteDossie.uf}</p>
-							<p><strong>Telefone:</strong> {pacienteDossie.telefone}</p>
-							<p><strong>Unidade de Vínculo:</strong> {pacienteDossie.unidadeVinculada}</p>
-						</div>
-						<div>
-							<h4 class="font-mono font-bold text-slate-500 text-[10px] uppercase border-b pb-1 mb-2">Alertas de Saúde</h4>
-							<p><strong class="text-red-700">Alergias:</strong> {pacienteDossie.alergias.map(a => a.substancia).join(', ') || 'Nenhuma'}</p>
-							<p><strong>Condições Crônicas:</strong> {pacienteDossie.condicoesCronicas.map(c => c.descricao).join(', ') || 'Nenhuma'}</p>
-							<p><strong>Medicamentos em Uso:</strong> {pacienteDossie.medicamentosEmUso.map(m => `${m.nome} ${m.dosagem}`).join(', ') || 'Nenhum'}</p>
-						</div>
-					</div>
-				{:else if abaDossieAtiva === 'quadro'}
-					<div class="flex flex-col gap-4 font-sans text-xs">
-						<!-- Alergias -->
-						<div>
-							<h4 class="font-mono font-bold text-red-700 text-xs uppercase mb-2">Alergias Registradas</h4>
-							<div class="border border-red-200 bg-red-50 p-3">
-								{#each pacienteDossie.alergias as al}
-									<div class="font-bold text-red-900">{al.substancia} ({al.tipo}) — Gravidade: {al.gravidade}</div>
-									<div class="text-xs text-red-800">{al.observacao}</div>
-								{:else}
-									<div class="text-slate-500">Nenhuma alergia registrada.</div>
-								{/each}
-							</div>
-						</div>
-
-						<!-- Medicamentos em Uso -->
-						<div>
-							<h4 class="font-mono font-bold text-slate-800 text-xs uppercase mb-2">Medicamentos em Uso Contínuo</h4>
-							<table class="w-full border-collapse font-mono text-xs border border-slate-200">
-								<thead>
-									<tr class="bg-slate-100 text-left border-b border-slate-200">
-										<th class="p-2">Medicamento</th>
-										<th class="p-2">Dosagem</th>
-										<th class="p-2">Frequência</th>
-										<th class="p-2">Prescritor</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each pacienteDossie.medicamentosEmUso as med}
-										<tr class="border-b border-slate-100">
-											<td class="p-2 font-bold">{med.nome}</td>
-											<td class="p-2">{med.dosagem}</td>
-											<td class="p-2">{med.frequencia}</td>
-											<td class="p-2">{med.prescritor}</td>
-										</tr>
-									{:else}
-										<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhum medicamento registrado.</td></tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
-					</div>
-				{:else if abaDossieAtiva === 'atendimentos'}
-					<div class="flex flex-col gap-3 font-sans text-xs">
-						{#each pacienteDossie.atendimentos as at}
-							<div class="border border-slate-200 p-3 bg-slate-50">
-								<div class="flex justify-between border-b border-slate-200 pb-1.5 font-mono text-[11px] text-slate-600">
-									<span>{new Date(at.data).toLocaleString('pt-BR')} — <strong>{at.profissional}</strong> ({at.especialidade})</span>
-									<span>CID-10: <strong>{at.cid10}</strong></span>
-								</div>
-								<div class="mt-2">
-									<p><strong>Queixa:</strong> {at.queixaPrincipal}</p>
-									<p><strong>Diagnóstico:</strong> {at.diagnostico}</p>
-									<p><strong>Conduta:</strong> {at.conduta}</p>
-								</div>
-							</div>
-						{:else}
-							<div class="p-8 text-center text-slate-500">Nenhum atendimento anterior registrado.</div>
-						{/each}
-					</div>
-				{:else if abaDossieAtiva === 'exames'}
-					<table class="w-full border-collapse font-mono text-xs border border-slate-200">
-						<thead>
-							<tr class="bg-slate-100 text-left border-b border-slate-200">
-								<th class="p-2">Data</th>
-								<th class="p-2">Exame</th>
-								<th class="p-2">Solicitante</th>
-								<th class="p-2">Resultado</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each pacienteDossie.exames as ex}
-								<tr class="border-b border-slate-100">
-									<td class="p-2">{ex.data}</td>
-									<td class="p-2 font-bold">{ex.tipo}</td>
-									<td class="p-2">{ex.solicitante}</td>
-									<td class="p-2 font-bold {ex.resultado === 'ALTERADO' ? 'text-red-700' : 'text-emerald-700'}">{ex.resultado}</td>
-								</tr>
-							{:else}
-								<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhum exame registrado.</td></tr>
-							{/each}
-						</tbody>
-					</table>
-				{:else if abaDossieAtiva === 'vacinas'}
-					<table class="w-full border-collapse font-mono text-xs border border-slate-200">
-						<thead>
-							<tr class="bg-slate-100 text-left border-b border-slate-200">
-								<th class="p-2">Data</th>
-								<th class="p-2">Vacina</th>
-								<th class="p-2">Dose</th>
-								<th class="p-2">Lote</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each pacienteDossie.vacinacoes as vc}
-								<tr class="border-b border-slate-100">
-									<td class="p-2">{vc.data}</td>
-									<td class="p-2 font-bold">{vc.vacina}</td>
-									<td class="p-2">{vc.dose}</td>
-									<td class="p-2">{vc.lote}</td>
-								</tr>
-							{:else}
-								<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhuma vacina registrada.</td></tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			</div>
-
-			<div class="flex justify-end pt-2">
-				<button
-					type="button"
-					onclick={() => modalDossieAberto = false}
-					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
-				>
-					Fechar Dossiê
-				</button>
-			</div>
-		</div>
-	{/if}
-</Modal>
+	carregando={carregandoDossie}
+	paciente={pacienteDossie}
+	onClose={() => (modalDossieAberto = false)}
+	onImprimirProntuario={() => (modalImprimirAberto = true)}
+/>
 
 <!-- MODAL 3: Formulario de Encaminhamento Intermunicipal / Regulação SMS (TFD) -->
-<Modal
+<ModalReferenciaIntermunicipal
 	isOpen={modalReferenciaAberto}
-	onClose={() => modalReferenciaAberto = false}
-	title="ENCAMINHAMENTO INTERMUNICIPAL (REGULAÇÃO SMS / TFD)"
-	subtitle={consultaAtiva ? `Paciente: ${consultaAtiva.paciente.nome}` : ''}
-	maxWidth="lg"
->
-	{#if protocoloReferenciaGerado}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-6 text-center flex flex-col items-center gap-3">
-			<div class="text-xl font-black text-emerald-900 font-mono">
-				✓ ENCAMINHAMENTO INTERMUNICIPAL REGISTRADO
-			</div>
-			<div class="text-sm font-mono text-slate-800">
-				Protocolo Gerado: <strong class="bg-emerald-200 px-2 py-1 text-base">{protocoloReferenciaGerado}</strong>
-			</div>
-			<div class="text-xs font-sans text-slate-700 max-w-md">
-				O pedido foi enviado diretamente para a fila da Regulação da Secretaria Municipal de Saúde. O paciente poderá acompanhar a regulação e o agendamento logístico no centro de comando.
-			</div>
-		</div>
-	{:else}
-		<div class="flex flex-col gap-4 font-sans text-xs">
-			<div class="border border-blue-200 bg-blue-50 p-3 text-blue-900 font-mono text-[11px]">
-				ℹ Utilize este formulário quando o tratamento ou procedimento do paciente não estiver disponível na rede municipal, necessitando de encaminhamento para centro de referência em outra cidade.
-			</div>
-
-			<div class="grid grid-cols-2 gap-3 font-mono">
-				<!-- Município de Destino -->
-				<div class="flex flex-col gap-1">
-					<label for="ref-mun" class="text-[10px] font-bold text-slate-600 uppercase">Município de Referência <span class="text-red-700">*</span></label>
-					<select id="ref-mun" bind:value={refMunicipioDestino} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans">
-						{#each municipiosReferencia as m}
-							<option value={m}>{m}</option>
-						{/each}
-					</select>
-				</div>
-
-				<!-- Especialidade / Procedimento de Alta Complexidade -->
-				<div class="flex flex-col gap-1">
-					<label for="ref-esp" class="text-[10px] font-bold text-slate-600 uppercase">Especialidade / Alta Complexidade <span class="text-red-700">*</span></label>
-					<select id="ref-esp" bind:value={refEspecialidade} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans">
-						{#each especialidadesReferencia as e}
-							<option value={e}>{e}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-12 gap-3 font-mono">
-				<div class="col-span-4 flex flex-col gap-1">
-					<label for="ref-cid" class="text-[10px] font-bold text-slate-600 uppercase">CID-10 <span class="text-red-700">*</span></label>
-					<input id="ref-cid" type="text" bind:value={refCid10} class="border border-slate-300 p-2 text-xs font-bold outline-none focus:border-blue-900 uppercase" />
-				</div>
-				<div class="col-span-8 flex flex-col gap-1">
-					<label for="ref-diag" class="text-[10px] font-bold text-slate-600 uppercase">Diagnóstico Clínico</label>
-					<input id="ref-diag" type="text" bind:value={refDiagnostico} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans" />
-				</div>
-			</div>
-
-			<!-- Justificativa / Laudo Médico -->
-			<div class="flex flex-col gap-1">
-				<label for="ref-just" class="font-mono text-[10px] font-bold text-slate-600 uppercase">
-					Laudo Médico e Justificativa da Necessidade Intermunicipal <span class="text-red-700">*</span>
-				</label>
-				<textarea
-					id="ref-just"
-					rows="4"
-					bind:value={refJustificativa}
-					placeholder="Descreva a fundamentação clínica para o tratamento fora do município..."
-					class="border border-slate-300 p-2.5 text-xs outline-none focus:border-blue-900 resize-none font-sans"
-				></textarea>
-			</div>
-
-			<!-- Prioridade e Logística -->
-			<div class="grid grid-cols-3 gap-3 font-mono border-t border-slate-200 pt-3">
-				<div class="flex flex-col gap-1">
-					<label for="ref-prio" class="text-[9px] font-bold text-slate-600 uppercase">Prioridade Clínica</label>
-					<select id="ref-prio" bind:value={refPrioridade} class="border border-slate-300 p-1.5 text-xs outline-none">
-						<option value="ELETIVA">ELETIVA</option>
-						<option value="PRIORITARIA">PRIORITÁRIA</option>
-						<option value="URGENTE">URGENTE</option>
-						<option value="EMERGENCIA">EMERGÊNCIA</option>
-					</select>
-				</div>
-				<div class="flex flex-col gap-1">
-					<label for="ref-transp" class="text-[9px] font-bold text-slate-600 uppercase">Transporte Solicitado</label>
-					<select id="ref-transp" bind:value={refTransporte} class="border border-slate-300 p-1.5 text-xs outline-none">
-						<option value="VAN_SMS">Van da SMS</option>
-						<option value="AMBULANCIA">Ambulância Simples</option>
-						<option value="UTI_MOVEL">Ambulância UTI Móvel</option>
-						<option value="PASSAGEM_RODOVIARIA">Passagem Rodoviária</option>
-					</select>
-				</div>
-				<div class="flex flex-col gap-1 justify-center">
-					<span class="text-[9px] font-bold text-slate-600 uppercase">Acompanhante</span>
-					<label for="ref-acomp" class="flex items-center gap-1.5 cursor-pointer font-sans">
-						<input id="ref-acomp" type="checkbox" bind:checked={refAcompanhante} class="h-4 w-4" />
-						<span>Exige Acompanhante</span>
-					</label>
-				</div>
-			</div>
-
-			<div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 font-mono">
-				<button
-					type="button"
-					onclick={() => modalReferenciaAberto = false}
-					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
-				>
-					Cancelar
-				</button>
-
-				<button
-					type="button"
-					onclick={submeterReferenciaIntermunicipal}
-					disabled={enviandoReferencia}
-					class="border border-blue-900 bg-blue-900 text-white px-5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-blue-950 disabled:opacity-50"
-				>
-					{enviandoReferencia ? 'Enviando à Regulação...' : 'Enviar para Regulação SMS'}
-				</button>
-			</div>
-		</div>
-	{/if}
-</Modal>
+	consulta={consultaAtiva}
+	enviando={enviandoReferencia}
+	protocoloGerado={protocoloReferenciaGerado}
+	onClose={() => (modalReferenciaAberto = false)}
+	onSubmit={submeterReferenciaIntermunicipal}
+/>
 
 <!-- OVERLAY 4: Impressão do Prontuário Eletrônico (ImprimirProntuario) -->
 {#if modalImprimirAberto && pacienteDossie}
@@ -1886,210 +1578,32 @@
 		operador={auth.me ? `${auth.me.nome} (${auth.me.matricula})` : medicoLogado}
 		prefeitura={auth.me?.prefeitura ?? 'Prefeitura Municipal'}
 		unidade="Centro Municipal de Especialidades"
-		onFechar={() => modalImprimirAberto = false}
+		onFechar={() => (modalImprimirAberto = false)}
 	/>
 {/if}
 
 <!-- OVERLAY 5: Modal de Criação de Encaminhamento para Regulação SMS / Secretaria -->
-{#if modalNovoEncaminhamentoAberto && consultaAtiva}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-blue-900 px-5 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">➕ SOLICITAÇÃO DE ENCAMINHAMENTO PARA REGULAÇÃO SMS</div>
-				<button onclick={() => modalNovoEncaminhamentoAberto = false} class="text-blue-200 hover:text-white font-bold text-sm">✕</button>
-			</div>
+<ModalNovoEncaminhamentoRegulacao
+	isOpen={modalNovoEncaminhamentoAberto}
+	consulta={consultaAtiva}
+	{medicoLogado}
+	{medicoCrm}
+	{soapCid10}
+	{soapDiagnostico}
+	enviando={enviandoNovoEncaminhamento}
+	onClose={() => (modalNovoEncaminhamentoAberto = false)}
+	onSubmit={enviarNovoEncaminhamentoRegulacao}
+/>
 
-			<div class="p-6 flex flex-col gap-4">
-				<!-- Dados Preenchidos Automaticamente do Paciente -->
-				<div class="bg-blue-50 border border-blue-200 p-3 font-mono">
-					<div class="font-bold text-blue-900 text-xs font-sans">{consultaAtiva.paciente.nome}</div>
-					<div class="text-[11px] text-slate-600 mt-0.5">
-						CPF: {consultaAtiva.paciente.cpf} · Cartão SUS: {consultaAtiva.paciente.cartaoSus} · Sexo: {consultaAtiva.paciente.sexo}
-					</div>
-					<div class="text-[10px] text-slate-500 mt-1">
-						Unidade Solicitante: <strong>Centro Municipal de Especialidades</strong> · Solicitante: <strong>{medicoLogado} ({medicoCrm})</strong>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-					<div class="flex flex-col gap-1">
-						<label for="enc-esp" class="font-bold text-slate-700 text-[11px]">Especialidade / Fila de Destino *</label>
-						<select id="enc-esp" bind:value={formNovoEncEspecialidade} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-							<option value="Cardiologia Pediátrica">Cardiologia Pediátrica</option>
-							<option value="Cirurgia Vascular">Cirurgia Vascular</option>
-							<option value="Neurologia Clínica">Neurologia Clínica</option>
-							<option value="Oncologia Cirúrgica">Oncologia Cirúrgica</option>
-							<option value="Endocrinologia e Metabologia">Endocrinologia e Metabologia</option>
-							<option value="Pneumologia Clínica">Pneumologia Clínica</option>
-							<option value="Ressonância Magnética com Contraste">Ressonância Magnética com Contraste</option>
-							<option value="Tomografia Computadorizada">Tomografia Computadorizada</option>
-						</select>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label for="enc-prio" class="font-bold text-slate-700 text-[11px]">Prioridade Clínica *</label>
-						<select id="enc-prio" bind:value={formNovoEncPrioridade} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-							<option value="ELETIVA">Eletiva (Fluxo Normal)</option>
-							<option value="PRIORITARIA">Prioritária (Acompanhamento Próximo)</option>
-							<option value="URGENTE">Urgente (Risco de Descompensação)</option>
-						</select>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-1 md:grid-cols-12 gap-2">
-					<div class="md:col-span-4 flex flex-col gap-1">
-						<label for="enc-cid" class="font-bold text-slate-700 text-[11px]">CID-10 Principal</label>
-						<input id="enc-cid" type="text" bind:value={soapCid10} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-slate-50 uppercase" />
-					</div>
-					<div class="md:col-span-8 flex flex-col gap-1">
-						<label for="enc-diag" class="font-bold text-slate-700 text-[11px]">Diagnóstico / Impressão Clínica</label>
-						<input id="enc-diag" type="text" bind:value={soapDiagnostico} class="border border-slate-300 p-2 text-xs font-sans bg-slate-50" />
-					</div>
-				</div>
-
-				<div class="flex flex-col gap-1">
-					<label for="enc-just" class="font-bold text-slate-700 text-[11px]">Justificativa Clínica / O que o paciente precisa fazer *</label>
-					<textarea
-						id="enc-just"
-						rows="4"
-						bind:value={formNovoEncJustificativa}
-						placeholder="Descreva detalhadamente a necessidade clínica, indicação do exame/consulta especializada..."
-						class="border border-slate-300 p-2.5 text-xs font-sans resize-none outline-none focus:border-blue-900"
-					></textarea>
-				</div>
-
-				<div class="bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-900">
-					ℹ Ao confirmar, a solicitação será transmitida diretamente para a Fila de Regulação da Secretaria Municipal de Saúde.
-				</div>
-			</div>
-
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
-				<button onclick={() => modalNovoEncaminhamentoAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
-					Cancelar
-				</button>
-				<button
-					onclick={enviarNovoEncaminhamentoRegulacao}
-					disabled={enviandoNovoEncaminhamento}
-					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
-				>
-					{enviandoNovoEncaminhamento ? 'Enviando à Regulação...' : '✓ Confirmar e Enviar para a Secretaria / Regulação'}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- OVERLAY 6: Modal de Agendamento Direto de Retorno / Volta (Data Manual - Sem Fila Automática) -->
-{#if modalRetornoAberto && consultaAtiva}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.15)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-purple-900 px-5 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">📅 AGENDAR RETORNO / VOLTA DO PACIENTE (DATA MANUAL)</div>
-				<button onclick={() => modalRetornoAberto = false} class="text-purple-200 hover:text-white font-bold text-sm">✕</button>
-			</div>
-
-			<div class="p-5 flex flex-col gap-4">
-				<div class="bg-purple-50 border border-purple-200 p-3 font-sans text-purple-950">
-					<div class="font-bold text-xs">{consultaAtiva.paciente.nome}</div>
-					<div class="text-[11px] text-purple-800 font-mono mt-0.5">CPF: {consultaAtiva.paciente.cpf} · Prontuário PEC: {consultaAtiva.pacienteId}</div>
-					<div class="text-[10px] text-purple-900 mt-1">
-						⚡ <strong>Agendamento Direto:</strong> A vaga do retorno é gravada imediatamente na data escolhida, sem precisar passar pela fila de cálculo automático.
-					</div>
-				</div>
-
-				<!-- Atalhos Rápidos de Prazos de Retorno -->
-				<div class="flex flex-col gap-1">
-					<span class="text-[10px] font-bold text-slate-600 uppercase">Atalhos de Prazo para o Retorno:</span>
-					<div class="flex flex-wrap gap-2">
-						<button
-							type="button"
-							onclick={() => selecionarPrazoPresetRetorno(7)}
-							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
-						>
-							+ 7 Dias
-						</button>
-						<button
-							type="button"
-							onclick={() => selecionarPrazoPresetRetorno(15)}
-							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
-						>
-							+ 15 Dias
-						</button>
-						<button
-							type="button"
-							onclick={() => selecionarPrazoPresetRetorno(30)}
-							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
-						>
-							+ 30 Dias (1 Mês)
-						</button>
-						<button
-							type="button"
-							onclick={() => selecionarPrazoPresetRetorno(60)}
-							class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 px-2.5 py-1 text-xs font-bold"
-						>
-							+ 60 Dias (2 Meses)
-						</button>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-2 gap-3">
-					<div class="flex flex-col gap-1">
-						<label for="ret-data" class="font-bold text-slate-700 text-[10px] uppercase">Data Manual do Retorno *</label>
-						<input
-							id="ret-data"
-							type="date"
-							bind:value={dataRetornoManual}
-							class="border border-slate-300 p-2 text-xs font-bold font-mono outline-none focus:border-purple-800"
-						/>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label for="ret-hora" class="font-bold text-slate-700 text-[10px] uppercase">Horário da Consulta *</label>
-						<input
-							id="ret-hora"
-							type="time"
-							bind:value={horaRetornoManual}
-							class="border border-slate-300 p-2 text-xs font-bold font-mono outline-none focus:border-purple-800"
-						/>
-					</div>
-				</div>
-
-				<div class="flex flex-col gap-1">
-					<label for="ret-medico" class="font-bold text-slate-700 text-[10px] uppercase">Médico Atribuído ao Retorno</label>
-					<input
-						id="ret-medico"
-						type="text"
-						bind:value={medicoRetornoNome}
-						class="border border-slate-300 p-2 text-xs font-sans outline-none focus:border-purple-800"
-					/>
-				</div>
-
-				<div class="flex flex-col gap-1">
-					<label for="ret-obs" class="font-bold text-slate-700 text-[10px] uppercase">Observações / Exames a Apresentar</label>
-					<textarea
-						id="ret-obs"
-						rows="3"
-						bind:value={obsRetorno}
-						class="border border-slate-300 p-2 text-xs font-sans resize-none outline-none focus:border-purple-800"
-					></textarea>
-				</div>
-			</div>
-
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
-				<button onclick={() => modalRetornoAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
-					Cancelar
-				</button>
-				<button
-					onclick={confirmarAgendamentoRetornoManual}
-					disabled={agendandoRetorno}
-					class="border border-purple-900 bg-purple-900 px-5 py-2 font-bold text-white uppercase hover:bg-purple-950 disabled:opacity-50"
-				>
-					{agendandoRetorno ? 'Agendando...' : '✓ Confirmar Agendamento de Retorno (Data Manual)'}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<!-- OVERLAY 6: Modal de Agendamento Direto de Retorno / Volta (Data Manual) -->
+<ModalAgendarRetornoManual
+	isOpen={modalRetornoAberto}
+	consulta={consultaAtiva}
+	medicoNomePadrao={medicoLogado}
+	agendando={agendandoRetorno}
+	onClose={() => (modalRetornoAberto = false)}
+	onSubmit={confirmarAgendamentoRetornoManual}
+/>
 
 <style>
 	select, input, textarea, button {

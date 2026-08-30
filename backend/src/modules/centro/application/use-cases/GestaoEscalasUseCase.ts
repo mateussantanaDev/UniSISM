@@ -1,4 +1,5 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
 export interface EscalaEspecialistaDTO {
@@ -97,7 +98,15 @@ export class GestaoEscalasUseCase {
     };
   }
 
-  async atualizarEscala(id: string, data: Partial<EscalaEspecialistaDTO>, atendenteId: string): Promise<EscalaEspecialistaDTO> {
+  async atualizarEscala(id: string, data: Partial<EscalaEspecialistaDTO>, scope: AccessScope, atendenteId: string): Promise<EscalaEspecialistaDTO> {
+    const existing = await prisma.escalaEspecialista.findUnique({ where: { id } });
+    if (!existing || !existing.ativo) {
+      throw NotFound('ESCALA_NAO_ENCONTRADA', 'Escala não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('ESCALA_NAO_ENCONTRADA', 'Escala não encontrada');
+    }
+
     const res = await prisma.escalaEspecialista.update({
       where: { id },
       data: {
@@ -145,7 +154,15 @@ export class GestaoEscalasUseCase {
     };
   }
 
-  async deletarEscala(id: string, atendenteId: string): Promise<void> {
+  async deletarEscala(id: string, scope: AccessScope, atendenteId: string): Promise<void> {
+    const existing = await prisma.escalaEspecialista.findUnique({ where: { id } });
+    if (!existing || !existing.ativo) {
+      throw NotFound('ESCALA_NAO_ENCONTRADA', 'Escala não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('ESCALA_NAO_ENCONTRADA', 'Escala não encontrada');
+    }
+
     await prisma.escalaEspecialista.update({
       where: { id },
       data: { ativo: false },

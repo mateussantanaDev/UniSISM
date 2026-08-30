@@ -3,7 +3,9 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
+import { ensureUbsAcessivel } from '../../../../shared/scope';
 import { BadRequest, NotFound } from '../../../../shared/errors';
+import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface RemarcarEncaminhamentoInput {
   encaminhamentoId: string;
@@ -18,6 +20,8 @@ export interface RemarcarEncaminhamentoInput {
 }
 
 export class RemarcarEncaminhamentoRegulacaoUseCase {
+  private readonly notificacoes = new NotificacaoPacienteService();
+
   async exec(input: RemarcarEncaminhamentoInput, scope: AccessScope): Promise<Encaminhamento> {
     if (!input.motivo || input.motivo.trim().length < 5) {
       throw BadRequest('MOTIVO_OBRIGATORIO', 'Descreva o motivo da remarcação (mínimo 5 caracteres).');
@@ -35,6 +39,8 @@ export class RemarcarEncaminhamentoRegulacaoUseCase {
     if (!row) {
       throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não localizado na fila de regulação.');
     }
+
+    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
 
     const newAgendamentoDate = new Date(`${input.novaData}T${input.novoHorario}:00.000Z`);
 
@@ -81,6 +87,20 @@ export class RemarcarEncaminhamentoRegulacaoUseCase {
 
       return res;
     });
+
+    void this.notificacoes
+      .notificar({
+        cpfPaciente: updated.pacienteCpf,
+        pacienteNome: updated.pacienteNome,
+        encaminhamentoId: updated.id,
+        tipo: 'AGENDADO',
+        ...MENSAGENS.agendado(updated.protocolo, newAgendamentoDate.toISOString()),
+        payload: {
+          protocolo: updated.protocolo,
+          agendamentoPrevisto: newAgendamentoDate.toISOString(),
+        },
+      })
+      .catch(() => {});
 
     return rowParaEncaminhamento(updated);
   }

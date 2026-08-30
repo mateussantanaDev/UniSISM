@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import { calcularIdadeExata } from '$lib/presentation/utils/stringUtils';
 
 	interface AtendimentoHistorico {
 		id: string;
@@ -44,28 +45,40 @@
 			const me = await api.auth.me().catch(() => null);
 
 			listaHistorico = encs
-				.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES')
-				.map((enc, idx) => ({
-					id: enc.id,
-					protocolo: enc.protocolo,
-					dataAtendimento: enc.agendamentoPrevisto || new Date().toISOString().substring(0, 10),
-					horario: `0${8 + (idx % 4)}:${(idx * 20) % 60 === 0 ? '00' : (idx * 20) % 60}`,
-					pacienteNome: enc.paciente.nome,
-					pacienteCpf: enc.paciente.cpf,
-					pacienteCartaoSus: enc.paciente.cartaoSus || '',
-					pacienteIdade: enc.paciente.dataNascimento ? new Date().getFullYear() - new Date(enc.paciente.dataNascimento).getFullYear() : 0,
-					unidadeOrigem: enc.unidadeOrigem || 'Unidade de Origem',
-					cid10: enc.solicitacao.cid10 || '',
-					cidDescricao: enc.solicitacao.cidDescricao || '',
-					diagnostico: enc.solicitacao.cidDescricao || '',
-					queixaPrincipal: enc.solicitacao.justificativaClinica || '',
-					exameFisico: (enc as any).exameFisico || 'Exame físico sem alterações anotadas.',
-					conduta: (enc as any).conduta || 'Paciente acompanhado em consulta especializada.',
-					prescricao: (enc as any).prescricao || '',
-					atestadoEmitido: (enc as any).atestadoEmitido || '',
-					medicoNome: me?.nome || 'Médico Especialista',
-					medicoCrm: (me as any)?.crm ? `CRM ${(me as any).crm}` : 'CRM Regulação'
-				}));
+				.filter(e => {
+					const f = (e.filaDestino as string) || '';
+					const c = (e as any).canalRoteamento || '';
+					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || f === 'CEO' || c === 'CENTRO_ESPECIALIDADES' || c === 'CENTRO_ODONTOLOGICO';
+				})
+				.map((enc) => {
+					const soap = (enc as any).atendimentoSOAP;
+					const dataAtend = soap?.concluidoEm?.substring(0, 10) || enc.agendamentoPrevisto || new Date(enc.atualizadoEm || enc.criadoEm).toISOString().substring(0, 10);
+					const horaAtend = soap?.concluidoEm
+						? new Date(soap.concluidoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+						: '08:00';
+
+					return {
+						id: enc.id,
+						protocolo: enc.protocolo,
+						dataAtendimento: dataAtend,
+						horario: horaAtend,
+						pacienteNome: enc.paciente.nome,
+						pacienteCpf: enc.paciente.cpf,
+						pacienteCartaoSus: enc.paciente.cartaoSus || '',
+						pacienteIdade: calcularIdadeExata(enc.paciente.dataNascimento),
+						unidadeOrigem: enc.unidadeOrigem || 'Unidade Básica de Saúde',
+						cid10: soap?.cid10 || enc.solicitacao.cid10 || '',
+						cidDescricao: soap?.diagnostico || enc.solicitacao.cidDescricao || '',
+						diagnostico: soap?.diagnostico || enc.solicitacao.cidDescricao || 'Consulta Especializada',
+						queixaPrincipal: soap?.queixaPrincipal || enc.solicitacao.justificativaClinica || '',
+						exameFisico: soap?.exameFisico || (enc as any).exameFisico || 'Consulta realizada conforme registrado no prontuário.',
+						conduta: soap?.conduta || (enc as any).conduta || 'Conduta registrada no atendimento especializado.',
+						prescricao: soap?.prescricao || (enc as any).prescricao || '',
+						atestadoEmitido: (enc as any).atestadoEmitido || '',
+						medicoNome: (enc as any).profissionalAtribuido || me?.nome || 'Médico Especialista',
+						medicoCrm: (me as any)?.crm ? `CRM ${(me as any).crm}` : 'CRM Regulação'
+					};
+				});
 		} catch (e) {
 			console.error('[UniSISM] Erro ao carregar histórico de atendimentos.', e);
 			listaHistorico = [];

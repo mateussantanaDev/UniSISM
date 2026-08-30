@@ -260,6 +260,7 @@ export class AprovarEncaminhamentoUseCase {
         data: {
           status: StatusEncaminhamento.APROVADO,
           agendamentoPrevisto: agendamento,
+          ...(agendamento ? { statusAtendimentoCentro: 'AGENDADO' } : {}),
           ...(localAg !== undefined ? { localAgendamento: localAg || null } : {}),
           ...(profAg !== undefined ? { profissionalAgendado: profAg || null } : {}),
           ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),

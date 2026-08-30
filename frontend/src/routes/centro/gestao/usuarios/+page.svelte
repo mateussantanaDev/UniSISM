@@ -92,7 +92,10 @@
 		});
 	});
 
+	let erroModalUsuario = $state('');
+
 	function abrirNovoUsuario() {
+		erroModalUsuario = '';
 		formNome = '';
 		formCpf = '';
 		formEmail = '';
@@ -107,10 +110,11 @@
 
 	async function salvarNovoUsuario() {
 		if (!formNome.trim() || !formCpf.trim() || !formEmail.trim()) {
-			alert('Preencha os campos obrigatórios (Nome, CPF e E-mail).');
+			erroModalUsuario = 'Preencha os campos obrigatórios (Nome, CPF e E-mail).';
 			return;
 		}
 
+		erroModalUsuario = '';
 		salvando = true;
 		try {
 			await api.admin.createUsuario({
@@ -126,16 +130,17 @@
 			mensagemSucesso = `✓ Usuário ${formNome} cadastrado com sucesso no servidor!`;
 			modalNovoAberto = false;
 			await carregarUsuarios();
-			setTimeout(() => mensagemSucesso = '', 5000);
+			setTimeout(() => (mensagemSucesso = ''), 5000);
 		} catch (e: any) {
 			console.error(e);
-			alert(`Falha ao cadastrar usuário: ${e?.message || 'Erro do servidor'}`);
+			erroModalUsuario = `Falha ao cadastrar usuário: ${e?.message || 'Erro do servidor'}`;
 		} finally {
 			salvando = false;
 		}
 	}
 
 	function abrirEditar(u: UsuarioListado) {
+		erroModalUsuario = '';
 		usuarioEdicao = u;
 		formNome = u.nome;
 		formCpf = u.cpf || '';
@@ -148,6 +153,7 @@
 
 	async function salvarEdicaoUsuario() {
 		if (!usuarioEdicao) return;
+		erroModalUsuario = '';
 		salvando = true;
 		try {
 			await api.admin.updateUsuario(usuarioEdicao.id, {
@@ -160,10 +166,10 @@
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;
 			modalEditarAberto = false;
 			await carregarUsuarios();
-			setTimeout(() => mensagemSucesso = '', 5000);
+			setTimeout(() => (mensagemSucesso = ''), 5000);
 		} catch (e: any) {
 			console.error(e);
-			alert(`Falha ao atualizar usuário: ${e?.message || 'Erro do servidor'}`);
+			erroModalUsuario = `Falha ao atualizar usuário: ${e?.message || 'Erro do servidor'}`;
 		} finally {
 			salvando = false;
 		}
@@ -177,15 +183,16 @@
 				await api.admin.setAtivoUsuario(u.id, novoStatus);
 				mensagemSucesso = `✓ Status do usuário ${u.nome} alterado para ${novoStatus ? 'ATIVO' : 'INATIVO'}.`;
 				await carregarUsuarios();
-				setTimeout(() => mensagemSucesso = '', 4000);
+				setTimeout(() => (mensagemSucesso = ''), 4000);
 			} catch (e: any) {
 				console.error(e);
-				alert(`Falha ao alterar status do usuário: ${e?.message || 'Erro de permissão'}`);
+				erro = `Falha ao alterar status do usuário: ${e?.message || 'Erro de permissão'}`;
 			}
 		}
 	}
 
 	function abrirResetSenha(u: UsuarioListado) {
+		erroModalUsuario = '';
 		usuarioEdicao = u;
 		formNovaSenha = 'UniSISM@2026';
 		modalResetSenhaAberto = true;
@@ -193,15 +200,16 @@
 
 	async function executarResetSenha() {
 		if (!usuarioEdicao || !formNovaSenha.trim()) return;
+		erroModalUsuario = '';
 		salvando = true;
 		try {
 			await api.admin.resetarSenhaUsuario(usuarioEdicao.id, formNovaSenha.trim());
 			mensagemSucesso = `✓ Senha do usuário ${usuarioEdicao.nome} redefinida com sucesso! O usuário deverá alterá-la no próximo login.`;
 			modalResetSenhaAberto = false;
-			setTimeout(() => mensagemSucesso = '', 5000);
+			setTimeout(() => (mensagemSucesso = ''), 5000);
 		} catch (e: any) {
 			console.error(e);
-			alert(`Falha ao redefinir senha: ${e?.message || 'Erro do servidor'}`);
+			erroModalUsuario = `Falha ao redefinir senha: ${e?.message || 'Erro do servidor'}`;
 		} finally {
 			salvando = false;
 		}
@@ -403,6 +411,11 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				{#if erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
+						⚠ {erroModalUsuario}
+					</div>
+				{/if}
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 					<div class="flex flex-col gap-1">
 						<label for="usr-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo *</label>
@@ -466,7 +479,7 @@
 					disabled={salvando}
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
-					{salvando ? 'Salvando no Servidor...' : '✓ Salvar e Credenciar'}
+					{salvando ? 'Cadastrando...' : '✓ Cadastrar Profissional'}
 				</button>
 			</div>
 		</div>
@@ -483,6 +496,11 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				{#if erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
+						⚠ {erroModalUsuario}
+					</div>
+				{/if}
 				<div class="flex flex-col gap-1">
 					<label for="ed-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo</label>
 					<input id="ed-nome" type="text" bind:value={formNome} class="border border-slate-300 p-2 text-xs" />
@@ -541,6 +559,11 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				{#if erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
+						⚠ {erroModalUsuario}
+					</div>
+				{/if}
 				<div class="text-slate-800">
 					Definir nova senha temporária para <strong>{usuarioEdicao.nome}</strong>:
 				</div>

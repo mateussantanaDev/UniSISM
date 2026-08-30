@@ -1,8 +1,23 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import type { Paciente, SolicitacaoMedica, PrioridadeClinica, Sexo, RacaCor } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		alocarVagaPorProfissionalEEscala,
+		ESPECIALIDADES_CEM,
+		ESPECIALIDADES_CEO,
+		ESCALAS_PADRAO_CEM,
+		ESCALAS_PADRAO_CEO,
+		type TipoCentro,
+		type AgendamentoOcupado
+	} from '$lib/domain/centro/alocadorInteligenteEscala';
+
+	// Centro Selecionado determinado 100% pelo órgão / rota (CEM vs CEO)
+	let centroSelecionado = $derived<TipoCentro>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroSelecionado === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
 
 	// Dados do Paciente (existente ou novo)
 	let pacienteCpf = $state('');
@@ -30,19 +45,21 @@
 	let pacienteExiste = $state(false);
 	let erroBusca = $state('');
 	let ultimoCpfPesquisado = '';
+	let timerMensagem: any = null;
 
-	// Dados da Solicitacao Médica
-	let medicoNome = $state('Médico do Balcão');
+	// Dados da Solicitacao Médica / Odontológica
+	let medicoNome = $state('Profissional do Balcão');
 	let medicoCrm = $state('000000');
-	let especialidade = $state('');
+	let especialidade = $state('Cardiologia');
 	let tipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('CONSULTA');
 	let procedimentoSolicitado = $state('');
 	let cid10 = $state('Z00');
-	let cidDescricao = $state('Exame Geral');
-	let justificativa = $state('Agendamento direto efetuado no balcão do Centro de Especialidades.');
+	let cidDescricao = $state('Consulta Direta / Exame Geral');
+	let justificativa = $state('Atendimento presencial no balcão da unidade especializada');
 	let prioridade = $state<PrioridadeClinica>('ELETIVA');
+	let recomendacoes = $state('');
 
-	const procedimentosCadastrados = [
+	const procedimentosCem = [
 		'02.11.02.003-6 - Eletrocardiograma (ECG)',
 		'02.05.02.009-7 - Ecocardiograma Transtorácico',
 		'04.04.01.001-2 - Biópsia de Pele e Subcutâneo',
@@ -53,53 +70,82 @@
 		'02.06.01.007-9 - Endoscopia Digestiva Alta'
 	];
 
-	// Dados do Agendamento
-	let especialistaNome = $state('');
-	let recomendacoes = $state('');
-
-	// Agendamento Retroativo / Digitação de Fichas de Papel / Data Manual
-	let modoData = $state<'AUTODATA' | 'MANUAL' | 'RETROATIVO'>('AUTODATA');
-	let dataRetroativa = $state(new Date().toISOString().substring(0, 10));
-	let horaRetroativa = $state('09:00');
-	let statusRetroativo = $state<'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU'>('CONCLUIDO');
-
-	// Lista de especialidades cadastradas pela gestão no Centro
-	const especialidadesCadastradas = [
-		'Cardiologia',
-		'Oftalmologia',
-		'Dermatologia',
-		'Endocrinologia',
-		'Ginecologia/Obstetrícia',
-		'Ortopedia',
-		'Neurologia'
+	const procedimentosCeo = [
+		'03.07.02.006-1 - Tratamento Endodôntico Dente Permanente',
+		'03.07.01.004-0 - Raspagem e Alisamento Periodontal',
+		'04.14.01.014-9 - Exodontia de Dente Incluso / Semi-incluso',
+		'03.07.03.003-2 - Condicionamento Odontopediátrico',
+		'03.07.04.004-6 - Atendimento Odontológico a Pacientes Especiais',
+		'07.01.07.012-9 - Moldagem e Instalação de Prótese Dentária',
+		'02.01.01.042-8 - Biópsia de Glândula Salivar / Lesão Bucal'
 	];
 
-	// Dropdown de Médicos com Busca (carregados do servidor)
-	let medicosEspecialistas = $state<{ nome: string, especialidade: string, registro: string }[]>([]);
+	let especialidadesCadastradas = $derived(
+		ehCeo ? [...ESPECIALIDADES_CEO] : [...ESPECIALIDADES_CEM]
+	);
+
+	let procedimentosCadastrados = $derived(
+		ehCeo ? procedimentosCeo : procedimentosCem
+	);
+
+	// Dropdown de Especialistas exclusivos do órgão
+	let medicosEspecialistas = $derived<{ nome: string, especialidade: string, registro: string }[]>(
+		ehCeo
+			? ESCALAS_PADRAO_CEO.map(e => ({ nome: e.nome, especialidade: e.especialidade, registro: e.registro }))
+			: ESCALAS_PADRAO_CEM.map(e => ({ nome: e.nome, especialidade: e.especialidade, registro: e.registro }))
+	);
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
 	let medicoSelecionado = $state<{ nome: string, especialidade: string, registro: string } | null>(null);
 
-	let medicosFiltrados = $derived(
-		medicosEspecialistas.filter(m => {
-			if (especialidade && m.especialidade !== especialidade) {
-				return false;
+	// Inicializa e sincroniza especialista e especialidade padrão
+	$effect(() => {
+		if (ehCeo) {
+			if (!especialidade || !ESPECIALIDADES_CEO.includes(especialidade as any)) {
+				especialidade = 'Endodontia';
 			}
-			return (
-				m.nome.toLowerCase().includes(buscaMedico.toLowerCase()) ||
-				m.especialidade.toLowerCase().includes(buscaMedico.toLowerCase())
-			);
-		})
+			if (!medicoSelecionado || medicoSelecionado.registro.startsWith('CRM')) {
+				medicoSelecionado = medicosEspecialistas[0] || null;
+			}
+		} else {
+			if (!especialidade || !ESPECIALIDADES_CEM.includes(especialidade as any)) {
+				especialidade = 'Cardiologia';
+			}
+			if (!medicoSelecionado || medicoSelecionado.registro.startsWith('CRO')) {
+				medicoSelecionado = medicosEspecialistas[0] || null;
+			}
+		}
+	});
+
+	let alocacaoOtimizadaBalcao = $derived.by(() => {
+		return alocarVagaPorProfissionalEEscala({
+			centro: centroSelecionado,
+			medicoNome: medicoSelecionado?.nome,
+			especialidade,
+			prioridade,
+			dataBase: new Date()
+		});
+	});
+
+	let medicosFiltrados = $derived(
+		medicosEspecialistas.filter(m =>
+			m.nome.toLowerCase().includes(buscaMedico.toLowerCase()) ||
+			m.especialidade.toLowerCase().includes(buscaMedico.toLowerCase())
+		)
 	);
 
-	let processandoAgendamento = $state(false);
-	let erroAgendamento = $state('');
-	let sucessoAgendamento = $state('');
+	// Modo de Agendamento (Otimização Automática vs Manual vs Retroativo)
+	let modoData = $state<'AUTODATA' | 'MANUAL' | 'RETROATIVO'>('AUTODATA');
+	let dataManual = $state(new Date().toISOString().substring(0, 10));
+	let horaManual = $state('08:00');
+	let dataRetroativa = $state(new Date().toISOString().substring(0, 10));
+	let horaRetroativa = $state('08:00');
+	let statusRetroativo = $state<'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU'>('CONCLUIDO');
 
-	// Encaminhamentos SUS & Comprovantes Particulares para Alocação Direta de Vaga
-	let encaminhamentosDisponiveis = $state<Array<{ id: string; protocolo: string; especialidade: string; dataAgendamento?: string }>>([]);
-	let encaminhamentoSelecionadoId = $state<string>('');
+	// Vínculo a Encaminhamento SUS & Particulares
 	let tipoEncaminhamento = $state<'SUS_REGULADO' | 'PARTICULAR' | 'SEM_ANEXO'>('SEM_ANEXO');
+	let encaminhamentosDisponiveis = $state<{ id: string; protocolo: string; especialidade: string; dataAgendamento?: string }[]>([]);
+	let encaminhamentoSelecionadoId = $state<string | null>(null);
 	let anexoParticularFoto = $state<string | null>(null);
 	let anexoParticularNome = $state<string>('');
 	let cameraAbertaBalcao = $state(false);
@@ -117,29 +163,100 @@
 		if (file) {
 			const reader = new FileReader();
 			reader.onload = (ev) => {
-				anexoParticularFoto = ev.target?.result as string || 'uploaded';
+				anexoParticularFoto = (ev.target?.result as string) || 'uploaded';
 				anexoParticularNome = file.name;
 				tipoEncaminhamento = 'PARTICULAR';
 			};
 			reader.readAsDataURL(file);
+			target.value = '';
 		}
 	}
 
-	function calcularMockDataOtimizada(prio: PrioridadeClinica): { data: string; hora: string } {
+	onDestroy(() => {
+		if (timerMensagem) clearTimeout(timerMensagem);
+	});
+
+	function calcularDataOtimizadaRegulacao(prio: PrioridadeClinica): { data: string; hora: string } {
 		const hoje = new Date();
 		let dias = 15;
-		if (prio === 'EMERGENCIA') dias = 1;
-		else if (prio === 'URGENTE') dias = 3;
-		else if (prio === 'PRIORITARIA') dias = 7;
+		let horaStr = '09:00';
+		if (prio === 'EMERGENCIA') {
+			dias = 1;
+			horaStr = '08:00';
+		} else if (prio === 'URGENTE') {
+			dias = 3;
+			horaStr = '08:30';
+		} else if (prio === 'PRIORITARIA') {
+			dias = 7;
+			horaStr = '09:00';
+		} else {
+			dias = 15;
+			horaStr = '09:30';
+		}
 		
 		hoje.setDate(hoje.getDate() + dias);
 		if (hoje.getDay() === 0) hoje.setDate(hoje.getDate() + 1);
 		else if (hoje.getDay() === 6) hoje.setDate(hoje.getDate() + 2);
 
 		const dataStr = hoje.toISOString().substring(0, 10);
-		const horas = ['08:00', '09:15', '10:30', '13:00', '14:15', '15:30', '16:45'];
-		const horaStr = horas[Math.floor(Math.random() * horas.length)];
+		return { data: dataStr, hora: horaStr };
+	}
 
+	let processandoAgendamento = $state(false);
+	let sucessoAgendamento = $state('');
+	let erroAgendamento = $state('');
+
+	// Limpar e formatar CPF
+	function formatarCpf(val: string) {
+		const nums = val.replace(/\D/g, '').slice(0, 11);
+		if (nums.length <= 3) return nums;
+		if (nums.length <= 6) return `${nums.slice(0, 3)}.${nums.slice(3)}`;
+		if (nums.length <= 9) return `${nums.slice(0, 3)}.${nums.slice(3, 6)}.${nums.slice(6)}`;
+		return `${nums.slice(0, 3)}.${nums.slice(3, 6)}.${nums.slice(6, 9)}-${nums.slice(9)}`;
+	}
+
+	function handleCpfInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const sanitizado = target.value.replace(/\D/g, '');
+		pacienteCpf = formatarCpf(target.value);
+
+		if (sanitizado.length === 11 && sanitizado !== ultimoCpfPesquisado) {
+			ultimoCpfPesquisado = sanitizado;
+			pesquisarPaciente(sanitizado);
+		} else if (sanitizado.length < 11) {
+			pacienteExiste = false;
+			pacienteId = null;
+			ultimoCpfPesquisado = '';
+			erroBusca = '';
+			encaminhamentosDisponiveis = [];
+		}
+	}
+
+	function selecionarMedico(med: { nome: string, especialidade: string, registro: string }) {
+		medicoSelecionado = med;
+		buscaMedico = med.nome;
+		dropdownAberto = false;
+		if (!especialidade || especialidade === 'Clínica Geral') {
+			especialidade = med.especialidade;
+		}
+	}
+
+	function limparMedico() {
+		medicoSelecionado = null;
+		buscaMedico = '';
+	}
+
+	function calcularDataOtimizada(prio: PrioridadeClinica, esp: string): { data: string, hora: string } {
+		const hoje = new Date();
+		let dias = 15;
+		if (prio === 'URGENTE' || (prio as string) === 'EMERGENCIA') dias = 1;
+		else if (prio === 'PRIORITARIA') dias = 7;
+		hoje.setDate(hoje.getDate() + dias);
+		
+		const horasPossiveis = ['08:00', '08:45', '09:30', '10:15', '11:00', '13:30', '14:15', '15:00', '15:45'];
+		const seed = (esp.length + dias) % horasPossiveis.length;
+		const horaStr = horasPossiveis[seed];
+		const dataStr = hoje.toISOString().substring(0, 10);
 		return { data: dataStr, hora: horaStr };
 	}
 
@@ -150,47 +267,32 @@
 		erroAgendamento = '';
 
 		try {
-			try {
-				const resCentro = await api.centroRecepcao.buscarPacientePorCpf(sanitizado);
-				if (resCentro && resCentro.existe && resCentro.paciente) {
-					pacienteExiste = true;
-					pacienteId = resCentro.paciente.id || null;
-					pacienteNome = resCentro.paciente.nome;
-					pacienteSus = resCentro.paciente.cartaoSus || '';
-					pacienteNasc = resCentro.paciente.dataNascimento || '';
-					pacienteSexo = (resCentro.paciente.sexo as Sexo) || 'M';
-					pacienteTel = resCentro.paciente.telefone || '';
-					pacienteEnd = resCentro.paciente.endereco || '';
-					pacienteNomeMae = resCentro.paciente.nomeMae || '';
-					pacienteRacaCor = (resCentro.paciente.racaCor as RacaCor) || '';
-					return;
-				}
-			} catch (errCentro) {
-				console.info('[UniSISM] Endpoint /v1/centro/recepcao/pacientes/por-cpf em transição — usando fallback pacientes.porCpf', errCentro);
-			}
+			// Busca de paciente no PEC
+			const res = await api.centroRecepcao.buscarPacientePorCpf(sanitizado)
+				.catch(() => api.pacientes.porCpf(sanitizado).catch(() => null));
 
-			// Fallback para API geral de pacientes
-			const res = await api.pacientes.porCpf(sanitizado);
-			if (res.existe && res.paciente) {
+			if (res && res.existe && res.paciente) {
 				pacienteExiste = true;
 				pacienteId = res.paciente.id || null;
 				pacienteNome = res.paciente.nome;
 				pacienteSus = res.paciente.cartaoSus || '';
 				pacienteNasc = res.paciente.dataNascimento || '';
-				pacienteSexo = res.paciente.sexo || 'M';
+				pacienteSexo = (res.paciente.sexo as Sexo) || 'M';
 				pacienteTel = res.paciente.telefone || '';
 				pacienteEnd = res.paciente.endereco || '';
 				pacienteNomeMae = res.paciente.nomeMae || '';
 				pacienteRacaCor = (res.paciente.racaCor as RacaCor) || '';
 
-				// Carrega encaminhamentos SUS ativos do paciente
+				// Carrega encaminhamentos SUS ativos DO PACIENTE ESPECÍFICO
 				try {
-					const encs = await api.encaminhamentos.list({ status: 'APROVADO', limit: 5 });
-					if (encs && encs.length > 0) {
+					const encs = pacienteId 
+						? await api.encaminhamentos.list({ pacienteId, status: 'APROVADO', limit: 10 }).catch(() => [])
+						: [];
+					if (Array.isArray(encs) && encs.length > 0) {
 						encaminhamentosDisponiveis = encs.map(e => ({
 							id: e.id,
 							protocolo: e.protocolo,
-							especialidade: e.solicitacao.especialidadeSolicitada,
+							especialidade: e.solicitacao?.especialidadeSolicitada || '',
 							dataAgendamento: e.agendamentoPrevisto || undefined
 						}));
 						tipoEncaminhamento = 'SUS_REGULADO';
@@ -314,14 +416,19 @@
 			}
 			dataCalculada = dataRetroativa;
 			horaCalculada = horaRetroativa || '09:00';
+		} else if (modoData === 'MANUAL') {
+			dataCalculada = dataManual;
+			horaCalculada = horaManual || '08:00';
+		} else if (alocacaoOtimizadaBalcao) {
+			dataCalculada = alocacaoOtimizadaBalcao.data;
+			horaCalculada = alocacaoOtimizadaBalcao.hora;
 		} else {
-			const otimizado = calcularMockDataOtimizada(prioridade);
-			dataCalculada = otimizado.data;
-			horaCalculada = otimizado.hora;
+			dataCalculada = new Date().toISOString().substring(0, 10);
+			horaCalculada = '08:30';
 		}
 
-		const nomeMedicoFinal = medicoSelecionado?.nome || 'Especialista';
-		const notaAgendamento = `Médico: ${nomeMedicoFinal} às ${horaCalculada} | ${mensagemAlocacaoResumo} | Obs: ${recomendacoes.trim() || 'Nenhuma'}` + (modoData === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
+		const nomeMedicoFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || 'Especialista';
+		const notaAgendamento = `Médico: ${nomeMedicoFinal} às ${horaCalculada} | ${mensagemAlocacaoResumo} | [ESCALA ${centroSelecionado}]: ${alocacaoOtimizadaBalcao?.justificativaEscala || 'Alocação programada'} | Obs: ${recomendacoes.trim() || 'Nenhuma'}` + (modoData === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
 		try {
 			// 1. Prepara dados do Paciente
@@ -373,19 +480,34 @@
 			let horaFinal = horaCalculada;
 
 			try {
-				const resBalcao = await api.centroRecepcao.agendarBalcao({
-					paciente: pacientePayload,
-					solicitacao: solicitacaoPayload,
-					nota: recomendacoes.trim(),
-					medicoDesejado: nomeMedicoFinal,
-					dataAgendamento: dataCalculada,
-					horaAgendamento: horaCalculada,
-					status: modoData === 'RETROATIVO' ? statusRetroativo : undefined
-				} as any);
-				if (resBalcao && resBalcao.encaminhamento) {
-					protocoloFinal = resBalcao.encaminhamento.protocolo;
-					if (resBalcao.encaminhamento.agendamentoPrevisto) {
-						dataFinal = resBalcao.encaminhamento.agendamentoPrevisto;
+				if (modoData === 'RETROATIVO' && pacienteId) {
+					const resRetro = await api.centroRecepcao.agendarBalcaoRetroativo({
+						pacienteId,
+						especialidade: especialidade.trim(),
+						tipoServico: tipoServico as any,
+						procedimentoSolicitado: tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined,
+						modoData: 'RETROATIVO',
+						dataRetroativa: dataCalculada,
+						horaRetroativa: horaCalculada,
+						statusRetroativo: statusRetroativo as any,
+						medicoNome: nomeMedicoFinal
+					});
+					protocoloFinal = resRetro.protocolo;
+				} else {
+					const resBalcao = await api.centroRecepcao.agendarBalcao({
+						paciente: pacientePayload,
+						solicitacao: solicitacaoPayload,
+						nota: recomendacoes.trim(),
+						medicoDesejado: nomeMedicoFinal,
+						dataAgendamento: dataCalculada,
+						horaAgendamento: horaCalculada,
+						status: modoData === 'RETROATIVO' ? statusRetroativo : undefined
+					} as any);
+					if (resBalcao && resBalcao.encaminhamento) {
+						protocoloFinal = resBalcao.encaminhamento.protocolo;
+						if (resBalcao.encaminhamento.agendamentoPrevisto) {
+							dataFinal = resBalcao.encaminhamento.agendamentoPrevisto;
+						}
 					}
 				}
 			} catch (errBalcao) {
@@ -401,11 +523,13 @@
 				await api.encaminhamentos.aprovar(criado.id, {
 					filaDestino: 'CENTRO_ESPECIALIDADES',
 					agendamentoPrevisto: dataCalculada,
-					nota: notaAgendamento
+					nota: `Médico: ${nomeMedicoFinal} às ${horaCalculada} | Obs: ${recomendacoes.trim() || 'Nenhuma'}`
 				});
 			}
 
 			sucessoAgendamento = `Agendamento realizado com sucesso pelo algoritmo de otimização!\n\nProtocolo: ${protocoloFinal}\nData Calculada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário: ${horaFinal}\nMédico: ${nomeMedicoFinal}`;
+			if (timerMensagem) clearTimeout(timerMensagem);
+			timerMensagem = setTimeout(() => { sucessoAgendamento = ''; }, 6000);
 			
 			// Limpa o formulário
 			pacienteCpf = '';
@@ -434,6 +558,10 @@
 			processandoAgendamento = false;
 		}
 	}
+
+	onDestroy(() => {
+		if (timerMensagem) clearTimeout(timerMensagem);
+	});
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-xs">
@@ -603,12 +731,32 @@
 				<PanelHeader title="Dados do Agendamento Especializado" index="02" />
 				
 				<div class="p-4 flex flex-col gap-3 font-sans text-xs">
+					<!-- Identificação do Órgão -->
+					<div class="border border-slate-300 bg-slate-100 p-2 font-mono text-xs flex items-center justify-between">
+						<span class="font-bold text-slate-700 uppercase text-[10px]">🏢 UNIDADE ASSISTENCIAL:</span>
+						<span class="font-bold text-slate-900">{nomeOrgao}</span>
+					</div>
 
+					<!-- Especialidade (Dropdown de especialidades cadastradas no Centro selecionado) -->
+					<div class="flex flex-col gap-1">
+						<label for="cons-esp" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+							Especialidade Solicitada <span class="text-red-700">*</span>
+						</label>
+						<select
+							id="cons-esp"
+							bind:value={especialidade}
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 font-sans"
+						>
+							{#each especialidadesCadastradas as esp}
+								<option value={esp}>{esp.toUpperCase()}</option>
+							{/each}
+						</select>
+					</div>
 
 					<!-- Médico especialista dropdown com busca -->
 					<div class="flex flex-col gap-1 relative">
 						<label for="medico-search" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
-							Médico Especialista <span class="text-red-700">*</span>
+							Profissional / Especialista da Escala <span class="text-red-700">*</span>
 						</label>
 						
 						<button
@@ -617,7 +765,7 @@
 							onclick={() => dropdownAberto = !dropdownAberto}
 							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-left font-sans text-sm text-slate-900 outline-none flex justify-between items-center"
 						>
-							<span>{medicoSelecionado ? `${medicoSelecionado.nome} (${medicoSelecionado.especialidade})` : 'Selecione um Médico Especialista...'}</span>
+							<span>{medicoSelecionado ? `${medicoSelecionado.nome} (${medicoSelecionado.especialidade} - ${medicoSelecionado.registro})` : 'Selecione um Profissional da Escala...'}</span>
 							<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>
 						</button>
 
@@ -858,6 +1006,26 @@
 								<span>🔙 PAPEL / RETRO</span>
 							</button>
 						</div>
+
+						{#if modoData === 'AUTODATA' && alocacaoOtimizadaBalcao}
+							<div class="border-2 border-emerald-700 bg-emerald-50/80 p-3 flex flex-col gap-1.5 font-mono text-xs shadow-xs">
+								<div class="flex items-center justify-between">
+									<span class="font-bold text-emerald-950 uppercase text-[10px] flex items-center gap-1">
+										<span>⚡ ALOCAÇÃO DETERMINÍSTICA DE ESCALA ({centroSelecionado})</span>
+									</span>
+									<span class="bg-emerald-700 text-white font-bold px-1.5 py-0.5 text-[9px] uppercase">{alocacaoOtimizadaBalcao.prazoLegalSus}</span>
+								</div>
+								<div class="text-sm font-black text-emerald-900 font-sans mt-0.5">
+									📅 {alocacaoOtimizadaBalcao.dataFormatada} às {alocacaoOtimizadaBalcao.hora}
+								</div>
+								<div class="text-[11px] text-emerald-950 font-bold">
+									📍 {alocacaoOtimizadaBalcao.consultorio} · {alocacaoOtimizadaBalcao.medicoNome} ({alocacaoOtimizadaBalcao.registro})
+								</div>
+								<div class="text-[10px] text-emerald-800 border-t border-emerald-200 pt-1 font-sans leading-tight">
+									{alocacaoOtimizadaBalcao.justificativaEscala}
+								</div>
+							</div>
+						{/if}
 
 						{#if modoData === 'MANUAL'}
 							<div class="flex flex-col gap-2 border-t border-purple-300 pt-2 font-mono text-xs">

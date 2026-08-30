@@ -7,7 +7,9 @@
 	import type { FiltroPacienteEspecial } from '$lib/api/types';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { useAuth } from '$lib/presentation/contexts/authContext';
 
+	const auth = useAuth();
 	let lista = $state<PacienteResumo[]>([]);
 	let carregando = $state(true);
 	let busca = $state('');
@@ -94,7 +96,7 @@
 		<MetricCard
 			label="Pacientes Cadastrados"
 			value={lista.length}
-			sublabel="Vinculados à UBS CENTRAL"
+			sublabel={auth.me?.unidade ? `Vinculados à ${auth.me.unidade}` : 'Rede municipal'}
 		/>
 		<MetricCard
 			label="Com Condições Crônicas"

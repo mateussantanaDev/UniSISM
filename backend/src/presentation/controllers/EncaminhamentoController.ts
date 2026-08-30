@@ -35,6 +35,13 @@ const patchEncaminhamentoSchema = z.object({
   cidDescricao: z.string().optional(),
   especialidadeSolicitada: z.string().optional(),
   cid10: z.string().optional(),
+  agendamentoPrevisto: z.string().nullable().optional(),
+  dataDisponibilidade: z.string().nullable().optional(),
+  localAgendamento: z.string().nullable().optional(),
+  profissionalAgendado: z.string().nullable().optional(),
+  cidadeAgendamento: z.string().nullable().optional(),
+  ufAgendamento: z.string().nullable().optional(),
+  observacoesRegulacao: z.string().nullable().optional(),
 });
 
 const MIMES_ANEXO = new Set(['application/pdf', 'image/jpeg', 'image/png']);

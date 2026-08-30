@@ -10,6 +10,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
 
 	const auth = useAuth();
 
@@ -196,11 +197,7 @@
 				<div
 					class="flex h-10 w-10 shrink-0 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-sm font-bold text-white"
 				>
-					{usuario.nome
-						.split(' ')
-						.slice(0, 2)
-						.map((n) => n[0])
-						.join('')}
+					{obterIniciais(usuario.nome)}
 				</div>
 				<div class="leading-tight">
 					<div class="font-mono text-[10px] tracking-widest text-slate-400 uppercase">

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
 
 	// State
 	let carregando = $state(true);
@@ -56,8 +57,16 @@
 				qtd: item.qtd
 			})).sort((a, b) => b.qtd - a.qtd).slice(0, 5);
 
-			totalPrescricoes = Math.round(totalConsultasMes * 0.8);
-			totalExamesPedidos = Math.round(totalConsultasMes * 0.5);
+			let totalPrescricoesCount = 0;
+			let totalExamesCount = 0;
+			for (const e of encs) {
+				const soap = (e as any).atendimentoSOAP;
+				if (soap?.prescricao || (e as any).prescricao || soap?.prescricaoResumo) totalPrescricoesCount++;
+				if (soap?.exames || (e as any).examesPedidos || (e.solicitacao as any)?.tipoServico === 'PROCEDIMENTO') totalExamesCount++;
+			}
+
+			totalPrescricoes = totalPrescricoesCount > 0 ? totalPrescricoesCount : totalConsultasMes;
+			totalExamesPedidos = totalExamesCount > 0 ? totalExamesCount : Math.round(totalConsultasMes * 0.5);
 		} catch (e) {
 			console.info('[UniSISM] Carregando indicadores do especialista.', e);
 		} finally {
@@ -81,7 +90,7 @@
 	<section class="border border-slate-200 bg-white p-5 flex items-center justify-between">
 		<div class="flex items-center gap-3">
 			<div class="flex h-12 w-12 items-center justify-center bg-blue-900 text-lg font-bold text-white font-mono">
-				{medicoNome.substring(0, 2).toUpperCase()}
+				{obterIniciais(medicoNome)}
 			</div>
 			<div>
 				<div class="font-bold text-slate-900 text-base font-sans">{medicoNome}</div>

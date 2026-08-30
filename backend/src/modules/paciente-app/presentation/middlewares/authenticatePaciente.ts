@@ -47,11 +47,6 @@ export async function authenticatePaciente(
       cpfFormatado: sessao.conta.cpfFormatado,
       nome: sessao.conta.nome,
     };
-    // touch ultima atividade
-    void prisma.sessaoPaciente.update({
-      where: { id: sessao.id },
-      data: {},
-    }).catch(() => undefined);
     next();
   } catch (err) {
     next(err);

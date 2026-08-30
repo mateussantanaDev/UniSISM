@@ -3,61 +3,141 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 
 export interface DoctorInfo {
   nome: string;
+  crm?: string;
   especialidade: string;
-  diasSemana: number[]; // 1 = Monday, 2 = Tuesday, etc.
+  diasSemana: number[]; // 0 = Domingo, 1 = Segunda, 2 = Terça, etc.
   horaInicio: number;
   horaFim: number;
+  duracaoMinutos?: number;
 }
 
-export const DOCTORS: DoctorInfo[] = [
-  {
-    nome: 'Dr. Roberto Medeiros',
-    especialidade: 'Cardiologia',
-    diasSemana: [1, 3], // Segunda e Quarta
-    horaInicio: 8,
-    horaFim: 12,
-  },
-  {
-    nome: 'Dra. Sandra Regina',
-    especialidade: 'Cardiologia',
-    diasSemana: [2, 4], // Terça e Quinta
-    horaInicio: 13,
-    horaFim: 17,
-  },
-  {
-    nome: 'Dr. Fábio Alencar',
-    especialidade: 'Oftalmologia',
-    diasSemana: [2, 5], // Terça e Sexta
-    horaInicio: 8,
-    horaFim: 12,
-  },
-  {
-    nome: 'Dra. Patrícia Silveira',
-    especialidade: 'Oftalmologia',
-    diasSemana: [1, 4], // Segunda e Quinta
-    horaInicio: 13,
-    horaFim: 17,
-  },
-];
+const DIA_MAP: Record<string, number> = {
+  domingo: 0,
+  dom: 0,
+  '0': 0,
+  segunda: 1,
+  'segunda-feira': 1,
+  seg: 1,
+  '1': 1,
+  terca: 2,
+  terça: 2,
+  'terca-feira': 2,
+  'terça-feira': 2,
+  ter: 2,
+  '2': 2,
+  quarta: 3,
+  'quarta-feira': 3,
+  qua: 3,
+  '3': 3,
+  quinta: 4,
+  'quinta-feira': 4,
+  qui: 4,
+  '4': 4,
+  sexta: 5,
+  'sexta-feira': 5,
+  sex: 5,
+  '5': 5,
+  sabado: 6,
+  sábado: 6,
+  sab: 6,
+  '6': 6,
+};
 
-export function findDoctor(profissional?: string, nota?: string, especialidade?: string): DoctorInfo {
-  const searchStr = `${profissional ?? ''} ${nota ?? ''}`.toLowerCase();
-  
-  for (const doc of DOCTORS) {
-    const lastName = doc.nome.replace(/Dr\.|Dra\./g, '').trim().toLowerCase();
-    if (searchStr.includes(lastName)) {
-      return doc;
+function parseDiasSemana(dias: string[]): number[] {
+  const result = new Set<number>();
+  for (const d of dias) {
+    const normalizado = d.trim().toLowerCase();
+    if (normalizado in DIA_MAP) {
+      result.add(DIA_MAP[normalizado]!);
     }
   }
-  
-  if (especialidade) {
-    const docBySpec = DOCTORS.find(
-      (d) => d.especialidade.toLowerCase() === especialidade.toLowerCase()
-    );
-    if (docBySpec) return docBySpec;
+  return result.size > 0 ? Array.from(result) : [1, 2, 3, 4, 5]; // Default seg a sex
+}
+
+function parseHora(horarioStr: string, fallback: number): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(horarioStr.trim());
+  if (m && m[1]) return Number(m[1]);
+  return fallback;
+}
+
+export async function findDoctorAsync(
+  profissional?: string,
+  nota?: string,
+  especialidade?: string,
+): Promise<DoctorInfo> {
+  const searchStr = `${profissional ?? ''} ${nota ?? ''}`.toLowerCase().trim();
+
+  // 1. Busca todas as escalas ativas do banco
+  try {
+    const escalas = await prisma.escalaEspecialista.findMany({
+      where: { ativo: true, status: 'ATIVA' },
+      orderBy: { medicoNome: 'asc' },
+    });
+
+    if (escalas && escalas.length > 0) {
+      // Busca por nome do profissional
+      if (searchStr) {
+        for (const e of escalas) {
+          const lastName = e.medicoNome.replace(/Dr\.|Dra\./gi, '').trim().toLowerCase();
+          if (lastName && searchStr.includes(lastName)) {
+            return {
+              nome: e.medicoNome,
+              crm: e.crm,
+              especialidade: e.especialidade,
+              diasSemana: parseDiasSemana(e.diasSemana),
+              horaInicio: parseHora(e.horarioInicio, 8),
+              horaFim: parseHora(e.horarioFim, 17),
+              duracaoMinutos: e.duracaoMinutos,
+            };
+          }
+        }
+      }
+
+      // Busca por especialidade
+      if (especialidade) {
+        const matchSpec = escalas.find(
+          (e) => e.especialidade.toLowerCase() === especialidade.toLowerCase(),
+        );
+        if (matchSpec) {
+          return {
+            nome: matchSpec.medicoNome,
+            crm: matchSpec.crm,
+            especialidade: matchSpec.especialidade,
+            diasSemana: parseDiasSemana(matchSpec.diasSemana),
+            horaInicio: parseHora(matchSpec.horarioInicio, 8),
+            horaFim: parseHora(matchSpec.horarioFim, 17),
+            duracaoMinutos: matchSpec.duracaoMinutos,
+          };
+        }
+      }
+
+      // Retorna a primeira escala cadastrada
+      const primeira = escalas[0]!;
+      return {
+        nome: primeira.medicoNome,
+        crm: primeira.crm,
+        especialidade: primeira.especialidade,
+        diasSemana: parseDiasSemana(primeira.diasSemana),
+        horaInicio: parseHora(primeira.horarioInicio, 8),
+        horaFim: parseHora(primeira.horarioFim, 17),
+        duracaoMinutos: primeira.duracaoMinutos,
+      };
+    }
+  } catch (err) {
+    // Fallback gracioso se o banco estiver desconectado ou em migração
+    console.info('[UniSISM] Banco de escalas não acessível no momento — utilizando mapeamento inteligente fallback.');
   }
-  
-  return DOCTORS[0]!;
+
+  // Fallback padrão se ainda não houver escalas cadastradas
+  const specNome = especialidade || 'Clínica Geral';
+  return {
+    nome: profissional ? profissional.trim() : `Médico Especialista (${specNome})`,
+    especialidade: specNome,
+    diasSemana: [1, 2, 3, 4, 5], // Seg a Sex
+    horaInicio: 8,
+    horaFim: 17,
+    duracaoMinutos: 20,
+  };
 }
 
 export async function calcularOtimizacaoAgendamento(params: {
@@ -66,8 +146,8 @@ export async function calcularOtimizacaoAgendamento(params: {
   especialidade: string;
   prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' | 'EMERGENCIA';
 }): Promise<{ dateStr: string; timeStr: string; dateTime: Date; doctor: DoctorInfo }> {
-  const doctor = findDoctor(params.profissional, params.nota, params.especialidade);
-  
+  const doctor = await findDoctorAsync(params.profissional, params.nota, params.especialidade);
+
   // Busca todos os agendamentos aprovados no futuro para este médico
   const appointments = await prisma.encaminhamento.findMany({
     where: {
@@ -79,7 +159,7 @@ export async function calcularOtimizacaoAgendamento(params: {
       agendamentoPrevisto: true,
     },
   });
-  
+
   const bookedDates = appointments
     .map((a) => a.agendamentoPrevisto?.toISOString())
     .filter(Boolean) as string[];
@@ -95,23 +175,23 @@ export async function calcularOtimizacaoAgendamento(params: {
   startSearch.setUTCHours(0, 0, 0, 0);
 
   let current = new Date(startSearch);
-  
+
   for (let d = 0; d < 180; d++) {
     const dayOfWeek = current.getUTCDay();
-    
+
     if (doctor.diasSemana.includes(dayOfWeek)) {
       const year = current.getUTCFullYear();
       const month = current.getUTCMonth();
       const date = current.getUTCDate();
-      
+
       for (let hour = doctor.horaInicio; hour < doctor.horaFim; hour++) {
         for (const min of [0, 30]) {
           const slotDateTime = new Date(Date.UTC(year, month, date, hour, min, 0, 0));
-          
+
           if (slotDateTime.getTime() <= Date.now()) {
             continue;
           }
-          
+
           const slotIso = slotDateTime.toISOString();
           if (!bookedDates.includes(slotIso)) {
             const pad = (n: number) => String(n).padStart(2, '0');
@@ -131,7 +211,7 @@ export async function calcularOtimizacaoAgendamento(params: {
   const month = fallbackDate.getUTCMonth();
   const date = fallbackDate.getUTCDate();
   const pad = (n: number) => String(n).padStart(2, '0');
-  
+
   return {
     dateStr: `${year}-${pad(month + 1)}-${pad(date)}`,
     timeStr: '08:00',

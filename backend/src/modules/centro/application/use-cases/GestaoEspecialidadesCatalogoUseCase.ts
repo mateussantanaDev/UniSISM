@@ -1,4 +1,5 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
 export interface EspecialidadeCatalogoDTO {
@@ -74,7 +75,15 @@ export class GestaoEspecialidadesCatalogoUseCase {
     };
   }
 
-  async atualizarEspecialidade(id: string, data: Partial<EspecialidadeCatalogoDTO>, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {
+  async atualizarEspecialidade(id: string, data: Partial<EspecialidadeCatalogoDTO>, scope: AccessScope, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {
+    const existing = await prisma.especialidadeCatalogo.findUnique({ where: { id } });
+    if (!existing || !existing.ativa) {
+      throw NotFound('ESPECIALIDADE_NAO_ENCONTRADA', 'Especialidade não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('ESPECIALIDADE_NAO_ENCONTRADA', 'Especialidade não encontrada');
+    }
+
     const res = await prisma.especialidadeCatalogo.update({
       where: { id },
       data: {
@@ -110,7 +119,15 @@ export class GestaoEspecialidadesCatalogoUseCase {
     };
   }
 
-  async deletarEspecialidade(id: string, atendenteId: string): Promise<void> {
+  async deletarEspecialidade(id: string, scope: AccessScope, atendenteId: string): Promise<void> {
+    const existing = await prisma.especialidadeCatalogo.findUnique({ where: { id } });
+    if (!existing || !existing.ativa) {
+      throw NotFound('ESPECIALIDADE_NAO_ENCONTRADA', 'Especialidade não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('ESPECIALIDADE_NAO_ENCONTRADA', 'Especialidade não encontrada');
+    }
+
     await prisma.especialidadeCatalogo.update({
       where: { id },
       data: { ativa: false },
@@ -118,7 +135,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
 
     await prisma.auditoriaLog.create({
       data: {
-        acao: 'CENTRO_GESTAO_DELETAR_ESCALA',
+        acao: 'CENTRO_GESTAO_DELETAR_ESPECIALIDADE',
         recurso: 'CENTRO_ESPECIALIDADES',
         recursoId: id,
         atendenteId,

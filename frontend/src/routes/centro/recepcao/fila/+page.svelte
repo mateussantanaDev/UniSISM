@@ -1,13 +1,28 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import type { Encaminhamento, PrioridadeClinica } from '$lib/api/types';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		alocarVagaPorProfissionalEEscala,
+		ESCALAS_PADRAO_CEM,
+		ESCALAS_PADRAO_CEO,
+		type TipoCentro,
+		type AgendamentoOcupado
+	} from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	let encaminhamentos = $state<Encaminhamento[]>([]);
 	let carregando = $state(true);
 	let erro = $state('');
+	let timerMensagem: any = null;
+
+	// Centro Ativo determinado 100% pelo órgão / rota atual (CEM vs CEO)
+	let centroAtivo = $derived<TipoCentro>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 
 	// Filtros
 	let busca = $state('');
@@ -29,7 +44,7 @@
 	let processandoAgendamento = $state(false);
 	let erroModal = $state('');
 
-	// Dropdown de Médicos com Busca (carregados do servidor)
+	// Dropdown de Médicos/Dentistas com Busca (exclusivos deste órgão)
 	let medicosEspecialistas = $state<{ nome: string, especialidade: string, registro: string }[]>([]);
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
@@ -42,59 +57,45 @@
 		)
 	);
 
-	function calcularMockDataOtimizada(prio: PrioridadeClinica): { data: string; hora: string } {
-		const hoje = new Date();
-		let dias = 15;
-		if (prio === 'EMERGENCIA') dias = 1;
-		else if (prio === 'URGENTE') dias = 3;
-		else if (prio === 'PRIORITARIA') dias = 7;
-		
-		hoje.setDate(hoje.getDate() + dias);
-		if (hoje.getDay() === 0) hoje.setDate(hoje.getDate() + 1);
-		else if (hoje.getDay() === 6) hoje.setDate(hoje.getDate() + 2);
-
-		const dataStr = hoje.toISOString().substring(0, 10);
-		const horas = ['08:00', '09:15', '10:30', '13:00', '14:15', '15:30', '16:45'];
-		const horaStr = horas[Math.floor(Math.random() * horas.length)];
-
-		return { data: dataStr, hora: horaStr };
-	}
+	let mensagemSucesso = $state('');
 
 	async function carregarFila() {
 		carregando = true;
 		erro = '';
 		try {
-			// Tenta consumir endpoint v3.0.0 de regulação do Centro (centro-doc-back.md)
-			try {
-				const resCentro = await api.centroRecepcao.listFilaEspera({
-					centro: 'CENTRO_ESPECIALIDADES',
+			const centroParam = ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES';
+			const [resCentro, resTodos, usuarios] = await Promise.all([
+				api.centroRecepcao.listFilaEspera({
+					centro: centroParam,
 					status: 'APROVADO',
 					agendado: false
+				}).catch(() => null),
+				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
+				api.admin.listUsuarios().catch(() => [])
+			]);
+
+			// Carrega escalas oficiais exclusivas do órgão
+			const escalasBase = ehCeo ? ESCALAS_PADRAO_CEO : ESCALAS_PADRAO_CEM;
+			medicosEspecialistas = escalasBase.map(e => ({
+				nome: e.nome,
+				especialidade: e.especialidade,
+				registro: e.registro
+			}));
+
+			if (resCentro && Array.isArray(resCentro.encaminhamentos)) {
+				encaminhamentos = resCentro.encaminhamentos as any[];
+			} else {
+				// Fallback filtrando estritamente a fila do respectivo órgão
+				encaminhamentos = resTodos.filter(e => {
+					const f = (e.filaDestino as string) || '';
+					const c = (e as any).canalRoteamento || '';
+					if (ehCeo) {
+						return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
+					} else {
+						return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+					}
 				});
-				if (resCentro && Array.isArray(resCentro.encaminhamentos) && resCentro.encaminhamentos.length > 0) {
-					encaminhamentos = resCentro.encaminhamentos as any[];
-					return;
-				}
-			} catch (errCentro) {
-				console.info('[UniSISM] Endpoint /v1/centro/recepcao/fila-espera em transição — usando fallback /v1/encaminhamentos', errCentro);
 			}
-
-			// Carrega médicos do banco de dados para o seletor de agendamento
-			try {
-				const usuarios = await api.admin.listUsuarios();
-				const medicos = usuarios.filter(u => (u as any).perfil === 'MEDICO' || (u as any).perfil === 'REGULADOR_SMS');
-				medicosEspecialistas = medicos.map(m => ({
-					nome: m.nome,
-					especialidade: (m as any).especialidade || 'Especialista',
-					registro: m.cpf ? `CRM/REG ${m.cpf.substring(0, 6)}` : 'CRM 10000'
-				}));
-			} catch (eMed) {
-				console.info('[UniSISM] Não foi possível carregar lista de médicos do admin.', eMed);
-			}
-
-			// Fallback para API geral de encaminhamentos
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
-			encaminhamentos = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
 		} catch (e: any) {
 			console.error(e);
 			erro = `Falha ao carregar fila da regulação: ${e?.message || 'Erro no servidor'}`;
@@ -105,6 +106,10 @@
 
 	onMount(() => {
 		carregarFila();
+	});
+
+	onDestroy(() => {
+		if (timerMensagem) clearTimeout(timerMensagem);
 	});
 
 	let listaEspecialidades = $derived.by(() => {
@@ -165,6 +170,25 @@
 		paginaAtual = 1;
 	});
 
+	let alocacaoInteligente = $derived.by(() => {
+		if (!selecionado) return null;
+		const agendadosOcupados: AgendamentoOcupado[] = encaminhamentos
+			.filter(e => e.agendamentoPrevisto)
+			.map(e => ({
+				data: e.agendamentoPrevisto!.substring(0, 10),
+				hora: (e.observacoesRegulacao || '').match(/(\d{2}:\d{2})/)?.[1] || '08:00',
+				medicoNome: (e as any).profissionalAtribuido
+			}));
+
+		return alocarVagaPorProfissionalEEscala({
+			centro: centroAtivo,
+			medicoNome: medicoSelecionado?.nome,
+			especialidade: selecionado.solicitacao.especialidadeSolicitada,
+			prioridade: selecionado.solicitacao.prioridade,
+			agendamentosExistentes: agendadosOcupados
+		});
+	});
+
 	function abrirAgendamento(enc: Encaminhamento) {
 		selecionado = enc;
 		notaAgendamento = (enc as any).nota || '';
@@ -211,33 +235,35 @@
 			}
 			dataCalculada = dataAgendamentoManual;
 			horaCalculada = horaAgendamentoManual || '09:00';
+		} else if (alocacaoInteligente) {
+			dataCalculada = alocacaoInteligente.data;
+			horaCalculada = alocacaoInteligente.hora;
 		} else {
-			const otimizado = calcularMockDataOtimizada(selecionado.solicitacao.prioridade);
-			dataCalculada = otimizado.data;
-			horaCalculada = otimizado.hora;
+			dataCalculada = new Date().toISOString().substring(0, 10);
+			horaCalculada = '08:30';
 		}
 
 		const ehRemarcacao = !!selecionado.agendamentoPrevisto;
-		const notaCompleta = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | ${ehRemarcacao ? '[REMARCAÇÃO DE CONSULTA]' : ''} Obs: ${notaAgendamento.trim() || 'Nenhuma'}`;
+		const localNome = alocacaoInteligente?.centroNome || (centroAtivo === 'CEO' ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+		const notaCompleta = `Médico: ${medicoSelecionado.nome} às ${horaCalculada} | ${ehRemarcacao ? '[REMARCAÇÃO DE CONSULTA]' : ''} [ESCALA SUS]: ${alocacaoInteligente?.justificativaEscala || 'Alocação programada'}`;
 
 		try {
-			try {
+			if (ehRemarcacao) {
+				await api.centroRecepcao.remarcar(selecionado.id, {
+					novaData: dataCalculada,
+					novoHorario: horaCalculada,
+					unidadeDestino: localNome,
+					motivo: notaAgendamento.trim() || 'Remarcação de consulta realizada pela recepção.'
+				});
+			} else {
 				await api.centroRecepcao.agendar(selecionado.id, {
 					profissional: medicoSelecionado.nome,
 					nota: notaCompleta,
-					localAgendamento: 'Centro Municipal de Especialidades',
-					agendamentoPrevisto: dataCalculada
-				} as any);
-			} catch (errAgendar) {
-				console.info('[UniSISM] Endpoint /v1/centro/recepcao/agendar/:id em transição — usando fallback aprovar', errAgendar);
-				await api.encaminhamentos.aprovar(selecionado.id, {
-					filaDestino: 'CENTRO_ESPECIALIDADES',
-					agendamentoPrevisto: dataCalculada,
-					nota: notaCompleta
+					localAgendamento: localNome
 				});
 			}
 
-			// Atualiza estado local imediatamente para refletir a remarcação
+			// Atualiza estado local imediatamente para refletir o agendamento
 			selecionado.agendamentoPrevisto = dataCalculada;
 			(selecionado as any).profissionalAtribuido = medicoSelecionado.nome;
 			
@@ -245,7 +271,9 @@
 			await carregarFila();
 			
 			const dtFmt = dataCalculada.split('-').reverse().join('/');
-			alert(`✓ ${ehRemarcacao ? 'CONSULTA REMARCADA' : 'AGENDAMENTO CONCLUÍDO'} COM SUCESSO!\n\nPaciente: ${selecionado.paciente.nome}\nData Agendada: ${dtFmt} às ${horaCalculada}\nMédico Especialista: ${medicoSelecionado.nome}`);
+			mensagemSucesso = `✓ ${ehRemarcacao ? 'CONSULTA REMARCADA' : 'AGENDAMENTO CONCLUÍDO'} COM SUCESSO!\nPaciente: ${selecionado.paciente.nome} | Data Agendada: ${dtFmt} às ${horaCalculada} | Médico: ${medicoSelecionado.nome}`;
+			if (timerMensagem) clearTimeout(timerMensagem);
+			timerMensagem = setTimeout(() => { mensagemSucesso = ''; }, 6000);
 		} catch (e) {
 			console.error(e);
 			if (e instanceof ApiError) {
@@ -272,6 +300,16 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-xs">
+	{#if mensagemSucesso}
+		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm whitespace-pre-wrap flex items-center justify-between">
+			<div class="flex items-center gap-2">
+				<span class="text-base">✓</span>
+				<span>{mensagemSucesso}</span>
+			</div>
+			<button type="button" onclick={() => mensagemSucesso = ''} class="text-xs font-bold text-emerald-800 hover:text-emerald-950">✕</button>
+		</div>
+	{/if}
+
 	<!-- Painel de Métricas -->
 	<section class="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
 		<div class="border border-slate-200 bg-white p-4">
@@ -505,6 +543,12 @@
 
 
 
+				<!-- Identificação do Órgão -->
+				<div class="border border-slate-300 bg-slate-100 p-2 font-mono text-xs flex items-center justify-between">
+					<span class="font-bold text-slate-700 uppercase text-[10px]">🏢 UNIDADE ASSISTENCIAL:</span>
+					<span class="font-bold text-slate-900">{nomeOrgao}</span>
+				</div>
+
 				<!-- Modo de Atribuição de Data (Automático vs Remarcação / Manual) -->
 				<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-2.5">
 					<span class="text-[9px] font-bold tracking-widest text-slate-700 uppercase">
@@ -516,7 +560,7 @@
 							onclick={() => modoSelecaoData = 'AUTO'}
 							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors {modoSelecaoData === 'AUTO' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
 						>
-							⚡ Auto (Algoritmo)
+							⚡ Auto (Escala do Médico)
 						</button>
 						<button
 							type="button"
@@ -554,7 +598,7 @@
 				<!-- Médico especialista dropdown com busca -->
 				<div class="flex flex-col gap-1 relative">
 					<label for="medico-search" class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
-						Médico Especialista <span class="text-red-700">*</span>
+						Profissional / Especialista da Escala <span class="text-red-700">*</span>
 					</label>
 					
 					<button
@@ -563,7 +607,7 @@
 						onclick={() => dropdownAberto = !dropdownAberto}
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-left font-sans text-sm text-slate-900 outline-none flex justify-between items-center"
 					>
-						<span>{medicoSelecionado ? `${medicoSelecionado.nome} (${medicoSelecionado.especialidade})` : 'Selecione um Médico Especialista...'}</span>
+						<span>{medicoSelecionado ? `${medicoSelecionado.nome} (${medicoSelecionado.especialidade} - ${medicoSelecionado.registro})` : 'Selecione um Profissional...'}</span>
 						<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>
 					</button>
 
@@ -590,17 +634,38 @@
 										class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-blue-900 border-b border-slate-100 last:border-b-0 text-xs font-mono flex justify-between"
 									>
 										<span class="font-bold">{med.nome}</span>
-										<span class="text-slate-500 text-[10px] uppercase font-semibold">{med.especialidade}</span>
+										<span class="text-slate-500 text-[10px] uppercase font-semibold">{med.especialidade} · {med.registro}</span>
 									</button>
 								{:else}
 									<div class="px-3 py-3 text-center text-slate-500 text-xs font-sans">
-										Nenhum médico encontrado.
+										Nenhum profissional encontrado.
 									</div>
 								{/each}
 							</div>
 						</div>
 					{/if}
 				</div>
+
+				<!-- Preview em Tempo Real da Alocação por Escala do Médico -->
+				{#if modoSelecaoData === 'AUTO' && alocacaoInteligente}
+					<div class="border-2 border-emerald-700 bg-emerald-50/80 p-3 flex flex-col gap-1.5 font-mono text-xs shadow-xs">
+						<div class="flex items-center justify-between">
+							<span class="font-bold text-emerald-950 uppercase text-[10px] flex items-center gap-1">
+								<span>⚡ ALOCAÇÃO DETERMINÍSTICA DE ESCALA</span>
+							</span>
+							<span class="bg-emerald-700 text-white font-bold px-1.5 py-0.5 text-[9px] uppercase">{alocacaoInteligente.prazoLegalSus}</span>
+						</div>
+						<div class="text-sm font-black text-emerald-900 font-sans mt-0.5">
+							📅 {alocacaoInteligente.dataFormatada} às {alocacaoInteligente.hora}
+						</div>
+						<div class="text-[11px] text-emerald-950 font-bold">
+							📍 {alocacaoInteligente.consultorio} · {alocacaoInteligente.medicoNome} ({alocacaoInteligente.registro})
+						</div>
+						<div class="text-[10px] text-emerald-800 border-t border-emerald-200 pt-1 font-sans leading-tight">
+							{alocacaoInteligente.justificativaEscala}
+						</div>
+					</div>
+				{/if}
 
 				<!-- Notas adicionais -->
 				<div class="flex flex-col gap-1">

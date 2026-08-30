@@ -5,6 +5,7 @@ import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-c
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { BadRequest, NotFound } from '../../../../shared/errors';
+import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface AgendamentoBalcaoInput {
   paciente: {
@@ -38,6 +39,8 @@ export interface AgendamentoBalcaoInput {
 }
 
 export class AgendamentoBalcaoRecepcaoUseCase {
+  private readonly notificacoes = new NotificacaoPacienteService();
+
   async exec(input: AgendamentoBalcaoInput, scope: AccessScope): Promise<Encaminhamento> {
     const cleanCpf = input.paciente.cpf.replace(/\D/g, '');
     if (cleanCpf.length !== 11) {
@@ -56,33 +59,12 @@ export class AgendamentoBalcaoRecepcaoUseCase {
       targetUbsId = ubs.id;
     }
 
-    // 1. Find or create Paciente
-    let dbPaciente = await prisma.paciente.findUnique({
-      where: { cpf: cleanCpf },
-    });
-
-    if (!dbPaciente) {
-      dbPaciente = await prisma.paciente.create({
-        data: {
-          nome: input.paciente.nome.trim(),
-          cpf: cleanCpf,
-          cartaoSus: input.paciente.cartaoSus || null,
-          dataNascimento: new Date(input.paciente.dataNascimento),
-          sexo: input.paciente.sexo as Sexo,
-          telefone: input.paciente.telefone,
-          endereco: input.paciente.endereco,
-          ubsId: targetUbsId,
-        },
-      });
-    }
-
-    // 2. Generate Protocol
     const now = new Date();
-    const datePart = now.toISOString().substring(0, 10).replace(/-/g, '');
-    const count = await prisma.encaminhamento.count();
-    const protocolo = `ENC${datePart}-${String(count + 1).padStart(4, '0')}`;
+    const dataSolicitacao = input.solicitacao.dataSolicitacao
+      ? new Date(input.solicitacao.dataSolicitacao)
+      : now;
 
-    // 3. Optimize scheduling date and slot
+    // Optimize scheduling date and slot
     const otimizado = await calcularOtimizacaoAgendamento({
       profissional: input.medicoDesejado,
       nota: input.nota,
@@ -91,12 +73,39 @@ export class AgendamentoBalcaoRecepcaoUseCase {
     });
 
     const localAg = 'Centro Municipal de Especialidades';
-    const dataSolicitacao = input.solicitacao.dataSolicitacao
-      ? new Date(input.solicitacao.dataSolicitacao)
-      : now;
 
-    // 4. Create Encaminhamento record in single transaction
+    // Create Encaminhamento record in single atomic transaction
     const createdRow = await prisma.$transaction(async (tx) => {
+      // 1. Find or create Paciente
+      let dbPaciente = await tx.paciente.findUnique({
+        where: { cpf: cleanCpf },
+      });
+
+      if (!dbPaciente) {
+        dbPaciente = await tx.paciente.create({
+          data: {
+            nome: input.paciente.nome.trim(),
+            cpf: cleanCpf,
+            cartaoSus: input.paciente.cartaoSus || null,
+            dataNascimento: new Date(input.paciente.dataNascimento),
+            sexo: input.paciente.sexo as Sexo,
+            telefone: input.paciente.telefone,
+            endereco: input.paciente.endereco,
+            ubsId: targetUbsId,
+          },
+        });
+      }
+
+      // 2. Generate Protocol
+      const ano = now.getUTCFullYear();
+      const chave = `UBS-${ano}`;
+      const seq = await tx.sequencialProtocolo.upsert({
+        where: { chave },
+        create: { chave, valor: 1 },
+        update: { valor: { increment: 1 } },
+      });
+      const protocolo = `BAL-${ano}-${String(seq.valor).padStart(6, '0')}`;
+
       const encRow = await tx.encaminhamento.create({
         data: {
           protocolo,
@@ -182,6 +191,20 @@ export class AgendamentoBalcaoRecepcaoUseCase {
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });
     });
+
+    void this.notificacoes
+      .notificar({
+        cpfPaciente: createdRow.pacienteCpf,
+        pacienteNome: createdRow.pacienteNome,
+        encaminhamentoId: createdRow.id,
+        tipo: 'AGENDADO',
+        ...MENSAGENS.agendado(createdRow.protocolo, otimizado.dateTime.toISOString()),
+        payload: {
+          protocolo: createdRow.protocolo,
+          agendamentoPrevisto: otimizado.dateTime.toISOString(),
+        },
+      })
+      .catch(() => {});
 
     return rowParaEncaminhamento(createdRow);
   }

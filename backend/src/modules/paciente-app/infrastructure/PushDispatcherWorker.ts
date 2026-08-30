@@ -98,10 +98,22 @@ export class PushDispatcherWorker {
   /** Processa UMA batch. Exportado para smoke test rodar manualmente. */
   async _processarBatch(): Promise<{ processadas: number; ok: number; falhas: number }> {
     const agora = new Date();
-    // Pega TODAS as PENDENTE (filtro de backoff é feito no app side abaixo, pois
-    // o cálculo depende de `pushTentativas` + tabela `BACKOFF_MIN` JS-only).
+    const t1MinAtras = new Date(agora.getTime() - 1 * 60_000);
+    const t5MinAtras = new Date(agora.getTime() - 5 * 60_000);
+    const t30MinAtras = new Date(agora.getTime() - 30 * 60_000);
+
+    // Filtra elegíveis diretamente no banco para impedir head-of-line blocking por itens em backoff
     const candidatos = await prisma.notificacaoPaciente.findMany({
-      where: { pushStatus: 'PENDENTE' },
+      where: {
+        pushStatus: 'PENDENTE',
+        OR: [
+          { pushTentativas: 0 },
+          { pushUltimaTentativaEm: null },
+          { pushTentativas: 1, pushUltimaTentativaEm: { lte: t1MinAtras } },
+          { pushTentativas: 2, pushUltimaTentativaEm: { lte: t5MinAtras } },
+          { pushTentativas: { gte: 3 }, pushUltimaTentativaEm: { lte: t30MinAtras } },
+        ],
+      },
       take: BATCH_SIZE,
       orderBy: { criadaEm: 'asc' },
     });
@@ -111,15 +123,6 @@ export class PushDispatcherWorker {
     let ok = 0;
     let falhas = 0;
     for (const notif of candidatos) {
-      // Backoff check
-      const tentativas = notif.pushTentativas;
-      if (tentativas > 0 && notif.pushUltimaTentativaEm) {
-        const backoffMin = BACKOFF_MIN[Math.min(tentativas, BACKOFF_MIN.length - 1)] ?? 30;
-        const proximaEm =
-          notif.pushUltimaTentativaEm.getTime() + backoffMin * 60_000;
-        if (proximaEm > agora.getTime()) continue; // ainda em backoff
-      }
-
       const resultado = await this._processarNotificacao(notif);
       if (resultado === 'ok') ok++;
       else if (resultado === 'falha') falhas++;

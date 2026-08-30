@@ -1,5 +1,6 @@
 import { StatusSalaConsultorio } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
 export interface SalaConsultorioDTO {
@@ -71,7 +72,15 @@ export class GestaoSalasUseCase {
     };
   }
 
-  async atualizarSala(id: string, data: Partial<SalaConsultorioDTO>, atendenteId: string): Promise<SalaConsultorioDTO> {
+  async atualizarSala(id: string, data: Partial<SalaConsultorioDTO>, scope: AccessScope, atendenteId: string): Promise<SalaConsultorioDTO> {
+    const existing = await prisma.salaConsultorio.findUnique({ where: { id } });
+    if (!existing) {
+      throw NotFound('SALA_NAO_ENCONTRADA', 'Sala não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('SALA_NAO_ENCONTRADA', 'Sala não encontrada');
+    }
+
     const res = await prisma.salaConsultorio.update({
       where: { id },
       data: {
@@ -105,7 +114,15 @@ export class GestaoSalasUseCase {
     };
   }
 
-  async deletarSala(id: string, atendenteId: string): Promise<void> {
+  async deletarSala(id: string, scope: AccessScope, atendenteId: string): Promise<void> {
+    const existing = await prisma.salaConsultorio.findUnique({ where: { id } });
+    if (!existing) {
+      throw NotFound('SALA_NAO_ENCONTRADA', 'Sala não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && existing.prefeituraId && existing.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('SALA_NAO_ENCONTRADA', 'Sala não encontrada');
+    }
+
     await prisma.salaConsultorio.delete({
       where: { id },
     });

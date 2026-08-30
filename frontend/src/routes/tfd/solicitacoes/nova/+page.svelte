@@ -1128,7 +1128,7 @@
 							? 'border-blue-900 text-blue-900 bg-slate-50'
 							: 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'}"
 					>
-						🖨️ SCANNER (MOCK)
+						🖨️ SCANNER DE GUIA
 					</button>
 				</div>
 

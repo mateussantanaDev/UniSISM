@@ -10,6 +10,7 @@
 	import { setPacienteContext } from '$lib/presentation/contexts/pacienteContext';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { camposFaltantesPaciente } from '$lib/presentation/utils/pacienteGaps';
+	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
 
 	const auth = useAuth();
 
@@ -131,7 +132,7 @@
 					<div
 						class="flex h-12 w-12 shrink-0 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-base font-bold text-white"
 					>
-						{paciente.nome.split(' ').slice(0, 2).map((n) => n[0]).join('')}
+						{obterIniciais(paciente.nome)}
 					</div>
 					<div class="leading-tight">
 						<div class="font-mono text-[10px] tracking-widest text-slate-400 uppercase">

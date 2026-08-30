@@ -3,7 +3,9 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
+import { ensureUbsAcessivel } from '../../../../shared/scope';
 import { NotFound } from '../../../../shared/errors';
+import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface EncaminhamentoIntermunicipalInput {
   pacienteId: string;
@@ -22,6 +24,8 @@ export interface EncaminhamentoIntermunicipalInput {
 }
 
 export class EncaminhamentoIntermunicipalMedicoUseCase {
+  private readonly notificacoes = new NotificacaoPacienteService();
+
   async exec(input: EncaminhamentoIntermunicipalInput, scope: AccessScope): Promise<Encaminhamento> {
     const paciente = await prisma.paciente.findUnique({
       where: { id: input.pacienteId },
@@ -32,12 +36,20 @@ export class EncaminhamentoIntermunicipalMedicoUseCase {
       throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado');
     }
 
+    ensureUbsAcessivel(scope, { id: paciente.ubsId, prefeituraId: paciente.ubs?.prefeituraId ?? '' });
+
     const now = new Date();
-    const datePart = now.toISOString().substring(0, 10).replace(/-/g, '');
-    const count = await prisma.encaminhamento.count();
-    const protocolo = `ENC${datePart}-${String(count + 1).padStart(4, '0')}`;
 
     const createdRow = await prisma.$transaction(async (tx) => {
+      const ano = now.getUTCFullYear();
+      const chave = `UBS-${ano}`;
+      const seq = await tx.sequencialProtocolo.upsert({
+        where: { chave },
+        create: { chave, valor: 1 },
+        update: { valor: { increment: 1 } },
+      });
+      const protocolo = `TFD-${ano}-${String(seq.valor).padStart(6, '0')}`;
+
       const encRow = await tx.encaminhamento.create({
         data: {
           protocolo,
@@ -98,6 +110,7 @@ export class EncaminhamentoIntermunicipalMedicoUseCase {
             protocolo: encRow.protocolo,
             pacienteNome: paciente.nome,
             especialidade: input.solicitacao.especialidadeSolicitada,
+            medicoSolicitante: input.doctor.nome,
           },
         },
       });
@@ -107,6 +120,19 @@ export class EncaminhamentoIntermunicipalMedicoUseCase {
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });
     });
+
+    void this.notificacoes
+      .notificar({
+        cpfPaciente: createdRow.pacienteCpf,
+        pacienteNome: createdRow.pacienteNome,
+        encaminhamentoId: createdRow.id,
+        tipo: 'ENCAMINHAMENTO_CRIADO',
+        ...MENSAGENS.encaminhamentoCriado(createdRow.protocolo, 'Centro Municipal de Especialidades'),
+        payload: {
+          protocolo: createdRow.protocolo,
+        },
+      })
+      .catch(() => {});
 
     return rowParaEncaminhamento(createdRow);
   }

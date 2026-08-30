@@ -6,7 +6,7 @@
  *   UBS         → COORDENADOR_UBS, ATENDENTE_UBS (escopo: apenas a UBS)
  */
 import type { RoleAtendente } from '../../generated/prisma';
-import { Forbidden } from './errors';
+import { Forbidden, NotFound } from './errors';
 
 export type AccessScope =
   | { kind: 'GLOBAL' }
@@ -25,7 +25,7 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'DESENVOLVEDOR':
       return { kind: 'GLOBAL' };
     case 'ADMIN':
-    case 'REGULADOR_SMS':
+      case 'REGULADOR_SMS':
     case 'GESTOR_TFD':
     case 'ATENDENTE_TFD':
     case 'MOTORISTA_TFD':
@@ -51,20 +51,22 @@ export function buildScope(ctx: AuthContext): AccessScope {
 /**
  * Garante que o atendente pode acessar/escrever em uma UBS específica.
  * Use em endpoints que recebem ubsId no payload (ex.: criar atendente).
+ * Retorna 404 NotFound para evitar enumeração de recursos fora do tenant.
  */
 export function ensureUbsAcessivel(scope: AccessScope, ubs: { id: string; prefeituraId: string }) {
   if (scope.kind === 'GLOBAL') return;
   if (scope.kind === 'PREFEITURA' && scope.prefeituraId === ubs.prefeituraId) return;
   if (scope.kind === 'UBS' && scope.ubsId === ubs.id) return;
-  throw Forbidden('FORA_DO_ESCOPO', 'Recurso fora do escopo do usuário');
+  throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
 }
 
 /**
  * Garante que o atendente pode acessar/escrever em uma prefeitura específica.
+ * Retorna 404 NotFound para evitar enumeração de recursos fora do tenant.
  */
 export function ensurePrefeituraAcessivel(scope: AccessScope, prefeituraId: string) {
   if (scope.kind === 'GLOBAL') return;
   if (scope.kind === 'PREFEITURA' && scope.prefeituraId === prefeituraId) return;
   if (scope.kind === 'UBS' && scope.prefeituraId === prefeituraId) return;
-  throw Forbidden('FORA_DO_ESCOPO', 'Recurso fora do escopo do usuário');
+  throw NotFound('PREFEITURA_NAO_ENCONTRADA', 'Prefeitura não encontrada');
 }

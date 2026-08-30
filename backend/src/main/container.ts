@@ -112,6 +112,7 @@ import { ObterProntuarioPacienteMedicoUseCase } from '../modules/centro/applicat
 import { RegistrarConsultaSOAPMedicoUseCase } from '../modules/centro/application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
 import { EncaminhamentoIntermunicipalMedicoUseCase } from '../modules/centro/application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
 import { SolicitarEncaminhamentoMedicoUseCase } from '../modules/centro/application/use-cases/SolicitarEncaminhamentoMedicoUseCase';
+import { AgendarRetornoMedicoUseCase } from '../modules/centro/application/use-cases/AgendarRetornoMedicoUseCase';
 import { CentroRecepcaoController } from '../modules/centro/presentation/controllers/CentroRecepcaoController';
 import { CentroGestaoController } from '../modules/centro/presentation/controllers/CentroGestaoController';
 import { CentroMedicoController } from '../modules/centro/presentation/controllers/CentroMedicoController';
@@ -279,7 +280,7 @@ export function buildContainer() {
   const createEncUC = new CreateEncaminhamentoUseCase(encaminhamentosRepo, storage, scanner);
   const listEncUC = new ListEncaminhamentosUseCase(encaminhamentosRepo);
   const getEncUC = new GetEncaminhamentoUseCase(encaminhamentosRepo);
-  const resolverUC = new ResolverPendenciaUseCase(encaminhamentosRepo, storage);
+  const resolverUC = new ResolverPendenciaUseCase(encaminhamentosRepo, storage, scanner);
 
   const listPacUC = new ListPacientesUseCase(pacientesRepo);
   const getPacUC = new GetPacienteUseCase(pacientesRepo);
@@ -438,6 +439,7 @@ export function buildContainer() {
     new RegistrarConsultaSOAPMedicoUseCase(),
     new EncaminhamentoIntermunicipalMedicoUseCase(),
     new SolicitarEncaminhamentoMedicoUseCase(),
+    new AgendarRetornoMedicoUseCase(),
   );
 
   // ----- Módulo Prontuário (CRUD de sub-documentos) -----

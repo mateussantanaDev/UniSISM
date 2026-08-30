@@ -20,31 +20,28 @@ export class ListarAgendaMedicoCentroUseCase {
     const endOfDay = new Date(`${targetDateStr}T23:59:59.999Z`);
 
     const isOdonto = input.centro === 'CENTRO_ODONTOLOGICO';
-    const where: Prisma.EncaminhamentoWhereInput = {
-      status: StatusEncaminhamento.APROVADO,
-      agendamentoPrevisto: {
-        gte: startOfDay,
-        lte: endOfDay,
+    const conditions: Prisma.EncaminhamentoWhereInput[] = [
+      {
+        OR: isOdonto
+          ? [
+              { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+              { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+              { especialidadeSolicitada: { contains: 'Odont', mode: 'insensitive' } },
+              { especialidadeSolicitada: { contains: 'CEO', mode: 'insensitive' } },
+              { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } },
+            ]
+          : [
+              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+              { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+              {
+                AND: [
+                  { canalRoteamento: { not: CanalRoteamento.CENTRO_ODONTOLOGICO } },
+                  { destinoRegulacao: { not: 'CENTRO_ODONTOLOGICO' as any } },
+                ],
+              },
+            ],
       },
-      OR: isOdonto
-        ? [
-            { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
-            { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
-            { especialidadeSolicitada: { contains: 'Odont', mode: 'insensitive' } },
-            { especialidadeSolicitada: { contains: 'CEO', mode: 'insensitive' } },
-            { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } },
-          ]
-        : [
-            { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-            { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-            {
-              AND: [
-                { canalRoteamento: { not: CanalRoteamento.CENTRO_ODONTOLOGICO } },
-                { destinoRegulacao: { not: 'CENTRO_ODONTOLOGICO' as any } },
-              ],
-            },
-          ],
-    };
+    ];
 
     if (input.doctorNome || input.doctorMatricula) {
       const docOr: Prisma.EncaminhamentoWhereInput[] = [];
@@ -54,8 +51,18 @@ export class ListarAgendaMedicoCentroUseCase {
       if (input.doctorMatricula) {
         docOr.push({ profissionalAgendado: { contains: input.doctorMatricula } });
       }
-      where.OR = docOr;
+      conditions.push({ OR: docOr });
     }
+
+    const where: Prisma.EncaminhamentoWhereInput = {
+      deletadoEm: null,
+      status: StatusEncaminhamento.APROVADO,
+      agendamentoPrevisto: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+      AND: conditions,
+    };
 
     if (input.especialidade) {
       where.especialidadeSolicitada = {

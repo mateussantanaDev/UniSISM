@@ -21,6 +21,10 @@ export function buildProntuarioRoutes(
     'ADMIN',
     'COORDENADOR_UBS',
     'ATENDENTE_UBS',
+    'MEDICO',
+    'MEDICO_ESPECIALISTA',
+    'ATENDENTE_CENTRO',
+    'REGULADOR_SMS',
   );
   const guards = [authenticate, canEdit];
 

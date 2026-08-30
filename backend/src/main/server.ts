@@ -84,8 +84,10 @@ async function main() {
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
-  // Trigger: cria uma viagem para o motorista e um encaminhamento para o paciente cadastrados
-  void createTripAndReferralOnStartup();
+  // Trigger: cria uma viagem para o motorista e um encaminhamento apenas em ambiente dev se explicitamente solicitado
+  if (!env.isProd && process.env['SEED_ON_STARTUP'] === 'true') {
+    void createTripAndReferralOnStartup();
+  }
 }
 
 async function createTripAndReferralOnStartup() {

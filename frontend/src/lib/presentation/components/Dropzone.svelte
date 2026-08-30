@@ -53,6 +53,7 @@
 		const target = e.target as HTMLInputElement;
 		const selected = Array.from(target.files ?? []);
 		if (selected.length > 0 && onFiles) onFiles(selected);
+		target.value = '';
 	}
 
 	function openPicker() {

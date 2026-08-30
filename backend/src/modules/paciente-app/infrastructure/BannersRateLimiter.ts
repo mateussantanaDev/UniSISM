@@ -14,7 +14,7 @@
  * Chaves Redis: prefixo `rl:pa:ban:`.
  */
 import { TooManyRequests } from '../../../shared/errors';
-import { getCache } from '../../../infrastructure/cache/Cache';
+import { incrWithTtl } from '../../../infrastructure/cache/InMemoryRateLimiter';
 import { logger } from '../../../infrastructure/logger';
 
 interface JanelaLimite {
@@ -42,26 +42,6 @@ const LIMITE_POR_IP: JanelaLimite = {
   mensagem: 'Muitas requisições deste dispositivo. Aguarde alguns minutos.',
 };
 
-const localCounters = new Map<string, { v: number; expiraEm: number }>();
-
-async function incrComTtl(chave: string, ttlSeconds: number): Promise<number> {
-  const cache = getCache();
-  if (cache.isReady()) {
-    const atual = await cache.get<number>(chave);
-    const novo = (atual ?? 0) + 1;
-    await cache.set(chave, novo, ttlSeconds);
-    return novo;
-  }
-  const now = Date.now();
-  const slot = localCounters.get(chave);
-  if (slot && slot.expiraEm > now) {
-    slot.v += 1;
-    return slot.v;
-  }
-  localCounters.set(chave, { v: 1, expiraEm: now + ttlSeconds * 1000 });
-  return 1;
-}
-
 function anonimizar(s: string): string {
   return s.length <= 4 ? '***' : s.slice(0, 4) + '***';
 }
@@ -69,7 +49,7 @@ function anonimizar(s: string): string {
 export class BannersRateLimiter {
   async consumir(contaId: string, ip: string | null): Promise<void> {
     for (const [idx, lim] of LIMITES_POR_CONTA.entries()) {
-      const hits = await incrComTtl(`rl:pa:ban:conta:${idx}:${contaId}`, lim.janelaSeg);
+      const hits = await incrWithTtl(`rl:pa:ban:conta:${idx}:${contaId}`, lim.janelaSeg);
       if (hits > lim.max) {
         logger.warn(
           { contaId, camada: idx, hits, max: lim.max },
@@ -79,7 +59,7 @@ export class BannersRateLimiter {
       }
     }
     if (ip) {
-      const hits = await incrComTtl(`rl:pa:ban:ip:${ip}`, LIMITE_POR_IP.janelaSeg);
+      const hits = await incrWithTtl(`rl:pa:ban:ip:${ip}`, LIMITE_POR_IP.janelaSeg);
       if (hits > LIMITE_POR_IP.max) {
         logger.warn(
           { ip: anonimizar(ip), hits, max: LIMITE_POR_IP.max },

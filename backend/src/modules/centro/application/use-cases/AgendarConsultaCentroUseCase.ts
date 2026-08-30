@@ -6,6 +6,7 @@ import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento'
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
 import { NotFound, BadRequest } from '../../../../shared/errors';
+import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface AgendarConsultaCentroInput {
   id: string;
@@ -20,6 +21,8 @@ export interface AgendarConsultaCentroInput {
 }
 
 export class AgendarConsultaCentroUseCase {
+  private readonly notificacoes = new NotificacaoPacienteService();
+
   async exec(input: AgendarConsultaCentroInput, scope: AccessScope): Promise<Encaminhamento> {
     const row = await prisma.encaminhamento.findUnique({
       where: { id: input.id },
@@ -89,6 +92,20 @@ export class AgendarConsultaCentroUseCase {
 
       return res;
     });
+
+    void this.notificacoes
+      .notificar({
+        cpfPaciente: updated.pacienteCpf,
+        pacienteNome: updated.pacienteNome,
+        encaminhamentoId: updated.id,
+        tipo: 'AGENDADO',
+        ...MENSAGENS.agendado(updated.protocolo, otimizado.dateTime.toISOString()),
+        payload: {
+          protocolo: updated.protocolo,
+          agendamentoPrevisto: otimizado.dateTime.toISOString(),
+        },
+      })
+      .catch(() => {});
 
     return rowParaEncaminhamento(updated);
   }

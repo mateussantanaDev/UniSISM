@@ -28,7 +28,8 @@
 				items: [
 					{ label: 'Fila da Regulação', href: '/centro/recepcao/fila', shortcut: 'F' },
 					{ label: 'Agenda do Dia', href: '/centro/recepcao/agenda', shortcut: 'A' },
-					{ label: 'Agendar no Balcão', href: '/centro/recepcao/balcao', shortcut: 'B' }
+					{ label: 'Agendar no Balcão', href: '/centro/recepcao/balcao', shortcut: 'B' },
+					{ label: 'Painel TV (Chamada)', href: '/centro/recepcao/painel', shortcut: 'T' }
 				]
 			});
 		}

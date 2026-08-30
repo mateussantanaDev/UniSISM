@@ -15,6 +15,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
   S3Client,
@@ -119,5 +120,19 @@ export class S3FileStorage implements IFileStorage {
     if (!r.Body) throw new Error(`S3 object ${caminho} sem body`);
     // r.Body é um Readable em Node
     return r.Body as import('node:stream').Readable;
+  }
+
+  async deletar(caminho: string): Promise<void> {
+    await this.garantirBucket();
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: caminho,
+        }),
+      );
+    } catch (err) {
+      logger.warn({ err, bucket: this.bucket, key: caminho }, 'falha ao deletar objeto S3');
+    }
   }
 }

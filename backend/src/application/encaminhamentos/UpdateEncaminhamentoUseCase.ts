@@ -41,6 +41,7 @@ export interface UpdateEncaminhamentoInput {
   profissionalAgendado?: string | null;
   cidadeAgendamento?: string | null;
   ufAgendamento?: string | null;
+  observacoesRegulacao?: string | null;
 }
 
 export class UpdateEncaminhamentoUseCase {
@@ -156,6 +157,10 @@ export class UpdateEncaminhamentoUseCase {
     if (input.ufAgendamento !== undefined && input.ufAgendamento !== existe.ufAgendamento) {
       data.ufAgendamento = input.ufAgendamento;
       camposAlterados.push('ufAgendamento');
+    }
+    if (input.observacoesRegulacao !== undefined && input.observacoesRegulacao !== existe.observacoesRegulacao) {
+      data.observacoesRegulacao = input.observacoesRegulacao;
+      camposAlterados.push('observacoesRegulacao');
     }
 
     if (camposAlterados.length === 0) {

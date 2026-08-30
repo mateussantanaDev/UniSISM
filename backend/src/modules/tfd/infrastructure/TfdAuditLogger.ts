@@ -21,6 +21,7 @@
 import crypto from 'node:crypto';
 import type { Prisma, AcaoAuditoriaTFD } from '../../../../generated/prisma';
 import { prisma } from '../../../infrastructure/database/prisma';
+import { canonicalJson } from '../../../shared/canonicalJson';
 
 const GENESIS = '0'.repeat(64);
 
@@ -59,8 +60,8 @@ function calcHash(
     registro.operadorId,
     registro.ip,
     registro.em.toISOString(),
-    JSON.stringify(registro.antes ?? null),
-    JSON.stringify(registro.depois ?? null),
+    canonicalJson(registro.antes ?? null),
+    canonicalJson(registro.depois ?? null),
     hashAnterior,
   ].join('|');
   return crypto.createHash('sha256').update(payload).digest('hex');
@@ -75,6 +76,10 @@ export class TfdAuditLogger implements ITfdAuditLogger {
     tx: Prisma.TransactionClient,
     input: RegistrarTfdInput,
   ): Promise<void> {
+    // Concurrency lock por prefeitura: serializa inserções na cadeia de auditoria da mesma prefeitura
+    const lockKey = crypto.createHash('sha256').update(input.prefeituraId).digest().readInt32BE(0);
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey})`;
+
     // Pega o último hash da prefeitura (genesis se não houver)
     const ultimo = await tx.tfdAuditLog.findFirst({
       where: { prefeituraId: input.prefeituraId },

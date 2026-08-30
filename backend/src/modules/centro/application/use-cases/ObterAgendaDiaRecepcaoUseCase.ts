@@ -20,6 +20,7 @@ export class ObterAgendaDiaRecepcaoUseCase {
 
     const isOdonto = input.centro === 'CENTRO_ODONTOLOGICO';
     const where: Prisma.EncaminhamentoWhereInput = {
+      deletadoEm: null,
       status: StatusEncaminhamento.APROVADO,
       agendamentoPrevisto: {
         gte: startOfDay,

@@ -9,6 +9,7 @@
 	import { formatarCpf, formatarData } from '$lib/presentation/utils/tfdFormat';
 	import type { Motorista, ViagemFrota } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -137,11 +138,7 @@
 				<div
 					class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-base font-bold text-white"
 				>
-					{m.nome
-						.split(' ')
-						.slice(0, 2)
-						.map((n) => n[0])
-						.join('')}
+					{obterIniciais(m.nome)}
 				</div>
 				<div class="leading-tight">
 					<div class="font-mono text-[10px] tracking-widest text-slate-400 uppercase">

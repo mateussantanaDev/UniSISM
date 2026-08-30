@@ -50,8 +50,12 @@
 			'ATENDENTE_UBS',
 			'COORDENADOR_UBS',
 			'REGULADOR_SMS',
+			'MEDICO',
+			'MEDICO_ESPECIALISTA',
+			'ATENDENTE_CENTRO',
 			'GESTOR_TFD',
 			'REGULADOR_TFD',
+			'ATENDENTE_TFD',
 			'ADMIN',
 			'DESENVOLVEDOR'
 		];
@@ -64,7 +68,11 @@
 		role === 'ADMIN' ||
 			role === 'REGULADOR_SMS' ||
 			role === 'GESTOR_TFD' ||
-			role === 'REGULADOR_TFD'
+			role === 'REGULADOR_TFD' ||
+			role === 'ATENDENTE_TFD' ||
+			role === 'MEDICO' ||
+			role === 'MEDICO_ESPECIALISTA' ||
+			role === 'ATENDENTE_CENTRO'
 	);
 	let exigeUbs = $derived(role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS');
 

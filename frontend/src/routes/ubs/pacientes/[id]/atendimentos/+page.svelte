@@ -9,6 +9,7 @@
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { api, ApiError } from '$lib/api';
 	import type { PacienteCompleto, TipoAtendimento } from '$lib/api/types';
+	import { separarDataHora } from '$lib/presentation/utils/stringUtils';
 
 	const ctx = usePaciente();
 	const auth = useAuth();
@@ -38,14 +39,29 @@
 		try {
 			const atualizado = await api.pacientes.removeAtendimento(p.id, removendoId);
 			ctx.atualizar?.(atualizado);
+			removendoId = null;
 			notificar('ok', 'Atendimento removido.');
 		} catch (e) {
-			notificar('erro', e instanceof ApiError ? e.message : 'Falha ao remover.');
+			console.error(e);
+			notificar('erro', 'Falha ao remover atendimento.');
 		} finally {
 			removendo = false;
-			removendoId = null;
 		}
 	}
+
+	function formatarDataHoraPartes(iso?: string | null) {
+		if (!iso) return { data: '—', hora: 'Nunca atendido' };
+		const str = new Date(iso).toLocaleString('pt-BR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+		return separarDataHora(str);
+	}
+
+	let ultimoAtendimentoFmt = $derived(formatarDataHoraPartes(p.ultimoAtendimento));
 
 	const tipoLabel: Record<TipoAtendimento, string> = {
 		CONSULTA_MEDICA: 'Consulta Médica',
@@ -53,7 +69,7 @@
 		VACINACAO: 'Vacinação',
 		CURATIVO: 'Curativo',
 		ODONTOLOGICO: 'Odontológico',
-		PROCEDIMENTO: 'Procedimento',
+		PROCEDIMENTO: 'Procedimentos',
 		ACOLHIMENTO: 'Acolhimento'
 	};
 
@@ -137,10 +153,8 @@
 		/>
 		<MetricCard
 			label="Último Atendimento"
-			value={p.ultimoAtendimento ? formatarData(p.ultimoAtendimento).split(' ')[0] : '—'}
-			sublabel={p.ultimoAtendimento
-				? formatarData(p.ultimoAtendimento).split(' ')[1]
-				: 'Nunca atendido'}
+			value={ultimoAtendimentoFmt.data}
+			sublabel={ultimoAtendimentoFmt.hora}
 		/>
 	</section>
 
@@ -188,15 +202,16 @@
 			{:else}
 				<ul class="divide-y divide-slate-100">
 					{#each filtrados as a (a.id)}
+						{@const dtHora = formatarDataHoraPartes(a.data)}
 						<li class="px-4 py-3">
 							<div class="flex items-start justify-between gap-3">
 								<div class="flex items-start gap-3">
 									<div class="text-right font-mono">
 										<div class="text-[11px] font-bold text-slate-900">
-											{formatarData(a.data).split(' ')[0]}
+											{dtHora.data}
 										</div>
 										<div class="text-[10px] text-slate-500">
-											{formatarData(a.data).split(' ')[1]}
+											{dtHora.hora}
 										</div>
 									</div>
 									<div class="min-w-0">

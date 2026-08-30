@@ -20,52 +20,7 @@
 	let erro = $state('');
 	let filtroTipo = $state<'TODOS' | 'CONSULTA' | 'PROCEDIMENTO'>('TODOS');
 
-	let listaEspecialidades = $state<EspecialidadeSigtap[]>([
-		{
-			id: 'esp-1',
-			nome: 'Cardiologia Clínica',
-			codigoSigtap: '03.01.01.007-2',
-			tempoPadraoMinutos: 20,
-			valorTabelaBrl: 120.00,
-			documentosObrigatorios: ['Encaminhamento da UBS', 'ECG recente'],
-			preparoRequerido: 'Trazer exames cardiológicos prévios.',
-			ativa: true,
-			tipoServico: 'CONSULTA'
-		},
-		{
-			id: 'esp-2',
-			nome: 'Eletrocardiograma (ECG)',
-			codigoSigtap: '02.11.02.003-6',
-			tempoPadraoMinutos: 15,
-			valorTabelaBrl: 45.00,
-			documentosObrigatorios: ['Solicitação médica'],
-			preparoRequerido: 'Não aplicar cremes no tórax no dia do exame.',
-			ativa: true,
-			tipoServico: 'PROCEDIMENTO'
-		},
-		{
-			id: 'esp-3',
-			nome: 'Ecocardiograma Transtorácico',
-			codigoSigtap: '02.05.02.009-7',
-			tempoPadraoMinutos: 30,
-			valorTabelaBrl: 180.00,
-			documentosObrigatorios: ['Solicitação médica com justificativa'],
-			preparoRequerido: 'Repouso 15 minutos antes.',
-			ativa: true,
-			tipoServico: 'PROCEDIMENTO'
-		},
-		{
-			id: 'esp-4',
-			nome: 'Neurologia Clínica',
-			codigoSigtap: '03.01.01.007-6',
-			tempoPadraoMinutos: 25,
-			valorTabelaBrl: 130.00,
-			documentosObrigatorios: ['Resumo de encaminhamento'],
-			preparoRequerido: 'Trazer exames anteriores.',
-			ativa: true,
-			tipoServico: 'CONSULTA'
-		}
-	]);
+	let listaEspecialidades = $state<EspecialidadeSigtap[]>([]);
 
 	let exibidas = $derived(
 		listaEspecialidades.filter(e => filtroTipo === 'TODOS' || e.tipoServico === filtroTipo)
@@ -73,13 +28,14 @@
 
 	// Modal State
 	let modalNovaAberto = $state(false);
-	let formNome = $state('Biópsia de Pele');
-	let formCodigo = $state('04.04.01.001-2');
+	let erroModal = $state('');
+	let formNome = $state('');
+	let formCodigo = $state('');
 	let formTempo = $state(20);
-	let formValor = $state(95.00);
+	let formValor = $state(80.00);
 	let formTipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('PROCEDIMENTO');
-	let formDocs = $state('Solicitação do Dermatologista');
-	let formPreparo = $state('Jejum relativo de 4 horas.');
+	let formDocs = $state('');
+	let formPreparo = $state('');
 
 	async function carregarEspecialidades() {
 		carregando = true;
@@ -105,9 +61,10 @@
 
 	async function cadastrarEspecialidade() {
 		if (!formNome.trim() || !formCodigo.trim()) {
-			alert('Preencha o nome e o código SIGTAP.');
+			erroModal = 'Preencha o nome e o código SIGTAP.';
 			return;
 		}
+		erroModal = '';
 
 		const nova: EspecialidadeSigtap = {
 			id: 'esp-' + Date.now(),
@@ -273,6 +230,12 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				{#if erroModal}
+					<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900">
+						⚠ {erroModal}
+					</div>
+				{/if}
+
 				<div class="flex flex-col gap-1">
 					<label for="esp-tipo" class="font-bold text-slate-700 text-[11px]">Tipo de Serviço *</label>
 					<select id="esp-tipo" bind:value={formTipoServico} class="border border-slate-300 p-2 text-xs font-bold bg-white">

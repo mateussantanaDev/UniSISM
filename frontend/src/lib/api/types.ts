@@ -21,7 +21,11 @@ export type Role =
   | 'REGULADOR_SMS'
   | 'GESTOR_TFD'
   | 'REGULADOR_TFD'
-  | 'MEDICO';
+  | 'MEDICO'
+  | 'MEDICO_ESPECIALISTA'
+  | 'ATENDENTE_CENTRO'
+  | 'ATENDENTE_TFD'
+  | 'MOTORISTA_TFD';
 
 export type Escopo = 'GLOBAL' | 'PREFEITURA' | 'UBS';
 
@@ -1319,6 +1323,7 @@ export interface ListAgendaDiaCentroQuery {
   especialidade?: string;
   medico?: string;
   statusAtendimento?: StatusAtendimentoCentro;
+  centro?: 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
 }
 
 export interface ListAgendaDiaCentroResponse {
@@ -1336,11 +1341,62 @@ export interface AgendarBalcaoCentroRequest {
   solicitacao: SolicitacaoMedica;
   nota?: string;
   medicoDesejado?: string;
+  dataAgendamento?: string;
+  horaAgendamento?: string;
+  status?: string;
+}
+
+export interface AgendamentoBalcaoRetroativoRequest {
+  pacienteId: string;
+  especialidade: string;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimentoSolicitado?: string;
+  modoData?: 'AUTODATA' | 'MANUAL' | 'RETROATIVO';
+  dataRetroativa: string; // YYYY-MM-DD
+  horaRetroativa: string; // HH:mm
+  statusRetroativo?: 'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU';
+  medicoId?: string;
+  medicoNome?: string;
+}
+
+export interface AgendamentoBalcaoRetroativoResponse {
+  id: string;
+  protocolo: string;
+  status: string;
+  mensagem: string;
 }
 
 export interface DesmarcarReagendarCentroRequest {
   acao: 'DESMARCAR' | 'REAGENDAR';
+  novaData?: string;
+  novoHorario?: string;
+  unidadeDestino?: string;
   motivo?: string;
+}
+
+export interface RemarcarEncaminhamentoRegulacaoRequest {
+  novaData: string; // YYYY-MM-DD
+  novoHorario: string; // HH:mm
+  unidadeDestino?: string;
+  motivo: string;
+}
+
+export interface ItemProcedimentoRealizado {
+  codigoSigtap?: string;
+  nome: string;
+  quantidade?: number;
+  valorUnitario?: number;
+  observacao?: string;
+}
+
+export interface RegistrarProcedimentosAtendimentoRequest {
+  procedimentos: ItemProcedimentoRealizado[];
+}
+
+export interface RegistrarProcedimentosAtendimentoResponse {
+  sucesso: boolean;
+  totalProcedimentos: number;
+  valorTotalBrl: number;
 }
 
 // ============================================================
@@ -1350,34 +1406,86 @@ export interface DesmarcarReagendarCentroRequest {
 export interface ListAgendaMedicoQuery {
   data?: string; // YYYY-MM-DD
   statusAtendimento?: StatusAtendimentoCentro;
+  especialidade?: string;
+  centro?: 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
 }
 
 export interface ListAgendaMedicoResponse {
+  data?: string;
   agenda: EncaminhamentoCentroItem[];
   total: number;
 }
 
 export interface RegistrarAtendimentoSoapCentroRequest {
-  subjetivo: string;
-  objetivo: string;
-  avaliacao: string;
-  plano: string;
-  queixaPrincipal: string;
+  subjetivo?: string;
+  objetivo?: string;
+  avaliacao?: string;
+  plano?: string;
+  queixaPrincipal?: string;
+  exameFisico?: string;
   diagnostico: string;
   cid10: string;
   conduta: string;
+  prescricao?: string;
   prescricaoResumo?: string;
+  pressaoArterial?: string;
+  frequenciaCardiaca?: string;
+  peso?: string;
+  unidade?: string;
 }
 
 export interface CriarEncaminhamentoIntermunicipalCentroRequest {
+  encaminhamentoId?: string;
   pacienteId: string;
-  solicitacao: {
-    especialidadeSolicitada: string;
-    cid10: string;
-    cidDescricao: string;
-    justificativaClinica: string;
-    prioridade: PrioridadeClinica;
+  municipioDestino?: string;
+  especialidade?: string;
+  cid10?: string;
+  diagnostico?: string;
+  justificativa?: string;
+  prioridade?: PrioridadeClinica;
+  transporteRequerido?: string;
+  requerAcompanhante?: boolean;
+  solicitacao?: {
+    especialidadeSolicitada?: string;
+    cid10?: string;
+    cidDescricao?: string;
+    justificativaClinica?: string;
+    prioridade?: PrioridadeClinica;
   };
+}
+
+export interface SolicitarEncaminhamentoMedicoRequest {
+  encaminhamentoId?: string;
+  pacienteId?: string;
+  especialidadeSolicitada: string;
+  cid10: string;
+  cidDescricao?: string;
+  justificativaClinica: string;
+  prioridade?: PrioridadeClinica;
+  observacao?: string;
+}
+
+export interface SolicitarEncaminhamentoMedicoResponse {
+  sucesso: boolean;
+  protocolo: string;
+  status: string;
+  mensagem: string;
+  encaminhamento: EncaminhamentoCentroItem;
+}
+
+export interface AgendarRetornoDirectRequest {
+  consultaId: string;
+  pacienteId?: string;
+  medicoNome: string;
+  dataRetorno: string; // YYYY-MM-DD
+  horaRetorno: string; // HH:mm
+  observacoes?: string;
+}
+
+export interface AgendarRetornoDirectResponse {
+  sucesso: boolean;
+  retornoId: string;
+  encaminhamento: EncaminhamentoCentroItem;
 }
 
 // ============================================================
@@ -1510,6 +1618,7 @@ export interface ProcedimentoRealizadoItem {
   codigoSigtap?: string;
   nome: string;
   quantidade: number;
+  valorUnitario?: number;
   observacao?: string;
 }
 

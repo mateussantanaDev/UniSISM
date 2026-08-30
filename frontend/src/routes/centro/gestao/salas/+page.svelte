@@ -31,6 +31,8 @@
 	let formAla = $state('Ala A — Térreo');
 	let formEquipamentos = $state('Maca Articulada, Raio-X Digital, Foco Auxiliar');
 
+	let erroModalSala = $state('');
+
 	async function carregarSalas() {
 		carregando = true;
 		erro = '';
@@ -51,9 +53,10 @@
 
 	async function cadastrarNovaSala() {
 		if (!formCodigo.trim() || !formNome.trim()) {
-			alert('Preencha os campos obrigatórios (Código e Nome da Sala).');
+			erroModalSala = 'Preencha os campos obrigatórios (Código e Nome da Sala).';
 			return;
 		}
+		erroModalSala = '';
 
 		const nova: SalaConsultorio = {
 			id: 'sala-' + Date.now(),
@@ -217,6 +220,11 @@
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
+				{#if erroModalSala}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
+						⚠ {erroModalSala}
+					</div>
+				{/if}
 				<div class="grid grid-cols-2 gap-3">
 					<div class="flex flex-col gap-1">
 						<label for="sl-cod" class="font-bold text-slate-700 text-[11px]">Código da Sala *</label>

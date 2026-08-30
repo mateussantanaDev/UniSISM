@@ -288,7 +288,11 @@ export class CentroRecepcaoController {
       scope,
     );
 
-    res.json({ encaminhamento: result });
+    res.json({
+      sucesso: true,
+      mensagem: body.acao === 'DESMARCAR' ? 'Consulta desmarcada com sucesso.' : 'Consulta reagendada com sucesso.',
+      encaminhamento: result,
+    });
   };
 
   postBalcaoRetroativo = async (req: Request, res: Response): Promise<void> => {
@@ -341,7 +345,7 @@ export class CentroRecepcaoController {
   postAusenciaMedica = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const body = ausenciaMedicaSchema.parse(req.body);
-    const result = await this.ausenciaMedicaUC.exec(body, scope, req.auth!.sub);
+    const result = await this.ausenciaMedicaUC.exec(body, req.auth!.sub, scope);
     res.json(result);
   };
 }

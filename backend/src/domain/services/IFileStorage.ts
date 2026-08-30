@@ -15,4 +15,7 @@ export interface IFileStorage {
 
   /** Obtém o conteúdo binário como Readable stream (usado em download). */
   obterStream(caminho: string): Promise<import('node:stream').Readable>;
+
+  /** Deleta o arquivo do storage (disco local ou S3/MinIO). */
+  deletar(caminho: string): Promise<void>;
 }

@@ -116,6 +116,16 @@ import type {
   ListAuditoriaCentroResponse,
   SalaConsultorioCentro,
   EspecialidadeSigtapCentro,
+  AgendamentoBalcaoRetroativoRequest,
+  AgendamentoBalcaoRetroativoResponse,
+  RemarcarEncaminhamentoRegulacaoRequest,
+  ItemProcedimentoRealizado,
+  RegistrarProcedimentosAtendimentoRequest,
+  RegistrarProcedimentosAtendimentoResponse,
+  SolicitarEncaminhamentoMedicoRequest,
+  SolicitarEncaminhamentoMedicoResponse,
+  AgendarRetornoDirectRequest,
+  AgendarRetornoDirectResponse,
 } from './types';
 
 // ============================================================
@@ -1505,6 +1515,27 @@ export class CentroRecepcaoApi {
       req
     );
   }
+
+  /** Agendamento direto em balcão retroativo (POST /v1/centro/balcao/agendar). */
+  agendarBalcaoRetroativo(
+    req: AgendamentoBalcaoRetroativoRequest
+  ): Promise<AgendamentoBalcaoRetroativoResponse> {
+    return this.api.post<AgendamentoBalcaoRetroativoResponse>(
+      '/centro/balcao/agendar',
+      req
+    );
+  }
+
+  /** Remarcar encaminhamento na regulação (POST /v1/encaminhamentos/:id/remarcar). */
+  remarcar(
+    id: string,
+    req: RemarcarEncaminhamentoRegulacaoRequest
+  ): Promise<{ encaminhamento: EncaminhamentoCentroItem }> {
+    return this.api.post<{ encaminhamento: EncaminhamentoCentroItem }>(
+      `/encaminhamentos/${encodeURIComponent(id)}/remarcar`,
+      req
+    );
+  }
 }
 
 export class CentroMedicoApi {
@@ -1553,11 +1584,32 @@ export class CentroMedicoApi {
     );
   }
 
+  /** Solicitar novo encaminhamento médico durante a consulta (POST /v1/centro/medico/solicitar-encaminhamento). */
+  solicitarEncaminhamento(
+    req: SolicitarEncaminhamentoMedicoRequest
+  ): Promise<SolicitarEncaminhamentoMedicoResponse> {
+    return this.api.post<SolicitarEncaminhamentoMedicoResponse>(
+      '/centro/medico/solicitar-encaminhamento',
+      req
+    );
+  }
+
+  /** Registrar procedimentos faturáveis SIGTAP realizados no atendimento (POST /v1/centro/atendimentos/:id/procedimentos). */
+  registrarProcedimentos(
+    id: string,
+    req: RegistrarProcedimentosAtendimentoRequest
+  ): Promise<RegistrarProcedimentosAtendimentoResponse> {
+    return this.api.post<RegistrarProcedimentosAtendimentoResponse>(
+      `/centro/atendimentos/${encodeURIComponent(id)}/procedimentos`,
+      req
+    );
+  }
+
   /** Agendar retorno direto do paciente com data manual (POST /v1/centro/medico/retorno). */
   agendarRetornoDirect(
-    req: { consultaId: string; pacienteId: string; medicoNome: string; dataRetorno: string; horaRetorno: string; observacoes?: string }
-  ): Promise<{ sucesso: boolean; retornoId: string }> {
-    return this.api.post<{ sucesso: boolean; retornoId: string }>(
+    req: AgendarRetornoDirectRequest
+  ): Promise<AgendarRetornoDirectResponse> {
+    return this.api.post<AgendarRetornoDirectResponse>(
       '/centro/medico/retorno',
       req
     );

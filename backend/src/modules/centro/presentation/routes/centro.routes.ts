@@ -52,6 +52,7 @@ export function buildCentroRoutes(
   router.post('/centro/recepcao/desmarcar-reagendar/:id', authenticate, recepcaoRoles, recepcaoController.postDesmarcarReagendar);
   router.post('/encaminhamentos/:id/remarcar', authenticate, recepcaoRoles, recepcaoController.postRemarcar);
   router.post('/centro/notificacoes/ausencia-medica', authenticate, gestaoRoles, recepcaoController.postAusenciaMedica);
+  router.post('/centro/gestao/notificacoes-ausencia', authenticate, gestaoRoles, recepcaoController.postAusenciaMedica);
   router.post('/centro/atendimentos/:id/procedimentos', authenticate, medicoRoles, recepcaoController.postProcedimentos);
 
   // ───── Médico Especialista & Consultório Digital ERP (Fase 2 / ERP v3.1.0) ─────
@@ -69,6 +70,7 @@ export function buildCentroRoutes(
   router.post('/centro/medico/encaminhamento-intermunicipal', authenticate, medicoRoles, medicoController.postEncaminhamentoIntermunicipal);
   router.post('/centro/medico/atendimentos/:id/encaminhamento', authenticate, medicoRoles, medicoController.postSolicitarEncaminhamento);
   router.post('/centro/medico/solicitar-encaminhamento', authenticate, medicoRoles, medicoController.postSolicitarEncaminhamento);
+  router.post('/centro/medico/retorno', authenticate, medicoRoles, medicoController.postAgendarRetorno);
 
   // ───── Gestão & Diretoria Executiva (Fase 3 / ERP v3.1.0) ─────
   router.get('/centro/gestao/dashboard', authenticate, gestaoRoles, gestaoController.getDashboard);

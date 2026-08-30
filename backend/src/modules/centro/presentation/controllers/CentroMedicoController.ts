@@ -7,8 +7,9 @@ import type { ListarAgendaMedicoCentroUseCase } from '../../application/use-case
 import type { ChamarPacienteMedicoUseCase } from '../../application/use-cases/ChamarPacienteMedicoUseCase';
 import type { ObterProntuarioPacienteMedicoUseCase } from '../../application/use-cases/ObterProntuarioPacienteMedicoUseCase';
 import type { RegistrarConsultaSOAPMedicoUseCase } from '../../application/use-cases/RegistrarConsultaSOAPMedicoUseCase';
-import type { EncaminhamentoIntermunicipalMedicoUseCase } from '../../application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
 import type { SolicitarEncaminhamentoMedicoUseCase } from '../../application/use-cases/SolicitarEncaminhamentoMedicoUseCase';
+import type { EncaminhamentoIntermunicipalMedicoUseCase } from '../../application/use-cases/EncaminhamentoIntermunicipalMedicoUseCase';
+import type { AgendarRetornoMedicoUseCase } from '../../application/use-cases/AgendarRetornoMedicoUseCase';
 import { BadRequest } from '../../../../shared/errors';
 
 const soapSchema = z.object({
@@ -60,6 +61,15 @@ const solicitarEncaminhamentoSchema = z.object({
   observacao: z.string().optional(),
 });
 
+const retornoSchema = z.object({
+  consultaId: z.string().min(1),
+  pacienteId: z.string().optional(),
+  medicoNome: z.string().min(2),
+  dataRetorno: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  horaRetorno: z.string().min(2),
+  observacoes: z.string().optional(),
+});
+
 export class CentroMedicoController {
   constructor(
     private readonly atendentes: IAtendenteRepository,
@@ -69,6 +79,7 @@ export class CentroMedicoController {
     private readonly registrarSoapUC: RegistrarConsultaSOAPMedicoUseCase,
     private readonly intermunicipalUC: EncaminhamentoIntermunicipalMedicoUseCase,
     private readonly solicitarEncaminhamentoUC: SolicitarEncaminhamentoMedicoUseCase,
+    private readonly agendarRetornoUC: AgendarRetornoMedicoUseCase,
   ) {}
 
   getAgenda = async (req: Request, res: Response): Promise<void> => {
@@ -159,15 +170,14 @@ export class CentroMedicoController {
     res.json({
       pacienteId: prontuario.paciente.id,
       paciente: prontuario.paciente,
-      alergias: prontuario.alergias.map((a) => a.substancia),
+      alergias: prontuario.alergias,
+      alergiasResumo: prontuario.alergias.map((a) => a.substancia),
       alergiasDetalhadas: prontuario.alergias,
-      condicoesCronicas: prontuario.condicoesCronicas.map((c) => c.descricao || c.cid10),
+      condicoesCronicas: prontuario.condicoesCronicas,
+      condicoesCronicasResumo: prontuario.condicoesCronicas.map((c) => c.descricao || c.cid10),
       condicoesCronicasDetalhadas: prontuario.condicoesCronicas,
-      medicamentosEmUso: prontuario.medicamentosEmUso.map((m) => ({
-        nome: m.nome,
-        dosagem: m.dosagem,
-        frequencia: m.frequencia,
-      })),
+      medicamentosEmUso: prontuario.medicamentosEmUso,
+      atendimentosAnteriores: prontuario.atendimentosAnteriores,
       historicoAtendimentos: prontuario.atendimentosAnteriores.map((at) => ({
         id: at.id,
         data: at.data.substring(0, 10),
@@ -307,5 +317,30 @@ export class CentroMedicoController {
       mensagem: 'Encaminhamento gerado com sucesso e enviado à Regulação da Secretaria de Saúde.',
       encaminhamento: result,
     });
+  };
+
+  postAgendarRetorno = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = retornoSchema.parse(req.body);
+    const doctor = await this.atendentes.buscarPorId(req.auth!.sub);
+
+    const result = await this.agendarRetornoUC.exec(
+      {
+        consultaId: body.consultaId,
+        pacienteId: body.pacienteId,
+        medicoNome: body.medicoNome,
+        dataRetorno: body.dataRetorno,
+        horaRetorno: body.horaRetorno,
+        observacoes: body.observacoes,
+        doctor: {
+          id: doctor?.id || req.auth!.sub,
+          nome: doctor?.nome || 'Médico Especialista',
+          matricula: doctor?.matricula || 'CRM 00000',
+        },
+      },
+      scope,
+    );
+
+    res.status(201).json(result);
   };
 }

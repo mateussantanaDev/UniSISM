@@ -91,6 +91,8 @@ export const rbac = {
 		return (
 			role === 'ATENDENTE_UBS' ||
 			role === 'COORDENADOR_UBS' ||
+			role === 'MEDICO' ||
+			role === 'MEDICO_ESPECIALISTA' ||
 			role === 'DESENVOLVEDOR'
 		);
 	},
@@ -192,6 +194,7 @@ export const rbac = {
 		return (
 			role === 'ATENDENTE_UBS' ||
 			role === 'COORDENADOR_UBS' ||
+			role === 'MEDICO' ||
 			role === 'DESENVOLVEDOR'
 		);
 	},
@@ -216,6 +219,7 @@ export const rbac = {
 		return (
 			role === 'GESTOR_TFD' ||
 			role === 'REGULADOR_TFD' ||
+			role === 'ATENDENTE_TFD' ||
 			role === 'ADMIN' ||
 			role === 'DESENVOLVEDOR'
 		);
@@ -240,19 +244,23 @@ export const rbac = {
 		const ehCem = tipoUnidade === 'CEM' || (nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO'));
 
 		if (ehCeo) {
-			if (role === 'MEDICO') return '/ceo/medico/agenda';
-			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS') return '/ceo/recepcao/fila';
+			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
+			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO') return '/ceo/recepcao/fila';
 			return '/ceo/gestao/dashboard';
 		}
 
 		if (ehCem) {
-			if (role === 'MEDICO') return '/cem/medico/agenda';
-			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS') return '/cem/recepcao/fila';
+			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/cem/medico/agenda';
+			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
 			return '/cem/gestao/dashboard';
 		}
 
+		if (role === 'MEDICO_ESPECIALISTA') return '/centro/medico/agenda';
+		if (role === 'ATENDENTE_CENTRO') return '/centro/recepcao/fila';
+		if (role === 'MEDICO') return '/ubs/dashboard';
 		if (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') return '/ubs/dashboard';
-		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD') return '/tfd/dashboard';
+		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD') return '/tfd/dashboard';
+		if (role === 'MOTORISTA_TFD') return '/tfd/viagens';
 		if (role === 'REGULADOR_SMS' || role === 'ADMIN') return '/sms/dashboard';
 		if (role === 'DESENVOLVEDOR') return '/sms/dashboard';
 		return '/login';

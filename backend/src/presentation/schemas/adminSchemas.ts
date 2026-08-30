@@ -119,6 +119,10 @@ export const alterarAtivoSchema = z.object({
   ativo: z.boolean(),
 });
 
+export const alterarAtivoUbsSchema = z.object({
+  ativa: z.boolean(),
+});
+
 export const atualizarPrefeituraSchema = z.object({
   nome: z.string().min(2).optional(),
   municipio: z.string().min(2).optional(),

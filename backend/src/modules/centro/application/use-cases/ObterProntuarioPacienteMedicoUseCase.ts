@@ -2,6 +2,8 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../../shared/scope';
 import { NotFound } from '../../../../shared/errors';
 
+import { ensureUbsAcessivel } from '../../../../shared/scope';
+
 export interface ProntuarioCompletoDTO {
   paciente: {
     id: string;
@@ -88,6 +90,7 @@ export class ObterProntuarioPacienteMedicoUseCase {
     const pac = await prisma.paciente.findUnique({
       where: { id: pacienteId },
       include: {
+        ubs: { select: { id: true, prefeituraId: true } },
         alergias: true,
         condicoesCronicas: true,
         medicamentosEmUso: true,
@@ -100,6 +103,8 @@ export class ObterProntuarioPacienteMedicoUseCase {
     if (!pac) {
       throw NotFound('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado no Prontuário Eletrônico');
     }
+
+    ensureUbsAcessivel(scope, { id: pac.ubsId, prefeituraId: pac.ubs?.prefeituraId ?? '' });
 
     return {
       paciente: {

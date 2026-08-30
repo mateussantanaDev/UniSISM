@@ -14,14 +14,16 @@
 		onCancel: () => void;
 	} = $props();
 
-	let novaData = $state(
-		encaminhamento.agendamentoPrevisto
-			? encaminhamento.agendamentoPrevisto.substring(0, 10)
-			: new Date().toISOString().substring(0, 10)
-	);
+	let novaData = $state('');
 	let novoHorario = $state('09:00');
 	let novaUnidade = $state('Centro de Especialidades Médicas (CEM)');
 	let motivoRemarcacao = $state('Remarcação de atendimento a pedido do paciente / ajuste de escala de regulação.');
+
+	$effect(() => {
+		novaData = encaminhamento.agendamentoPrevisto
+			? encaminhamento.agendamentoPrevisto.substring(0, 10)
+			: new Date().toISOString().substring(0, 10);
+	});
 
 	let processando = $state(false);
 	let erro = $state('');

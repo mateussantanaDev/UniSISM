@@ -72,10 +72,11 @@ export class CreateUsuarioUseCase {
       case 'MEDICO':
       case 'MEDICO_ESPECIALISTA':
       case 'ATENDENTE_CENTRO': {
-        if (!input.prefeituraId) {
+        const effectivePrefId = input.prefeituraId || (criadorScope.kind === 'PREFEITURA' ? criadorScope.prefeituraId : null);
+        if (!effectivePrefId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
-        const pref = await prisma.prefeitura.findUnique({ where: { id: input.prefeituraId } });
+        const pref = await prisma.prefeitura.findUnique({ where: { id: effectivePrefId } });
         if (!pref) throw NotFound('PREFEITURA_NAO_ENCONTRADA', 'Prefeitura não encontrada');
         ensurePrefeituraAcessivel(criadorScope, pref.id);
         prefeituraId = pref.id;

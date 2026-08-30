@@ -3,6 +3,7 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento, PrioridadeClinica } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
+import { ensureUbsAcessivel } from '../../../../shared/scope';
 import { NotFound, Unprocessable } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
@@ -56,10 +57,12 @@ export class SolicitarEncaminhamentoMedicoUseCase {
         pacienteEndereco: true,
         ubsId: true,
         unidadeOrigem: true,
+        ubs: { select: { id: true, prefeituraId: true } },
       },
     });
 
     if (currentEnc) {
+      ensureUbsAcessivel(scope, { id: currentEnc.ubsId, prefeituraId: currentEnc.ubs?.prefeituraId ?? '' });
       pacienteData = {
         id: currentEnc.pacienteId || undefined,
         nome: currentEnc.pacienteNome,
@@ -75,17 +78,11 @@ export class SolicitarEncaminhamentoMedicoUseCase {
     } else {
       const pac = await prisma.paciente.findUnique({
         where: { id: encaminhamentoIdOrPacienteId },
+        include: { ubs: { select: { id: true, prefeituraId: true, nome: true, municipio: true } } },
       });
 
       if (pac) {
-        const fallbackUbs = await prisma.ubs.findFirst({
-          where: scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : undefined,
-        });
-
-        if (!fallbackUbs) {
-          throw Unprocessable('UBS_NAO_ENCONTRADA', 'Nenhuma UBS encontrada para vincular a solicitação.');
-        }
-
+        ensureUbsAcessivel(scope, { id: pac.ubsId, prefeituraId: pac.ubs?.prefeituraId ?? '' });
         pacienteData = {
           id: pac.id,
           nome: pac.nome,
@@ -95,8 +92,8 @@ export class SolicitarEncaminhamentoMedicoUseCase {
           sexo: pac.sexo,
           telefone: pac.telefone,
           endereco: pac.endereco,
-          ubsId: fallbackUbs.id,
-          unidadeOrigem: `${fallbackUbs.nome} - ${fallbackUbs.municipio}`,
+          ubsId: pac.ubsId,
+          unidadeOrigem: `${pac.ubs.nome} - ${pac.ubs.municipio}`,
         };
       }
     }

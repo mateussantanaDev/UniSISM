@@ -27,6 +27,10 @@ export class AuditoriaCentroUseCase {
       recurso: 'CENTRO_ESPECIALIDADES',
     };
 
+    if (scope.kind === 'PREFEITURA') {
+      where.atendente = { prefeituraId: scope.prefeituraId };
+    }
+
     if (input.acao) {
       where.acao = { contains: input.acao, mode: 'insensitive' };
     }

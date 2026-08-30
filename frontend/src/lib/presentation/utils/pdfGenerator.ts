@@ -4,9 +4,6 @@
  * qualquer valor oklch de CSS (Tailwind v4) em valores hexadecimais nativos antes do html2canvas.
  */
 
-// @ts-ignore
-import html2pdf from 'html2pdf.js';
-
 function converterColorParaRgb(colorStr: string, ctx: CanvasRenderingContext2D | null): string {
 	if (!colorStr || !colorStr.includes('oklch') || !ctx) return colorStr;
 	try {
@@ -36,11 +33,11 @@ export async function baixarElementoComoPDF(element: HTMLElement, filename: stri
 				canvas.height = 1;
 				const ctx = canvas.getContext('2d');
 
-				// Higieniza todos os elementos clonados convertendo oklch para hex/rgb
+				// Higieniza elementos convertendo oklch para hex/rgb de forma eficiente
 				const elements = clonedDoc.querySelectorAll('*');
-				elements.forEach((el) => {
-					const htmlEl = el as HTMLElement;
-					if (!htmlEl || !htmlEl.style) return;
+				for (let i = 0; i < elements.length; i++) {
+					const htmlEl = elements[i] as HTMLElement;
+					if (!htmlEl || !htmlEl.style) continue;
 
 					try {
 						const computed = window.getComputedStyle(htmlEl);
@@ -60,7 +57,11 @@ export async function baixarElementoComoPDF(element: HTMLElement, filename: stri
 					} catch {
 						/* ignora elementos sem estilo computado */
 					}
-				});
+				}
+
+				// Descarta o canvas temporário para liberação imediata de memória
+				canvas.width = 0;
+				canvas.height = 0;
 			}
 		},
 		jsPDF: {
@@ -71,6 +72,10 @@ export async function baixarElementoComoPDF(element: HTMLElement, filename: stri
 	};
 
 	try {
+		// Lazy-load html2pdf.js sob demanda para não onerar o bundle inicial da aplicação
+		// @ts-ignore
+		const html2pdfModule = await import('html2pdf.js');
+		const html2pdf = html2pdfModule.default || html2pdfModule;
 		await html2pdf().set(opt).from(element).save();
 	} catch (err) {
 		console.error('[UniSISM] Erro ao gerar e baixar PDF:', err);

@@ -36,6 +36,7 @@ export class MetricasDashboardDiretoriaUseCase {
 
     const whereBase: any = {
       canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
+      deletadoEm: null,
     };
 
     if (scope.kind === 'PREFEITURA') {

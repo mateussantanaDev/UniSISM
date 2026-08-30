@@ -64,7 +64,8 @@
 				return;
 			}
 
-			if (sessao.role !== 'REGULADOR_SMS' && sessao.role !== 'MEDICO' && sessao.role !== 'COORDENADOR_UBS' && !superUser) {
+			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS'];
+			if (!allowedRoles.includes(sessao.role) && !superUser) {
 				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}

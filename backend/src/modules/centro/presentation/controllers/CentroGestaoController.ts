@@ -88,11 +88,12 @@ export class CentroGestaoController {
   };
 
   putCota = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const ubsId = paramString(req, 'ubsId');
     const body = putCotaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
-    const result = await this.cotasUC.atualizarCota(ubsId, body, atendenteId);
+    const result = await this.cotasUC.atualizarCota(ubsId, body, scope, atendenteId);
     res.json(result);
   };
 
@@ -112,19 +113,21 @@ export class CentroGestaoController {
   };
 
   putEscala = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const body = putEscalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
-    const result = await this.escalasUC.atualizarEscala(id, body, atendenteId);
+    const result = await this.escalasUC.atualizarEscala(id, body, scope, atendenteId);
     res.json(result);
   };
 
   deleteEscala = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
-    await this.escalasUC.deletarEscala(id, atendenteId);
+    await this.escalasUC.deletarEscala(id, scope, atendenteId);
     res.status(204).send();
   };
 
@@ -144,19 +147,21 @@ export class CentroGestaoController {
   };
 
   putSala = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const body = putSalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
-    const result = await this.salasUC.atualizarSala(id, body, atendenteId);
+    const result = await this.salasUC.atualizarSala(id, body, scope, atendenteId);
     res.json(result);
   };
 
   deleteSala = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
-    await this.salasUC.deletarSala(id, atendenteId);
+    await this.salasUC.deletarSala(id, scope, atendenteId);
     res.status(204).send();
   };
 
@@ -176,19 +181,21 @@ export class CentroGestaoController {
   };
 
   putEspecialidade = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const body = putEspecialidadeSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
-    const result = await this.especialidadesUC.atualizarEspecialidade(id, body, atendenteId);
+    const result = await this.especialidadesUC.atualizarEspecialidade(id, body, scope, atendenteId);
     res.json(result);
   };
 
   deleteEspecialidade = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
-    await this.especialidadesUC.deletarEspecialidade(id, atendenteId);
+    await this.especialidadesUC.deletarEspecialidade(id, scope, atendenteId);
     res.status(204).send();
   };
 

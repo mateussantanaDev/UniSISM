@@ -1,5 +1,6 @@
 import { StatusEncaminhamento, CanalRoteamento } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
 export interface CotaUbsDTO {
@@ -27,40 +28,51 @@ export class GestaoCotasUseCase {
       orderBy: { nome: 'asc' },
     });
 
+    if (ubsList.length === 0) return [];
+
+    const ubsIds = ubsList.map((u) => u.id);
     const now = new Date();
     const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
     const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
-    const result: CotaUbsDTO[] = [];
+    // Batch 1: Busca todas as cotas das UBSs de uma só vez
+    const cotasRecords = await prisma.cotaUbs.findMany({
+      where: { ubsId: { in: ubsIds } },
+    });
+    const cotasMap = new Map(cotasRecords.map((c) => [c.ubsId, c]));
 
-    for (const ubs of ubsList) {
-      const [cotaRecord, countAlocadas] = await Promise.all([
-        prisma.cotaUbs.findUnique({ where: { ubsId: ubs.id } }),
-        prisma.encaminhamento.count({
-          where: {
-            ubsId: ubs.id,
-            status: StatusEncaminhamento.APROVADO,
+    // Batch 2: Agrupa contagem de encaminhamentos aprovados por UBS
+    const alocadasList = await prisma.encaminhamento.groupBy({
+      by: ['ubsId'],
+      _count: { _all: true },
+      where: {
+        ubsId: { in: ubsIds },
+        status: StatusEncaminhamento.APROVADO,
+        OR: [
+          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+          { destinoRegulacao: 'CEM' as any },
+        ],
+        AND: [
+          {
             OR: [
-              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-              { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-              { destinoRegulacao: 'CEM' as any },
-            ],
-            AND: [
+              { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
               {
-                OR: [
-                  { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
-                  {
-                    AND: [
-                      { agendamentoPrevisto: null },
-                      { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
-                    ],
-                  },
+                AND: [
+                  { agendamentoPrevisto: null },
+                  { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
                 ],
               },
             ],
           },
-        }),
-      ]);
+        ],
+      },
+    });
+    const alocadasMap = new Map(alocadasList.map((a) => [a.ubsId, a._count._all]));
+
+    return ubsList.map((ubs) => {
+      const cotaRecord = cotasMap.get(ubs.id);
+      const countAlocadas = alocadasMap.get(ubs.id) ?? 0;
 
       const totalCotasMes = cotaRecord?.totalCotasMes ?? 350;
       const especialidades = (cotaRecord?.especialidades as Record<string, number>) || {
@@ -76,7 +88,7 @@ export class GestaoCotasUseCase {
       if (disponiveis === 0) status = 'ESGOTADO';
       else if (disponiveis < 30) status = 'CRITICO';
 
-      result.push({
+      return {
         ubsId: ubs.id,
         ubsNome: ubs.nome,
         totalCotasMes,
@@ -84,17 +96,29 @@ export class GestaoCotasUseCase {
         disponiveis,
         status,
         especialidades,
-      });
-    }
-
-    return result;
+      };
+    });
   }
 
-  async atualizarCota(ubsId: string, data: { totalCotasMes: number; especialidades: Record<string, number> }, atendenteId: string): Promise<CotaUbsDTO> {
+  async atualizarCota(
+    ubsId: string,
+    data: { totalCotasMes: number; especialidades: Record<string, number> },
+    scope: AccessScope,
+    atendenteId: string,
+  ): Promise<CotaUbsDTO> {
     const ubs = await prisma.ubs.findUnique({
       where: { id: ubsId },
-      select: { id: true, nome: true },
+      select: { id: true, nome: true, prefeituraId: true },
     });
+    if (!ubs) {
+      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
+    }
+    if (scope.kind === 'PREFEITURA' && ubs.prefeituraId !== scope.prefeituraId) {
+      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
+    }
+    if (scope.kind === 'UBS' && ubs.id !== scope.ubsId) {
+      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
+    }
 
     const res = await prisma.cotaUbs.upsert({
       where: { ubsId },

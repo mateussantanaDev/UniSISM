@@ -6,7 +6,6 @@
  *   - status → 'FALHA' com erro_trace_id='EXPIRADO'
  *   - INSERT audit EXPIRADO
  */
-import fs from 'node:fs';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
 import type { IFileStorage } from '../../../domain/services/IFileStorage';
@@ -53,11 +52,7 @@ export class ExpiracaoCron {
     for (const r of expirados) {
       if (r.storageKey) {
         try {
-          const abs = this.storage.caminhoAbsoluto(r.storageKey);
-          if (!abs.startsWith('s3://') && fs.existsSync(abs)) {
-            await fs.promises.unlink(abs);
-          }
-          // TODO: S3 deleteObject quando STORAGE_PROVIDER=s3
+          await this.storage.deletar(r.storageKey);
         } catch (err) {
           logger.warn({ err, id: r.id, key: r.storageKey }, 'falha ao apagar arquivo do storage');
         }

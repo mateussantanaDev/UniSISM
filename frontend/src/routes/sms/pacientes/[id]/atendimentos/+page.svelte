@@ -4,6 +4,8 @@
 	import { usePaciente } from '$lib/presentation/contexts/pacienteContext';
 	import type { TipoAtendimento } from '$lib/api/types';
 
+	import { separarDataHora } from '$lib/presentation/utils/stringUtils';
+
 	const ctx = usePaciente();
 	let p = $derived(ctx.paciente!);
 
@@ -27,14 +29,16 @@
 		ACOLHIMENTO: 'border-orange-600 bg-orange-50 text-orange-800'
 	};
 
-	function formatarDataHora(iso: string) {
-		return new Date(iso).toLocaleString('pt-BR', {
+	function formatarDataHoraPartes(iso?: string | null) {
+		if (!iso) return { data: '—', hora: 'Nunca' };
+		const str = new Date(iso).toLocaleString('pt-BR', {
 			day: '2-digit',
 			month: '2-digit',
 			year: '2-digit',
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+		return separarDataHora(str);
 	}
 
 	let consultasMedicas = $derived(
@@ -45,6 +49,7 @@
 			(a) => new Date(a.data).getFullYear() === new Date().getFullYear()
 		).length
 	);
+	let ultimoAtendimentoFmt = $derived(formatarDataHoraPartes(p.ultimoAtendimento));
 </script>
 
 <div class="flex flex-col gap-4">
@@ -54,8 +59,8 @@
 		<MetricCard label="No Ano" value={totalAno} sublabel={String(new Date().getFullYear())} />
 		<MetricCard
 			label="Último Atendimento"
-			value={p.ultimoAtendimento ? formatarDataHora(p.ultimoAtendimento).split(' ')[0] : '—'}
-			sublabel={p.ultimoAtendimento ? formatarDataHora(p.ultimoAtendimento).split(' ')[1] : 'Nunca'}
+			value={ultimoAtendimentoFmt.data}
+			sublabel={ultimoAtendimentoFmt.hora}
 		/>
 	</section>
 
@@ -78,15 +83,16 @@
 				</li>
 			{:else}
 				{#each p.atendimentos as a (a.id)}
+					{@const dtHora = formatarDataHoraPartes(a.data)}
 					<li class="px-4 py-3">
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex items-start gap-3">
 								<div class="text-right font-mono">
 									<div class="text-[11px] font-bold text-slate-900">
-										{formatarDataHora(a.data).split(' ')[0]}
+										{dtHora.data}
 									</div>
 									<div class="text-[10px] text-slate-500">
-										{formatarDataHora(a.data).split(' ')[1]}
+										{dtHora.hora}
 									</div>
 								</div>
 								<div class="min-w-0">

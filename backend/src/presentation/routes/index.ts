@@ -158,7 +158,16 @@ export function buildRoutes(deps: Deps): Router {
   router.patch(
     '/pacientes/:id',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'ATENDENTE_UBS'),
+    requireRole(
+      'DESENVOLVEDOR',
+      'ADMIN',
+      'COORDENADOR_UBS',
+      'ATENDENTE_UBS',
+      'MEDICO',
+      'MEDICO_ESPECIALISTA',
+      'ATENDENTE_CENTRO',
+      'REGULADOR_SMS',
+    ),
     deps.pacientes.patch,
   );
   router.delete(
@@ -292,6 +301,12 @@ export function buildRoutes(deps: Deps): Router {
     authenticate,
     requireRole('DESENVOLVEDOR', 'ADMIN'),
     deps.admin.deleteUbs,
+  );
+  router.post(
+    '/admin/ubs/:id/ativo',
+    authenticate,
+    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    deps.admin.postAtivarUbs,
   );
 
   // ----- Recomendações por especialidade (CRUD admin) -----

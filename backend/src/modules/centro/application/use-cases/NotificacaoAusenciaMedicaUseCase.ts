@@ -1,12 +1,13 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
-import type { AccessScope } from '../../../../shared/scope';
 import { logger } from '../../../../infrastructure/logger';
+import type { AccessScope } from '../../../../shared/scope';
+import { NotificacaoPacienteService } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
-export interface NotificacaoAusenciaMedicaInput {
+export interface NotificacaoAusenciaInput {
   medicoNome: string;
   dataAfetada: string; // YYYY-MM-DD
   tipoMotivo: 'FALTA_MEDICA' | 'MUDANCA_DIA' | 'FERIAS_LICENCA';
-  novaData?: string;
+  novaData?: string; // YYYY-MM-DD
   mensagem: string;
   canais?: {
     app?: boolean;
@@ -15,36 +16,43 @@ export interface NotificacaoAusenciaMedicaInput {
   };
 }
 
-export interface NotificacaoAusenciaMedicaOutput {
-  sucesso: boolean;
-  pacientesNotificados: number;
-  dataDisparo: string;
-}
-
 export class NotificacaoAusenciaMedicaUseCase {
+  private readonly notificacoes = new NotificacaoPacienteService();
+
   async exec(
-    input: NotificacaoAusenciaMedicaInput,
-    scope: AccessScope,
+    input: NotificacaoAusenciaInput,
     atendenteId: string,
-  ): Promise<NotificacaoAusenciaMedicaOutput> {
-    const dataAfetadaDate = new Date(`${input.dataAfetada}T00:00:00.000Z`);
-    const dataAfetadaFim = new Date(`${input.dataAfetada}T23:59:59.999Z`);
+    scope: AccessScope,
+  ): Promise<{ sucesso: boolean; pacientesNotificados: number; dataDisparo: string }> {
+    const startOfDay = new Date(`${input.dataAfetada}T00:00:00.000Z`);
+    const endOfDay = new Date(`${input.dataAfetada}T23:59:59.999Z`);
 
-    const prefeituraId = scope.kind === 'PREFEITURA' ? scope.prefeituraId : undefined;
-
-    // 1. Busca encaminhamentos / agendamentos afetados
-    const encaminhamentos = await prisma.encaminhamento.findMany({
-      where: {
-        ...(prefeituraId ? { ubs: { prefeituraId } } : {}),
-        profissionalAgendado: { contains: input.medicoNome, mode: 'insensitive' },
-        agendamentoPrevisto: {
-          gte: dataAfetadaDate,
-          lte: dataAfetadaFim,
-        },
+    // Busca agendamentos afetados
+    const whereEncaminhamento: any = {
+      deletadoEm: null,
+      agendamentoPrevisto: {
+        gte: startOfDay,
+        lte: endOfDay,
       },
+      profissionalAgendado: {
+        contains: input.medicoNome,
+        mode: 'insensitive',
+      },
+    };
+
+    if (scope.kind === 'PREFEITURA') {
+      whereEncaminhamento.ubs = { prefeituraId: scope.prefeituraId };
+    } else if (scope.kind === 'UBS') {
+      whereEncaminhamento.ubsId = scope.ubsId;
+    }
+
+    const encaminhamentos = await prisma.encaminhamento.findMany({
+      where: whereEncaminhamento,
       select: {
         id: true,
+        protocolo: true,
         pacienteId: true,
+        pacienteCpf: true,
         pacienteNome: true,
         pacienteTelefone: true,
       },
@@ -52,26 +60,60 @@ export class NotificacaoAusenciaMedicaUseCase {
 
     const agendamentosCentro = await prisma.agendamentoCentro.findMany({
       where: {
-        ...(prefeituraId ? { prefeituraId } : {}),
-        medicoNome: { contains: input.medicoNome, mode: 'insensitive' },
         dataAgendamento: {
-          gte: dataAfetadaDate,
-          lte: dataAfetadaFim,
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        medicoNome: {
+          contains: input.medicoNome,
+          mode: 'insensitive',
         },
       },
       select: {
         id: true,
         pacienteId: true,
-        paciente: { select: { nome: true, telefone: true } },
+        paciente: { select: { nome: true, cpf: true, telefone: true } },
       },
     });
 
     const pacienteIdsSet = new Set<string>();
     for (const e of encaminhamentos) {
       if (e.pacienteId) pacienteIdsSet.add(e.pacienteId);
+      // Dispara push para o paciente
+      void this.notificacoes
+        .notificar({
+          cpfPaciente: e.pacienteCpf,
+          pacienteNome: e.pacienteNome,
+          encaminhamentoId: e.id,
+          tipo: 'AGENDADO',
+          titulo: 'Aviso sobre seu atendimento',
+          corpo: input.mensagem,
+          payload: {
+            protocolo: e.protocolo,
+            motivo: input.tipoMotivo,
+            novaData: input.novaData,
+          },
+        })
+        .catch(() => {});
     }
+
     for (const a of agendamentosCentro) {
       if (a.pacienteId) pacienteIdsSet.add(a.pacienteId);
+      if (a.paciente?.cpf) {
+        void this.notificacoes
+          .notificar({
+            cpfPaciente: a.paciente.cpf,
+            pacienteNome: a.paciente.nome,
+            tipo: 'AGENDADO',
+            titulo: 'Aviso sobre seu atendimento',
+            corpo: input.mensagem,
+            payload: {
+              motivo: input.tipoMotivo,
+              novaData: input.novaData,
+            },
+          })
+          .catch(() => {});
+      }
     }
 
     const totalPacientes = pacienteIdsSet.size;

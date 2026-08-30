@@ -41,4 +41,13 @@ export class DiskFileStorage implements IFileStorage {
     await fs.access(abs); // throws se não existir
     return createReadStream(abs);
   }
+
+  async deletar(caminho: string): Promise<void> {
+    const abs = this.caminhoAbsoluto(caminho);
+    try {
+      await fs.unlink(abs);
+    } catch (err: any) {
+      if (err && err.code !== 'ENOENT') throw err;
+    }
+  }
 }

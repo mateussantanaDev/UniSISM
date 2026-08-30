@@ -58,7 +58,11 @@
 		REGULADOR_SMS: 'border-amber-600 bg-amber-50 text-amber-800',
 		GESTOR_TFD: 'border-emerald-700 bg-emerald-50 text-emerald-800',
 		REGULADOR_TFD: 'border-blue-900 bg-blue-50 text-blue-900',
-		MEDICO: 'border-blue-900 bg-blue-50 text-blue-950'
+		MEDICO: 'border-blue-900 bg-blue-50 text-blue-950',
+		MEDICO_ESPECIALISTA: 'border-teal-700 bg-teal-50 text-teal-900',
+		ATENDENTE_CENTRO: 'border-indigo-700 bg-indigo-50 text-indigo-900',
+		ATENDENTE_TFD: 'border-sky-600 bg-sky-50 text-sky-700',
+		MOTORISTA_TFD: 'border-amber-700 bg-amber-50 text-amber-900'
 	};
 </script>
 

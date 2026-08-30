@@ -20,6 +20,7 @@ import { paramString } from '../../shared/http';
 import { getAdminConfiguracoes } from '../../shared/adminConfig';
 import {
   alterarAtivoSchema,
+  alterarAtivoUbsSchema,
   atualizarPrefeituraSchema,
   atualizarUbsSchema,
   atualizarUsuarioSchema,
@@ -196,5 +197,18 @@ export class AdminController {
     const id = paramString(req, 'id');
     await this.deleteUbsUC.exec(scopeFromRequest(req), req.auth!.sub, id);
     res.status(204).send();
+  };
+
+  postAtivarUbs = async (req: Request, res: Response): Promise<void> => {
+    const body = alterarAtivoUbsSchema.parse(req.body);
+    const id = paramString(req, 'id');
+    const out = await this.updateUbsUC.exec(
+      scopeFromRequest(req),
+      req.auth!.sub,
+      id,
+      { ativa: body.ativa },
+      { ip: req.ip ?? null, userAgent: req.header('user-agent') ?? null },
+    );
+    res.json({ id: out.id, ativa: out.ativa });
   };
 }

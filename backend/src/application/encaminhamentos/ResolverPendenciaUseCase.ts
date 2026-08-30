@@ -5,8 +5,11 @@ import type {
   ResolverPendenciaInput,
 } from '../../domain/repositories/IEncaminhamentoRepository';
 import type { IFileStorage } from '../../domain/services/IFileStorage';
+import type { IAnexoScanner } from '../../infrastructure/scan/ClamavScanner';
 import type { AccessScope } from '../../shared/scope';
+import { prisma } from '../../infrastructure/database/prisma';
 import { logger } from '../../infrastructure/logger';
+import { PdfCompressor } from '../../infrastructure/services/PdfCompressor';
 import {
   MENSAGENS,
   NotificacaoPacienteService,
@@ -29,12 +32,29 @@ export interface ResolverPendenciaUseCaseInput {
 }
 
 export class ResolverPendenciaUseCase {
+  private readonly compressor = new PdfCompressor();
   private readonly notificacoes = new NotificacaoPacienteService();
 
   constructor(
     private readonly repo: IEncaminhamentoRepository,
     private readonly storage: IFileStorage,
+    private readonly scanner?: IAnexoScanner,
   ) {}
+
+  private async talvezComprimir(
+    nome: string,
+    mimeType: string,
+    buffer: Buffer,
+  ): Promise<Buffer> {
+    if (mimeType !== 'application/pdf') return buffer;
+    try {
+      const r = await this.compressor.comprimir(buffer);
+      return r.buffer;
+    } catch (err) {
+      logger.warn({ err, nome }, 'falha ao comprimir PDF na pendência, salvando original');
+      return buffer;
+    }
+  }
 
   async exec(input: ResolverPendenciaUseCaseInput): Promise<Encaminhamento> {
     if ((!input.nota || input.nota.trim().length === 0) && input.anexos.length === 0) {
@@ -44,10 +64,11 @@ export class ResolverPendenciaUseCase {
     const pasta = `encaminhamentos/pendencias/${new Date().toISOString().slice(0, 7)}`;
     const novosAnexos: ResolverPendenciaInput['novosAnexos'] = [];
     for (const a of input.anexos) {
+      const bufferComprimido = await this.talvezComprimir(a.nomeOriginal, a.mimeType, a.buffer);
       const arq = await this.storage.salvar({
         nomeOriginal: a.nomeOriginal,
         mimeType: a.mimeType,
-        buffer: a.buffer,
+        buffer: bufferComprimido,
         pasta,
       });
       novosAnexos.push({
@@ -66,6 +87,11 @@ export class ResolverPendenciaUseCase {
       novosAnexos,
     });
 
+    // Scan AV dos novos anexos (fire-and-forget)
+    if (this.scanner && novosAnexos.length > 0) {
+      void this.escanearNovosAnexosAsync(atualizado.id);
+    }
+
     void this.notificacoes
       .notificar({
         cpfPaciente: atualizado.paciente.cpf,
@@ -78,5 +104,24 @@ export class ResolverPendenciaUseCase {
       .catch((err) => logger.warn({ err }, 'notificar PENDENCIA_RESOLVIDA falhou'));
 
     return atualizado;
+  }
+
+  private async escanearNovosAnexosAsync(encaminhamentoId: string): Promise<void> {
+    if (!this.scanner) return;
+    try {
+      const anexos = await prisma.anexoDocumento.findMany({
+        where: { encaminhamentoId, scanStatus: 'PENDENTE' },
+        select: { id: true, caminho: true },
+      });
+      for (const a of anexos) {
+        try {
+          await this.scanner.escanearEAtualizar(a.id, this.storage.caminhoAbsoluto(a.caminho));
+        } catch (err) {
+          logger.warn({ err, anexoId: a.id }, 'scan AV do anexo de pendência falhou');
+        }
+      }
+    } catch (err) {
+      logger.warn({ err, encaminhamentoId }, 'falha ao enfileirar scan AV de pendência');
+    }
   }
 }

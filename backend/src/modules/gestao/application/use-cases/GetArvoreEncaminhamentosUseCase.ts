@@ -168,7 +168,8 @@ export class GetArvoreEncaminhamentosUseCase {
     type Row = { ubsId: string; status: string; qtd: bigint; max_ano: number | null };
     
     const conditions: Prisma.Sql[] = [
-      Prisma.sql`"ubsId" = ANY(${ids})`
+      Prisma.sql`"ubsId" = ANY(${ids})`,
+      Prisma.sql`"deletadoEm" IS NULL`,
     ];
 
     if (respostaSUS === true) {
@@ -229,7 +230,8 @@ export class GetArvoreEncaminhamentosUseCase {
     type Row = { ano: number; status: string; qtd: bigint };
     
     const conditions: Prisma.Sql[] = [
-      Prisma.sql`"ubsId" = ${ubsId}`
+      Prisma.sql`"ubsId" = ${ubsId}`,
+      Prisma.sql`"deletadoEm" IS NULL`,
     ];
 
     if (respostaSUS === true) {
@@ -271,6 +273,7 @@ export class GetArvoreEncaminhamentosUseCase {
     const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
     const conditions: Prisma.Sql[] = [
       Prisma.sql`"ubsId" = ${ubsId}`,
+      Prisma.sql`"deletadoEm" IS NULL`,
       Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`
     ];
 
@@ -313,6 +316,7 @@ export class GetArvoreEncaminhamentosUseCase {
     const dateField = respostaSUS === true ? '"respostaSusRegistradoEm"' : '"criadoEm"';
     const conditions: Prisma.Sql[] = [
       Prisma.sql`"ubsId" = ${ubsId}`,
+      Prisma.sql`"deletadoEm" IS NULL`,
       Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`,
       Prisma.sql`EXTRACT(MONTH FROM ${Prisma.raw(dateField)}) = ${mes}::int`
     ];

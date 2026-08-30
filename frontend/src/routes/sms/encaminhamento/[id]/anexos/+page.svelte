@@ -5,6 +5,8 @@
 	import { useEncaminhamento } from '$lib/presentation/contexts/encaminhamentoContext';
 	import type { TipoAnexo } from '$lib/api/types';
 
+	import { separarDataHora } from '$lib/presentation/utils/stringUtils';
+
 	const ctx = useEncaminhamento();
 	let enc = $derived(ctx.encaminhamento!);
 
@@ -19,14 +21,21 @@
 		OUTRO: 'Outro Documento'
 	};
 
-	function formatarData(iso: string) {
-		return new Date(iso).toLocaleString('pt-BR', {
+	function formatarDataHoraPartes(iso?: string | null) {
+		if (!iso) return { data: '—', hora: 'Sem anexos' };
+		const str = new Date(iso).toLocaleString('pt-BR', {
 			day: '2-digit',
 			month: '2-digit',
 			year: '2-digit',
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+		return separarDataHora(str);
+	}
+
+	function formatarData(iso: string) {
+		const { data, hora } = formatarDataHoraPartes(iso);
+		return `${data} ${hora}`;
 	}
 
 	function totalMb(): string {
@@ -38,14 +47,17 @@
 
 	let anexosInfectados = $derived(enc.anexos.filter((a) => a.scanStatus === 'INFECTADO').length);
 	let anexosPendentes = $derived(enc.anexos.filter((a) => a.scanStatus === 'PENDENTE').length);
+	let ultimoAnexoData = $derived(
+		enc.anexos.length > 0 ? formatarDataHoraPartes(enc.anexos[enc.anexos.length - 1].uploadEm) : { data: '—', hora: 'Sem anexos' }
+	);
 </script>
 
 <section class="flex flex-col gap-4">
 	<div class="grid grid-cols-2 gap-3 md:grid-cols-4">
 		<MetricCard
-			label="Total de Anexos"
+			label="Total de Documentos"
 			value={enc.anexos.length}
-			sublabel="Arquivos vinculados"
+			sublabel="Arquivos anexados"
 		/>
 		<MetricCard label="Volume Total" value={totalMb()} sublabel="megabytes" />
 		<MetricCard
@@ -56,12 +68,8 @@
 		/>
 		<MetricCard
 			label="Última Inclusão"
-			value={enc.anexos.length > 0
-				? formatarData(enc.anexos[enc.anexos.length - 1].uploadEm).split(' ')[0]
-				: '—'}
-			sublabel={enc.anexos.length > 0
-				? formatarData(enc.anexos[enc.anexos.length - 1].uploadEm).split(' ')[1]
-				: 'Sem anexos'}
+			value={ultimoAnexoData.data}
+			sublabel={ultimoAnexoData.hora}
 		/>
 	</div>
 

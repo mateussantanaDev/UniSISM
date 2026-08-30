@@ -86,7 +86,7 @@
 			<div class="border border-slate-200 bg-white p-4 flex flex-col justify-between">
 				<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">EM CONSULTA AGORA</div>
 				<div class="mt-2 text-3xl font-extrabold text-indigo-700 font-sans">{emAtendimentoHoje}</div>
-				<div class="mt-2 text-[10px] text-indigo-900 font-mono font-bold font-mono">Em consultório médico</div>
+				<div class="mt-2 text-[10px] text-indigo-900 font-mono font-bold">Em consultório médico</div>
 			</div>
 
 			<div class="border border-slate-200 bg-white p-4 flex flex-col justify-between">

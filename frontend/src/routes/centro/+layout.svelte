@@ -56,9 +56,10 @@
 		}
 		try {
 			const sessao = await api.auth.me();
-			// Permite acesso para regulador, admin da prefeitura e DEV
-			if (sessao.role !== 'REGULADOR_SMS' && sessao.role !== 'ADMIN' && sessao.role !== 'DESENVOLVEDOR') {
-				goto(rbac.faceDestinoPadrao(sessao.role), { replaceState: true });
+			const superUser = sessao.role === 'ADMIN' || sessao.role === 'DESENVOLVEDOR';
+			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS'];
+			if (!allowedRoles.includes(sessao.role) && !superUser) {
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;

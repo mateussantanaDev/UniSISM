@@ -22,7 +22,7 @@
  * para isolar de outros rate-limiters do projeto (`rl:rel:` etc.).
  */
 import { TooManyRequests } from '../../../shared/errors';
-import { getCache } from '../../../infrastructure/cache/Cache';
+import { incrWithTtl } from '../../../infrastructure/cache/InMemoryRateLimiter';
 import { logger } from '../../../infrastructure/logger';
 
 /** Janela em segundos + máximo de hits permitidos. */
@@ -66,30 +66,6 @@ export const LIMITES_REDEFINIR_SENHA: ReadonlyArray<JanelaLimite> = [
   },
 ];
 
-/** Fallback in-memory (single-process — não escala em cluster mas evita crash em DEV sem Redis). */
-const localCounters = new Map<string, { v: number; expiraEm: number }>();
-
-async function incrComTtl(chave: string, ttlSeconds: number): Promise<number> {
-  const cache = getCache();
-  if (cache.isReady()) {
-    // Pattern simples: get → incr → set (idempotente, suficiente pra rate limit;
-    // se 2 reqs concorrentes ganharem race, o pior caso é 1 hit extra — aceitável).
-    const atual = await cache.get<number>(chave);
-    const novo = (atual ?? 0) + 1;
-    await cache.set(chave, novo, ttlSeconds);
-    return novo;
-  }
-  // Fallback in-memory
-  const now = Date.now();
-  const slot = localCounters.get(chave);
-  if (slot && slot.expiraEm > now) {
-    slot.v += 1;
-    return slot.v;
-  }
-  localCounters.set(chave, { v: 1, expiraEm: now + ttlSeconds * 1000 });
-  return 1;
-}
-
 /** Anonimiza chave de log (não revela IP completo nem CPF). */
 function anonimizar(s: string): string {
   if (s.length <= 4) return '***';
@@ -107,7 +83,7 @@ export class PasswordRecoveryRateLimiter {
     // Camadas por IP
     for (const [idx, lim] of LIMITES_ESQUECI_SENHA.entries()) {
       const chave = `rl:pa:esq:ip:${idx}:${ipKey}`;
-      const hits = await incrComTtl(chave, lim.janelaSeg);
+      const hits = await incrWithTtl(chave, lim.janelaSeg);
       if (hits > lim.max) {
         logger.warn(
           { ip: anonimizar(ipKey), camada: idx, hits, max: lim.max },
@@ -120,7 +96,7 @@ export class PasswordRecoveryRateLimiter {
     // Camada por CPF (só conta se CPF chegou normalizado válido)
     if (cpfDigits.length === 11) {
       const chave = `rl:pa:esq:cpf:${cpfDigits}`;
-      const hits = await incrComTtl(chave, LIMITES_ESQUECI_SENHA_CPF.janelaSeg);
+      const hits = await incrWithTtl(chave, LIMITES_ESQUECI_SENHA_CPF.janelaSeg);
       if (hits > LIMITES_ESQUECI_SENHA_CPF.max) {
         logger.warn(
           { cpfHash: anonimizar(cpfDigits), hits, max: LIMITES_ESQUECI_SENHA_CPF.max },
@@ -139,7 +115,7 @@ export class PasswordRecoveryRateLimiter {
     const ipKey = ip ?? 'noip';
     for (const [idx, lim] of LIMITES_REDEFINIR_SENHA.entries()) {
       const chave = `rl:pa:red:ip:${idx}:${ipKey}`;
-      const hits = await incrComTtl(chave, lim.janelaSeg);
+      const hits = await incrWithTtl(chave, lim.janelaSeg);
       if (hits > lim.max) {
         logger.warn(
           { ip: anonimizar(ipKey), camada: idx, hits, max: lim.max },
@@ -159,7 +135,7 @@ export class PasswordRecoveryRateLimiter {
   async consumirGenericoFace3(ip: string | null, acao: string): Promise<void> {
     const ipKey = ip ?? 'noip';
     const chave = `rl:pa:gen:${acao}:ip:${ipKey}`;
-    const hits = await incrComTtl(chave, 15 * 60);
+    const hits = await incrWithTtl(chave, 15 * 60);
     if (hits > 30) {
       logger.warn({ ip: anonimizar(ipKey), acao, hits }, '[rl] genérico Face 3 limite excedido');
       throw TooManyRequests(

@@ -209,7 +209,7 @@ export class RelatorioWorker {
       // Cleanup /tmp
       try {
         if (fsSync.existsSync(caminhoTmp)) await fs.unlink(caminhoTmp);
-        await fs.rmdir(tmp);
+        await fs.rm(tmp, { recursive: true, force: true });
       } catch {
         /* ignora */
       }

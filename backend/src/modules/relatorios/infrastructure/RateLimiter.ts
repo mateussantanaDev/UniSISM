@@ -11,7 +11,7 @@
  * (não é seguro em cluster mas evita falha no dev).
  */
 import { prisma } from '../../../infrastructure/database/prisma';
-import { getCache } from '../../../infrastructure/cache/Cache';
+import { incrWithTtl } from '../../../infrastructure/cache/InMemoryRateLimiter';
 import { TooManyRequests } from '../../../shared/errors';
 
 export interface LimiteConfig {
@@ -26,29 +26,6 @@ export const LIMITES_PADRAO: LimiteConfig = {
   simultaneosPorPrefeitura: 3,
 };
 
-const localCounters = new Map<string, { v: number; expiraEm: number }>();
-
-async function incrComTtl(chave: string, ttlSeconds: number): Promise<number> {
-  const cache = getCache();
-  if (cache.isReady()) {
-    // ioredis não expõe INCR tipado no nosso wrapper — usamos set-if-absent + get
-    const atual = await cache.get<number>(chave);
-    const novo = (atual ?? 0) + 1;
-    await cache.set(chave, novo, ttlSeconds);
-    return novo;
-  }
-  // Fallback in-memory
-  const now = Date.now();
-  const slot = localCounters.get(chave);
-  if (slot && slot.expiraEm > now) {
-    slot.v += 1;
-    return slot.v;
-  }
-  const novo = { v: 1, expiraEm: now + ttlSeconds * 1000 };
-  localCounters.set(chave, novo);
-  return 1;
-}
-
 export class RelatorioRateLimiter {
   constructor(private readonly cfg: LimiteConfig = LIMITES_PADRAO) {}
 
@@ -56,14 +33,14 @@ export class RelatorioRateLimiter {
     const horaKey = `rl:rel:u:${atendenteId}:h`;
     const diaKey = `rl:rel:u:${atendenteId}:d`;
 
-    const countHora = await incrComTtl(horaKey, 3600);
+    const countHora = await incrWithTtl(horaKey, 3600);
     if (countHora > this.cfg.porUsuarioHora) {
       throw TooManyRequests(
         'RATE_LIMIT_EXCEDIDO',
         `Limite de ${this.cfg.porUsuarioHora} relatórios por hora atingido. Tente novamente mais tarde.`,
       );
     }
-    const countDia = await incrComTtl(diaKey, 86400);
+    const countDia = await incrWithTtl(diaKey, 86400);
     if (countDia > this.cfg.porUsuarioDia) {
       throw TooManyRequests(
         'RATE_LIMIT_EXCEDIDO',

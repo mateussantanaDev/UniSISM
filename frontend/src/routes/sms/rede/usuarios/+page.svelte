@@ -59,7 +59,11 @@
 		ATENDENTE_UBS: 'border-emerald-700 bg-emerald-50 text-emerald-800',
 		GESTOR_TFD: 'border-sky-700 bg-sky-50 text-sky-800',
 		REGULADOR_TFD: 'border-blue-900 bg-blue-50 text-blue-900',
-		MEDICO: 'border-blue-900 bg-blue-50 text-blue-950'
+		MEDICO: 'border-blue-900 bg-blue-50 text-blue-950',
+		MEDICO_ESPECIALISTA: 'border-teal-700 bg-teal-50 text-teal-900',
+		ATENDENTE_CENTRO: 'border-indigo-700 bg-indigo-50 text-indigo-900',
+		ATENDENTE_TFD: 'border-sky-600 bg-sky-50 text-sky-700',
+		MOTORISTA_TFD: 'border-amber-700 bg-amber-50 text-amber-900'
 	};
 
 	const roles: Array<'TODOS' | Role> = [
@@ -67,6 +71,12 @@
 		'ATENDENTE_UBS',
 		'COORDENADOR_UBS',
 		'REGULADOR_SMS',
+		'MEDICO',
+		'MEDICO_ESPECIALISTA',
+		'ATENDENTE_CENTRO',
+		'GESTOR_TFD',
+		'REGULADOR_TFD',
+		'ATENDENTE_TFD',
 		'ADMIN',
 		'DESENVOLVEDOR'
 	];

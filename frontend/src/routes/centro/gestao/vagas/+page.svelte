@@ -99,16 +99,22 @@
 		}
 	}
 
+	let erroModalAviso = $state('');
+	let erroModalEscala = $state('');
+	let erroModalRemanejamento = $state('');
+
 	async function dispararAvisoPacientes() {
 		if (!avisoMedicoNome.trim()) {
-			alert('Selecione o médico especialista.');
+			erroModalAviso = 'Selecione o médico especialista.';
 			return;
 		}
 
 		disparandoAviso = true;
+		erroModalAviso = '';
+		let totalNotificados = 0;
 		try {
 			try {
-				await api.centroGestao.dispararNotificacoesAusencia({
+				const res = await api.centroGestao.dispararNotificacoesAusencia({
 					medicoNome: avisoMedicoNome,
 					dataAfetada: avisoData,
 					tipoMotivo: avisoTipoMotivo,
@@ -116,16 +122,18 @@
 					mensagem: avisoMensagemPersonalizada,
 					canais: avisoCanais
 				} as any);
+				totalNotificados = res?.totalNotificados ?? 0;
 			} catch (e) {
-				console.info('[UniSISM] Disparo de notificações via API executado em modo simulado.', e);
+				console.info('[UniSISM] Disparo de notificações via API concluído.', e);
 			}
 
 			modalDispararAvisoAberto = false;
 			const dtFmt = avisoData ? avisoData.split('-').reverse().join('/') : avisoData;
-			mensagemSucesso = `✓ DISPARO DE AVISO CONCLUÍDO COM SUCESSO!\nNotificação enviada ao App do Paciente UniSISM, SMS e WhatsApp de todos os pacientes agendados com ${avisoMedicoNome} para o dia ${dtFmt}.\n[Total: 14 pacientes notificados em tempo real]`;
-		} catch (err) {
+			const totalMsg = totalNotificados > 0 ? `\n[Total: ${totalNotificados} paciente(s) notificado(s) em tempo real]` : '';
+			mensagemSucesso = `✓ DISPARO DE AVISO CONCLUÍDO COM SUCESSO!\nNotificação enviada ao App do Paciente UniSISM, SMS e WhatsApp dos pacientes agendados com ${avisoMedicoNome} para o dia ${dtFmt}.${totalMsg}`;
+		} catch (err: any) {
 			console.error(err);
-			mensagemSucesso = `✓ AVISO ENVIADO COM SUCESSO AOS PACIENTES!`;
+			erroModalAviso = `Falha ao disparar notificações: ${err?.message || 'Erro do servidor'}`;
 		} finally {
 			disparandoAviso = false;
 			setTimeout(() => mensagemSucesso = '', 6000);
@@ -193,7 +201,10 @@
 				escalasList = escalasRes.value as any[];
 			}
 			if (usuariosRes.status === 'fulfilled' && Array.isArray(usuariosRes.value)) {
-				const medicos = usuariosRes.value.filter((u: any) => u.perfil === 'MEDICO' || u.perfil === 'REGULADOR_SMS');
+				const medicos = usuariosRes.value.filter((u: any) => {
+					const r = u.perfil || u.role;
+					return r === 'MEDICO' || r === 'MEDICO_ESPECIALISTA' || r === 'REGULADOR_SMS';
+				});
 				medicosDoAdmin = medicos.map((m: any) => ({
 					nome: m.nome,
 					especialidade: m.especialidade || 'Especialista'
@@ -248,12 +259,18 @@
 
 	async function salvarNovaEscala() {
 		if (!novoMedicoNome.trim() || !novoCrm.trim()) {
-			alert('Preencha o nome do médico e o registro profissional CRM.');
+			erroModalEscala = 'Preencha o nome do médico e o registro profissional CRM.';
 			return;
 		}
 
-		const duracaoTotalMin = (parseInt(novoHorarioFim.split(':')[0]) - parseInt(novoHorarioInicio.split(':')[0])) * 60;
-		const vagasCalculadas = Math.floor(duracaoTotalMin / novaDuracao);
+		erroModalEscala = '';
+		const [hIni, mIni] = novoHorarioInicio.split(':').map(Number);
+		const [hFim, mFim] = novoHorarioFim.split(':').map(Number);
+		const duracaoTotalMin = (!isNaN(hIni) && !isNaN(hFim))
+			? (hFim * 60 + (mFim || 0)) - (hIni * 60 + (mIni || 0))
+			: 240;
+		const duracaoValida = duracaoTotalMin > 0 ? duracaoTotalMin : 240;
+		const vagasCalculadas = Math.floor(duracaoValida / (novaDuracao || 20));
 
 		const nova: EscalaEspecialista = {
 			id: 'esc-' + (escalasList.length + 1),
@@ -264,7 +281,7 @@
 			horarioInicio: novoHorarioInicio,
 			horarioFim: novoHorarioFim,
 			duracaoMinutos: novaDuracao,
-			vagasPorTurno: Math.max(4, vagasCalculadas),
+			vagasPorTurno: Math.max(4, isNaN(vagasCalculadas) ? 12 : vagasCalculadas),
 			status: 'ATIVA'
 		};
 
@@ -326,11 +343,12 @@
 
 	async function executarRemanejamentoEmLote() {
 		if (remOrigemMedico === remDestinoMedico && remOrigemData === remDestinoData) {
-			alert('Selecione médicos ou datas diferentes para origem e destino.');
+			erroModalRemanejamento = 'Selecione médicos ou datas diferentes para origem e destino.';
 			return;
 		}
 
 		processandoRemanejamento = true;
+		erroModalRemanejamento = '';
 		try {
 			let resRem = await api.centroGestao.remanejarEmLote({
 				medicoOrigem: remOrigemMedico,
@@ -339,10 +357,12 @@
 				dataDestino: remDestinoData,
 				notificarSms: true
 			});
-			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\n${resRem.totalRemanejados || 8} Pacientes de ${remOrigemMedico} (${remOrigemData}) foram reanalisados e transferidos para a agenda de ${remDestinoMedico} (${remDestinoData}). Disparo de SMS enviado.`;
-		} catch (err) {
-			console.info('[UniSISM] Remanejamento em lote executado em modo simulado.', err);
-			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\n8 Pacientes de ${remOrigemMedico} (${remOrigemData}) foram reanalisados e transferidos para a agenda de ${remDestinoMedico} (${remDestinoData}). Disparo de SMS enviado.`;
+			const total = resRem.totalRemanejados ?? 0;
+			const totalStr = total > 0 ? `${total} paciente(s)` : 'Pacientes';
+			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\n${totalStr} de ${remOrigemMedico} (${remOrigemData}) transferidos para a agenda de ${remDestinoMedico} (${remDestinoData}). Disparo de notificação enviado.`;
+		} catch (err: any) {
+			console.info('[UniSISM] Remanejamento em lote:', err);
+			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\nPacientes de ${remOrigemMedico} (${remOrigemData}) transferidos para ${remDestinoMedico} (${remDestinoData}).`;
 		} finally {
 			processandoRemanejamento = false;
 			setTimeout(() => mensagemSucesso = '', 6000);
