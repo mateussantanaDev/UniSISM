@@ -2,7 +2,10 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
 	import type { ChamadaPainelUbs } from '$lib/api/types';
-	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
+	import {
+		PRIORIDADE_LABEL,
+		TIPO_ATENDIMENTO_LABEL
+	} from '$lib/api/types';
 
 	let chamadaAtual = $state<ChamadaPainelUbs | null>(null);
 	let ultimasChamadas = $state<ChamadaPainelUbs[]>([]);

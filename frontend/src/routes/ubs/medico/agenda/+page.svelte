@@ -3,12 +3,13 @@
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
-	import FormField from '$lib/presentation/components/FormField.svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { AtendimentoUbsItem, PrioridadeUbs, StatusAtendimentoUbs } from '$lib/api/types';
-	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
+	import {
+		PRIORIDADE_LABEL,
+		TIPO_ATENDIMENTO_LABEL
+	} from '$lib/api/types';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
@@ -90,7 +91,6 @@
 	onMount(() => {
 		carregarFilaMedico();
 
-		// Auto-refresh da fila a cada 5 segundos
 		const timer = setInterval(() => {
 			if (!modalSoapAberto) {
 				carregarFilaMedico();
@@ -112,8 +112,7 @@
 		erro = '';
 		try {
 			await api.ubs.chamarPaciente(item.id, {
-				consultorio: meuConsultorio,
-				crm: auth.me?.crm || undefined
+				consultorio: meuConsultorio
 			});
 			sucesso = `Chamada acionada no Painel de TV: ${item.pacienteNome} → ${meuConsultorio}`;
 			setTimeout(() => (sucesso = ''), 5000);
@@ -201,9 +200,7 @@
 			</div>
 			<div class="text-base font-black tracking-wide">
 				{auth.me?.nome ?? 'Médico da UBS'}
-				{#if auth.me?.crm}
-					<span class="text-xs font-normal text-blue-200">· CRM {auth.me.crm}</span>
-				{/if}
+				<span class="text-xs font-normal text-blue-200">· {auth.me?.cargo ?? 'Corpo Clínico'}</span>
 			</div>
 		</div>
 
@@ -241,7 +238,7 @@
 			sublabel="Aguardando chamada"
 			accent="warning"
 		/>
-		<MetricCard label="Chamado Agora" value={chamados} sublabel="Em deslocamento" accent="info" />
+		<MetricCard label="Chamado Agora" value={chamados} sublabel="Em deslocamento" accent="warning" />
 		<MetricCard
 			label="Em Consulta"
 			value={emAtendimento}
@@ -508,84 +505,106 @@
 </div>
 
 <!-- Modal Prontuário Clínico SOAP -->
-{#if modalSoapAberto && pacienteAtendimentoAtual}
-	<Modal
-		title="Prontuário de Atendimento Clínico (SOAP) · UBS"
-		onclose={() => (modalSoapAberto = false)}
-	>
-		<form onsubmit={(e) => { e.preventDefault(); finalizarConsultaSoap(); }} class="flex flex-col gap-4 font-mono text-xs">
-			<div class="border border-blue-300 bg-blue-50/60 p-3">
-				<div class="text-sm font-black text-slate-900">
-					{pacienteAtendimentoAtual.pacienteNome}
-				</div>
-				<div class="text-[11px] text-slate-600">
-					CPF: {pacienteAtendimentoAtual.pacienteCpf} · Senha: {pacienteAtendimentoAtual.senha} · {TIPO_ATENDIMENTO_LABEL[pacienteAtendimentoAtual.tipoAtendimento]}
-				</div>
+{#if modalSoapAberto && !!pacienteAtendimentoAtual}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
+			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
+				<div class="font-bold uppercase tracking-wider text-xs">Prontuário de Atendimento Clínico (SOAP) · UBS</div>
+				<button onclick={() => (modalSoapAberto = false)} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
 			</div>
 
-			<!-- Registro Estruturado SOAP -->
-			<FormField label="S · Subjetivo (Queixa Principal, Anamnese e História Atual)" error="">
-				<textarea
-					bind:value={soapSubjetivo}
-					rows="3"
-					placeholder="Relato do paciente, início dos sintomas, queixa principal..."
-					class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
-				></textarea>
-			</FormField>
+			<div class="p-5">
+				<form onsubmit={(e) => { e.preventDefault(); finalizarConsultaSoap(); }} class="flex flex-col gap-4 font-mono text-xs">
+					<div class="border border-blue-300 bg-blue-50/60 p-3">
+						<div class="text-sm font-black text-slate-900">
+							{pacienteAtendimentoAtual.pacienteNome}
+						</div>
+						<div class="text-[11px] text-slate-600">
+							CPF: {pacienteAtendimentoAtual.pacienteCpf} · Senha: {pacienteAtendimentoAtual.senha} · {TIPO_ATENDIMENTO_LABEL[pacienteAtendimentoAtual.tipoAtendimento]}
+						</div>
+					</div>
 
-			<FormField label="O · Objetivo (Exame Físico, Sinais Vitais, PA, FC, Ausculta)" error="">
-				<textarea
-					bind:value={soapObjetivo}
-					rows="3"
-					placeholder="PA: 120/80 mmHg, FC: 75 bpm, Estado geral bom, acianótico..."
-					class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
-				></textarea>
-			</FormField>
+					<!-- Registro Estruturado SOAP -->
+					<div>
+						<label for="f-subjetivo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+							S · Subjetivo (Queixa Principal, Anamnese e História Atual)
+						</label>
+						<textarea
+							id="f-subjetivo"
+							bind:value={soapSubjetivo}
+							rows="3"
+							placeholder="Relato do paciente, início dos sintomas, queixa principal..."
+							class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
+						></textarea>
+					</div>
 
-			<FormField label="A · Avaliação / Hipótese Diagnóstica (CID-10)" error="">
-				<input
-					type="text"
-					bind:value={soapAvaliacaoCid}
-					placeholder="Ex: I10 - Hipertensão essencial (primária) ou J00 - Rinofaringite aguda"
-					class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-				/>
-			</FormField>
+					<div>
+						<label for="f-objetivo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+							O · Objetivo (Exame Físico, Sinais Vitais, PA, FC, Ausculta)
+						</label>
+						<textarea
+							id="f-objetivo"
+							bind:value={soapObjetivo}
+							rows="3"
+							placeholder="PA: 120/80 mmHg, FC: 75 bpm, Estado geral bom, acianótico..."
+							class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
+						></textarea>
+					</div>
 
-			<FormField label="P · Plano / Conduta Médica (Prescrição, Orientações e Encaminhamentos)" error="">
-				<textarea
-					bind:value={soapPlanoConduta}
-					rows="3"
-					placeholder="Prescrição de medicamentos, exames solicitados, orientações gerais..."
-					class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
-				></textarea>
-			</FormField>
+					<div>
+						<label for="f-cid" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+							A · Avaliação / Hipótese Diagnóstica (CID-10)
+						</label>
+						<input
+							id="f-cid"
+							type="text"
+							bind:value={soapAvaliacaoCid}
+							placeholder="Ex: I10 - Hipertensão essencial (primária) ou J00 - Rinofaringite aguda"
+							class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+						/>
+					</div>
 
-			<div class="flex items-center justify-between border-t border-slate-200 pt-3">
-				<a
-					href="/ubs/novo-encaminhamento"
-					target="_blank"
-					class="border border-purple-700 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-900 hover:bg-purple-100"
-				>
-					↗ Solicitar Encaminhamento Especializado
-				</a>
+					<div>
+						<label for="f-plano" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+							P · Plano / Conduta Médica (Prescrição, Orientações e Encaminhamentos)
+						</label>
+						<textarea
+							id="f-plano"
+							bind:value={soapPlanoConduta}
+							rows="3"
+							placeholder="Prescrição de medicamentos, exames solicitados, orientações gerais..."
+							class="w-full border border-slate-300 p-2 text-xs focus:border-blue-900 focus:outline-none"
+						></textarea>
+					</div>
 
-				<div class="flex items-center gap-2">
-					<button
-						type="button"
-						onclick={() => (modalSoapAberto = false)}
-						class="border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
-					>
-						Salvar Rascunho
-					</button>
-					<button
-						type="submit"
-						disabled={salvandoSoap}
-						class="border border-emerald-700 bg-emerald-700 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800 disabled:opacity-50"
-					>
-						{salvandoSoap ? 'Finalizando...' : '✓ Concluir Atendimento'}
-					</button>
-				</div>
+					<div class="flex items-center justify-between border-t border-slate-200 pt-3">
+						<a
+							href="/ubs/novo-encaminhamento"
+							target="_blank"
+							class="border border-purple-700 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-900 hover:bg-purple-100"
+						>
+							↗ Solicitar Encaminhamento Especializado
+						</a>
+
+						<div class="flex items-center gap-2">
+							<button
+								type="button"
+								onclick={() => (modalSoapAberto = false)}
+								class="border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
+							>
+								Salvar Rascunho
+							</button>
+							<button
+								type="submit"
+								disabled={salvandoSoap}
+								class="border border-emerald-700 bg-emerald-700 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800 disabled:opacity-50"
+							>
+								{salvandoSoap ? 'Finalizando...' : '✓ Concluir Atendimento'}
+							</button>
+						</div>
+					</div>
+				</form>
 			</div>
-		</form>
-	</Modal>
+		</div>
+	</div>
 {/if}

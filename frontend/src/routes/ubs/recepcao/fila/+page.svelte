@@ -2,19 +2,25 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
-	import FormField from '$lib/presentation/components/FormField.svelte';
-	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { api, ApiError } from '$lib/api';
-	import type { AtendimentoUbsItem, PrioridadeUbs, TipoAtendimentoUbs, StatusAtendimentoUbs, Usuario } from '$lib/api/types';
-	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
+	import type {
+		AtendimentoUbsItem,
+		PrioridadeUbs,
+		StatusAtendimentoUbs,
+		TipoAtendimentoUbs,
+		UsuarioListado
+	} from '$lib/api/types';
+	import {
+		PRIORIDADE_LABEL,
+		TIPO_ATENDIMENTO_LABEL
+	} from '$lib/api/types';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
 
 	let itens = $state<AtendimentoUbsItem[]>([]);
-	let medicos = $state<Usuario[]>([]);
+	let medicos = $state<UsuarioListado[]>([]);
 	let carregando = $state(true);
 	let salvando = $state(false);
 	let erro = $state('');
@@ -134,7 +140,6 @@
 		carregarFila();
 		carregarProfissionais();
 
-		// Polling suave a cada 6 segundos para manter a fila sincronizada com as chamadas
 		const timer = setInterval(() => {
 			if (!salvando && !modalAberto) {
 				carregarFila();
@@ -154,22 +159,25 @@
 		buscandoPaciente = true;
 		erro = '';
 		try {
-			const p = await api.pacientes.byCpf(clean);
-			if (p) {
-				pacienteId = p.id;
-				pacienteNome = p.nome;
-				pacienteCpf = p.cpf;
-				pacienteCartaoSus = p.cartaoSus || '';
-				pacienteDataNasc = p.dataNascimento ? p.dataNascimento.slice(0, 10) : '';
-				pacienteSexo = p.sexo || 'M';
-				pacienteTelefone = p.telefone || '';
-				pacienteEndereco = p.endereco || '';
+			const res = await api.pacientes.porCpf(clean);
+			if (res.existe && res.paciente) {
+				pacienteId = res.paciente.id;
+				pacienteNome = res.paciente.nome;
+				pacienteCpf = res.paciente.cpf;
+				pacienteCartaoSus = res.paciente.cartaoSus || '';
+				pacienteDataNasc = res.paciente.dataNascimento ? res.paciente.dataNascimento.slice(0, 10) : '';
+				pacienteSexo = (res.paciente.sexo as any) || 'M';
+				pacienteTelefone = res.paciente.telefone || '';
+				pacienteEndereco = res.paciente.endereco || '';
 				sucesso = 'Paciente localizado no cadastro!';
 				setTimeout(() => (sucesso = ''), 3000);
+			} else {
+				pacienteCpf = clean;
+				erro = 'Paciente não localizado. Preencha os campos abaixo para cadastrá-lo.';
 			}
 		} catch (e) {
 			pacienteCpf = clean;
-			erro = 'Paciente não localizado. Preencha os campos abaixo para cadastrá-lo na entrada.';
+			erro = 'Paciente não localizado. Preencha os campos abaixo para cadastrá-lo.';
 		} finally {
 			buscandoPaciente = false;
 		}
@@ -206,7 +214,7 @@
 				prioridade,
 				medicoId: medicoId || undefined,
 				medicoNome: medSel?.nome || undefined,
-				crm: medSel?.crm || undefined,
+				crm: (medSel as any)?.crm || undefined,
 				consultorio,
 				queixaBreve: queixaBreve.trim() || undefined
 			});
@@ -233,7 +241,7 @@
 				consultorio: item.consultorio,
 				crm: item.crm || undefined
 			});
-			sucesso = `Chamada disparada no Painel de TV: ${item.pacienteNome} -> ${item.consultorio}`;
+			sucesso = `Chamada disparada no Painel de TV: ${item.pacienteNome} → ${item.consultorio}`;
 			setTimeout(() => (sucesso = ''), 5000);
 			await carregarFila();
 		} catch (e) {
@@ -298,7 +306,7 @@
 			sublabel="Fila na recepção"
 			accent="warning"
 		/>
-		<MetricCard label="Chamados" value={chamados} sublabel="Na sala de espera" accent="info" />
+		<MetricCard label="Chamados" value={chamados} sublabel="Na sala de espera" accent="warning" />
 		<MetricCard
 			label="Em Consulta"
 			value={emAtendimento}
@@ -525,176 +533,219 @@
 
 <!-- Modal de Acolhimento / Entrada na Fila -->
 {#if modalAberto}
-	<Modal title="Acolhimento & Entrada na Fila Diária (UBS)" onclose={() => (modalAberto = false)}>
-		<form onsubmit={(e) => { e.preventDefault(); salvarEntradaFila(); }} class="flex flex-col gap-4 font-mono text-xs">
-			{#if erro}
-				<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900">
-					⚠ {erro}
-				</div>
-			{/if}
-
-			<!-- Busca Rápida por CPF -->
-			<div class="border border-blue-200 bg-blue-50/50 p-3">
-				<div class="mb-2 text-[11px] font-bold text-blue-900 uppercase">
-					1. Identificação do Paciente (SUS)
-				</div>
-				<div class="flex items-center gap-2">
-					<input
-						type="text"
-						bind:value={buscaCpf}
-						placeholder="Digite o CPF para autocompletar..."
-						class="flex-1 border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-blue-900 focus:outline-none"
-					/>
-					<button
-						type="button"
-						onclick={buscarPacientePorCpf}
-						disabled={buscandoPaciente}
-						class="border border-blue-900 bg-blue-900 px-4 py-1.5 font-bold text-white uppercase hover:bg-blue-800 disabled:opacity-50"
-					>
-						{buscandoPaciente ? 'Buscando...' : 'Buscar CPF'}
-					</button>
-				</div>
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
+		<div class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
+			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
+				<div class="font-bold uppercase tracking-wider text-xs">Acolhimento & Entrada na Fila Diária (UBS)</div>
+				<button onclick={() => (modalAberto = false)} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
 			</div>
 
-			<!-- Dados Básicos -->
-			<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-				<FormField label="Nome Completo do Paciente *" error="">
-					<input
-						type="text"
-						bind:value={pacienteNome}
-						required
-						placeholder="Nome completo..."
-						class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-					/>
-				</FormField>
+			<div class="p-5">
+				<form onsubmit={(e) => { e.preventDefault(); salvarEntradaFila(); }} class="flex flex-col gap-4 font-mono text-xs">
+					{#if erro}
+						<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900">
+							⚠ {erro}
+						</div>
+					{/if}
 
-				<FormField label="CPF *" error="">
-					<input
-						type="text"
-						bind:value={pacienteCpf}
-						required
-						placeholder="000.000.000-00"
-						class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-					/>
-				</FormField>
+					<!-- Busca Rápida por CPF -->
+					<div class="border border-blue-200 bg-blue-50/50 p-3">
+						<div class="mb-2 text-[11px] font-bold text-blue-900 uppercase">
+							1. Identificação do Paciente (SUS)
+						</div>
+						<div class="flex items-center gap-2">
+							<input
+								type="text"
+								bind:value={buscaCpf}
+								placeholder="Digite o CPF para autocompletar..."
+								class="flex-1 border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-blue-900 focus:outline-none"
+							/>
+							<button
+								type="button"
+								onclick={buscarPacientePorCpf}
+								disabled={buscandoPaciente}
+								class="border border-blue-900 bg-blue-900 px-4 py-1.5 font-bold text-white uppercase hover:bg-blue-800 disabled:opacity-50"
+							>
+								{buscandoPaciente ? 'Buscando...' : 'Buscar CPF'}
+							</button>
+						</div>
+					</div>
 
-				<FormField label="Cartão Nacional do SUS (CNS)" error="">
-					<input
-						type="text"
-						bind:value={pacienteCartaoSus}
-						placeholder="Cartão SUS (opcional)"
-						class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-					/>
-				</FormField>
+					<!-- Dados Básicos -->
+					<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+						<div>
+							<label for="f-nome" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								Nome Completo do Paciente *
+							</label>
+							<input
+								id="f-nome"
+								type="text"
+								bind:value={pacienteNome}
+								required
+								placeholder="Nome completo..."
+								class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+							/>
+						</div>
 
-				<FormField label="Telefone / WhatsApp" error="">
-					<input
-						type="text"
-						bind:value={pacienteTelefone}
-						placeholder="(00) 00000-0000"
-						class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-					/>
-				</FormField>
+						<div>
+							<label for="f-cpf" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								CPF *
+							</label>
+							<input
+								id="f-cpf"
+								type="text"
+								bind:value={pacienteCpf}
+								required
+								placeholder="000.000.000-00"
+								class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+							/>
+						</div>
+
+						<div>
+							<label for="f-cns" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								Cartão Nacional do SUS (CNS)
+							</label>
+							<input
+								id="f-cns"
+								type="text"
+								bind:value={pacienteCartaoSus}
+								placeholder="Cartão SUS (opcional)"
+								class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+							/>
+						</div>
+
+						<div>
+							<label for="f-tel" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								Telefone / WhatsApp
+							</label>
+							<input
+								id="f-tel"
+								type="text"
+								bind:value={pacienteTelefone}
+								placeholder="(00) 00000-0000"
+								class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+							/>
+						</div>
+					</div>
+
+					<!-- Classificação de Prioridade & Atendimento -->
+					<div class="border-t border-slate-200 pt-3">
+						<div class="mb-3 text-[11px] font-bold text-slate-900 uppercase">
+							2. Classificação de Prioridade & Destino
+						</div>
+
+						<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+							<div>
+								<label for="f-tipo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+									Tipo de Atendimento *
+								</label>
+								<select
+									id="f-tipo"
+									bind:value={tipoAtendimento}
+									class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+								>
+									<option value="CONSULTA_MEDICA">Consulta Médica (Clínica Geral)</option>
+									<option value="PRE_NATAL">Pré-Natal / Saúde da Mulher</option>
+									<option value="HIPERDIA">Hiperdia (Hipertensão / Diabetes)</option>
+									<option value="PUERICULTURA">Puericultura / Pediatria</option>
+									<option value="ENFERMAGEM">Atendimento de Enfermagem</option>
+									<option value="ACOLHIMENTO_TRIAGEM">Acolhimento / Triagem Inicial</option>
+									<option value="VACINACAO">Vacinação / Sala de Vacina</option>
+									<option value="CURATIVO">Curativos & Procedimentos</option>
+									<option value="ODONTOLOGIA">Odontologia (Saúde Bucal UBS)</option>
+								</select>
+							</div>
+
+							<div>
+								<label for="f-prioridade" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+									Prioridade Legal / SUS *
+								</label>
+								<select
+									id="f-prioridade"
+									bind:value={prioridade}
+									class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold focus:border-blue-900 focus:outline-none"
+								>
+									<option value="NORMAL">🔵 Normal (Ordem de Chegada)</option>
+									<option value="SUPER_PRIORIDADE_80">🟣 Superprioridade (Idoso 80+ Anos)</option>
+									<option value="IDOSO_60">🟠 Idoso (60 a 79 anos)</option>
+									<option value="GESTANTE_LACTANTE">🌸 Gestante / Lactante / Criança de Colo</option>
+									<option value="PCD">♿ Pessoa com Deficiência (PCD)</option>
+									<option value="TEA">🧩 Autismo (Lei Romeo Mion - TEA)</option>
+									<option value="URGENCIA">🔴 Urgência / Triagem com Risco Imediato</option>
+								</select>
+							</div>
+
+							<div>
+								<label for="f-medico" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+									Médico / Profissional Designado
+								</label>
+								<select
+									id="f-medico"
+									bind:value={medicoId}
+									class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+								>
+									<option value="">Qualquer Profissional Disponível</option>
+									{#each medicos as m}
+										<option value={m.id}>
+											{m.nome} ({m.role}){(m as any).crm ? ` - CRM ${(m as any).crm}` : ''}
+										</option>
+									{/each}
+								</select>
+							</div>
+
+							<div>
+								<label for="f-sala" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+									Consultório / Sala *
+								</label>
+								<select
+									id="f-sala"
+									bind:value={consultorio}
+									class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold focus:border-blue-900 focus:outline-none"
+								>
+									<option value="Consultório 01">Consultório 01 (Médico)</option>
+									<option value="Consultório 02">Consultório 02 (Médico)</option>
+									<option value="Consultório 03">Consultório 03 (Enfermagem / Pré-natal)</option>
+									<option value="Sala de Triagem">Sala de Triagem / Acolhimento</option>
+									<option value="Sala de Vacina">Sala de Vacinação</option>
+									<option value="Sala de Curativo">Sala de Curativos / Procedimentos</option>
+									<option value="Consultório Odontológico">Consultório Odontológico</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="mt-3">
+							<label for="f-queixa" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								Queixa Principal / Motivo Breve
+							</label>
+							<input
+								id="f-queixa"
+								type="text"
+								bind:value={queixaBreve}
+								placeholder="Ex: Renovação de receita, dor lombar, febre há 2 dias..."
+								class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
+							/>
+						</div>
+					</div>
+
+					<!-- Rodapé de Ações -->
+					<div class="mt-4 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
+						<button
+							type="button"
+							onclick={() => (modalAberto = false)}
+							class="border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							disabled={salvando}
+							class="border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800 disabled:opacity-50"
+						>
+							{salvando ? 'Gerando Senha...' : '✓ Gerar Senha & Inserir na Fila'}
+						</button>
+					</div>
+				</form>
 			</div>
-
-			<!-- Classificação de Prioridade & Atendimento -->
-			<div class="border-t border-slate-200 pt-3">
-				<div class="mb-3 text-[11px] font-bold text-slate-900 uppercase">
-					2. Classificação de Prioridade & Destino
-				</div>
-
-				<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-					<FormField label="Tipo de Atendimento *" error="">
-						<select
-							bind:value={tipoAtendimento}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-						>
-							<option value="CONSULTA_MEDICA">Consulta Médica (Clínica Geral)</option>
-							<option value="PRE_NATAL">Pré-Natal / Saúde da Mulher</option>
-							<option value="HIPERDIA">Hiperdia (Hipertensão / Diabetes)</option>
-							<option value="PUERICULTURA">Puericultura / Pediatria</option>
-							<option value="ENFERMAGEM">Atendimento de Enfermagem</option>
-							<option value="ACOLHIMENTO_TRIAGEM">Acolhimento / Triagem Inicial</option>
-							<option value="VACINACAO">Vacinação / Sala de Vacina</option>
-							<option value="CURATIVO">Curativos & Procedimentos</option>
-							<option value="ODONTOLOGIA">Odontologia (Saúde Bucal UBS)</option>
-						</select>
-					</FormField>
-
-					<FormField label="Prioridade Legal / SUS *" error="">
-						<select
-							bind:value={prioridade}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold focus:border-blue-900 focus:outline-none"
-						>
-							<option value="NORMAL">🔵 Normal (Ordem de Chegada)</option>
-							<option value="SUPER_PRIORIDADE_80">🟣 Superprioridade (Idoso 80+ Anos)</option>
-							<option value="IDOSO_60">🟠 Idoso (60 a 79 anos)</option>
-							<option value="GESTANTE_LACTANTE">🌸 Gestante / Lactante / Criança de Colo</option>
-							<option value="PCD">♿ Pessoa com Deficiência (PCD)</option>
-							<option value="TEA">🧩 Autismo (Lei Romeo Mion - TEA)</option>
-							<option value="URGENCIA">🔴 Urgência / Triagem com Risco Imediato</option>
-						</select>
-					</FormField>
-
-					<FormField label="Médico / Profissional Designado" error="">
-						<select
-							bind:value={medicoId}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-						>
-							<option value="">Qualquer Profissional Disponível</option>
-							{#each medicos as m}
-								<option value={m.id}>
-									{m.nome} ({m.role}){m.crm ? ` - CRM ${m.crm}` : ''}
-								</option>
-							{/each}
-						</select>
-					</FormField>
-
-					<FormField label="Consultório / Sala *" error="">
-						<select
-							bind:value={consultorio}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold focus:border-blue-900 focus:outline-none"
-						>
-							<option value="Consultório 01">Consultório 01 (Médico)</option>
-							<option value="Consultório 02">Consultório 02 (Médico)</option>
-							<option value="Consultório 03">Consultório 03 (Enfermagem / Pré-natal)</option>
-							<option value="Sala de Triagem">Sala de Triagem / Acolhimento</option>
-							<option value="Sala de Vacina">Sala de Vacinação</option>
-							<option value="Sala de Curativo">Sala de Curativos / Procedimentos</option>
-							<option value="Consultório Odontológico">Consultório Odontológico</option>
-						</select>
-					</FormField>
-				</div>
-
-				<div class="mt-3">
-					<FormField label="Queixa Principal / Motivo Breve" error="">
-						<input
-							type="text"
-							bind:value={queixaBreve}
-							placeholder="Ex: Renovação de receita, dor lombar, febre há 2 dias..."
-							class="w-full border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-900 focus:outline-none"
-						/>
-					</FormField>
-				</div>
-			</div>
-
-			<!-- Rodapé de Ações -->
-			<div class="mt-4 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
-				<button
-					type="button"
-					onclick={() => (modalAberto = false)}
-					class="border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
-				>
-					Cancelar
-				</button>
-				<button
-					type="submit"
-					disabled={salvando}
-					class="border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800 disabled:opacity-50"
-				>
-					{salvando ? 'Gerando Senha...' : '✓ Gerar Senha & Inserir na Fila'}
-				</button>
-			</div>
-		</form>
-	</Modal>
+		</div>
+	</div>
 {/if}
