@@ -1,11 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	// Types for Cotas and Escalas
 	interface CotaUbs {
@@ -370,7 +378,17 @@
 	}
 </script>
 
+<svelte:head>
+	<title>ERP Gestão - Matriz de Vagas & Escalas · {siglaOrgao} UniSISM</title>
+</svelte:head>
+
 <div class="flex flex-col gap-4 font-mono text-xs">
+	<!-- Panel Header -->
+	<PanelHeader
+		title="MATRIZ DE VAGAS, COTAS POR UBS & ESCALAS — {nomeOrgao.toUpperCase()}"
+		subtitle="Parametrização de cotas mensais de atendimento por UBS, escalas de trabalho dos profissionais ({rotuloRegistro}) e remanejamento dinâmico em lote."
+	/>
+
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
 		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm flex flex-col gap-1 whitespace-pre-wrap">

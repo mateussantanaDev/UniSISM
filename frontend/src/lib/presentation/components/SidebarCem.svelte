@@ -21,23 +21,24 @@
 		const role = auth.me?.role;
 		const list: NavGroup[] = [];
 
-		// Recepção CEM
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		// Recepção / Operação CEM
+		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'RECEPÇÃO CEM',
+				titulo: 'OPERAÇÃO CEM',
 				items: [
 					{ label: 'Fila da Regulação', href: '/cem/recepcao/fila', shortcut: 'F' },
 					{ label: 'Agenda do Dia', href: '/cem/recepcao/agenda', shortcut: 'A' },
 					{ label: 'Agendar no Balcão', href: '/cem/recepcao/balcao', shortcut: 'B' },
-					{ label: 'Painel TV (Chamada)', href: '/cem/recepcao/painel', shortcut: 'T' }
+					{ label: 'Painel TV (Chamada)', href: '/cem/recepcao/painel', shortcut: 'T' },
+					{ label: 'Base de Pacientes', href: '/cem/pacientes', shortcut: 'P' }
 				]
 			});
 		}
 
 		// Médico Especialista CEM
-		if (role === 'MEDICO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'MÉDICO ESPECIALISTA CEM',
+				titulo: 'CORPO CLÍNICO MÉDICO',
 				items: [
 					{ label: 'Consultório Digital SOAP', href: '/cem/medico/agenda', shortcut: 'M' },
 					{ label: 'Histórico de Atendimentos', href: '/cem/medico/historico', shortcut: 'H' },
@@ -49,14 +50,16 @@
 		// Gestão ERP CEM
 		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'DIRETORIA & GESTÃO CEM',
+				titulo: 'INTELIGÊNCIA & GESTÃO CEM',
 				items: [
 					{ label: 'Painel Geral Executivo', href: '/cem/gestao/dashboard', shortcut: 'D' },
-					{ label: 'Gestão de Usuários & Equipes', href: '/cem/gestao/usuarios', shortcut: 'U' },
+					{ label: 'Analytics & Desempenho', href: '/cem/gestao/analytics', shortcut: 'L' },
 					{ label: 'Matriz de Vagas & Escalas', href: '/cem/gestao/vagas', shortcut: 'V' },
 					{ label: 'Consultórios & Infraestrutura', href: '/cem/gestao/salas', shortcut: 'S' },
-					{ label: 'Catálogo & SIGTAP', href: '/cem/gestao/especialidades', shortcut: 'E' },
-					{ label: 'Produção e Relatórios', href: '/cem/gestao/producao', shortcut: 'P' }
+					{ label: 'Catálogo SIGTAP Médico', href: '/cem/gestao/especialidades', shortcut: 'E' },
+					{ label: 'Produção & Faturamento BPA', href: '/cem/gestao/producao', shortcut: 'R' },
+					{ label: 'Trilha de Auditoria CFM', href: '/cem/gestao/auditoria', shortcut: 'C' },
+					{ label: 'Usuários & Equipes', href: '/cem/gestao/usuarios', shortcut: 'U' }
 				]
 			});
 		}

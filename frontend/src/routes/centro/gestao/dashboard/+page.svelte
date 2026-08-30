@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import type { DashboardGestaoCentroResponse } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 
 	// State
 	let carregando = $state(true);
@@ -45,13 +51,13 @@
 </script>
 
 <svelte:head>
-	<title>ERP Diretoria - Painel Geral Executivo | UniSISM Centro</title>
+	<title>ERP Diretoria - Painel Geral Executivo · {siglaOrgao} UniSISM</title>
 </svelte:head>
 
 <div class="flex flex-col gap-5 font-mono text-xs">
 	<!-- Panel Header -->
 	<PanelHeader
-		title="TORRE DE CONTROLE EXECUTIVA — CENTRO DE ESPECIALIDADES"
+		title="TORRE DE CONTROLE EXECUTIVA — {nomeOrgao.toUpperCase()}"
 		subtitle="Visão geral estratégica em tempo real da produtividade, capacidade instalada, cotas por UBS e fluxo assistencial."
 	/>
 

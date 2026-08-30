@@ -16,30 +16,31 @@
 		items: NavItem[];
 	}
 
-	// Grupos de navegação para o CEO — Centro de Especialidades Médicas
+	// Grupos de navegação para o CEO — Centro de Especialidades Odontológicas
 	let gruposVisiveis = $derived.by<NavGroup[]>(() => {
 		const role = auth.me?.role;
 		const list: NavGroup[] = [];
 
-		// Recepção CEO
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		// Recepção / Operação CEO
+		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'RECEPÇÃO CEO',
+				titulo: 'OPERAÇÃO CEO',
 				items: [
 					{ label: 'Fila da Regulação', href: '/ceo/recepcao/fila', shortcut: 'F' },
 					{ label: 'Agenda do Dia', href: '/ceo/recepcao/agenda', shortcut: 'A' },
 					{ label: 'Agendar no Balcão', href: '/ceo/recepcao/balcao', shortcut: 'B' },
-					{ label: 'Painel TV (Chamada)', href: '/ceo/recepcao/painel', shortcut: 'T' }
+					{ label: 'Painel TV (Chamada)', href: '/ceo/recepcao/painel', shortcut: 'T' },
+					{ label: 'Base de Pacientes', href: '/ceo/pacientes', shortcut: 'P' }
 				]
 			});
 		}
 
-		// Médico Especialista CEO
-		if (role === 'MEDICO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		// Cirurgião-Dentista Especialista CEO
+		if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'MÉDICO ESPECIALISTA CEO',
+				titulo: 'CORPO CLÍNICO ODONTO',
 				items: [
-					{ label: 'Consultório Digital SOAP', href: '/ceo/medico/agenda', shortcut: 'M' },
+					{ label: 'Consultório SOAP & Odontograma', href: '/ceo/medico/agenda', shortcut: 'M' },
 					{ label: 'Histórico de Atendimentos', href: '/ceo/medico/historico', shortcut: 'H' },
 					{ label: 'Indicadores & Produtividade', href: '/ceo/medico/desempenho', shortcut: 'I' }
 				]
@@ -49,14 +50,16 @@
 		// Gestão ERP CEO
 		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
-				titulo: 'DIRETORIA & GESTÃO CEO',
+				titulo: 'INTELIGÊNCIA & GESTÃO CEO',
 				items: [
 					{ label: 'Painel Geral Executivo', href: '/ceo/gestao/dashboard', shortcut: 'D' },
-					{ label: 'Gestão de Usuários & Equipes', href: '/ceo/gestao/usuarios', shortcut: 'U' },
+					{ label: 'Analytics & Desempenho', href: '/ceo/gestao/analytics', shortcut: 'L' },
 					{ label: 'Matriz de Vagas & Escalas', href: '/ceo/gestao/vagas', shortcut: 'V' },
-					{ label: 'Consultórios & Infraestrutura', href: '/ceo/gestao/salas', shortcut: 'S' },
-					{ label: 'Catálogo & SIGTAP', href: '/ceo/gestao/especialidades', shortcut: 'E' },
-					{ label: 'Produção e Relatórios', href: '/ceo/gestao/producao', shortcut: 'P' }
+					{ label: 'Cadeiras Odontológicas', href: '/ceo/gestao/salas', shortcut: 'S' },
+					{ label: 'Catálogo SIGTAP Odonto', href: '/ceo/gestao/especialidades', shortcut: 'E' },
+					{ label: 'Produção Odonto & BPA-I', href: '/ceo/gestao/producao', shortcut: 'R' },
+					{ label: 'Trilha de Auditoria CFO', href: '/ceo/gestao/auditoria', shortcut: 'C' },
+					{ label: 'Equipes & Usuários', href: '/ceo/gestao/usuarios', shortcut: 'U' }
 				]
 			});
 		}

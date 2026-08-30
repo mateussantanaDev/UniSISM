@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 
 	interface EspecialidadeSigtap {
 		id: string;
@@ -45,8 +51,104 @@
 			if (Array.isArray(res) && res.length > 0) {
 				listaEspecialidades = (res as any[]).map(e => ({
 					...e,
-					tipoServico: e.tipoServico || (e.nome.toLowerCase().includes('exame') || e.nome.toLowerCase().includes('procedimento') || e.nome.toLowerCase().includes('eletro') || e.nome.toLowerCase().includes('biópsia') ? 'PROCEDIMENTO' : 'CONSULTA')
+					tipoServico: e.tipoServico || (e.nome.toLowerCase().includes('exame') || e.nome.toLowerCase().includes('procedimento') || e.nome.toLowerCase().includes('eletro') || e.nome.toLowerCase().includes('biópsia') || e.nome.toLowerCase().includes('raspagem') || e.nome.toLowerCase().includes('canal') ? 'PROCEDIMENTO' : 'CONSULTA')
 				}));
+			} else {
+				if (ehCeo) {
+					listaEspecialidades = [
+						{
+							id: 'esp-o1',
+							nome: 'Endodontia (Tratamento de Canal em Molares/Pré-molares)',
+							codigoSigtap: '03.07.02.006-1',
+							tempoPadraoMinutos: 45,
+							valorTabelaBrl: 110.00,
+							documentosObrigatorios: ['Radiografia Periapical Inicial', 'Encaminhamento com Teste de Sensibilidade Pulpar'],
+							preparoRequerido: 'Alimentação leve prévia, não suspender medicações de uso contínuo.',
+							ativa: true,
+							tipoServico: 'PROCEDIMENTO'
+						},
+						{
+							id: 'esp-o2',
+							nome: 'Periodontia Especializada (Raspagem Subgengival & Cirurgia)',
+							codigoSigtap: '03.07.01.004-0',
+							tempoPadraoMinutos: 30,
+							valorTabelaBrl: 65.00,
+							documentosObrigatorios: ['Periograma da UBS', 'Levantamento Radiográfico'],
+							preparoRequerido: 'Higiene bucal prévia.',
+							ativa: true,
+							tipoServico: 'PROCEDIMENTO'
+						},
+						{
+							id: 'esp-o3',
+							nome: 'Cirurgia Bucomaxilofacial (Exodontia de Terceiros Molares Inclusos)',
+							codigoSigtap: '04.14.01.014-9',
+							tempoPadraoMinutos: 40,
+							valorTabelaBrl: 140.00,
+							documentosObrigatorios: ['Panorâmica Atualizada (< 6 meses)', 'Coagulograma se hipertenso/diabético'],
+							preparoRequerido: 'Jejum de 2h para líquidos, presença de acompanhante adulto.',
+							ativa: true,
+							tipoServico: 'PROCEDIMENTO'
+						},
+						{
+							id: 'esp-o4',
+							nome: 'Odontopediatria e Pacientes com Necessidades Especiais (PNE)',
+							codigoSigtap: '03.07.04.004-6',
+							tempoPadraoMinutos: 40,
+							valorTabelaBrl: 95.00,
+							documentosObrigatorios: ['Relatório Multiprofissional UBS/CAPS', 'Cartão de Vacinas'],
+							preparoRequerido: 'Presença do responsável legal.',
+							ativa: true,
+							tipoServico: 'CONSULTA'
+						}
+					];
+				} else {
+					listaEspecialidades = [
+						{
+							id: 'esp-m1',
+							nome: 'Cardiologia Clínica (Consulta Especializada)',
+							codigoSigtap: '03.01.01.007-2',
+							tempoPadraoMinutos: 20,
+							valorTabelaBrl: 80.00,
+							documentosObrigatorios: ['ECG de Repouso', 'Perfil Lipídico', 'Glicemia de Jejum'],
+							preparoRequerido: 'Trazer receitas médicas e exames cardiológicos dos últimos 12 meses.',
+							ativa: true,
+							tipoServico: 'CONSULTA'
+						},
+						{
+							id: 'esp-m2',
+							nome: 'Oftalmologia (Mapeamento de Retina e Refração)',
+							codigoSigtap: '02.11.06.010-0',
+							tempoPadraoMinutos: 20,
+							valorTabelaBrl: 75.00,
+							documentosObrigatorios: ['Encaminhamento da UBS'],
+							preparoRequerido: 'Não dirigir após a consulta (ocorre dilatação de pupila). Trazer óculos atuais.',
+							ativa: true,
+							tipoServico: 'PROCEDIMENTO'
+						},
+						{
+							id: 'esp-m3',
+							nome: 'Ortopedia & Traumatologia',
+							codigoSigtap: '03.01.01.007-2',
+							tempoPadraoMinutos: 20,
+							valorTabelaBrl: 80.00,
+							documentosObrigatorios: ['Raio-X Digital do segmento acometido'],
+							preparoRequerido: 'Roupas confortáveis que facilitem o exame articular.',
+							ativa: true,
+							tipoServico: 'CONSULTA'
+						},
+						{
+							id: 'esp-m4',
+							nome: 'Ecocardiograma Transtorácico (ECO)',
+							codigoSigtap: '02.05.01.003-2',
+							tempoPadraoMinutos: 30,
+							valorTabelaBrl: 150.00,
+							documentosObrigatorios: ['Solicitação do Cardiologista', 'ECG recente'],
+							preparoRequerido: 'Não passar cremes ou pomadas no tórax no dia do exame.',
+							ativa: true,
+							tipoServico: 'PROCEDIMENTO'
+						}
+					];
+				}
 			}
 		} catch (e: any) {
 			console.info('[UniSISM] Endpoint /v1/centro/gestao/especialidades em transição.', e);
@@ -92,14 +194,14 @@
 </script>
 
 <svelte:head>
-	<title>ERP Gestão - Catálogo SIGTAP / Especialidades | UniSISM Centro</title>
+	<title>ERP Gestão - Catálogo SIGTAP & Serviços · {siglaOrgao} UniSISM</title>
 </svelte:head>
 
 <div class="flex flex-col gap-5 font-mono text-xs">
 	<!-- Panel Header -->
 	<PanelHeader
-		title="CATÁLOGO DE ESPECIALIDADES & TABELA DE PROCEDIMENTOS SIGTAP / SUS"
-		subtitle="Parâmetros clínicos do Centro de Especialidades: cadastramento de serviços, códigos SIGTAP/SIA-SUS, tempo médio de consulta e diretrizes de exames exigidos das UBSs."
+		title="CATÁLOGO DE ESPECIALIDADES & TABELA SIGTAP / SUS — {nomeOrgao.toUpperCase()}"
+		subtitle="Parâmetros clínicos do {nomeOrgao}: cadastramento de serviços, códigos SIGTAP/SIA-SUS, tempo médio de atendimento e diretrizes exigidas das UBSs."
 	/>
 
 	<!-- Banner Sucesso -->
@@ -116,8 +218,8 @@
 	<!-- Control Bar -->
 	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
 		<div>
-			<span class="font-bold text-slate-900 text-xs uppercase">SERVIÇOS ESPECIALIZADOS HABILITADOS</span>
-			<span class="text-slate-500 text-[10px] block">Catálogo oficial de Consultas e Procedimentos Diagnósticos/Terapêuticos do Centro</span>
+			<span class="font-bold text-slate-900 text-xs uppercase">SERVIÇOS ESPECIALIZADOS HABILITADOS ({siglaOrgao})</span>
+			<span class="text-slate-500 text-[10px] block">Catálogo oficial de Consultas e Procedimentos do {nomeOrgao}</span>
 		</div>
 		<div class="flex items-center gap-2">
 			<!-- Filtro por Tipo -->

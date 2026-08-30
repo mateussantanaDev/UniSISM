@@ -1,8 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import type { UsuarioListado, Role, Escopo } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	// State
 	let carregando = $state(true);
@@ -27,7 +35,7 @@
 	let formEmail = $state('');
 	let formMatricula = $state('');
 	let formPerfil = $state<any>('MEDICO');
-	let formTipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEO');
+	let formTipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEM');
 	let formEspecialidade = $state('Cardiologia');
 	let formRegistroProfissional = $state('');
 	let formSenha = $state('Mudar@123');
@@ -229,14 +237,14 @@
 </script>
 
 <svelte:head>
-	<title>ERP Gestão - Equipes e Usuários | UniSISM Centro</title>
+	<title>ERP Gestão - Equipes e Usuários · {siglaOrgao} UniSISM</title>
 </svelte:head>
 
 <div class="flex flex-col gap-5 font-mono text-xs">
 	<!-- Panel Header -->
 	<PanelHeader
-		title="ERP GESTÃO DE EQUIPES, MÉDICOS E ATENDENTES"
-		subtitle="Cadastro oficial de profissionais de saúde, credenciamento de CRM/registros, gestão de perfis de acesso e controle de credenciais."
+		title="GESTÃO DE EQUIPES, PROFISSIONAIS & ACESSOS — {nomeOrgao.toUpperCase()}"
+		subtitle="Cadastro oficial de profissionais de saúde, credenciamento de {rotuloRegistro}, gestão de perfis de acesso e controle de credenciais do {nomeOrgao}."
 	/>
 
 	<!-- Banner Sucesso Global -->

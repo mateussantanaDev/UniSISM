@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloUnidadeFisica = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório Médico');
+	let rotuloUnidadeFisicaPlural = $derived(ehCeo ? 'Cadeiras Odontológicas' : 'Consultórios e Salas');
 
 	interface SalaConsultorio {
 		id: string;
@@ -38,10 +46,108 @@
 		erro = '';
 		try {
 			const res = await api.centroGestao.listSalas();
-			listaSalas = (res as any[]) || [];
+			if (Array.isArray(res) && res.length > 0) {
+				listaSalas = res as any[];
+			} else {
+				// Seeds com base no tipo de centro
+				if (ehCeo) {
+					listaSalas = [
+						{
+							id: 'cad-01',
+							codigo: 'CAD-01',
+							nome: 'Cadeira 01 — Endodontia & Canal',
+							especialidadePrincipal: 'Endodontia',
+							medicoAlocado: 'Dra. Camila Ramos',
+							medicoCrm: 'CRO 9845-RS',
+							status: 'EM_ATENDIMENTO',
+							equipamentos: ['Equipo Odontológico Gnatus', 'Localizador Apical Digital', 'Motor de Endodontia Reciprocante', 'Raio-X Periapical de Coluna'],
+							ala: 'Clínica Integrada — Box 01'
+						},
+						{
+							id: 'cad-02',
+							codigo: 'CAD-02',
+							nome: 'Cadeira 02 — Cirurgia Bucomaxilofacial',
+							especialidadePrincipal: 'Cirurgia Bucomaxilofacial',
+							medicoAlocado: 'Dr. Lucas Silveira',
+							medicoCrm: 'CRO 11204-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Cadeira Odontológica Cirúrgica', 'Motor Cirúrgico para Implante/Exodontia', 'Foco Cirúrgico de LED', 'Bisturi Elétrico Odontológico'],
+							ala: 'Bloco Cirúrgico Odontológico — Box 02'
+						},
+						{
+							id: 'cad-03',
+							codigo: 'CAD-03',
+							nome: 'Cadeira 03 — Periodontia & Prótese',
+							especialidadePrincipal: 'Periodontia',
+							medicoAlocado: 'Dra. Beatriz Santos',
+							medicoCrm: 'CRO 7619-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Equipo Odontológico Completo', 'Ultrassom Odontológico com Jato de Bicarbonato', 'Fotopolimerizador sem Fio'],
+							ala: 'Clínica Integrada — Box 03'
+						},
+						{
+							id: 'cad-04',
+							codigo: 'CAD-04',
+							nome: 'Cadeira 04 — Odontopediatria & PNE',
+							especialidadePrincipal: 'Pacientes com Necessidades Especiais (PNE)',
+							medicoAlocado: 'Dr. Maurício Becker',
+							medicoCrm: 'CRO 8432-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Cadeira Ampla Adaptada PNE', 'Monitor Multiparâmetros Odonto', 'Oxímetro de Pulso', 'Aspirador Cirúrgico'],
+							ala: 'Ala Acessível Térreo — Box 04'
+						}
+					];
+				} else {
+					listaSalas = [
+						{
+							id: 'cons-01',
+							codigo: 'CONS-01',
+							nome: 'Consultório 01 — Cardiologia',
+							especialidadePrincipal: 'Cardiologia',
+							medicoAlocado: 'Dr. Roberto Medeiros',
+							medicoCrm: 'CRM 45892-RS',
+							status: 'EM_ATENDIMENTO',
+							equipamentos: ['Eletrocardiógrafo 12 Canais', 'Maca Clínica', 'Esfigmomanômetro Digital', 'Estetoscópio Littmann'],
+							ala: 'Ala Clínica Médica — Térreo'
+						},
+						{
+							id: 'cons-02',
+							codigo: 'CONS-02',
+							nome: 'Consultório 02 — Oftalmologia',
+							especialidadePrincipal: 'Oftalmologia',
+							medicoAlocado: 'Dra. Juliana Paes',
+							medicoCrm: 'CRM 33910-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Lâmpada de Fenda', 'Tonômetro de Aplanação', 'Projetor de Optotipos', 'Auto-Refrator'],
+							ala: 'Ala Diagnóstica — Sala 02'
+						},
+						{
+							id: 'cons-03',
+							codigo: 'CONS-03',
+							nome: 'Consultório 03 — Ortopedia & Traumatologia',
+							especialidadePrincipal: 'Ortopedia',
+							medicoAlocado: 'Dr. Fernando Lima',
+							medicoCrm: 'CRM 51203-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Negatoscópio Digital', 'Maca Articulada Ortopédica', 'Goniômetro'],
+							ala: 'Ala Ortopédica — Térreo'
+						},
+						{
+							id: 'cons-04',
+							codigo: 'CONS-04',
+							nome: 'Consultório 04 — Dermatologia & Pequenas Cirurgias',
+							especialidadePrincipal: 'Dermatologia',
+							medicoAlocado: 'Dra. Patricia Neves',
+							medicoCrm: 'CRM 29401-RS',
+							status: 'DISPONIVEL',
+							equipamentos: ['Dermatoscópio Polarizado', 'Foco Cirúrgico de LED', 'Mesa Auxiliar Cirúrgica'],
+							ala: 'Ala de Procedimentos — Sala 04'
+						}
+					];
+				}
+			}
 		} catch (e: any) {
 			console.info('[UniSISM] Endpoint /v1/centro/gestao/salas em transição.', e);
-			listaSalas = [];
 		} finally {
 			carregando = false;
 		}
@@ -93,14 +199,14 @@
 </script>
 
 <svelte:head>
-	<title>ERP Gestão - Infraestrutura & Consultórios | UniSISM Centro</title>
+	<title>ERP Gestão - Infraestrutura & {rotuloUnidadeFisicaPlural} · {siglaOrgao} UniSISM</title>
 </svelte:head>
 
 <div class="flex flex-col gap-5 font-mono text-xs">
 	<!-- Panel Header -->
 	<PanelHeader
-		title="ERP GESTÃO DE INFRAESTRUTURA & CONSULTÓRIOS"
-		subtitle="Mapeamento e controle em tempo real dos consultórios médicos, salas de exames funcionais, equipamentos instalados e alas operacionais."
+		title="GESTÃO DE INFRAESTRUTURA & {rotuloUnidadeFisicaPlural.toUpperCase()} — {nomeOrgao.toUpperCase()}"
+		subtitle="Mapeamento e controle em tempo real de {rotuloUnidadeFisicaPlural.toLowerCase()}, equipamentos instalados, profissionais alocados e status operacional."
 	/>
 
 	<!-- Banner Sucesso -->
@@ -117,18 +223,18 @@
 	<!-- Control Bar -->
 	<section class="border border-slate-200 bg-white p-4 flex items-center justify-between">
 		<div>
-			<span class="font-bold text-slate-900 text-xs uppercase">CONSULTÓRIOS E SALAS CADASTRADAS</span>
-			<span class="text-slate-500 text-[10px] block">Capacidade física instalada do Centro Municipal de Especialidades</span>
+			<span class="font-bold text-slate-900 text-xs uppercase">{rotuloUnidadeFisicaPlural.toUpperCase()} CADASTRADAS</span>
+			<span class="text-slate-500 text-[10px] block">Capacidade física instalada do {nomeOrgao}</span>
 		</div>
 		<button
 			onclick={() => modalNovaSalaAberto = true}
 			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950"
 		>
-			+ Cadastrar Consultório / Sala
+			+ Cadastrar {rotuloUnidadeFisica}
 		</button>
 	</section>
 
-	<!-- Grid de Consultórios / Salas -->
+	<!-- Grid de Consultórios / Cadeiras -->
 	<section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
 		{#each listaSalas as sala (sala.id)}
 			<div class="border border-slate-200 bg-white p-5 flex flex-col justify-between gap-3">

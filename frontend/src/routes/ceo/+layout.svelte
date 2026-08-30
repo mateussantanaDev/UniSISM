@@ -98,41 +98,57 @@
 			label: 'RECEPÇÃO CEO · AGENDAMENTO BALCÃO',
 			crumb: 'CEO / RECEPÇÃO / BALCÃO'
 		},
+		'/ceo/recepcao/painel': {
+			label: 'RECEPÇÃO CEO · PAINEL TV DE CHAMADAS',
+			crumb: 'CEO / RECEPÇÃO / PAINEL'
+		},
+		'/ceo/pacientes': {
+			label: 'BASE DE PACIENTES · HISTÓRICO CEO',
+			crumb: 'CEO / PACIENTES'
+		},
 		'/ceo/medico/agenda': {
-			label: 'MÉDICO CEO · CONSULTÓRIO DIGITAL SOAP',
-			crumb: 'CEO / MÉDICO / CONSULTÓRIO'
+			label: 'ODONTOLOGIA CEO · CONSULTÓRIO SOAP & ODONTOGRAMA',
+			crumb: 'CEO / ODONTO / CONSULTÓRIO'
 		},
 		'/ceo/medico/historico': {
-			label: 'MÉDICO CEO · HISTÓRICO DE ATENDIMENTOS',
-			crumb: 'CEO / MÉDICO / HISTÓRICO'
+			label: 'ODONTOLOGIA CEO · HISTÓRICO DE PROCEDIMENTOS',
+			crumb: 'CEO / ODONTO / HISTÓRICO'
 		},
 		'/ceo/medico/desempenho': {
-			label: 'MÉDICO CEO · INDICADORES & DESEMPENHO',
-			crumb: 'CEO / MÉDICO / DESEMPENHO'
+			label: 'ODONTOLOGIA CEO · INDICADORES & DESEMPENHO',
+			crumb: 'CEO / ODONTO / DESEMPENHO'
 		},
 		'/ceo/gestao/dashboard': {
-			label: 'DIRETORIA CEO · TORRE DE CONTROLE EXECUTIVA',
+			label: 'COORDENAÇÃO CEO · TORRE DE CONTROLE EXECUTIVA',
 			crumb: 'CEO / GESTÃO / DASHBOARD'
 		},
+		'/ceo/gestao/analytics': {
+			label: 'COORDENAÇÃO CEO · ANALYTICS & SAÚDE BUCAL',
+			crumb: 'CEO / GESTÃO / ANALYTICS'
+		},
 		'/ceo/gestao/usuarios': {
-			label: 'DIRETORIA CEO · GESTÃO DE EQUIPES & USUÁRIOS',
+			label: 'COORDENAÇÃO CEO · EQUIPES DE SAÚDE BUCAL',
 			crumb: 'CEO / GESTÃO / USUÁRIOS'
 		},
 		'/ceo/gestao/vagas': {
-			label: 'DIRETORIA CEO · MATRIZ DE COTAS & ESCALAS',
+			label: 'COORDENAÇÃO CEO · MATRIZ DE COTAS & ESCALAS',
 			crumb: 'CEO / GESTÃO / VAGAS'
 		},
 		'/ceo/gestao/salas': {
-			label: 'DIRETORIA CEO · CONSULTÓRIOS & INFRAESTRUTURA',
+			label: 'COORDENAÇÃO CEO · CADEIRAS ODONTOLÓGICAS',
 			crumb: 'CEO / GESTÃO / SALAS'
 		},
 		'/ceo/gestao/especialidades': {
-			label: 'DIRETORIA CEO · CATÁLOGO & SIGTAP',
+			label: 'COORDENAÇÃO CEO · CATÁLOGO SIGTAP ODONTO',
 			crumb: 'CEO / GESTÃO / ESPECIALIDADES'
 		},
 		'/ceo/gestao/producao': {
-			label: 'DIRETORIA CEO · PRODUÇÃO & AUDITORIA',
+			label: 'COORDENAÇÃO CEO · PRODUÇÃO & BPA-I ODONTO',
 			crumb: 'CEO / GESTÃO / PRODUÇÃO'
+		},
+		'/ceo/gestao/auditoria': {
+			label: 'COORDENAÇÃO CEO · TRILHA DE AUDITORIA CFO',
+			crumb: 'CEO / GESTÃO / AUDITORIA'
 		}
 	};
 

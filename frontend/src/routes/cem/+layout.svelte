@@ -98,6 +98,14 @@
 			label: 'RECEPÇÃO CEM · AGENDAMENTO BALCÃO',
 			crumb: 'CEM / RECEPÇÃO / BALCÃO'
 		},
+		'/cem/recepcao/painel': {
+			label: 'RECEPÇÃO CEM · PAINEL TV DE CHAMADAS',
+			crumb: 'CEM / RECEPÇÃO / PAINEL'
+		},
+		'/cem/pacientes': {
+			label: 'BASE DE PACIENTES · HISTÓRICO CEM',
+			crumb: 'CEM / PACIENTES'
+		},
 		'/cem/medico/agenda': {
 			label: 'MÉDICO CEM · CONSULTÓRIO DIGITAL SOAP',
 			crumb: 'CEM / MÉDICO / CONSULTÓRIO'
@@ -114,6 +122,10 @@
 			label: 'DIRETORIA CEM · TORRE DE CONTROLE EXECUTIVA',
 			crumb: 'CEM / GESTÃO / DASHBOARD'
 		},
+		'/cem/gestao/analytics': {
+			label: 'DIRETORIA CEM · ANALYTICS & INDICADORES',
+			crumb: 'CEM / GESTÃO / ANALYTICS'
+		},
 		'/cem/gestao/usuarios': {
 			label: 'DIRETORIA CEM · GESTÃO DE EQUIPES & USUÁRIOS',
 			crumb: 'CEM / GESTÃO / USUÁRIOS'
@@ -127,12 +139,16 @@
 			crumb: 'CEM / GESTÃO / SALAS'
 		},
 		'/cem/gestao/especialidades': {
-			label: 'DIRETORIA CEM · CATÁLOGO & SIGTAP',
+			label: 'DIRETORIA CEM · CATÁLOGO SIGTAP MÉDICO',
 			crumb: 'CEM / GESTÃO / ESPECIALIDADES'
 		},
 		'/cem/gestao/producao': {
-			label: 'DIRETORIA CEM · PRODUÇÃO & AUDITORIA',
+			label: 'DIRETORIA CEM · PRODUÇÃO & FATURAMENTO BPA',
 			crumb: 'CEM / GESTÃO / PRODUÇÃO'
+		},
+		'/cem/gestao/auditoria': {
+			label: 'DIRETORIA CEM · TRILHA DE AUDITORIA CFM',
+			crumb: 'CEM / GESTÃO / AUDITORIA'
 		}
 	};
 

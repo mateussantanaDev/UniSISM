@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import type {
 		Encaminhamento,
@@ -25,6 +26,13 @@
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let tituloProfissional = $derived(ehCeo ? 'CIRURGIÃO-DENTISTA ESPECIALISTA' : 'MÉDICO ESPECIALISTA');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
+	let rotuloSala = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório Médico');
 
 	// Structure of a Doctor's Appointment item
 	interface ConsultaAgenda {
@@ -75,8 +83,8 @@
 
 	// Dynamic State
 	let dataAgenda = $state(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
-	let medicoLogado = $state('Médico Especialista');
-	let medicoCrm = $state('CRM Regulação');
+	let medicoLogado = $state('Especialista');
+	let medicoCrm = $state('Regulação');
 	let busca = $state('');
 	let filtroStatus = $state<'TODOS' | 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU'>('TODOS');
 	let carregando = $state(true);
@@ -119,7 +127,7 @@
 	let novoProcedimentoQtd = $state(1);
 	let novoProcedimentoObs = $state('');
 
-	const procedimentosSigtapSugeridos = [
+	const procedimentosSigtapMedicos = [
 		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)' },
 		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento' },
 		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo' },
@@ -129,6 +137,21 @@
 		{ codigo: '04.01.01.001-5', nome: 'Retirada de Pontos' },
 		{ codigo: '02.11.05.008-3', nome: 'Holter 24 Horas' }
 	];
+
+	const procedimentosSigtapOdonto = [
+		{ codigo: '03.07.02.006-1', nome: 'Tratamento Endodôntico Dente Permanente' },
+		{ codigo: '03.07.01.004-0', nome: 'Raspagem e Alisamento Periodontal' },
+		{ codigo: '04.14.01.014-9', nome: 'Exodontia de Dente Incluso / Semi-incluso' },
+		{ codigo: '03.07.03.003-2', nome: 'Condicionamento Odontopediátrico' },
+		{ codigo: '03.07.04.004-6', nome: 'Atendimento Odontológico a Pacientes Especiais (PNE)' },
+		{ codigo: '07.01.07.012-9', nome: 'Moldagem e Instalação de Prótese Dentária' },
+		{ codigo: '02.01.01.042-8', nome: 'Biópsia de Lesão Bucal / Glândula Salivar' },
+		{ codigo: '02.04.01.018-0', nome: 'Radiografia Periapical / Interproximal' }
+	];
+
+	let procedimentosSigtapSugeridos = $derived(
+		ehCeo ? procedimentosSigtapOdonto : procedimentosSigtapMedicos
+	);
 
 	function adicionarProcedimento() {
 		if (!novoProcedimentoNome.trim()) {
@@ -444,7 +467,15 @@
 
 			// Consulta via API de encaminhamentos aprovados
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
-			const filtradosCentro = res.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
+			const filtradosCentro = res.filter(e => {
+				const f = (e.filaDestino as string) || '';
+				const c = (e as any).canalRoteamento || '';
+				if (ehCeo) {
+					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
+				} else {
+					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+				}
+			});
 			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda);
 
 			consultas = agendados.map((enc, idx) => {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
@@ -7,6 +8,13 @@
 
 	const auth = useAuth();
 	let timerMensagem: any = null;
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista' : 'Médico Especialista');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	interface ProducaoMedico {
 		medicoNome: string;
@@ -65,7 +73,7 @@
 	let novoProcQtd = $state(1);
 	let novoProcValor = $state(45.00);
 
-	const catalogoSigtapGestor = [
+	const catalogoSigtapGestorMed = [
 		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)', valor: 45.00 },
 		{ codigo: '02.05.02.009-7', nome: 'Ecocardiograma Transtorácico', valor: 180.00 },
 		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo', valor: 95.00 },
@@ -75,6 +83,19 @@
 		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento', valor: 40.00 },
 		{ codigo: '02.06.01.007-9', nome: 'Endoscopia Digestiva Alta', valor: 220.00 }
 	];
+
+	const catalogoSigtapGestorOdonto = [
+		{ codigo: '03.07.02.006-1', nome: 'Tratamento Endodôntico Dente Permanente', valor: 110.00 },
+		{ codigo: '03.07.01.004-0', nome: 'Raspagem e Alisamento Periodontal', valor: 65.00 },
+		{ codigo: '04.14.01.014-9', nome: 'Exodontia de Dente Incluso / Semi-incluso', valor: 140.00 },
+		{ codigo: '03.07.03.003-2', nome: 'Condicionamento Odontopediátrico', valor: 80.00 },
+		{ codigo: '03.07.04.004-6', nome: 'Atendimento Odonto PNE', valor: 95.00 },
+		{ codigo: '07.01.07.012-9', nome: 'Moldagem e Instalação de Prótese', valor: 190.00 },
+		{ codigo: '02.01.01.042-8', nome: 'Biópsia de Lesão Bucal', valor: 120.00 },
+		{ codigo: '02.04.01.018-0', nome: 'Radiografia Periapical', valor: 25.00 }
+	];
+
+	let catalogoSigtapGestor = $derived(ehCeo ? catalogoSigtapGestorOdonto : catalogoSigtapGestorMed);
 
 	let listaAtendimentosAjustaveis = $state<AtendimentoProcedimentoGestor[]>([]);
 
@@ -304,7 +325,17 @@
 	}
 </script>
 
+<svelte:head>
+	<title>ERP Gestão - Produção & Relatórios · {siglaOrgao} UniSISM</title>
+</svelte:head>
+
 <div class="flex flex-col gap-4 font-mono text-xs">
+	<!-- Panel Header -->
+	<PanelHeader
+		title="PRODUÇÃO ASSISTENCIAL & FATURAMENTO BPA-SUS — {nomeOrgao.toUpperCase()}"
+		subtitle="Consolidação mensal de atendimentos realizados, faturamento ambulatorial SIA-SUS, absenteísmo e relatórios oficiais de prestação de contas do {nomeOrgao}."
+	/>
+
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
 		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm flex flex-col gap-1 whitespace-pre-wrap">
@@ -318,7 +349,7 @@
 		<div class="border border-slate-200 bg-white p-4">
 			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Produção de Atendimentos / Mês</div>
 			<div class="mt-2 text-3xl font-bold text-slate-900">{totalConsultasMes}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Procedimentos médicos realizados no Centro</div>
+			<div class="text-[11px] text-slate-600 mt-1">Procedimentos especializados realizados no {siglaOrgao}</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">

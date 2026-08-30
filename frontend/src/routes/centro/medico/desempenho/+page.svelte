@@ -1,18 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
 
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+
 	// State
 	let carregando = $state(true);
-	let medicoNome = $state('Dr. Especialista');
-	let medicoCrm = $state('CRM Regulação');
+	let medicoNome = $state('Especialista');
+	let medicoCrm = $state('Regulação');
 	let medicoEspecialidade = $state('Cardiologia');
 
 	// Metrics
 	let totalConsultasMes = $state(0);
-	let tempoMedioMinutos = $state(15);
+	let tempoMedioMinutos = $state(20);
 	let taxaPresenca = $state(100);
 	let totalPrescricoes = $state(0);
 	let totalExamesPedidos = $state(0);
@@ -28,24 +36,34 @@
 				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => [])
 			]);
 
+			const encsCentro = encs.filter(e => {
+				const f = (e.filaDestino as string) || '';
+				const c = (e as any).canalRoteamento || '';
+				if (ehCeo) {
+					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
+				} else {
+					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+				}
+			});
+
 			if (me && me.nome) {
 				medicoNome = me.nome;
-				medicoEspecialidade = (me as any).especialidade || 'Especialista';
-				medicoCrm = (me as any).crm ? `CRM ${(me as any).crm}` : (me as any).cpf ? `CRM ${(me as any).cpf.substring(0, 6)}` : 'CRM Regulação';
+				medicoEspecialidade = (me as any).especialidade || (ehCeo ? 'Endodontia' : 'Cardiologia');
+				medicoCrm = (me as any).crm ? `${rotuloRegistro} ${(me as any).crm}` : (me as any).cpf ? `${rotuloRegistro} ${(me as any).cpf.substring(0, 6)}` : `${rotuloRegistro} Regulação`;
 			}
 
 			if (dash?.mesAtual) {
-				totalConsultasMes = dash.mesAtual.totalConcluidos || encs.length;
+				totalConsultasMes = dash.mesAtual.totalConcluidos || encsCentro.length;
 				taxaPresenca = Math.round(100 - (dash.mesAtual.taxaAbsenteismoPorcento || 0));
 			} else {
-				totalConsultasMes = encs.length;
+				totalConsultasMes = encsCentro.length;
 			}
 
 			// Agrupa CIDs e estatísticas reais do servidor
 			const mapaCid = new Map<string, { descricao: string; qtd: number }>();
-			for (const e of encs) {
-				const code = e.solicitacao?.cid10 || 'I10';
-				const desc = e.solicitacao?.cidDescricao || 'Consulta Especializada';
+			for (const e of encsCentro) {
+				const code = e.solicitacao?.cid10 || (ehCeo ? 'K04' : 'I10');
+				const desc = e.solicitacao?.cidDescricao || (ehCeo ? 'Doenças da Polpa Dentária' : 'Consulta Especializada');
 				const actual = mapaCid.get(code) || { descricao: desc, qtd: 0 };
 				actual.qtd += 1;
 				mapaCid.set(code, actual);

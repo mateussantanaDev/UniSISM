@@ -1,8 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import { calcularIdadeExata } from '$lib/presentation/utils/stringUtils';
+
+	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let ehCeo = $derived(centroAtivo === 'CEO');
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	interface AtendimentoHistorico {
 		id: string;
@@ -48,7 +56,11 @@
 				.filter(e => {
 					const f = (e.filaDestino as string) || '';
 					const c = (e as any).canalRoteamento || '';
-					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || f === 'CEO' || c === 'CENTRO_ESPECIALIDADES' || c === 'CENTRO_ODONTOLOGICO';
+					if (ehCeo) {
+						return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
+					} else {
+						return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+					}
 				})
 				.map((enc) => {
 					const soap = (enc as any).atendimentoSOAP;
