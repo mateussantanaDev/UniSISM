@@ -1739,3 +1739,35 @@ export interface AdicionarFilaUbsRequest {
   data?: string;
   ubsId?: string;
 }
+
+export const PRIORIDADE_PESO: Record<PrioridadeUbs, number> = {
+  URGENCIA: 1,
+  SUPER_PRIORIDADE_80: 2,
+  GESTANTE_LACTANTE: 3,
+  PCD: 4,
+  TEA: 5,
+  IDOSO_60: 6,
+  NORMAL: 7,
+};
+
+export const PRIORIDADE_LABEL: Record<PrioridadeUbs, string> = {
+  URGENCIA: 'Urgência / Risco',
+  SUPER_PRIORIDADE_80: 'Superprioridade (80+)',
+  GESTANTE_LACTANTE: 'Gestante / Lactante',
+  PCD: 'PCD (Deficiência)',
+  TEA: 'Autismo (TEA)',
+  IDOSO_60: 'Idoso (60-79 anos)',
+  NORMAL: 'Normal (Ordem de Chegada)',
+};
+
+export const TIPO_ATENDIMENTO_LABEL: Record<TipoAtendimentoUbs, string> = {
+  CONSULTA_MEDICA: 'Consulta Médica (Clínica Geral)',
+  ENFERMAGEM: 'Atendimento de Enfermagem',
+  ACOLHIMENTO_TRIAGEM: 'Acolhimento / Triagem',
+  PRE_NATAL: 'Pré-Natal / Saúde da Mulher',
+  HIPERDIA: 'Hiperdia (Hipertensão/Diabetes)',
+  PUERICULTURA: 'Puericultura / Pediatria',
+  VACINACAO: 'Vacinação / Imunização',
+  CURATIVO: 'Curativo / Procedimento',
+  ODONTOLOGIA: 'Odontologia / Saúde Bucal',
+};

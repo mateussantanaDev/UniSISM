@@ -5,17 +5,8 @@
 	import FormField from '$lib/presentation/components/FormField.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { api, ApiError } from '$lib/api';
-	import type {
-		AtendimentoUbsItem,
-		PrioridadeUbs,
-		StatusAtendimentoUbs,
-		TipoAtendimentoUbs,
-		Usuario
-	} from '$lib/api/types';
-	import {
-		PRIORIDADE_LABEL,
-		TIPO_ATENDIMENTO_LABEL
-	} from '../../../../../backend/src/modules/ubs-atendimento/domain/entities/AtendimentoUbsFila';
+	import type { AtendimentoUbsItem, PrioridadeUbs, TipoAtendimentoUbs, StatusAtendimentoUbs, Usuario } from '$lib/api/types';
+	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
