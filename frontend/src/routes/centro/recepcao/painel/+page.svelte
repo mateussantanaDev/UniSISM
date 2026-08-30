@@ -3,337 +3,393 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 
-	interface ChamadaPainel {
+	interface ChamadaItem {
 		id: string;
 		pacienteNome: string;
 		consultorio: string;
 		medicoNome: string;
 		especialidade: string;
 		horario: string;
-		tipo: 'CONSULTA' | 'PROCEDIMENTO' | 'RETORNO';
-		chamadoEm: Date;
+		status: string;
 	}
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let tituloPainel = $derived(ehCeo ? 'CENTRO DE ESPECIALIDADES ODONTOLÓGICAS (CEO)' : 'CENTRO DE ESPECIALIDADES MÉDICAS (CEM)');
-	let subtituloPainel = $derived(ehCeo ? 'SAÚDE BUCAL ESPECIALIZADA · SALA DE ESPERA' : 'AMBULATÓRIO DE ESPECIALIDADES MÉDICAS · SALA DE ESPERA');
 
-	let chamadaAtual = $state<ChamadaPainel | null>(null);
-	let ultimasChamadas = $state<ChamadaPainel[]>([]);
-	let horarioAtual = $state('');
-	let dataAtual = $state('');
-	let audioHabilitado = $state(true);
-	let vozHabilitada = $state(true);
-	let isFullscreen = $state(false);
-	let piscarDestaque = $state(false);
+	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let senhaPareamento = $derived(ehCeo ? 'CEO-2026' : 'CEM-2026');
+	let tipoLocal = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório');
 
-	let timerRelogio: any = null;
+	let urlTv = $state('https://unisism.vercel.app/tv');
+	let copiadoLink = $state(false);
+	let copiadoSenha = $state(false);
+	let testandoAudio = $state(false);
+	let chamadasAtivas = $state<ChamadaItem[]>([]);
+	let carregandoChamadas = $state(false);
 	let timerPolling: any = null;
-	let ultimaChamadaIdProcessada = '';
 
-	// Web Audio API Hospital Chime Synthesizer (Zero dependências externas de MP3)
-	function tocarChimeHospitalar() {
-		if (!audioHabilitado || typeof window === 'undefined') return;
-		try {
-			const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-			if (!AudioContextClass) return;
-			const ctx = new AudioContextClass();
-
-			const agora = ctx.currentTime;
-
-			// Nota 1: D5 (587.33 Hz)
-			const osc1 = ctx.createOscillator();
-			const gain1 = ctx.createGain();
-			osc1.type = 'sine';
-			osc1.frequency.setValueAtTime(587.33, agora);
-			gain1.gain.setValueAtTime(0, agora);
-			gain1.gain.linearRampToValueAtTime(0.3, agora + 0.05);
-			gain1.gain.exponentialRampToValueAtTime(0.001, agora + 0.6);
-			osc1.connect(gain1);
-			gain1.connect(ctx.destination);
-			osc1.start(agora);
-			osc1.stop(agora + 0.6);
-
-			// Nota 2: A5 (880.00 Hz)
-			const osc2 = ctx.createOscillator();
-			const gain2 = ctx.createGain();
-			osc2.type = 'sine';
-			osc2.frequency.setValueAtTime(880.0, agora + 0.25);
-			gain2.gain.setValueAtTime(0, agora + 0.25);
-			gain2.gain.linearRampToValueAtTime(0.35, agora + 0.3);
-			gain2.gain.exponentialRampToValueAtTime(0.001, agora + 0.9);
-			osc2.connect(gain2);
-			gain2.connect(ctx.destination);
-			osc2.start(agora + 0.25);
-			osc2.stop(agora + 0.9);
-		} catch (e) {
-			console.info('[UniSISM Painel] Web Audio em espera por interação do usuário.', e);
+	function copiarTexto(texto: string, tipo: 'link' | 'senha') {
+		if (typeof navigator !== 'undefined' && navigator.clipboard) {
+			navigator.clipboard.writeText(texto);
+			if (tipo === 'link') {
+				copiadoLink = true;
+				setTimeout(() => { copiadoLink = false; }, 2000);
+			} else {
+				copiadoSenha = true;
+				setTimeout(() => { copiadoSenha = false; }, 2000);
+			}
 		}
 	}
 
-	// Síntese de Voz Nativa do Navegador (Web Speech API)
-	function falarChamada(paciente: string, consultorio: string) {
-		if (!vozHabilitada || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-		try {
-			window.speechSynthesis.cancel();
-			const texto = `Paciente, ${paciente}. Comparecer ao ${consultorio}.`;
-			const utterance = new SpeechSynthesisUtterance(texto);
-			utterance.lang = 'pt-BR';
-			utterance.rate = 0.95;
-			utterance.pitch = 1.0;
-			
-			// Toca o chime primeiro, e fala em seguida
-			tocarChimeHospitalar();
-			setTimeout(() => {
-				window.speechSynthesis.speak(utterance);
-			}, 600);
-		} catch (e) {
-			console.info('[UniSISM Painel] Síntese de voz em espera.', e);
+	function abrirPainelNovaAba() {
+		if (typeof window !== 'undefined') {
+			const linkCompleto = `${window.location.origin}/tv?pin=${senhaPareamento}`;
+			window.open(linkCompleto, '_blank');
 		}
 	}
 
-	function atualizarRelogio() {
-		const agora = new Date();
-		horarioAtual = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-		dataAtual = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+	// Web Audio Synthesizer para Teste Local
+	function testarSomLocal() {
+		testandoAudio = true;
+		try {
+			const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+			if (AudioContextClass) {
+				const ctx = new AudioContextClass();
+				const agora = ctx.currentTime;
+
+				const osc1 = ctx.createOscillator();
+				const gain1 = ctx.createGain();
+				osc1.frequency.setValueAtTime(587.33, agora);
+				gain1.gain.setValueAtTime(0, agora);
+				gain1.gain.linearRampToValueAtTime(0.3, agora + 0.05);
+				gain1.gain.exponentialRampToValueAtTime(0.001, agora + 0.6);
+				osc1.connect(gain1);
+				gain1.connect(ctx.destination);
+				osc1.start(agora);
+				osc1.stop(agora + 0.6);
+
+				const osc2 = ctx.createOscillator();
+				const gain2 = ctx.createGain();
+				osc2.frequency.setValueAtTime(880.0, agora + 0.25);
+				gain2.gain.setValueAtTime(0, agora + 0.25);
+				gain2.gain.linearRampToValueAtTime(0.35, agora + 0.3);
+				gain2.gain.exponentialRampToValueAtTime(0.001, agora + 0.9);
+				osc2.connect(gain2);
+				gain2.connect(ctx.destination);
+				osc2.start(agora + 0.25);
+				osc2.stop(agora + 0.9);
+			}
+
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+				const msg = new SpeechSynthesisUtterance(`Teste de chamada do ${nomeOrgao}. Sistema de áudio operando normalmente.`);
+				msg.lang = 'pt-BR';
+				msg.rate = 0.95;
+				setTimeout(() => {
+					window.speechSynthesis.speak(msg);
+				}, 600);
+			}
+		} catch (e) {
+			console.error(e);
+		} finally {
+			setTimeout(() => { testandoAudio = false; }, 3500);
+		}
 	}
 
-	async function sincronizarChamadas() {
+	async function carregarChamadasRecentes() {
+		carregandoChamadas = true;
 		try {
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 50 }).catch(() => []);
-			
-			// Pacientes em atendimento chamados recentemente
-			const chamados = res
-				.filter((e: any) => e.statusAtendimentoCentro === 'EM_ATENDIMENTO' || e.statusAtendimentoCentro === 'AGUARDANDO_ATENDIMENTO')
+			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 30 }).catch(() => []);
+			chamadasAtivas = res
+				.filter((e: any) => {
+					const esp = (e.solicitacao?.especialidadeSolicitada || '').toLowerCase();
+					const eOdonto = esp.includes('odonto') || esp.includes('bucal') || esp.includes('canal') || esp.includes('periodontia') || esp.includes('bucomaxilo');
+					return ehCeo ? eOdonto : !eOdonto;
+				})
+				.slice(0, 8)
 				.map((e: any, idx: number) => {
-					const salaNumero = ((idx % 6) + 1).toString().padStart(2, '0');
+					const num = ((idx % 6) + 1).toString().padStart(2, '0');
 					return {
 						id: e.id,
 						pacienteNome: e.paciente?.nome || 'Paciente Identificado',
-						consultorio: `CONSULTÓRIO ${salaNumero} — ALA A`,
-						medicoNome: e.profissionalAtribuido || 'Dr(a). Médico Especialista',
-						especialidade: e.solicitacao?.especialidadeSolicitada || 'Especialidade',
+						consultorio: ehCeo ? `Cadeira Odonto ${num}` : `Consultório ${num}`,
+						medicoNome: e.profissionalAtribuido || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
+						especialidade: e.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia' : 'Especialidades'),
 						horario: new Date(e.atualizadoEm || e.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-						tipo: 'CONSULTA' as const,
-						chamadoEm: new Date(e.atualizadoEm || e.criadoEm)
+						status: e.statusAtendimentoCentro || 'AGUARDANDO_ATENDIMENTO'
 					};
 				});
-
-			if (chamados.length > 0) {
-				const maisRecente = chamados[0];
-				
-				// Se for uma nova chamada que ainda não foi anunciada
-				if (maisRecente.id !== ultimaChamadaIdProcessada) {
-					ultimaChamadaIdProcessada = maisRecente.id;
-					chamadaAtual = maisRecente;
-					ultimasChamadas = chamados.slice(1, 5);
-					
-					piscarDestaque = true;
-					setTimeout(() => { piscarDestaque = false; }, 4000);
-					
-					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio);
-				}
-			} else if (!chamadaAtual) {
-				// Estado inicial ilustrativo de standby caso a fila esteja limpa
-				chamadaAtual = {
-					id: 'standby-01',
-					pacienteNome: 'AGUARDANDO PRÓXIMA CHAMADA',
-					consultorio: 'PAINEL CENTRAL DE ATENDIMENTO',
-					medicoNome: 'RECEPÇÃO E TRIAGEM SUS',
-					especialidade: 'CENTRO DE ESPECIALIDADES',
-					horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-					tipo: 'CONSULTA',
-					chamadoEm: new Date()
-				};
-			}
 		} catch (e) {
-			console.info('[UniSISM Painel] Sincronização de chamadas em modo contínuo.', e);
-		}
-	}
-
-	function alternarFullscreen() {
-		if (!document.fullscreenElement) {
-			document.documentElement.requestFullscreen().catch(() => {});
-			isFullscreen = true;
-		} else {
-			if (document.exitFullscreen) {
-				document.exitFullscreen().catch(() => {});
-				isFullscreen = false;
-			}
+			console.info('[UniSISM] Carregando chamadas...', e);
+		} finally {
+			carregandoChamadas = false;
 		}
 	}
 
 	onMount(() => {
-		atualizarRelogio();
-		timerRelogio = setInterval(atualizarRelogio, 1000);
-
-		sincronizarChamadas();
-		timerPolling = setInterval(sincronizarChamadas, 5000);
+		if (typeof window !== 'undefined') {
+			urlTv = `${window.location.origin}/tv`;
+		}
+		carregarChamadasRecentes();
+		timerPolling = setInterval(carregarChamadasRecentes, 8000);
 	});
 
 	onDestroy(() => {
-		if (timerRelogio) clearInterval(timerRelogio);
 		if (timerPolling) clearInterval(timerPolling);
-		if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-			window.speechSynthesis.cancel();
-		}
 	});
 </script>
 
 <svelte:head>
-	<title>PAINEL DE CHAMADA DE PACIENTES · UNISISM TV</title>
+	<title>{centroAtivo} · Gerenciador do Painel TV</title>
 </svelte:head>
 
-<div class="flex h-screen w-screen flex-col bg-slate-950 text-white font-mono select-none overflow-hidden">
-	<!-- Top Bar: Identificação e Relógio -->
-	<header class="flex h-20 items-center justify-between border-b-2 border-slate-800 bg-slate-900 px-8">
-		<div class="flex items-center gap-4">
-			<div class="flex h-12 w-12 items-center justify-center bg-blue-600 font-black text-xl text-white shadow-md">
-				SUS
-			</div>
+<div class="space-y-6">
+	<!-- ═══════════════════════════════════════════════════════════════
+	     CABEÇALHO INSTITUCIONAL
+	     ═══════════════════════════════════════════════════════════════ -->
+	<div class="border border-slate-200 bg-white p-6">
+		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 			<div>
-				<div class="text-xl font-bold tracking-widest text-white uppercase font-sans">
-					{tituloPainel}
+				<div class="flex items-center gap-2">
+					<span class="inline-block h-2 w-2 rounded-full {ehCeo ? 'bg-emerald-600' : 'bg-blue-600'}"></span>
+					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+						SISTEMA UNIFICADO DE SAÚDE · MÓDULO DE RECEPÇÃO & SALA DE ESPERA
+					</span>
 				</div>
-				<div class="text-xs font-semibold text-blue-400 tracking-wider uppercase">
-					{subtituloPainel}
-				</div>
+				<h1 class="mt-1 font-mono text-xl font-bold tracking-tight text-slate-900 uppercase">
+					Painel de Chamada TV · {centroAtivo}
+				</h1>
+				<p class="mt-1 text-xs text-slate-600">
+					Gerenciamento da conexão de Smart TVs e transmissão de chamadas em tempo real para a sala de espera do <strong>{nomeOrgao}</strong>.
+				</p>
+			</div>
+
+			<div class="flex items-center gap-3">
+				<button
+					onclick={testarSomLocal}
+					disabled={testandoAudio}
+					class="inline-flex items-center justify-center gap-2 border border-slate-300 bg-slate-100 px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-200 transition-colors"
+				>
+					<span>{testandoAudio ? '🔊 Emitindo Teste...' : '🔊 Testar Som Local'}</span>
+				</button>
+
+				<button
+					onclick={abrirPainelNovaAba}
+					class="inline-flex items-center justify-center gap-2 border {ehCeo ? 'border-emerald-700 bg-emerald-700 hover:bg-emerald-800 text-white' : 'border-blue-900 bg-blue-900 hover:bg-blue-950 text-white'} px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-all shadow-sm"
+				>
+					<span>Abrir Painel TV Nesta Tela</span>
+					<kbd class="border border-white/40 px-1 py-0.5 text-[9px]">↗</kbd>
+				</button>
 			</div>
 		</div>
+	</div>
 
-		<!-- Controles e Relógio -->
-		<div class="flex items-center gap-6">
-			<div class="flex items-center gap-2">
-				<button
-					type="button"
-					onclick={() => audioHabilitado = !audioHabilitado}
-					class="border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors flex items-center gap-1.5 {audioHabilitado ? 'text-emerald-400' : 'text-slate-500'}"
-					title="Ativar/Desativar Som"
-				>
-					<span>{audioHabilitado ? '🔊 SOM LIGADO' : '🔇 MUDO'}</span>
-				</button>
-
-				<button
-					type="button"
-					onclick={() => vozHabilitada = !vozHabilitada}
-					class="border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors flex items-center gap-1.5 {vozHabilitada ? 'text-blue-400' : 'text-slate-500'}"
-					title="Ativar/Desativar Voz"
-				>
-					<span>{vozHabilitada ? '🗣️ VOZ ATIVA' : '🤐 VOZ OFF'}</span>
-				</button>
-
-				<button
-					type="button"
-					onclick={tocarChimeHospitalar}
-					class="border border-blue-600 bg-blue-600/30 hover:bg-blue-600 px-3 py-1.5 text-xs font-bold text-blue-300 hover:text-white uppercase rounded transition-colors"
-					title="Testar Sinal Sonoro"
-				>
-					🔔 Testar Som
-				</button>
-
-				<button
-					type="button"
-					onclick={alternarFullscreen}
-					class="border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-white uppercase rounded transition-colors"
-					title="Modo Tela Cheia"
-				>
-					⛶ Tela Cheia
-				</button>
+	<!-- ═══════════════════════════════════════════════════════════════
+	     CARDS DE CONEXÃO & PAREAMENTO DA TV
+	     ═══════════════════════════════════════════════════════════════ -->
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+		
+		<!-- CARD 1: URL DA TV -->
+		<div class="border border-slate-200 bg-white p-5 flex flex-col justify-between">
+			<div>
+				<div class="flex items-center justify-between">
+					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+						1. URL DE ACESSO NA TV
+					</span>
+					<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+				</div>
+				<div class="mt-2 font-mono text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 p-2.5 break-all select-all">
+					{urlTv}
+				</div>
+				<p class="mt-2 text-[11px] text-slate-600">
+					Abra o navegador na Smart TV da sala de espera e digite exatamente este endereço.
+				</p>
 			</div>
 
-			<div class="border-l border-slate-800 pl-6 text-right">
-				<div class="text-2xl font-black tracking-widest text-emerald-400 font-mono">
-					{horarioAtual || '00:00:00'}
+			<button
+				onclick={() => copiarTexto(urlTv, 'link')}
+				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+			>
+				{copiadoLink ? '✓ Link Copiado!' : 'Copiar URL da TV'}
+			</button>
+		</div>
+
+		<!-- CARD 2: SENHA DO CENTRO -->
+		<div class="border border-slate-200 bg-white p-5 flex flex-col justify-between">
+			<div>
+				<div class="flex items-center justify-between">
+					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+						2. SENHA DE PAREAMENTO
+					</span>
+					<span class="border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue-800 uppercase">
+						CENTRO ATIVO
+					</span>
 				</div>
-				<div class="text-[11px] text-slate-400 capitalize">
-					{dataAtual || 'Carregando data...'}
+				<div class="mt-2 font-mono text-2xl font-black {ehCeo ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-blue-900 bg-blue-50 border-blue-200'} border p-2 text-center tracking-widest select-all">
+					{senhaPareamento}
 				</div>
+				<p class="mt-2 text-[11px] text-slate-600">
+					Ao abrir a tela na Smart TV, digite esta senha para sincronizar as chamadas deste centro.
+				</p>
+			</div>
+
+			<button
+				onclick={() => copiarTexto(senhaPareamento, 'senha')}
+				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+			>
+				{copiadoSenha ? '✓ Senha Copiada!' : 'Copiar Senha do Centro'}
+			</button>
+		</div>
+
+		<!-- CARD 3: STATUS & ABERTURA DIRETA -->
+		<div class="border border-slate-200 bg-slate-50 p-5 flex flex-col justify-between">
+			<div>
+				<div class="flex items-center justify-between">
+					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+						3. TRANSMISSÃO EM TEMPO REAL
+					</span>
+					<span class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-emerald-700 uppercase">
+						<span class="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-600"></span>
+						ONLINE
+					</span>
+				</div>
+				<div class="mt-3 space-y-1.5 text-xs text-slate-700 font-mono">
+					<div class="flex justify-between border-b border-slate-200 pb-1">
+						<span class="text-slate-500">Órgão Vinculado:</span>
+						<strong>{centroAtivo}</strong>
+					</div>
+					<div class="flex justify-between border-b border-slate-200 pb-1">
+						<span class="text-slate-500">Tipo de Local:</span>
+						<strong>{tipoLocal}</strong>
+					</div>
+					<div class="flex justify-between pb-1">
+						<span class="text-slate-500">Sintetizador Voz:</span>
+						<strong class="text-emerald-700">Português (BR)</strong>
+					</div>
+				</div>
+			</div>
+
+			<button
+				onclick={abrirPainelNovaAba}
+				class="mt-4 w-full border {ehCeo ? 'border-emerald-700 bg-emerald-700 hover:bg-emerald-800' : 'border-blue-900 bg-blue-900 hover:bg-blue-950'} text-white py-2 font-mono text-xs font-bold tracking-widest uppercase transition-all shadow-sm"
+			>
+				Abrir Painel em Nova Aba ↗
+			</button>
+		</div>
+	</div>
+
+	<!-- ═══════════════════════════════════════════════════════════════
+	     GUIA RÁPIDO DE INSTALAÇÃO NA SMART TV
+	     ═══════════════════════════════════════════════════════════════ -->
+	<div class="border border-slate-200 bg-white p-6">
+		<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-3">
+			INSTRUÇÕES PARA A EQUIPE DA RECEPÇÃO
+		</div>
+		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<div class="border border-slate-100 bg-slate-50 p-4">
+				<div class="font-mono text-lg font-bold text-blue-900">01</div>
+				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Ligue a Smart TV</h3>
+				<p class="text-[11px] text-slate-600 mt-1">
+					Abra o navegador de internet integrado na TV da recepção ou no computador conectado via HDMI.
+				</p>
+			</div>
+
+			<div class="border border-slate-100 bg-slate-50 p-4">
+				<div class="font-mono text-lg font-bold text-blue-900">02</div>
+				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Acesse a URL</h3>
+				<p class="text-[11px] text-slate-600 mt-1">
+					Digite o endereço <strong>unisism.vercel.app/tv</strong> na barra de navegação da TV.
+				</p>
+			</div>
+
+			<div class="border border-slate-100 bg-slate-50 p-4">
+				<div class="font-mono text-lg font-bold text-blue-900">03</div>
+				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Digite a Senha</h3>
+				<p class="text-[11px] text-slate-600 mt-1">
+					Insira o código <strong>{senhaPareamento}</strong>. O painel conectará e salvará o pareamento automaticamente.
+				</p>
+			</div>
+
+			<div class="border border-slate-100 bg-slate-50 p-4">
+				<div class="font-mono text-lg font-bold text-blue-900">04</div>
+				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Coloque em Tela Cheia</h3>
+				<p class="text-[11px] text-slate-600 mt-1">
+					Clique no botão "Tela Cheia" (ou F11) e ajuste o volume dos alto-falantes da sala de espera.
+				</p>
 			</div>
 		</div>
-	</header>
+	</div>
 
-	<!-- Main Content Grid -->
-	<main class="flex flex-1 overflow-hidden p-6 gap-6">
-		<!-- Left: Chamada Principal (Hero Display) -->
-		<section class="flex flex-3 flex-col justify-between rounded-xl border-4 {piscarDestaque ? 'border-amber-400 bg-amber-950/40 animate-pulse' : 'border-blue-600 bg-slate-900/90'} p-8 shadow-2xl transition-all duration-300">
+	<!-- ═══════════════════════════════════════════════════════════════
+	     MONITORAMENTO EM TEMPO REAL DAS CHAMADAS
+	     ═══════════════════════════════════════════════════════════════ -->
+	<div class="border border-slate-200 bg-white">
+		<div class="border-b border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
 			<div>
-				<div class="flex items-center justify-between border-b-2 border-slate-800 pb-4">
-					<div class="flex items-center gap-3">
-						<span class="inline-block h-4 w-4 rounded-full bg-emerald-500 animate-ping"></span>
-						<span class="text-sm font-bold tracking-widest text-emerald-400 uppercase">
-							CHAMADA DE PACIENTE EM ANDAMENTO
-						</span>
-					</div>
-					<div class="text-sm font-bold text-slate-400">
-						HORÁRIO: <strong class="text-white">{chamadaAtual?.horario || '—'}</strong>
-					</div>
+				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+					MONITORAMENTO DE TRANSMISSÃO
 				</div>
-
-				<!-- Nome do Paciente em Destaque Gigante -->
-				<div class="mt-8 flex flex-col gap-2">
-					<span class="text-xs font-bold tracking-widest text-slate-400 uppercase">PACIENTE:</span>
-					<div class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white font-sans uppercase leading-none drop-shadow-md">
-						{chamadaAtual?.pacienteNome || 'AGUARDANDO...'}
-					</div>
-				</div>
+				<h2 class="font-mono text-sm font-bold text-slate-900 uppercase">
+					Fila de Chamadas Ativas · {centroAtivo}
+				</h2>
 			</div>
 
-			<!-- Destino: Consultório & Especialista -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t-2 border-slate-800 pt-6">
-				<!-- Box Consultório -->
-				<div class="rounded-lg border-2 border-emerald-500/50 bg-emerald-950/50 p-6 flex flex-col justify-center">
-					<span class="text-xs font-bold tracking-widest text-emerald-300 uppercase">DIRIGIR-SE AO LOCAL:</span>
-					<div class="text-3xl lg:text-4xl font-black text-emerald-400 mt-2 font-mono uppercase">
-						{chamadaAtual?.consultorio || 'SALA DE ATENDIMENTO'}
-					</div>
-				</div>
+			<button
+				onclick={carregarChamadasRecentes}
+				class="border border-slate-300 bg-white px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+			>
+				{carregandoChamadas ? 'Atualizando...' : '↻ Atualizar Fila'}
+			</button>
+		</div>
 
-				<!-- Box Especialista -->
-				<div class="rounded-lg border-2 border-blue-500/50 bg-blue-950/50 p-6 flex flex-col justify-center">
-					<span class="text-xs font-bold tracking-widest text-blue-300 uppercase">PROFISSIONAL RESPONSÁVEL:</span>
-					<div class="text-2xl lg:text-3xl font-bold text-white mt-1 font-sans">
-						{chamadaAtual?.medicoNome || 'Dr(a). Especialista'}
-					</div>
-					<div class="text-sm font-semibold text-blue-300 mt-1 uppercase">
-						{chamadaAtual?.especialidade || 'Consulta Especializada'}
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Right: Últimas Chamadas Anteriores -->
-		<aside class="flex flex-1 flex-col rounded-xl border-2 border-slate-800 bg-slate-900/60 p-6">
-			<div class="border-b-2 border-slate-800 pb-3 flex items-center justify-between">
-				<span class="text-xs font-bold tracking-wider text-slate-400 uppercase">ÚLTIMAS CHAMADAS</span>
-				<span class="text-[10px] text-slate-500 font-bold">HISTÓRICO</span>
-			</div>
-
-			<div class="mt-4 flex flex-1 flex-col gap-3 overflow-y-auto">
-				{#each ultimasChamadas as c (c.id)}
-					<div class="rounded-lg border border-slate-800 bg-slate-800/60 p-3.5 flex flex-col gap-1 transition-all hover:bg-slate-800">
-						<div class="flex items-center justify-between">
-							<span class="font-bold text-slate-200 text-sm font-sans truncate">{c.pacienteNome}</span>
-							<span class="text-[11px] font-mono text-emerald-400 font-bold">{c.horario}</span>
-						</div>
-						<div class="text-xs font-bold text-blue-400 font-mono">
-							{c.consultorio}
-						</div>
-						<div class="text-[10px] text-slate-400 truncate">
-							{c.medicoNome} · {c.especialidade}
-						</div>
-					</div>
-				{:else}
-					<div class="flex flex-1 items-center justify-center text-center text-slate-600 text-xs italic">
-						Nenhuma chamada anterior registrada nesta sessão.
-					</div>
-				{/each}
-			</div>
-
-			<!-- Footer com Mensagem Institucional -->
-			<div class="border-t-2 border-slate-800 pt-3 text-center text-[10px] text-slate-500 uppercase tracking-wider">
-				Atenção ao sinal sonoro · Mantenha seu documento com foto em mãos
-			</div>
-		</aside>
-	</main>
+		<div class="overflow-x-auto">
+			<table class="w-full text-left font-mono text-xs">
+				<thead class="border-b border-slate-200 bg-slate-100/70 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+					<tr>
+						<th class="px-6 py-3">Paciente</th>
+						<th class="px-6 py-3">Local Designado</th>
+						<th class="px-6 py-3">Profissional Responsável</th>
+						<th class="px-6 py-3">Especialidade</th>
+						<th class="px-6 py-3">Horário</th>
+						<th class="px-6 py-3 text-right">Status no Painel</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-slate-100">
+					{#if chamadasAtivas.length === 0}
+						<tr>
+							<td colspan="6" class="px-6 py-8 text-center text-slate-500">
+								Nenhum paciente em chamada no momento. Os atendimentos chamados pelos consultórios aparecerão aqui automaticamente.
+							</td>
+						</tr>
+					{:else}
+						{#each chamadasAtivas as c}
+							<tr class="hover:bg-slate-50 transition-colors">
+								<td class="px-6 py-3 font-bold text-slate-900">
+									{c.pacienteNome}
+								</td>
+								<td class="px-6 py-3 font-bold {ehCeo ? 'text-emerald-700' : 'text-blue-900'}">
+									{c.consultorio}
+								</td>
+								<td class="px-6 py-3 text-slate-700">
+									{c.medicoNome}
+								</td>
+								<td class="px-6 py-3 text-slate-600">
+									{c.especialidade}
+								</td>
+								<td class="px-6 py-3 text-slate-500 font-bold">
+									{c.horario}
+								</td>
+								<td class="px-6 py-3 text-right">
+									<span class="inline-flex items-center gap-1 border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800 uppercase">
+										<span class="inline-block h-1 w-1 rounded-full bg-emerald-600"></span>
+										TRANSMITIDO
+									</span>
+								</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	</div>
 </div>
