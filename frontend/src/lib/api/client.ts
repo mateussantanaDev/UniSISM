@@ -126,6 +126,8 @@ import type {
   SolicitarEncaminhamentoMedicoResponse,
   AgendarRetornoDirectRequest,
   AgendarRetornoDirectResponse,
+  CalcularSlotCentroRequest,
+  CalcularSlotCentroResponse,
 } from './types';
 
 // ============================================================
@@ -1574,6 +1576,16 @@ export class CentroRecepcaoApi {
       `/encaminhamentos/${encodeURIComponent(id)}/remarcar`,
       req
     );
+  }
+
+  /** Listar escalas médicas/odontológicas ativas (GET /v1/centro/escalas). */
+  listEscalas(): Promise<EscalaMedicoCentro[]> {
+    return this.api.get<EscalaMedicoCentro[]>('/centro/escalas');
+  }
+
+  /** Calcular slot de agendamento no backend (POST /v1/centro/recepcao/calcular-slot). */
+  calcularSlot(req: CalcularSlotCentroRequest): Promise<CalcularSlotCentroResponse> {
+    return this.api.post<CalcularSlotCentroResponse>('/centro/recepcao/calcular-slot', req);
   }
 }
 

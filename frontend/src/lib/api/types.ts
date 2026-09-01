@@ -1524,16 +1524,50 @@ export interface CotaUbsCentro {
 
 export interface EscalaMedicoCentro {
   id?: string;
+  medicoId?: string;
   medicoNome: string;
   crm: string;
   especialidade: string;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimentoId?: string;
   diasSemana: string[];
   horarioInicio: string;
   horarioFim: string;
   duracaoMinutos: number;
   vagasPorTurno: number;
-  status?: 'ATIVA' | 'FERIAS' | 'BLOQUEADA_PARCIAL';
+  status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA' | 'BLOQUEADA_PARCIAL';
   observacoes?: string;
+  ativo?: boolean;
+}
+
+export interface CalcularSlotCentroRequest {
+  centro?: 'CEM' | 'CEO' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
+  especialidade?: string;
+  medicoNome?: string;
+  medicoId?: string;
+  prioridade?: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' | 'EMERGENCIA';
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimento?: string;
+  dataBase?: string;
+}
+
+export interface CalcularSlotCentroResponse {
+  sucesso: boolean;
+  mensagem?: string;
+  alocacao?: {
+    data: string;
+    dataFormatada: string;
+    hora: string;
+    medicoId?: string;
+    medicoNome: string;
+    crm: string;
+    especialidade: string;
+    consultorio: string;
+    prazoLegalSus: string;
+    justificativaEscala: string;
+    duracaoMinutos: number;
+    tipoServico: string;
+  };
 }
 
 export interface RemanejamentoLoteCentroRequest {

@@ -3,24 +3,26 @@ import type { PrioridadeClinica } from '$lib/api/types';
 export type TipoCentro = 'CEM' | 'CEO';
 
 export interface EscalaProfissionalCentro {
-	id: string;
+	id?: string;
+	medicoId?: string;
 	nome: string;
 	registro: string; // CRM ou CRO
 	centro: TipoCentro;
 	especialidade: string;
-	diasSemana: Array<'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB'>;
+	diasSemana: Array<'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB' | string>;
 	horarioInicio: string; // "08:00"
 	horarioFim: string; // "12:00"
 	duracaoMinutos: number; // Ex: 20 min (CEM) ou 30-40 min (CEO)
 	vagasPorTurno: number;
-	consultorio: string; // "Consultório 03" ou "Cadeira 02"
-	status: 'ATIVA' | 'FERIAS' | 'BLOQUEADA_PARCIAL';
+	consultorio?: string;
+	status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA' | 'BLOQUEADA_PARCIAL';
 }
 
 export interface ResultadoAlocacaoAutomatica {
 	data: string; // YYYY-MM-DD
 	dataFormatada: string; // DD/MM/YYYY
 	hora: string; // HH:MM
+	medicoId?: string;
 	medicoNome: string;
 	registro: string;
 	especialidade: string;
@@ -40,7 +42,7 @@ export interface AgendamentoOcupado {
 	centro?: TipoCentro;
 }
 
-// Especialidades Oficiais por Centro
+// Especialidades Oficiais SUS por Centro
 export const ESPECIALIDADES_CEM = [
 	'Cardiologia',
 	'Oftalmologia',
@@ -70,266 +72,69 @@ export const ESPECIALIDADES_CEO = [
 	'Ortodontia Preventiva'
 ] as const;
 
-// Escalas Padrão Iniciais do CEM (Médicos Especialistas)
-export const ESCALAS_PADRAO_CEM: EscalaProfissionalCentro[] = [
-	{
-		id: 'esc-cem-01',
-		nome: 'Dr. Roberto Medeiros',
-		registro: 'CRM 14920',
-		centro: 'CEM',
-		especialidade: 'Cardiologia',
-		diasSemana: ['TER', 'QUI'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 01 — ALA A',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-02',
-		nome: 'Dra. Beatriz Albuquerque',
-		registro: 'CRM 18340',
-		centro: 'CEM',
-		especialidade: 'Oftalmologia',
-		diasSemana: ['SEG', 'QUA', 'SEX'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 02 — OFTALMOLOGIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-03',
-		nome: 'Dr. Lucas Silveira',
-		registro: 'CRM 19042',
-		centro: 'CEM',
-		especialidade: 'Ortopedia',
-		diasSemana: ['SEG', 'TER', 'QUI'],
-		horarioInicio: '13:00',
-		horarioFim: '17:00',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 03 — TRAUMATO-ORTOPEDIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-04',
-		nome: 'Dra. Mariana Fontes',
-		registro: 'CRM 22105',
-		centro: 'CEM',
-		especialidade: 'Dermatologia',
-		diasSemana: ['QUA', 'SEX'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 04 — DERMATOLOGIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-05',
-		nome: 'Dr. Fernando Vasconcellos',
-		registro: 'CRM 15780',
-		centro: 'CEM',
-		especialidade: 'Neurologia',
-		diasSemana: ['SEG', 'QUI'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 25,
-		vagasPorTurno: 10,
-		consultorio: 'CONSULTÓRIO 05 — NEUROLOGIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-06',
-		nome: 'Dra. Juliana Prado',
-		registro: 'CRM 20880',
-		centro: 'CEM',
-		especialidade: 'Ginecologia e Obstetrícia',
-		diasSemana: ['TER', 'QUA', 'SEX'],
-		horarioInicio: '13:30',
-		horarioFim: '17:30',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 06 — SAÚDE DA MULHER',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-07',
-		nome: 'Dr. Henrique Novaes',
-		registro: 'CRM 16400',
-		centro: 'CEM',
-		especialidade: 'Psiquiatria',
-		diasSemana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 30,
-		vagasPorTurno: 8,
-		consultorio: 'CONSULTÓRIO 07 — SAÚDE MENTAL',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-cem-08',
-		nome: 'Dra. Claudia Meirelles',
-		registro: 'CRM 21390',
-		centro: 'CEM',
-		especialidade: 'Endocrinologia',
-		diasSemana: ['TER', 'QUI'],
-		horarioInicio: '13:00',
-		horarioFim: '17:00',
-		duracaoMinutos: 20,
-		vagasPorTurno: 12,
-		consultorio: 'CONSULTÓRIO 08 — METABOLISMO',
-		status: 'ATIVA'
-	}
-];
+// Escalas Padrão (Sem dados mockados — alimentadas 100% pelo banco de dados)
+export const ESCALAS_PADRAO_CEM: EscalaProfissionalCentro[] = [];
+export const ESCALAS_PADRAO_CEO: EscalaProfissionalCentro[] = [];
 
-// Escalas Padrão Iniciais do CEO (Dentistas Especialistas por Cadeiras)
-export const ESCALAS_PADRAO_CEO: EscalaProfissionalCentro[] = [
-	{
-		id: 'esc-ceo-01',
-		nome: 'Dr. André Guimarães',
-		registro: 'CRO 7410',
-		centro: 'CEO',
-		especialidade: 'Endodontia',
-		diasSemana: ['SEG', 'TER', 'QUA'],
-		horarioInicio: '07:30',
-		horarioFim: '12:00',
-		duracaoMinutos: 35,
-		vagasPorTurno: 8,
-		consultorio: 'CADEIRA ODONTOLÓGICA 01 — ENDODONTIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-ceo-02',
-		nome: 'Dra. Camila Vasconcelos',
-		registro: 'CRO 8421',
-		centro: 'CEO',
-		especialidade: 'Cirurgia Bucomaxilofacial',
-		diasSemana: ['TER', 'QUI', 'SEX'],
-		horarioInicio: '08:00',
-		horarioFim: '12:30',
-		duracaoMinutos: 40,
-		vagasPorTurno: 7,
-		consultorio: 'CADEIRA ODONTOLÓGICA 02 — CIRURGIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-ceo-03',
-		nome: 'Dr. Rodrigo Barreto',
-		registro: 'CRO 9155',
-		centro: 'CEO',
-		especialidade: 'Periodontia',
-		diasSemana: ['SEG', 'QUA', 'SEX'],
-		horarioInicio: '13:00',
-		horarioFim: '17:00',
-		duracaoMinutos: 30,
-		vagasPorTurno: 8,
-		consultorio: 'CADEIRA ODONTOLÓGICA 03 — PERIODONTIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-ceo-04',
-		nome: 'Dra. Larissa Tavares',
-		registro: 'CRO 10240',
-		centro: 'CEO',
-		especialidade: 'Odontopediatria',
-		diasSemana: ['TER', 'QUA', 'QUI'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 30,
-		vagasPorTurno: 8,
-		consultorio: 'CADEIRA ODONTOLÓGICA 04 — ODONTOPEDIATRIA',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-ceo-05',
-		nome: 'Dr. Marcelo Fagundes',
-		registro: 'CRO 6780',
-		centro: 'CEO',
-		especialidade: 'Pacientes com Necessidades Especiais (PNE)',
-		diasSemana: ['SEG', 'QUI'],
-		horarioInicio: '08:00',
-		horarioFim: '12:00',
-		duracaoMinutos: 45,
-		vagasPorTurno: 5,
-		consultorio: 'CADEIRA ODONTOLÓGICA 05 — ATENDIMENTO PNE',
-		status: 'ATIVA'
-	},
-	{
-		id: 'esc-ceo-06',
-		nome: 'Dra. Patricia Mendonça',
-		registro: 'CRO 8930',
-		centro: 'CEO',
-		especialidade: 'Prótese Dentária',
-		diasSemana: ['SEG', 'TER', 'SEX'],
-		horarioInicio: '13:00',
-		horarioFim: '17:00',
-		duracaoMinutos: 30,
-		vagasPorTurno: 8,
-		consultorio: 'CADEIRA ODONTOLÓGICA 06 — PRÓTESE',
-		status: 'ATIVA'
-	}
-];
-
-const MAPA_DIAS_JS: Record<number, 'DOM' | 'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB'> = {
-	0: 'DOM',
-	1: 'SEG',
-	2: 'TER',
-	3: 'QUA',
-	4: 'QUI',
-	5: 'SEX',
-	6: 'SAB'
+const DIA_SEMANA_MAP: Record<string, number> = {
+	DOM: 0,
+	DOMINGO: 0,
+	SEG: 1,
+	SEGUNDA: 1,
+	TER: 2,
+	TERCA: 2,
+	TERÇA: 2,
+	QUA: 3,
+	QUARTA: 3,
+	QUI: 4,
+	QUINTA: 4,
+	SEX: 5,
+	SEXTA: 5,
+	SAB: 6,
+	SABADO: 6,
+	SÁBADO: 6
 };
 
-/**
- * Gera slots de horários de um turno com base no início, fim e duração
- */
-export function gerarSlotsTurno(horarioInicio: string, horarioFim: string, duracaoMinutos: number): string[] {
+export function gerarSlotsTurno(inicio: string, fim: string, duracaoMinutos = 20): string[] {
 	const slots: string[] = [];
-	const [hIni, mIni] = horarioInicio.split(':').map(Number);
-	const [hFim, mFim] = horarioFim.split(':').map(Number);
+	const [hIni = 8, mIni = 0] = inicio.split(':').map(Number);
+	const [hFim = 12, mFim = 0] = fim.split(':').map(Number);
 
-	let totalMinutos = hIni * 60 + mIni;
-	const totalMinutosFim = hFim * 60 + mFim;
+	let atual = hIni * 60 + mIni;
+	const limite = hFim * 60 + mFim;
 
-	while (totalMinutos + duracaoMinutos <= totalMinutosFim) {
-		const h = Math.floor(totalMinutos / 60);
-		const m = totalMinutos % 60;
+	while (atual + duracaoMinutos <= limite) {
+		const h = Math.floor(atual / 60);
+		const m = atual % 60;
 		slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-		totalMinutos += duracaoMinutos;
+		atual += duracaoMinutos;
 	}
 
-	return slots.length > 0 ? slots : [horarioInicio];
+	return slots.length > 0 ? slots : [inicio];
 }
 
-/**
- * ALGORITMO DETERMINÍSTICO DE ALOCAÇÃO AUTOMÁTICA DE VAGAS POR MÉDICO / DENTISTA ESPECÍFICO E CENTRO
- * 
- * 1. Identifica a escala real do profissional selecionado no respectivo centro (CEM ou CEO).
- * 2. Determina a janela de dias permitida conforme a gravidade e prioridade SUS.
- * 3. Varre a agenda do médico dia a dia verificando se ele atende naquele dia da semana.
- * 4. Para cada dia de atendimento, varre os slots de horários verificando ocupação.
- * 5. Aloca o paciente no primeiro slot livre e compatível com as diretrizes do SUS.
- */
+export function formatarDataBr(iso: string): string {
+	const [ano, mes, dia] = iso.split('-');
+	return `${dia}/${mes}/${ano}`;
+}
+
 export function alocarVagaPorProfissionalEEscala(params: {
 	centro: TipoCentro;
 	medicoNome?: string;
+	medicoId?: string;
 	especialidade?: string;
-	prioridade: PrioridadeClinica;
+	prioridade?: PrioridadeClinica;
 	agendamentosExistentes?: AgendamentoOcupado[];
-	escalasCustomizadas?: EscalaProfissionalCentro[];
+	escalasDisponiveis?: EscalaProfissionalCentro[];
 	dataBase?: Date;
 }): ResultadoAlocacaoAutomatica | null {
 	const {
 		centro,
 		medicoNome,
 		especialidade,
-		prioridade,
+		prioridade = 'ELETIVA',
 		agendamentosExistentes = [],
-		escalasCustomizadas,
+		escalasDisponiveis = [],
 		dataBase = new Date()
 	} = params;
 
@@ -337,140 +142,118 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		return null;
 	}
 
-	const escalasAtivas = (escalasCustomizadas && escalasCustomizadas.length > 0)
-		? escalasCustomizadas
-		: (centro === 'CEO' ? ESCALAS_PADRAO_CEO : ESCALAS_PADRAO_CEM);
+	const escalasAtivas = escalasDisponiveis.filter(e => e.status === 'ATIVA' || !e.status);
+	if (escalasAtivas.length === 0) {
+		return null;
+	}
 
-	// 1. Encontra a escala do médico selecionado ou o melhor especialista do Centro
 	let escala: EscalaProfissionalCentro | undefined;
-
 	if (medicoNome) {
-		escala = escalasAtivas.find(e => e.nome.toLowerCase() === medicoNome.toLowerCase() && e.status === 'ATIVA');
+		escala = escalasAtivas.find(e => e.nome.toLowerCase() === medicoNome.toLowerCase());
 	}
-
 	if (!escala && especialidade) {
-		escala = escalasAtivas.find(
-			e => e.especialidade.toLowerCase() === especialidade.toLowerCase() && e.status === 'ATIVA'
-		);
+		escala = escalasAtivas.find(e => e.especialidade.toLowerCase() === especialidade.toLowerCase());
 	}
-
+	if (!escala) {
+		escala = escalasAtivas[0];
+	}
 	if (!escala) {
 		return null;
 	}
 
-	const centroNomeCompleto = centro === 'CEO'
-		? 'Centro Municipal de Especialidades Odontológicas (CEO)'
-		: 'Centro Municipal de Especialidades Médicas (CEM)';
+	const diasNumericos = Array.from(new Set(
+		escala.diasSemana.map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
+	));
 
-	// 2. Determina a janela de dias por prioridade clínica SUS
-	let diasOffsetInicial = 0;
-	let prazoLegalSus = 'Até 30 dias corridos';
-	let fundamentacao = 'Portaria SUS: Demanda clínica eletiva com fila regular';
+	const slotsBase = gerarSlotsTurno(escala.horarioInicio, escala.horarioFim, escala.duracaoMinutos);
+	const ehCeo = centro === 'CEO';
 
-	switch (prioridade) {
-		case 'EMERGENCIA':
-			diasOffsetInicial = 0; // Mesmo dia ou primeiro dia de escala útil imediato
-			prazoLegalSus = 'Atendimento Imediato (Mesmo Dia / 24h)';
-			fundamentacao = `Portaria SUS: Demanda de emergência com risco iminente de agravo. Alocado no primeiro horário imediato da escala de ${escala.nome}.`;
-			break;
-		case 'URGENTE':
-			diasOffsetInicial = 1; // 1 a 3 dias úteis
-			prazoLegalSus = 'Até 72 horas úteis';
-			fundamentacao = `Portaria SUS: Demanda com gravidade moderada/alta. Alocado na primeira janela da escala de ${escala.nome}.`;
-			break;
-		case 'PRIORITARIA':
-			diasOffsetInicial = 7; // 7 a 10 dias
-			prazoLegalSus = 'Prioridade Legal SUS (7 a 10 dias)';
-			fundamentacao = `Portaria SUS: Prioridade legal (Idosos 60+, Gestantes, PCD, TEA ou Doença Crônica). Escala de ${escala.nome}.`;
-			break;
-		case 'ELETIVA':
-		default:
-			diasOffsetInicial = 14; // 14 a 30 dias
-			prazoLegalSus = 'Demanda Eletiva Regular (15 a 30 dias)';
-			fundamentacao = `Portaria SUS: Atendimento ambulatorial programado. Escala regular de ${escala.nome}.`;
-			break;
+	let offsetDias = 15;
+	let prazoTexto = 'Demanda Eletiva Regular (15 a 30 dias)';
+	let justificativaTexto = `Portaria SUS: Atendimento programado. Escala regular de ${escala.nome}.`;
+
+	if (prioridade === 'EMERGENCIA') {
+		offsetDias = 0;
+		prazoTexto = 'Atendimento Imediato (Mesmo Dia / 24h)';
+		justificativaTexto = `Portaria SUS: Demanda de emergência com risco iminente de agravo. Alocado no primeiro horário imediato da escala de ${escala.nome}.`;
+	} else if (prioridade === 'URGENTE') {
+		offsetDias = 1;
+		prazoTexto = 'Demanda Urgente (Até 72 horas)';
+		justificativaTexto = `Portaria SUS: Condição clínica aguda com risco de evolução desfavorável. Priorizado nos primeiros dias da escala de ${escala.nome}.`;
+	} else if (prioridade === 'PRIORITARIA') {
+		offsetDias = 7;
+		prazoTexto = 'Prioridade Legal SUS (7 a 10 dias)';
+		justificativaTexto = `Portaria SUS: Lei nº 10.048/2000 (Idosos 60+, PCD, Gestantes, TEA). Encaixe prioritário na escala de ${escala.nome}.`;
 	}
 
-	// 3. Varredura da agenda do profissional: busca pelo dia em que ele atende e tem vaga livre
-	const dataCursor = new Date(dataBase);
-	dataCursor.setDate(dataCursor.getDate() + diasOffsetInicial);
+	let dataCursor = new Date(dataBase);
+	dataCursor.setDate(dataCursor.getDate() + offsetDias);
 
-	const maxDiasBusca = 60; // Limite de 60 dias para busca de vaga
-	let diaEncontrado: string | null = null;
-	let horaEncontrada: string | null = null;
+	const ocupadosSet = new Set(
+		agendamentosExistentes.map(a => `${a.data}_${a.hora}`)
+	);
 
-	const slotsDoTurno = gerarSlotsTurno(escala.horarioInicio, escala.horarioFim, escala.duracaoMinutos);
+	let dataIsoFinal = '';
+	let horaFinal = '';
 
-	for (let diaOffset = 0; diaOffset < maxDiasBusca; diaOffset++) {
-		const diaSemanaNum = dataCursor.getDay();
-		const diaSemanaSigla = MAPA_DIAS_JS[diaSemanaNum];
+	let maxTentativas = 60;
+	while (maxTentativas > 0) {
+		const diaSemanaCursor = dataCursor.getDay();
+		if (diasNumericos.includes(diaSemanaCursor)) {
+			const ano = dataCursor.getFullYear();
+			const mes = String(dataCursor.getMonth() + 1).padStart(2, '0');
+			const dia = String(dataCursor.getDate()).padStart(2, '0');
+			const dataStr = `${ano}-${mes}-${dia}`;
 
-		// Se o profissional atende neste dia da semana (e não é domingo ou sábado fora de escala)
-		if (diaSemanaSigla && escala.diasSemana.includes(diaSemanaSigla as any)) {
-			const dataIso = dataCursor.toISOString().substring(0, 10);
-
-			// Agendamentos já marcados para este médico nesta data
-			const ocupadosNoDia = agendamentosExistentes.filter(
-				ag => ag.data === dataIso && (!ag.medicoNome || ag.medicoNome.toLowerCase() === escala!.nome.toLowerCase())
-			);
-
-			const horasOcupadas = new Set(ocupadosNoDia.map(ag => ag.hora));
-
-			// Se for EMERGÊNCIA e for hoje/primeiro dia de atendimento:
-			// Se houver slot livre, pega o primeiro. Se estiver lotado, insere como encaixe de emergência no primeiro slot do dia!
-			for (const slot of slotsDoTurno) {
-				if (!horasOcupadas.has(slot)) {
-					diaEncontrado = dataIso;
-					horaEncontrada = slot;
+			for (const slot of slotsBase) {
+				const chave = `${dataStr}_${slot}`;
+				if (!ocupadosSet.has(chave)) {
+					dataIsoFinal = dataStr;
+					horaFinal = slot;
 					break;
 				}
 			}
 
-			if (!diaEncontrado && prioridade === 'EMERGENCIA') {
-				// Encaixe prioritário no primeiro horário do médico no dia
-				diaEncontrado = dataIso;
-				horaEncontrada = slotsDoTurno[0] || escala.horarioInicio;
+			if (!horaFinal && prioridade === 'EMERGENCIA') {
+				dataIsoFinal = dataStr;
+				horaFinal = slotsBase[0] || escala.horarioInicio;
+				justificativaTexto += ' [Encaixe de Emergência Autorizado]';
 				break;
 			}
 
-			if (diaEncontrado && horaEncontrada) {
+			if (dataIsoFinal && horaFinal) {
 				break;
 			}
 		}
 
 		dataCursor.setDate(dataCursor.getDate() + 1);
+		maxTentativas--;
 	}
 
-	// Fallback de segurança se toda a grade de 60 dias estiver lotada
-	if (!diaEncontrado || !horaEncontrada) {
-		const fallbackDate = new Date(dataBase);
-		fallbackDate.setDate(fallbackDate.getDate() + diasOffsetInicial + 1);
-		diaEncontrado = fallbackDate.toISOString().substring(0, 10);
-		horaEncontrada = escala.horarioInicio;
+	if (!dataIsoFinal || !horaFinal) {
+		const ano = dataCursor.getFullYear();
+		const mes = String(dataCursor.getMonth() + 1).padStart(2, '0');
+		const dia = String(dataCursor.getDate()).padStart(2, '0');
+		dataIsoFinal = `${ano}-${mes}-${dia}`;
+		horaFinal = escala.horarioInicio;
 	}
 
-	const [ano, mes, dia] = diaEncontrado.split('-');
-	const dataFormatada = `${dia}/${mes}/${ano}`;
-
-	const diffTime = Math.abs(new Date(diaEncontrado + 'T12:00:00').getTime() - new Date(dataBase).getTime());
-	const diasAteAtendimento = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-	const diasAtendimentoStr = escala.diasSemana.join(', ');
-	const justificativaCompleta = `${fundamentacao} Profissional: ${escala.nome} (${escala.registro}), escala em ${diasAtendimentoStr} das ${escala.horarioInicio} às ${escala.horarioFim}. Vaga alocada no ${escala.consultorio}.`;
+	const consultorioFinal = escala.consultorio || (ehCeo ? `CADEIRA ODONTOLÓGICA 01 — ${escala.especialidade.toUpperCase()}` : `CONSULTÓRIO 01 — ${escala.especialidade.toUpperCase()}`);
 
 	return {
-		data: diaEncontrado,
-		dataFormatada,
-		hora: horaEncontrada,
+		data: dataIsoFinal,
+		dataFormatada: formatarDataBr(dataIsoFinal),
+		hora: horaFinal,
+		medicoId: escala.medicoId,
 		medicoNome: escala.nome,
 		registro: escala.registro,
 		especialidade: escala.especialidade,
 		centro,
-		centroNome: centroNomeCompleto,
-		consultorio: escala.consultorio,
+		centroNome: ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)',
+		consultorio: consultorioFinal,
 		prioridade,
-		diasAteAtendimento,
-		prazoLegalSus,
-		justificativaEscala: justificativaCompleta
+		diasAteAtendimento: offsetDias,
+		prazoLegalSus: prazoTexto,
+		justificativaEscala: `${justificativaTexto} Profissional: ${escala.nome} (${escala.registro}), escala em ${escala.diasSemana.join(', ')} das ${escala.horarioInicio} às ${escala.horarioFim}. Vaga alocada no ${consultorioFinal}.`
 	};
 }

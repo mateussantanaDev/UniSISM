@@ -46,6 +46,9 @@ export function buildCentroRoutes(
   router.post('/centro/tv/parear', recepcaoController.postTvParear);
 
   // ───── Recepção & Regulação do Centro (Fase 1) ─────
+  router.get('/centro/escalas', authenticate, recepcaoRoles, recepcaoController.getEscalas);
+  router.post('/centro/recepcao/calcular-slot', authenticate, recepcaoRoles, recepcaoController.postCalcularSlot);
+  router.post('/centro/alocacao/calcular-slot', authenticate, recepcaoRoles, recepcaoController.postCalcularSlot);
   router.get('/centro/recepcao/fila-espera', authenticate, recepcaoRoles, recepcaoController.getFilaEspera);
   router.post('/centro/recepcao/agendar/:id', authenticate, recepcaoRoles, recepcaoController.postAgendar);
   router.get('/centro/recepcao/agenda-dia', authenticate, recepcaoRoles, recepcaoController.getAgendaDia);

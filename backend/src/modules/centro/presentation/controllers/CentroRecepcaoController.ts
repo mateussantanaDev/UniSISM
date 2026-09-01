@@ -13,6 +13,8 @@ import type { AgendamentoBalcaoRetroativoUseCase } from '../../application/use-c
 import type { RemarcarEncaminhamentoRegulacaoUseCase } from '../../application/use-cases/RemarcarEncaminhamentoRegulacaoUseCase';
 import type { RegistrarProcedimentosAtendimentoUseCase } from '../../application/use-cases/RegistrarProcedimentosAtendimentoUseCase';
 import type { NotificacaoAusenciaMedicaUseCase } from '../../application/use-cases/NotificacaoAusenciaMedicaUseCase';
+import type { CalcularAlocacaoVagaCentroUseCase } from '../../application/use-cases/CalcularAlocacaoVagaCentroUseCase';
+import type { GestaoEscalasUseCase } from '../../application/use-cases/GestaoEscalasUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -26,6 +28,17 @@ const agendarSchema = z.object({
 const presencaSchema = z.object({
   status: z.enum(['AGUARDANDO_ATENDIMENTO', 'EM_ATENDIMENTO', 'CONCLUIDO', 'FALTOU']),
   observacao: z.string().optional(),
+});
+
+const calcularSlotSchema = z.object({
+  centro: z.enum(['CEM', 'CEO', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional(),
+  especialidade: z.string().optional(),
+  medicoNome: z.string().optional(),
+  medicoId: z.string().optional(),
+  prioridade: z.enum(['ELETIVA', 'PRIORITARIA', 'URGENTE', 'EMERGENCIA']).default('ELETIVA'),
+  tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
+  procedimento: z.string().optional(),
+  dataBase: z.string().optional(),
 });
 
 const balcaoSchema = z.object({
@@ -118,7 +131,22 @@ export class CentroRecepcaoController {
     private readonly remarcarUC: RemarcarEncaminhamentoRegulacaoUseCase,
     private readonly procedimentosUC: RegistrarProcedimentosAtendimentoUseCase,
     private readonly ausenciaMedicaUC: NotificacaoAusenciaMedicaUseCase,
+    private readonly calcularAlocacaoUC: CalcularAlocacaoVagaCentroUseCase,
+    private readonly gestaoEscalasUC: GestaoEscalasUseCase,
   ) {}
+
+  postCalcularSlot = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const body = calcularSlotSchema.parse(req.body);
+    const resultado = await this.calcularAlocacaoUC.exec(body, scope);
+    res.json(resultado);
+  };
+
+  getEscalas = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const escalas = await this.gestaoEscalasUC.listarEscalas(scope);
+    res.json(escalas);
+  };
 
   getFilaEspera = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);

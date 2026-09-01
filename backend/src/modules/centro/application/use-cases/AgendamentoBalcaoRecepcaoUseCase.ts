@@ -1,7 +1,7 @@
 import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao, Sexo, PrioridadeClinica, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
-import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-cases/OtimizadorVagas';
+import { CalcularAlocacaoVagaCentroUseCase } from './CalcularAlocacaoVagaCentroUseCase';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { BadRequest, NotFound } from '../../../../shared/errors';
@@ -40,6 +40,7 @@ export interface AgendamentoBalcaoInput {
 
 export class AgendamentoBalcaoRecepcaoUseCase {
   private readonly notificacoes = new NotificacaoPacienteService();
+  private readonly alocador = new CalcularAlocacaoVagaCentroUseCase();
 
   async exec(input: AgendamentoBalcaoInput, scope: AccessScope): Promise<Encaminhamento> {
     const cleanCpf = input.paciente.cpf.replace(/\D/g, '');
@@ -64,15 +65,34 @@ export class AgendamentoBalcaoRecepcaoUseCase {
       ? new Date(input.solicitacao.dataSolicitacao)
       : now;
 
-    // Optimize scheduling date and slot
-    const otimizado = await calcularOtimizacaoAgendamento({
-      profissional: input.medicoDesejado,
-      nota: input.nota,
-      especialidade: input.solicitacao.especialidadeSolicitada,
-      prioridade: input.solicitacao.prioridade,
-    });
+    // Detect if CEO or CEM based on specialty or routing
+    const espLow = input.solicitacao.especialidadeSolicitada.toLowerCase();
+    const ehCeo = espLow.includes('odonto') || espLow.includes('bucal') || espLow.includes('canal') || espLow.includes('periodontia') || espLow.includes('estomatologia');
+    const centroTipo = ehCeo ? 'CEO' : 'CEM';
 
-    const localAg = 'Centro Municipal de Especialidades';
+    // Optimize scheduling date and slot using real database scales
+    const resultadoAlocacao = await this.alocador.exec(
+      {
+        centro: centroTipo,
+        medicoNome: input.medicoDesejado,
+        especialidade: input.solicitacao.especialidadeSolicitada,
+        prioridade: input.solicitacao.prioridade,
+      },
+      scope,
+    );
+
+    let agendamentoPrevisto: Date;
+    let profissionalAgendado = input.medicoDesejado || input.solicitacao.medicoSolicitante || 'Especialista da Escala';
+    let localAg = ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades (CEM)';
+
+    if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
+      const aloc = resultadoAlocacao.alocacao;
+      agendamentoPrevisto = new Date(`${aloc.data}T${aloc.hora}:00`);
+      profissionalAgendado = aloc.medicoNome;
+      localAg = aloc.consultorio;
+    } else {
+      agendamentoPrevisto = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
+    }
 
     // Create Encaminhamento record in single atomic transaction
     const createdRow = await prisma.$transaction(async (tx) => {
@@ -110,8 +130,8 @@ export class AgendamentoBalcaoRecepcaoUseCase {
         data: {
           protocolo,
           status: StatusEncaminhamento.APROVADO,
-          canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
-          destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES,
+          canalRoteamento: ehCeo ? CanalRoteamento.CENTRO_ODONTOLOGICO : CanalRoteamento.CENTRO_ESPECIALIDADES,
+          destinoRegulacao: ehCeo ? DestinoRegulacao.CENTRO_ODONTOLOGICO : DestinoRegulacao.CENTRO_ESPECIALIDADES,
           pacienteId: dbPaciente.id,
           pacienteNome: dbPaciente.nome,
           pacienteCpf: dbPaciente.cpf,
@@ -128,14 +148,14 @@ export class AgendamentoBalcaoRecepcaoUseCase {
           justificativaClinica: input.solicitacao.justificativaClinica,
           prioridade: input.solicitacao.prioridade as PrioridadeClinica,
           dataSolicitacao,
-          unidadeOrigem: 'Balcão do Centro de Especialidades',
+          unidadeOrigem: ehCeo ? 'Balcão do Centro de Especialidades Odontológicas' : 'Balcão do Centro de Especialidades Médicas',
           atendenteResponsavel: input.atendente.nome,
           ubsId: targetUbsId,
           atendenteId: input.atendente.id,
-          agendamentoPrevisto: otimizado.dateTime,
-          profissionalAgendado: otimizado.doctor.nome,
+          agendamentoPrevisto,
+          profissionalAgendado,
           localAgendamento: localAg,
-          observacoesRegulacao: input.nota || 'Agendamento direto efetuado no balcão do Centro de Especialidades.',
+          observacoesRegulacao: input.nota || `Agendamento direto efetuado no balcão do ${centroTipo}.`,
           statusAtendimentoCentro: 'AGENDADO',
         },
       });
@@ -161,8 +181,8 @@ export class AgendamentoBalcaoRecepcaoUseCase {
           {
             encaminhamentoId: encRow.id,
             tipo: TipoEventoTimeline.AGENDADO,
-            titulo: 'Vaga Alocada Otimizada',
-            descricao: `Consulta agendada para ${otimizado.dateStr} às ${otimizado.timeStr}. Médico: ${otimizado.doctor.nome}.`,
+            titulo: 'Vaga Alocada na Escala',
+            descricao: `Consulta agendada para ${agendamentoPrevisto.toISOString().substring(0, 10)} às ${agendamentoPrevisto.toISOString().substring(11, 16)}. Profissional: ${profissionalAgendado}.`,
             autor: input.atendente.nome,
             autorPapel: 'Recepção · Centro de Especialidades',
           },
@@ -179,9 +199,9 @@ export class AgendamentoBalcaoRecepcaoUseCase {
             protocolo: encRow.protocolo,
             pacienteNome: dbPaciente.nome,
             especialidade: input.solicitacao.especialidadeSolicitada,
-            dataCalculada: otimizado.dateStr,
-            horario: otimizado.timeStr,
-            medico: otimizado.doctor.nome,
+            dataCalculada: agendamentoPrevisto.toISOString().substring(0, 10),
+            horario: agendamentoPrevisto.toISOString().substring(11, 16),
+            medico: profissionalAgendado,
           },
         },
       });
@@ -198,10 +218,10 @@ export class AgendamentoBalcaoRecepcaoUseCase {
         pacienteNome: createdRow.pacienteNome,
         encaminhamentoId: createdRow.id,
         tipo: 'AGENDADO',
-        ...MENSAGENS.agendado(createdRow.protocolo, otimizado.dateTime.toISOString()),
+        ...MENSAGENS.agendado(createdRow.protocolo, agendamentoPrevisto.toISOString()),
         payload: {
           protocolo: createdRow.protocolo,
-          agendamentoPrevisto: otimizado.dateTime.toISOString(),
+          agendamentoPrevisto: agendamentoPrevisto.toISOString(),
         },
       })
       .catch(() => {});

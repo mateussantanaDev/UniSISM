@@ -135,17 +135,18 @@
 		erro = '';
 		try {
 			const centroParam = ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES';
-			const [resCentro, resTodos] = await Promise.all([
+			const [resCentro, resTodos, resEscalas] = await Promise.all([
 				api.centroRecepcao.listAgendaDia({ data: dataAgenda, centro: centroParam }).catch(() => null),
-				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => [])
+				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
+				api.centroRecepcao.listEscalas().catch(() => [])
 			]);
 
-			// Carrega escalas oficiais exclusivas do órgão
-			const escalasBase = ehCeo ? ESCALAS_PADRAO_CEO : ESCALAS_PADRAO_CEM;
+			// Carrega escalas oficiais cadastradas no banco
+			const escalasBase = Array.isArray(resEscalas) ? resEscalas : [];
 			medicosEspecialistas = escalasBase.map(e => ({
-				nome: e.nome,
+				nome: e.medicoNome,
 				especialidade: e.especialidade,
-				registro: e.registro
+				registro: e.crm
 			}));
 
 			todosEncaminhamentosMes = resTodos.filter(e => {

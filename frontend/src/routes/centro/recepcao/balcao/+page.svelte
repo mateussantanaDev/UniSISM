@@ -2,14 +2,19 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
-	import type { Paciente, SolicitacaoMedica, PrioridadeClinica, Sexo, RacaCor } from '$lib/api/types';
+	import type {
+		Paciente,
+		SolicitacaoMedica,
+		PrioridadeClinica,
+		Sexo,
+		RacaCor,
+		EscalaMedicoCentro,
+		CalcularSlotCentroResponse
+	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
-		alocarVagaPorProfissionalEEscala,
 		ESPECIALIDADES_CEM,
 		ESPECIALIDADES_CEO,
-		ESCALAS_PADRAO_CEM,
-		ESCALAS_PADRAO_CEO,
 		type TipoCentro,
 		type AgendamentoOcupado
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
@@ -50,15 +55,21 @@
 	let ultimoCpfPesquisado = '';
 	let timerMensagem: any = null;
 
-	// Dados da Solicitação e Alocação (sem mock)
+	// Dados da Solicitação e Alocação
 	let especialidade = $state('');
 	let tipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('CONSULTA');
 	let procedimentoSolicitado = $state('');
 	let prioridade = $state<PrioridadeClinica>('ELETIVA');
 	let recomendacoes = $state('');
 
-	// Lista de agendamentos ocupados no banco para verificação de colisão de slots
-	let agendamentosExistentes = $state<AgendamentoOcupado[]>([]);
+	// Escalas e profissionais carregados 100% do Banco de Dados
+	let escalasDoBanco = $state<EscalaMedicoCentro[]>([]);
+	let carregandoEscalas = $state(true);
+
+	// Estado da Alocação Calculada no Servidor
+	let alocacaoOtimizadaBalcao = $state<CalcularSlotCentroResponse['alocacao'] | null>(null);
+	let calculandoSlotBackend = $state(false);
+	let mensagemSlotBackend = $state('');
 
 	const procedimentosCem = [
 		'02.11.02.003-6 - Eletrocardiograma (ECG)',
@@ -81,24 +92,36 @@
 		'02.01.01.042-8 - Biópsia de Glândula Salivar / Lesão Bucal'
 	];
 
-	let especialidadesCadastradas = $derived(
-		ehCeo ? [...ESPECIALIDADES_CEO] : [...ESPECIALIDADES_CEM]
-	);
+	// Especialidades obtidas a partir das escalas cadastradas no banco, com fallback para o catálogo oficial
+	let especialidadesCadastradas = $derived.by(() => {
+		const espBanco = Array.from(new Set(escalasDoBanco.map(e => e.especialidade))).filter(Boolean);
+		if (espBanco.length > 0) return espBanco;
+		return ehCeo ? [...ESPECIALIDADES_CEO] : [...ESPECIALIDADES_CEM];
+	});
 
 	let procedimentosCadastrados = $derived(
 		ehCeo ? procedimentosCeo : procedimentosCem
 	);
 
-	// Especialistas cadastrados na escala
-	let medicosEspecialistas = $derived<{ nome: string; especialidade: string; registro: string }[]>(
-		ehCeo
-			? ESCALAS_PADRAO_CEO.map(e => ({ nome: e.nome, especialidade: e.especialidade, registro: e.registro }))
-			: ESCALAS_PADRAO_CEM.map(e => ({ nome: e.nome, especialidade: e.especialidade, registro: e.registro }))
+	// Especialistas cadastrados na escala do banco
+	let medicosEspecialistas = $derived(
+		escalasDoBanco.map(e => ({
+			id: e.id,
+			medicoId: e.medicoId,
+			nome: e.medicoNome,
+			especialidade: e.especialidade,
+			registro: e.crm,
+			diasSemana: e.diasSemana,
+			horarioInicio: e.horarioInicio,
+			horarioFim: e.horarioFim,
+			duracaoMinutos: e.duracaoMinutos,
+			tipoServico: e.tipoServico
+		}))
 	);
 
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
-	let medicoSelecionado = $state<{ nome: string; especialidade: string; registro: string } | null>(null);
+	let medicoSelecionado = $state<{ id?: string; medicoId?: string; nome: string; especialidade: string; registro: string } | null>(null);
 
 	// Filtra especialistas pela especialidade selecionada (se houver) e texto de busca
 	let medicosFiltrados = $derived(
@@ -119,7 +142,7 @@
 		}
 	}
 
-	function selecionarMedico(med: { nome: string; especialidade: string; registro: string }) {
+	function selecionarMedico(med: { id?: string; medicoId?: string; nome: string; especialidade: string; registro: string }) {
 		medicoSelecionado = med;
 		buscaMedico = med.nome;
 		especialidade = med.especialidade;
@@ -131,17 +154,50 @@
 		buscaMedico = '';
 	}
 
-	// Alocação Automática Reativa
-	let alocacaoOtimizadaBalcao = $derived.by(() => {
-		if (!especialidade && !medicoSelecionado) return null;
-		return alocarVagaPorProfissionalEEscala({
-			centro: centroSelecionado,
-			medicoNome: medicoSelecionado?.nome,
-			especialidade: especialidade || medicoSelecionado?.especialidade,
-			prioridade,
-			agendamentosExistentes,
-			dataBase: new Date()
-		});
+	// Alocação Automática Reativa via Backend API
+	async function calcularSlotBackend() {
+		if (!especialidade && !medicoSelecionado) {
+			alocacaoOtimizadaBalcao = null;
+			mensagemSlotBackend = '';
+			return;
+		}
+
+		calculandoSlotBackend = true;
+		mensagemSlotBackend = '';
+
+		try {
+			const res = await api.centroRecepcao.calcularSlot({
+				centro: centroSelecionado,
+				especialidade: especialidade || medicoSelecionado?.especialidade,
+				medicoNome: medicoSelecionado?.nome,
+				medicoId: medicoSelecionado?.medicoId,
+				prioridade,
+				tipoServico,
+				procedimento: procedimentoSolicitado
+			});
+
+			if (res && res.sucesso && res.alocacao) {
+				alocacaoOtimizadaBalcao = res.alocacao;
+				mensagemSlotBackend = '';
+			} else {
+				alocacaoOtimizadaBalcao = null;
+				mensagemSlotBackend = res?.mensagem || 'Nenhum slot disponível com os critérios selecionados.';
+			}
+		} catch (err: any) {
+			alocacaoOtimizadaBalcao = null;
+			mensagemSlotBackend = err?.message || 'Falha ao consultar algoritmo de alocação no servidor.';
+		} finally {
+			calculandoSlotBackend = false;
+		}
+	}
+
+	$effect(() => {
+		const _esp = especialidade;
+		const _med = medicoSelecionado?.nome;
+		const _prio = prioridade;
+		const _serv = tipoServico;
+		const _proc = procedimentoSolicitado;
+		calcularSlotBackend();
 	});
 
 	// Opções de Agendamento Manual / Retorno / Histórico (Escondido por padrão via checkbox)
@@ -218,20 +274,13 @@
 
 	onMount(async () => {
 		try {
-			// Carrega agendamentos recentes para mapeamento de ocupação de slots
-			const res = await api.centroRecepcao.listFilaEspera().catch(() => null);
-			if (res && Array.isArray(res.encaminhamentos)) {
-				agendamentosExistentes = res.encaminhamentos
-					.filter(f => f.agendamentoPrevisto)
-					.map(f => ({
-						data: f.agendamentoPrevisto!.substring(0, 10),
-						hora: f.agendamentoPrevisto!.length > 10 ? f.agendamentoPrevisto!.substring(11, 16) : '08:00',
-						medicoNome: f.solicitacao?.medicoSolicitante,
-						centro: centroSelecionado
-					}));
-			}
+			carregandoEscalas = true;
+			const escalas = await api.centroRecepcao.listEscalas().catch(() => []);
+			escalasDoBanco = Array.isArray(escalas) ? escalas : [];
 		} catch (err) {
-			console.info('[UniSISM] Grade de agendamentos inicializada localmente.', err);
+			console.info('[UniSISM] Falha ao carregar escalas do backend.', err);
+		} finally {
+			carregandoEscalas = false;
 		}
 	});
 
@@ -300,7 +349,7 @@
 		}
 
 		const nomeProfissionalFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || 'Especialista da Escala';
-		const crmProfissionalFinal = medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.registro || (ehCeo ? 'CRO 0000' : 'CRM 0000');
+		const crmProfissionalFinal = medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm || (ehCeo ? 'CRO 0000' : 'CRM 0000');
 
 		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} às ${horaCalculada} | Prioridade: ${prioridade} | [ESCALA ${centroSelecionado}]: ${alocacaoOtimizadaBalcao?.justificativaEscala || 'Alocação direta'} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarAgendamentoManual && tipoAgendamentoManual === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
@@ -399,14 +448,6 @@
 				});
 			}
 
-			// Atualiza a ocupação local para evitar colisão imediata no próximo cadastro
-			agendamentosExistentes.push({
-				data: dataFinal,
-				hora: horaFinal,
-				medicoNome: nomeProfissionalFinal,
-				centro: centroSelecionado
-			});
-
 			sucessoAgendamento = `Agendamento confirmado com sucesso na grade do centro!\n\nProtocolo: ${protocoloFinal || 'AGD-' + Date.now().toString().slice(-6)}\nData Agendada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário do Slot: ${horaFinal}\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nUnidade: ${nomeOrgao}`;
 			
 			if (timerMensagem) clearTimeout(timerMensagem);
@@ -429,6 +470,8 @@
 			recomendacoes = '';
 			ultimoCpfPesquisado = '';
 			habilitarAgendamentoManual = false;
+			alocacaoOtimizadaBalcao = null;
+			mensagemSlotBackend = '';
 		} catch (e) {
 			console.error(e);
 			if (e instanceof ApiError) {
@@ -443,6 +486,27 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-xs">
+	<!-- Alerta se não houver escalas cadastradas no banco -->
+	{#if !carregandoEscalas && escalasDoBanco.length === 0}
+		<div class="border-2 border-amber-600 bg-amber-50 p-3.5 text-amber-950 font-sans text-xs flex items-center justify-between shadow-xs">
+			<div class="flex items-center gap-2.5">
+				<span class="text-base font-bold text-amber-700">⚠️</span>
+				<div>
+					<div class="font-bold text-amber-900 font-mono text-[11px] uppercase">Nenhuma escala profissional cadastrada no banco de dados</div>
+					<div class="text-[11px] text-amber-800">
+						Para o algoritmo do servidor calcular as vagas automaticamente, cadastre os profissionais, dias e turnos de atendimento na <strong>Matriz de Vagas & Escalas</strong>.
+					</div>
+				</div>
+			</div>
+			<a
+				href="/{centroSelecionado.toLowerCase()}/gestao/escalas"
+				class="bg-amber-800 hover:bg-amber-900 text-white font-mono text-[10px] font-bold px-3 py-1.5 uppercase transition-colors whitespace-nowrap"
+			>
+				Cadastrar Escalas →
+			</a>
+		</div>
+	{/if}
+
 	<!-- Alerta de Sucesso -->
 	{#if sucessoAgendamento}
 		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 text-emerald-900 font-bold flex flex-col gap-1.5 items-start whitespace-pre-wrap shadow-xs">
@@ -701,7 +765,13 @@
 							class="w-full border border-slate-300 bg-white px-2.5 py-2 text-left font-sans text-xs text-slate-900 outline-none flex justify-between items-center focus:border-blue-900"
 						>
 							<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
-								{medicoSelecionado ? `${medicoSelecionado.nome} — ${medicoSelecionado.especialidade} (${medicoSelecionado.registro})` : 'Selecione o profissional da escala...'}
+								{#if medicoSelecionado}
+									{medicoSelecionado.nome} — {medicoSelecionado.especialidade} ({medicoSelecionado.registro})
+								{:else if medicosEspecialistas.length === 0}
+									⚠️ Nenhum profissional cadastrado na escala deste Centro
+								{:else}
+									Selecione o profissional da escala...
+								{/if}
 							</span>
 							<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>
 						</button>
@@ -726,7 +796,7 @@
 										>
 											<div class="flex flex-col">
 												<span class="font-bold text-slate-900">{med.nome}</span>
-												<span class="text-[10px] text-slate-500">{med.registro}</span>
+												<span class="text-[10px] text-slate-500">{med.registro} · {med.diasSemana?.join(', ')} ({med.horarioInicio} - {med.horarioFim})</span>
 											</div>
 											<span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 uppercase font-semibold border border-slate-200">
 												{med.especialidade}
@@ -734,7 +804,11 @@
 										</button>
 									{:else}
 										<div class="px-3 py-3 text-center text-slate-500 text-xs font-sans">
-											Nenhum profissional encontrado para os filtros informados.
+											{#if medicosEspecialistas.length === 0}
+												Nenhum profissional com escala cadastrada no banco de dados. Cadastre na Matriz de Vagas & Escalas.
+											{:else}
+												Nenhum profissional encontrado para os filtros informados.
+											{/if}
 										</div>
 									{/each}
 								</div>
@@ -742,7 +816,7 @@
 						{/if}
 					</div>
 
-					<!-- Prioridade Clínica SUS (Necessária para cálculo do algoritmo de alocação de vagas) -->
+					<!-- Prioridade Clínica SUS (Diretriz de Alocação de Vagas) -->
 					<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
 						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center justify-between">
 							<span>Prioridade Clínica SUS (Diretriz de Alocação de Vagas) *</span>
@@ -785,12 +859,17 @@
 						</div>
 					</div>
 
-					<!-- Card Dinâmico: Resultado da Alocação Automática de Slots -->
-					{#if alocacaoOtimizadaBalcao}
+					<!-- Card Dinâmico: Resultado da Alocação Automática de Slots pelo Backend -->
+					{#if calculandoSlotBackend}
+						<div class="border border-blue-300 bg-blue-50 p-3 text-center text-blue-900 font-mono text-xs flex items-center justify-center gap-2 animate-pulse">
+							<span>⚡</span>
+							<span>[CALCULANDO ALOCAÇÃO DE VAGA NO SERVIDOR BACKEND...]</span>
+						</div>
+					{:else if alocacaoOtimizadaBalcao}
 						<div class="border-2 {prioridade === 'EMERGENCIA' ? 'border-red-800 bg-red-50/90 text-red-950' : prioridade === 'URGENTE' ? 'border-orange-700 bg-orange-50/90 text-orange-950' : 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} p-3 flex flex-col gap-1.5 font-mono text-xs shadow-xs">
 							<div class="flex items-center justify-between">
 								<span class="font-bold uppercase text-[10px] flex items-center gap-1.5">
-									<span>⚡ ALOCAÇÃO AUTOMÁTICA DE VAGA ({centroSelecionado})</span>
+									<span>⚡ ALOCAÇÃO DETERMINÍSTICA DO BACKEND ({centroSelecionado})</span>
 								</span>
 								<span class="{prioridade === 'EMERGENCIA' ? 'bg-red-800 text-white' : prioridade === 'URGENTE' ? 'bg-orange-800 text-white' : 'bg-emerald-800 text-white'} font-bold px-1.5 py-0.5 text-[9px] uppercase">
 									{alocacaoOtimizadaBalcao.prazoLegalSus}
@@ -804,16 +883,21 @@
 							</div>
 
 							<div class="text-[11px] font-bold">
-								📍 {alocacaoOtimizadaBalcao.consultorio} · {alocacaoOtimizadaBalcao.medicoNome} ({alocacaoOtimizadaBalcao.registro})
+								📍 {alocacaoOtimizadaBalcao.consultorio} · {alocacaoOtimizadaBalcao.medicoNome} ({alocacaoOtimizadaBalcao.crm})
 							</div>
 
 							<div class="text-[10px] border-t border-slate-300/60 pt-1 font-sans leading-tight opacity-90">
 								{alocacaoOtimizadaBalcao.justificativaEscala}
 							</div>
 						</div>
+					{:else if mensagemSlotBackend}
+						<div class="border border-amber-600 bg-amber-50 p-3 text-amber-900 font-mono text-xs flex flex-col gap-1">
+							<span class="font-bold">⚠️ RETORNO DO SERVIDOR:</span>
+							<span class="font-sans text-[11px]">{mensagemSlotBackend}</span>
+						</div>
 					{:else}
 						<div class="border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 font-mono text-[11px]">
-							⚡ Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para calcular automaticamente o próximo slot livre na grade da escala.
+							⚡ Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para calcular automaticamente o próximo slot livre na grade da escala do servidor.
 						</div>
 					{/if}
 

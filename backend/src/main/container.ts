@@ -105,6 +105,7 @@ import { AgendamentoBalcaoRetroativoUseCase } from '../modules/centro/applicatio
 import { RemarcarEncaminhamentoRegulacaoUseCase } from '../modules/centro/application/use-cases/RemarcarEncaminhamentoRegulacaoUseCase';
 import { RegistrarProcedimentosAtendimentoUseCase } from '../modules/centro/application/use-cases/RegistrarProcedimentosAtendimentoUseCase';
 import { NotificacaoAusenciaMedicaUseCase } from '../modules/centro/application/use-cases/NotificacaoAusenciaMedicaUseCase';
+import { CalcularAlocacaoVagaCentroUseCase } from '../modules/centro/application/use-cases/CalcularAlocacaoVagaCentroUseCase';
 import { GestaoCotasUseCase } from '../modules/centro/application/use-cases/GestaoCotasUseCase';
 import { GestaoEscalasUseCase } from '../modules/centro/application/use-cases/GestaoEscalasUseCase';
 import { RemanejamentoLoteUseCase } from '../modules/centro/application/use-cases/RemanejamentoLoteUseCase';
@@ -412,6 +413,9 @@ export function buildContainer() {
   );
 
   // ----- Módulo Centro de Especialidades -----
+  const gestaoEscalasUC = new GestaoEscalasUseCase();
+  const calcularAlocacaoUC = new CalcularAlocacaoVagaCentroUseCase();
+
   const centroRecepcaoController = new CentroRecepcaoController(
     atendentes,
     new ListarFilaEsperaCentroRecepcaoUseCase(),
@@ -424,12 +428,14 @@ export function buildContainer() {
     new RemarcarEncaminhamentoRegulacaoUseCase(),
     new RegistrarProcedimentosAtendimentoUseCase(),
     new NotificacaoAusenciaMedicaUseCase(),
+    calcularAlocacaoUC,
+    gestaoEscalasUC,
   );
 
   const centroGestaoController = new CentroGestaoController(
     atendentes,
     new GestaoCotasUseCase(),
-    new GestaoEscalasUseCase(),
+    gestaoEscalasUC,
     new RemanejamentoLoteUseCase(),
     new RelatorioBpaUseCase(),
     new AuditoriaCentroUseCase(),
