@@ -82,9 +82,22 @@
 
 			if ('speechSynthesis' in window) {
 				window.speechSynthesis.cancel();
-				const msg = new SpeechSynthesisUtterance(`Teste de chamada do ${nomeOrgao}. Sistema de áudio operando normalmente.`);
+				const msg = new SpeechSynthesisUtterance(`Atenção. Teste de áudio e chamada do ${nomeOrgao}. Sistema operando normalmente.`);
 				msg.lang = 'pt-BR';
-				msg.rate = 0.95;
+				msg.rate = 0.92;
+				msg.pitch = 1.08;
+				msg.volume = 1.0;
+
+				const vozes = window.speechSynthesis.getVoices();
+				const nomesFemininos = ['francisca', 'thalita', 'leticia', 'vitória', 'luciana', 'fernanda', 'maria', 'helena', 'camila', 'bia', 'google português do brasil'];
+				const vozesPtBr = vozes.filter(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+				let melhorVoz: SpeechSynthesisVoice | undefined;
+				for (const nome of nomesFemininos) {
+					melhorVoz = vozesPtBr.find(v => v.name.toLowerCase().includes(nome));
+					if (melhorVoz) break;
+				}
+				if (melhorVoz) msg.voice = melhorVoz;
+
 				setTimeout(() => {
 					window.speechSynthesis.speak(msg);
 				}, 600);

@@ -100,21 +100,91 @@
 		}
 	}
 
-	// Síntese de Voz Nativa em Português
+	let vozesCarregadas: SpeechSynthesisVoice[] = [];
+
+	function carregarVozesDisponiveis() {
+		if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+		vozesCarregadas = window.speechSynthesis.getVoices();
+	}
+
+	function obterMelhorVozFeminina(): SpeechSynthesisVoice | null {
+		if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+		const vozes = vozesCarregadas.length > 0 ? vozesCarregadas : window.speechSynthesis.getVoices();
+		if (!vozes || vozes.length === 0) return null;
+
+		// Prioridade para vozes femininas naturais / neurais em português brasileiro
+		const nomesFemininosAltaQualidade = [
+			'microsoft francisca online (natural) - portuguese (brazil)',
+			'microsoft thalita online (natural) - portuguese (brazil)',
+			'francisca',
+			'thalita',
+			'leticia',
+			'letícia',
+			'vitória',
+			'vitoria',
+			'luciana',
+			'fernanda',
+			'maria',
+			'helena',
+			'camila',
+			'bia',
+			'google português do brasil',
+			'pt-br-standard-a',
+			'pt-br-wavenet-a',
+			'pt-br-wavenet-c',
+			'pt-br-neural2-a',
+			'pt-br-neural2-c'
+		];
+
+		const vozesPtBr = vozes.filter(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+		for (const nome of nomesFemininosAltaQualidade) {
+			const v = vozesPtBr.find(voz => voz.name.toLowerCase().includes(nome));
+			if (v) return v;
+		}
+
+		const vozFemininaGenerica = vozesPtBr.find(v => 
+			v.name.toLowerCase().includes('female') || 
+			v.name.toLowerCase().includes('mulher') || 
+			v.name.toLowerCase().includes('feminina')
+		);
+		if (vozFemininaGenerica) return vozFemininaGenerica;
+
+		const vozesPt = vozes.filter(v => v.lang.startsWith('pt'));
+		for (const nome of nomesFemininosAltaQualidade) {
+			const v = vozesPt.find(voz => voz.name.toLowerCase().includes(nome));
+			if (v) return v;
+		}
+
+		return vozesPtBr[0] || vozesPt[0] || null;
+	}
+
+	// Síntese de Voz Humanizada Feminina em Português
 	function falarChamada(paciente: string, consultorio: string) {
 		if (!vozHabilitada || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 		try {
 			window.speechSynthesis.cancel();
-			const texto = `Atenção: Paciente, ${paciente}. Favor dirigir-se ao ${consultorio}.`;
+			const nomeLimpo = (paciente || 'Paciente').trim().replace(/[-_]/g, ' ');
+			const localLimpo = (consultorio || 'Consultório').trim();
+			
+			// Frase humanizada com prosódia acolhedora e natural
+			const texto = `Atenção, paciente ${nomeLimpo}. Por favor, comparecer ao ${localLimpo}.`;
 			const utterance = new SpeechSynthesisUtterance(texto);
 			utterance.lang = 'pt-BR';
-			utterance.rate = 0.95;
-			utterance.pitch = 1.0;
+			
+			const vozFeminina = obterMelhorVozFeminina();
+			if (vozFeminina) {
+				utterance.voice = vozFeminina;
+			}
+			
+			// Parâmetros acústicos calibrados para sonoridade feminina agradável e cristalina
+			utterance.rate = 0.92;   // Velocidade cadenciada para compreensão clara em sala de espera
+			utterance.pitch = 1.08;  // Entonação feminina acolhedora
+			utterance.volume = 1.0;
 
 			tocarChimeHospitalar();
 			setTimeout(() => {
 				window.speechSynthesis.speak(utterance);
-			}, 650);
+			}, 700);
 		} catch (e) {
 			console.info('[UniSISM TV] Síntese de voz em espera.', e);
 		}
@@ -289,6 +359,11 @@
 	onMount(() => {
 		atualizarRelogio();
 		timerRelogio = setInterval(atualizarRelogio, 1000);
+
+		if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+			carregarVozesDisponiveis();
+			window.speechSynthesis.onvoiceschanged = carregarVozesDisponiveis;
+		}
 
 		// 1. Verifica parâmetro na URL (?pin=CEM-2026 ou ?centro=CEM)
 		const pinUrl = page.url.searchParams.get('pin') || page.url.searchParams.get('senha') || page.url.searchParams.get('centro');

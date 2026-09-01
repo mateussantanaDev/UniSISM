@@ -68,17 +68,32 @@
 		if (!vozHabilitada || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 		try {
 			window.speechSynthesis.cancel();
-			const texto = `Atenção! Paciente, ${paciente}. Comparecer ao ${consultorio}. Dr(a) ${medico}.`;
+			const nomeLimpo = (paciente || 'Paciente').trim().replace(/[-_]/g, ' ');
+			const localLimpo = (consultorio || 'Consultório').trim();
+			const medicoLimpo = (medico || 'Médico').trim();
+
+			const texto = `Atenção, paciente ${nomeLimpo}. Por favor, comparecer ao ${localLimpo}, com Dr(a) ${medicoLimpo}.`;
 			const utterance = new SpeechSynthesisUtterance(texto);
 			utterance.lang = 'pt-BR';
 			utterance.rate = 0.92;
-			utterance.pitch = 1.0;
+			utterance.pitch = 1.08;
+			utterance.volume = 1.0;
+
+			const vozes = window.speechSynthesis.getVoices();
+			const nomesFemininos = ['francisca', 'thalita', 'leticia', 'vitória', 'luciana', 'fernanda', 'maria', 'helena', 'camila', 'bia', 'google português do brasil'];
+			const vozesPtBr = vozes.filter(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+			let melhorVoz: SpeechSynthesisVoice | undefined;
+			for (const nome of nomesFemininos) {
+				melhorVoz = vozesPtBr.find(v => v.name.toLowerCase().includes(nome));
+				if (melhorVoz) break;
+			}
+			if (melhorVoz) utterance.voice = melhorVoz;
 
 			// Toca o chime sonoro hospitalar e fala em seguida
 			tocarChimeHospitalar();
 			setTimeout(() => {
 				window.speechSynthesis.speak(utterance);
-			}, 650);
+			}, 700);
 		} catch (e) {
 			console.info('[UniSISM Painel UBS] Síntese de voz em espera.', e);
 		}
