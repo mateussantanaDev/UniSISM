@@ -8,6 +8,8 @@ export interface SalaConsultorioDTO {
   codigo: string;
   nome: string;
   especialidadePrincipal: string;
+  medicoAlocado?: string;
+  medicoCrm?: string;
   status: 'DISPONIVEL' | 'EM_ATENDIMENTO' | 'MANUTENCAO' | 'RESERVADA';
   equipamentos: string[];
   ala?: string | null;
@@ -20,20 +22,43 @@ export class GestaoSalasUseCase {
       where.prefeituraId = scope.prefeituraId;
     }
 
-    const salas = await prisma.salaConsultorio.findMany({
-      where,
-      orderBy: { codigo: 'asc' },
-    });
+    const [salas, escalas] = await Promise.all([
+      prisma.salaConsultorio.findMany({
+        where,
+        orderBy: { codigo: 'asc' },
+      }),
+      prisma.escalaEspecialista.findMany({
+        where: {
+          ativo: true,
+          ...(scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}),
+        },
+      }),
+    ]);
 
-    return salas.map((s) => ({
-      id: s.id,
-      codigo: s.codigo,
-      nome: s.nome,
-      especialidadePrincipal: s.especialidadePrincipal,
-      status: s.status as any,
-      equipamentos: s.equipamentos,
-      ala: s.ala,
-    }));
+    const diaSemanaHojeMap = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+    const diaHoje = diaSemanaHojeMap[new Date().getDay()] ?? 'SEG';
+
+    return salas.map((s) => {
+      const escalaHoje = escalas.find(
+        (e) =>
+          e.especialidade.toLowerCase() === s.especialidadePrincipal.toLowerCase() &&
+          e.diasSemana.some((d) => d && d.toUpperCase().includes(diaHoje)),
+      ) || escalas.find(
+        (e) => e.especialidade.toLowerCase() === s.especialidadePrincipal.toLowerCase(),
+      );
+
+      return {
+        id: s.id,
+        codigo: s.codigo,
+        nome: s.nome,
+        especialidadePrincipal: s.especialidadePrincipal,
+        medicoAlocado: escalaHoje?.medicoNome,
+        medicoCrm: escalaHoje?.crm,
+        status: s.status as any,
+        equipamentos: s.equipamentos,
+        ala: s.ala,
+      };
+    });
   }
 
   async criarSala(data: SalaConsultorioDTO, scope: AccessScope, atendenteId: string): Promise<SalaConsultorioDTO> {

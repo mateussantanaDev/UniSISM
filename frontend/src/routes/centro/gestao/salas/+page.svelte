@@ -46,108 +46,10 @@
 		erro = '';
 		try {
 			const res = await api.centroGestao.listSalas();
-			if (Array.isArray(res) && res.length > 0) {
-				listaSalas = res as any[];
-			} else {
-				// Seeds com base no tipo de centro
-				if (ehCeo) {
-					listaSalas = [
-						{
-							id: 'cad-01',
-							codigo: 'CAD-01',
-							nome: 'Cadeira 01 — Endodontia & Canal',
-							especialidadePrincipal: 'Endodontia',
-							medicoAlocado: 'Dra. Camila Ramos',
-							medicoCrm: 'CRO 9845-RS',
-							status: 'EM_ATENDIMENTO',
-							equipamentos: ['Equipo Odontológico Gnatus', 'Localizador Apical Digital', 'Motor de Endodontia Reciprocante', 'Raio-X Periapical de Coluna'],
-							ala: 'Clínica Integrada — Box 01'
-						},
-						{
-							id: 'cad-02',
-							codigo: 'CAD-02',
-							nome: 'Cadeira 02 — Cirurgia Bucomaxilofacial',
-							especialidadePrincipal: 'Cirurgia Bucomaxilofacial',
-							medicoAlocado: 'Dr. Lucas Silveira',
-							medicoCrm: 'CRO 11204-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Cadeira Odontológica Cirúrgica', 'Motor Cirúrgico para Implante/Exodontia', 'Foco Cirúrgico de LED', 'Bisturi Elétrico Odontológico'],
-							ala: 'Bloco Cirúrgico Odontológico — Box 02'
-						},
-						{
-							id: 'cad-03',
-							codigo: 'CAD-03',
-							nome: 'Cadeira 03 — Periodontia & Prótese',
-							especialidadePrincipal: 'Periodontia',
-							medicoAlocado: 'Dra. Beatriz Santos',
-							medicoCrm: 'CRO 7619-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Equipo Odontológico Completo', 'Ultrassom Odontológico com Jato de Bicarbonato', 'Fotopolimerizador sem Fio'],
-							ala: 'Clínica Integrada — Box 03'
-						},
-						{
-							id: 'cad-04',
-							codigo: 'CAD-04',
-							nome: 'Cadeira 04 — Odontopediatria & PNE',
-							especialidadePrincipal: 'Pacientes com Necessidades Especiais (PNE)',
-							medicoAlocado: 'Dr. Maurício Becker',
-							medicoCrm: 'CRO 8432-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Cadeira Ampla Adaptada PNE', 'Monitor Multiparâmetros Odonto', 'Oxímetro de Pulso', 'Aspirador Cirúrgico'],
-							ala: 'Ala Acessível Térreo — Box 04'
-						}
-					];
-				} else {
-					listaSalas = [
-						{
-							id: 'cons-01',
-							codigo: 'CONS-01',
-							nome: 'Consultório 01 — Cardiologia',
-							especialidadePrincipal: 'Cardiologia',
-							medicoAlocado: 'Dr. Roberto Medeiros',
-							medicoCrm: 'CRM 45892-RS',
-							status: 'EM_ATENDIMENTO',
-							equipamentos: ['Eletrocardiógrafo 12 Canais', 'Maca Clínica', 'Esfigmomanômetro Digital', 'Estetoscópio Littmann'],
-							ala: 'Ala Clínica Médica — Térreo'
-						},
-						{
-							id: 'cons-02',
-							codigo: 'CONS-02',
-							nome: 'Consultório 02 — Oftalmologia',
-							especialidadePrincipal: 'Oftalmologia',
-							medicoAlocado: 'Dra. Juliana Paes',
-							medicoCrm: 'CRM 33910-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Lâmpada de Fenda', 'Tonômetro de Aplanação', 'Projetor de Optotipos', 'Auto-Refrator'],
-							ala: 'Ala Diagnóstica — Sala 02'
-						},
-						{
-							id: 'cons-03',
-							codigo: 'CONS-03',
-							nome: 'Consultório 03 — Ortopedia & Traumatologia',
-							especialidadePrincipal: 'Ortopedia',
-							medicoAlocado: 'Dr. Fernando Lima',
-							medicoCrm: 'CRM 51203-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Negatoscópio Digital', 'Maca Articulada Ortopédica', 'Goniômetro'],
-							ala: 'Ala Ortopédica — Térreo'
-						},
-						{
-							id: 'cons-04',
-							codigo: 'CONS-04',
-							nome: 'Consultório 04 — Dermatologia & Pequenas Cirurgias',
-							especialidadePrincipal: 'Dermatologia',
-							medicoAlocado: 'Dra. Patricia Neves',
-							medicoCrm: 'CRM 29401-RS',
-							status: 'DISPONIVEL',
-							equipamentos: ['Dermatoscópio Polarizado', 'Foco Cirúrgico de LED', 'Mesa Auxiliar Cirúrgica'],
-							ala: 'Ala de Procedimentos — Sala 04'
-						}
-					];
-				}
-			}
+			listaSalas = Array.isArray(res) ? (res as any[]) : [];
 		} catch (e: any) {
-			console.info('[UniSISM] Endpoint /v1/centro/gestao/salas em transição.', e);
+			console.info('[UniSISM] Falha ao carregar salas da API.', e);
+			listaSalas = [];
 		} finally {
 			carregando = false;
 		}
@@ -268,7 +170,11 @@
 
 					{#if sala.medicoAlocado}
 						<div class="mt-3 bg-blue-50 border border-blue-200 p-2 text-blue-900 font-semibold text-[11px]">
-							👨‍⚕️ Médico em Turno: <strong>{sala.medicoAlocado}</strong> ({sala.medicoCrm})
+							{ehCeo ? '🦷 Cirurgião-Dentista' : '👨‍⚕️ Médico'} em Turno: <strong>{sala.medicoAlocado}</strong> ({sala.medicoCrm})
+						</div>
+					{:else}
+						<div class="mt-3 bg-slate-50 border border-slate-200 p-2 text-slate-500 font-mono text-[10px]">
+							ℹ Sem profissional alocado na escala hoje
 						</div>
 					{/if}
 
@@ -312,6 +218,12 @@
 					</div>
 				</div>
 			</div>
+		{:else}
+			{#if !carregando}
+				<div class="col-span-full border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 font-mono text-xs">
+					Nenhum {rotuloUnidadeFisica.toLowerCase()} cadastrado no banco de dados. Clique em "+ Cadastrar {rotuloUnidadeFisica}" para cadastrar.
+				</div>
+			{/if}
 		{/each}
 	</section>
 </div>

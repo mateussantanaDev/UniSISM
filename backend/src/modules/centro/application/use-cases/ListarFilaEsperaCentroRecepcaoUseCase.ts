@@ -1,4 +1,4 @@
-import { StatusEncaminhamento, CanalRoteamento, Prisma } from '../../../../../generated/prisma';
+import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao, Prisma } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
@@ -24,8 +24,7 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
       conditions.push({
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
-          { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
-          { destinoRegulacao: 'CEO' as any },
+          { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
           { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
@@ -40,8 +39,7 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
       conditions.push({
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-          { destinoRegulacao: 'CEM' as any },
+          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
           {
             AND: [
               { canalRoteamento: null, destinoRegulacao: null },

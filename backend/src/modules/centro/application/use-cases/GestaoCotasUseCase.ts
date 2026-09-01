@@ -1,4 +1,4 @@
-import { StatusEncaminhamento, CanalRoteamento } from '../../../../../generated/prisma';
+import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
@@ -50,8 +50,7 @@ export class GestaoCotasUseCase {
         status: StatusEncaminhamento.APROVADO,
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-          { destinoRegulacao: 'CEM' as any },
+          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
         ],
         AND: [
           {
@@ -153,8 +152,7 @@ export class GestaoCotasUseCase {
         status: StatusEncaminhamento.APROVADO,
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-          { destinoRegulacao: 'CEM' as any },
+          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
         ],
         AND: [
           {
