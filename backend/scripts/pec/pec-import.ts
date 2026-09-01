@@ -60,15 +60,44 @@ function parseRow(line: string, sep: string): string[] {
   return out;
 }
 
+function cleanDigits(s?: string): string {
+  return (s || '').replace(/\D/g, '');
+}
+
+function parseDate(s?: string): Date {
+  if (!s) return new Date('1990-01-01');
+  const str = s.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split('/').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (!isNaN(date.getTime())) return date;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const date = new Date(str);
+    if (!isNaN(date.getTime())) return date;
+  }
+  return new Date('1990-01-01');
+}
+
+function getVal(row: Record<string, string>, ...keys: string[]): string {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== '') return row[k].trim();
+    const foundKey = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
+    if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey].trim();
+  }
+  return '';
+}
+
 // ════════════════════════════════════════════════════════════════
 // Worker thread — processa 1 arquivo
 // ════════════════════════════════════════════════════════════════
 if (!isMainThread) {
   void (async () => {
-    const { file, ubsMap, prefeituraId } = workerData as {
+    const { file, ubsMap, prefeituraId, dryRun } = workerData as {
       file: string;
       ubsMap: Record<string, string>;
       prefeituraId: string;
+      dryRun: boolean;
     };
     parentPort?.postMessage({ kind: 'start', file });
 
@@ -79,9 +108,8 @@ if (!isMainThread) {
 
       // Detecta charset (tenta UTF-8 → senão Win-1252)
       let content = fs.readFileSync(file, 'utf-8');
-      if (content.includes('�')) {
+      if (content.includes('')) {
         const raw = fs.readFileSync(file);
-        // Fallback Win-1252
         try {
           content = raw.toString('latin1');
         } catch {}
@@ -89,10 +117,85 @@ if (!isMainThread) {
       const rows = parseCsv(content);
       parentPort?.postMessage({ kind: 'parsed', file, rows: rows.length });
 
-      // TODO: mapear por nome do arquivo qual entidade UNISISM importar
-      // Por enquanto só conta — implementação real do upsert vem após 1º CSV exemplar
-      parentPort?.postMessage({ kind: 'done', file, processed: rows.length, inserted: 0 });
+      const fileName = path.basename(file).toLowerCase();
+      const defaultUbsId = Object.values(ubsMap)[0];
+      let insertedCount = 0;
 
+      // ─── 1. CADASTRO INDIVIDUAL / PACIENTES ────────────────────────
+      if (fileName.includes('cadastro-individual') || fileName.includes('cidadao') || fileName.includes('paciente')) {
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const rawNome = getVal(row, 'Nome do Cidadão', 'Nome', 'NO_CIDADAO', 'Nome Cidadão', 'Nome Completo');
+          if (!rawNome) continue;
+
+          const rawCpf = cleanDigits(getVal(row, 'CPF', 'NU_CPF', 'Cpf'));
+          const rawCns = cleanDigits(getVal(row, 'CNS', 'Cartão Nacional de Saúde', 'Cartao SUS', 'NU_CNS', 'Cns'));
+          const cpfFinal = rawCpf.length === 11 ? rawCpf : (rawCns ? `CNS-${rawCns}` : `TEMP-${Date.now()}-${i}`);
+          const cnsFinal = rawCns.length === 15 ? rawCns : (rawCpf.length === 11 ? `999${rawCpf.slice(0, 12)}` : null);
+
+          const dataNascimento = parseDate(getVal(row, 'Data de Nascimento', 'DT_NASCIMENTO', 'Nascimento', 'Data Nascimento'));
+          const sexoStr = getVal(row, 'Sexo', 'DS_SEXO', 'Gênero').toUpperCase();
+          const sexo = sexoStr.startsWith('M') ? 'MASCULINO' : (sexoStr.startsWith('F') ? 'FEMININO' : 'OUTRO');
+
+          const nomeMae = getVal(row, 'Nome da Mãe', 'Nome Mãe', 'NO_MAE') || null;
+          const telefone = getVal(row, 'Telefone Celular', 'Telefone', 'Celular', 'NU_TELEFONE_CELULAR') || null;
+          const endereco = getVal(row, 'Logradouro', 'Endereço', 'DS_LOGRADOURO', 'Endereco') || null;
+          const bairro = getVal(row, 'Bairro', 'NO_BAIRRO') || null;
+          const cep = cleanDigits(getVal(row, 'CEP', 'NU_CEP')) || null;
+          const microarea = getVal(row, 'Microárea', 'Microarea', 'NU_MICRO_AREA') || null;
+          const equipeSaudeFamilia = getVal(row, 'Equipe', 'Nome da Equipe', 'DS_EQUIPE') || null;
+          const agenteComunitario = getVal(row, 'Agente Comunitário', 'ACS', 'NO_PROFISSIONAL') || null;
+
+          // Resolve UBS por correspondência de nome/INE
+          const rawUbs = getVal(row, 'Unidade de Saúde', 'Unidade', 'UBS', 'CNES', 'INE', 'NO_UNIDADE_SAUDE');
+          const matchedUbsSlug = Object.keys(ubsMap).find(k => k.includes(slug(rawUbs)) || slug(rawUbs).includes(k));
+          const ubsId = (matchedUbsSlug ? ubsMap[matchedUbsSlug] : null) || defaultUbsId;
+
+          if (!dryRun) {
+            await wPrisma.paciente.upsert({
+              where: { cpf: cpfFinal },
+              update: {
+                nome: rawNome,
+                cartaoSus: cnsFinal,
+                dataNascimento,
+                sexo: sexo as any,
+                nomeMae,
+                telefone,
+                endereco,
+                bairro,
+                municipio: 'Águas Belas',
+                uf: 'PE',
+                cep,
+                microarea,
+                equipeSaudeFamilia,
+                agenteComunitario,
+                ubsId,
+              },
+              create: {
+                nome: rawNome,
+                cpf: cpfFinal,
+                cartaoSus: cnsFinal,
+                dataNascimento,
+                sexo: sexo as any,
+                nomeMae,
+                telefone,
+                endereco,
+                bairro,
+                municipio: 'Águas Belas',
+                uf: 'PE',
+                cep,
+                microarea,
+                equipeSaudeFamilia,
+                agenteComunitario,
+                ubsId,
+              },
+            });
+          }
+          insertedCount++;
+        }
+      }
+
+      parentPort?.postMessage({ kind: 'done', file, processed: rows.length, inserted: insertedCount });
       await wPrisma.$disconnect();
     } catch (e) {
       parentPort?.postMessage({ kind: 'error', file, error: (e as Error).message });
@@ -151,7 +254,7 @@ if (!isMainThread) {
           }
           const file = files[idx++];
           const w = new Worker(__filename, {
-            workerData: { file, ubsMap, prefeituraId },
+            workerData: { file, ubsMap, prefeituraId, dryRun: DRY_RUN },
             execArgv: ['-r', 'ts-node/register/transpile-only'],
           });
           w.on('message', (msg: { kind: string; file?: string; rows?: number; processed?: number; inserted?: number; error?: string }) => {

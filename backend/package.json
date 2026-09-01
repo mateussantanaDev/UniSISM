@@ -24,7 +24,11 @@
     "test:unit": "ts-node --transpile-only tests/ubs-atendimento.test.ts && ts-node --transpile-only tests/centro.test.ts",
     "test:ubs": "ts-node --transpile-only tests/ubs-atendimento.test.ts",
     "test:e2e": "ts-node --transpile-only tests/e2e-fluxo-integrado.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pec:export": "ts-node-dev --transpile-only scripts/pec/pec-export-all.ts",
+    "pec:import": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --commit",
+    "pec:import:dry": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --dry-run",
+    "pec:debug": "ts-node-dev --transpile-only scripts/pec/pec-debug-1export.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1035.0",
