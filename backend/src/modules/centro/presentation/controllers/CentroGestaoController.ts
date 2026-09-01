@@ -77,7 +77,8 @@ export class CentroGestaoController {
 
   getDashboard = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const metrics = await this.dashboardUC.exec(scope);
+    const centro = req.query.centro as string | undefined;
+    const metrics = await this.dashboardUC.exec(scope, centro);
     res.json(metrics);
   };
 
@@ -99,7 +100,8 @@ export class CentroGestaoController {
 
   getEscalas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const escalas = await this.escalasUC.listarEscalas(scope);
+    const centro = req.query.centro as string | undefined;
+    const escalas = await this.escalasUC.listarEscalas(scope, centro);
     res.json(escalas);
   };
 
@@ -133,7 +135,8 @@ export class CentroGestaoController {
 
   getSalas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const salas = await this.salasUC.listarSalas(scope);
+    const centro = req.query.centro as string | undefined;
+    const salas = await this.salasUC.listarSalas(scope, centro);
     res.json(salas);
   };
 

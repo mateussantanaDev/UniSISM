@@ -15,8 +15,25 @@ export interface SalaConsultorioDTO {
   ala?: string | null;
 }
 
+const ESPECIALIDADES_ODONTO = [
+  'endodontia',
+  'periodontia',
+  'cirurgia bucomaxilofacial',
+  'bucomaxilo',
+  'odontopediatria',
+  'pacientes com necessidades especiais (pne)',
+  'pne',
+  'prótese dentária',
+  'protese dentaria',
+  'estomatologia',
+  'ortodontia preventiva',
+  'odontologia',
+  'saúde bucal',
+  'saude bucal',
+];
+
 export class GestaoSalasUseCase {
-  async listarSalas(scope: AccessScope): Promise<SalaConsultorioDTO[]> {
+  async listarSalas(scope: AccessScope, centro?: string): Promise<SalaConsultorioDTO[]> {
     const where: any = {};
     if (scope.kind === 'PREFEITURA') {
       where.prefeituraId = scope.prefeituraId;
@@ -38,7 +55,7 @@ export class GestaoSalasUseCase {
     const diaSemanaHojeMap = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
     const diaHoje = diaSemanaHojeMap[new Date().getDay()] ?? 'SEG';
 
-    return salas.map((s) => {
+    let salasDTO = salas.map((s) => {
       const escalaHoje = escalas.find(
         (e) =>
           e.especialidade.toLowerCase() === s.especialidadePrincipal.toLowerCase() &&
@@ -59,6 +76,26 @@ export class GestaoSalasUseCase {
         ala: s.ala,
       };
     });
+
+    if (centro) {
+      const centroNorm = centro.toUpperCase();
+      const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
+      salasDTO = salasDTO.filter((s) => {
+        const esp = s.especialidadePrincipal.toLowerCase();
+        const cod = s.codigo.toLowerCase();
+        const nom = s.nome.toLowerCase();
+        const eOdonto =
+          ESPECIALIDADES_ODONTO.some((o) => esp.includes(o)) ||
+          cod.startsWith('cad') ||
+          nom.includes('cadeira') ||
+          nom.includes('odonto');
+
+        return ehCeo ? eOdonto : !eOdonto;
+      });
+    }
+
+    return salasDTO;
   }
 
   async criarSala(data: SalaConsultorioDTO, scope: AccessScope, atendenteId: string): Promise<SalaConsultorioDTO> {

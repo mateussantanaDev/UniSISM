@@ -45,7 +45,7 @@
 		carregando = true;
 		erro = '';
 		try {
-			const res = await api.centroGestao.listSalas();
+			const res = await api.centroGestao.listSalas({ centro: siglaOrgao });
 			listaSalas = Array.isArray(res) ? (res as any[]) : [];
 		} catch (e: any) {
 			console.info('[UniSISM] Falha ao carregar salas da API.', e);

@@ -114,9 +114,32 @@ export class CalcularAlocacaoVagaCentroUseCase {
       ];
     }
 
-    const escalasDb = await prisma.escalaEspecialista.findMany({
+    const ESPECIALIDADES_ODONTO = [
+      'endodontia',
+      'periodontia',
+      'cirurgia bucomaxilofacial',
+      'bucomaxilo',
+      'odontopediatria',
+      'pacientes com necessidades especiais (pne)',
+      'pne',
+      'prótese dentária',
+      'protese dentaria',
+      'estomatologia',
+      'ortodontia preventiva',
+      'odontologia',
+      'saúde bucal',
+      'saude bucal',
+    ];
+
+    const todasEscalas = await prisma.escalaEspecialista.findMany({
       where: whereEscala,
       orderBy: { medicoNome: 'asc' },
+    });
+
+    const escalasDb = todasEscalas.filter((e) => {
+      const esp = e.especialidade.toLowerCase();
+      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+      return ehCeo ? eOdonto : !eOdonto;
     });
 
     if (!escalasDb || escalasDb.length === 0) {
@@ -181,9 +204,27 @@ export class CalcularAlocacaoVagaCentroUseCase {
         status: 'APROVADO',
         agendamentoPrevisto: { not: null },
         statusAtendimentoCentro: { notIn: ['FALTOU'] },
-        OR: [
-          { profissionalAgendado: escalaSelecionada.medicoNome },
-          { especialidadeSolicitada: escalaSelecionada.especialidade },
+        ...(ehCeo
+          ? {
+              OR: [
+                { canalRoteamento: 'CENTRO_ODONTOLOGICO' as any },
+                { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+                { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+              ],
+            }
+          : {
+              OR: [
+                { canalRoteamento: 'CENTRO_ESPECIALIDADES' as any },
+                { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+              ],
+            }),
+        AND: [
+          {
+            OR: [
+              { profissionalAgendado: escalaSelecionada.medicoNome },
+              { especialidadeSolicitada: escalaSelecionada.especialidade },
+            ],
+          },
         ],
       },
       select: { agendamentoPrevisto: true },

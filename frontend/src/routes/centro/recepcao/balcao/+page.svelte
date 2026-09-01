@@ -275,7 +275,7 @@
 	onMount(async () => {
 		try {
 			carregandoEscalas = true;
-			const escalas = await api.centroRecepcao.listEscalas().catch(() => []);
+			const escalas = await api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []);
 			escalasDoBanco = Array.isArray(escalas) ? escalas : [];
 		} catch (err) {
 			console.info('[UniSISM] Falha ao carregar escalas do backend.', err);

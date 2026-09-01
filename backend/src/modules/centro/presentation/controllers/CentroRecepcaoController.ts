@@ -17,6 +17,7 @@ import type { CalcularAlocacaoVagaCentroUseCase } from '../../application/use-ca
 import type { GestaoEscalasUseCase } from '../../application/use-cases/GestaoEscalasUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
+import { CanalRoteamento, DestinoRegulacao } from '../../../../../generated/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 
 const agendarSchema = z.object({
@@ -144,7 +145,8 @@ export class CentroRecepcaoController {
 
   getEscalas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const escalas = await this.gestaoEscalasUC.listarEscalas(scope);
+    const centro = req.query.centro as string | undefined;
+    const escalas = await this.gestaoEscalasUC.listarEscalas(scope, centro);
     res.json(escalas);
   };
 
@@ -389,6 +391,35 @@ export class CentroRecepcaoController {
           statusAtendimentoCentro: {
             in: ['EM_ATENDIMENTO', 'AGUARDANDO_ATENDIMENTO'],
           },
+          ...(ehCeo
+            ? {
+                OR: [
+                  { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+                  { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
+                  { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Periodont', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } },
+                  { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } },
+                ],
+              }
+            : {
+                OR: [
+                  { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+                  { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
+                  {
+                    AND: [
+                      { canalRoteamento: null, destinoRegulacao: null },
+                      { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
+                      { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
+                      { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+                    ],
+                  },
+                ],
+              }),
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
         orderBy: { atualizadoEm: 'desc' },
@@ -397,16 +428,7 @@ export class CentroRecepcaoController {
 
       const fullList = rows.map((r) => rowParaEncaminhamento(r as any));
 
-      const filtrados = fullList.filter((r) => {
-        const esp = (r.solicitacao?.especialidadeSolicitada || '').toLowerCase();
-        const eOdonto =
-          esp.includes('odonto') ||
-          esp.includes('bucal') ||
-          esp.includes('canal') ||
-          esp.includes('periodontia') ||
-          esp.includes('bucomaxilo');
-        return ehCeo ? eOdonto : !eOdonto;
-      });
+      const filtrados = fullList;
 
       const chamadas = filtrados.map((r, idx) => {
         const num = ((idx % 8) + 1).toString().padStart(2, '0');

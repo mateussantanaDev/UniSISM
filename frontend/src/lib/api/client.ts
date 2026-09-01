@@ -1579,8 +1579,8 @@ export class CentroRecepcaoApi {
   }
 
   /** Listar escalas médicas/odontológicas ativas (GET /v1/centro/escalas). */
-  listEscalas(): Promise<EscalaMedicoCentro[]> {
-    return this.api.get<EscalaMedicoCentro[]>('/centro/escalas');
+  listEscalas(query?: { centro?: string }): Promise<EscalaMedicoCentro[]> {
+    return this.api.get<EscalaMedicoCentro[]>('/centro/escalas', query as Record<string, unknown> | undefined);
   }
 
   /** Calcular slot de agendamento no backend (POST /v1/centro/recepcao/calcular-slot). */
@@ -1671,8 +1671,8 @@ export class CentroGestaoApi {
   constructor(private readonly api: ApiClient) {}
 
   /** Dashboard executivo em tempo real da diretoria (GET /v1/centro/gestao/dashboard). */
-  obterDashboard(): Promise<DashboardGestaoCentroResponse> {
-    return this.api.get<DashboardGestaoCentroResponse>('/centro/gestao/dashboard');
+  obterDashboard(query?: { centro?: string }): Promise<DashboardGestaoCentroResponse> {
+    return this.api.get<DashboardGestaoCentroResponse>('/centro/gestao/dashboard', query as Record<string, unknown> | undefined);
   }
 
   /** Listar cotas mensais das UBSs (GET /v1/centro/gestao/cotas). */
@@ -1686,8 +1686,8 @@ export class CentroGestaoApi {
   }
 
   /** Listar escalas médicas ativas (GET /v1/centro/gestao/escalas). */
-  listEscalas(): Promise<EscalaMedicoCentro[]> {
-    return this.api.get<EscalaMedicoCentro[]>('/centro/gestao/escalas');
+  listEscalas(query?: { centro?: string }): Promise<EscalaMedicoCentro[]> {
+    return this.api.get<EscalaMedicoCentro[]>('/centro/gestao/escalas', query as Record<string, unknown> | undefined);
   }
 
   /** Cadastrar nova escala de atendimento médico (POST /v1/centro/gestao/escalas). */
@@ -1726,8 +1726,8 @@ export class CentroGestaoApi {
   }
 
   /** Listar consultórios e salas físicas (GET /v1/centro/gestao/salas). */
-  listSalas(): Promise<SalaConsultorioCentro[]> {
-    return this.api.get<SalaConsultorioCentro[]>('/centro/gestao/salas');
+  listSalas(query?: { centro?: string }): Promise<SalaConsultorioCentro[]> {
+    return this.api.get<SalaConsultorioCentro[]>('/centro/gestao/salas', query as Record<string, unknown> | undefined);
   }
 
   /** Cadastrar novo consultório / sala (POST /v1/centro/gestao/salas). */

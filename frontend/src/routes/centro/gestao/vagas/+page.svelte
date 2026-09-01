@@ -199,7 +199,7 @@
 		try {
 			const [cotasRes, escalasRes, usuariosRes] = await Promise.allSettled([
 				api.centroGestao.listCotas(),
-				api.centroGestao.listEscalas(),
+				api.centroGestao.listEscalas({ centro: siglaOrgao }),
 				api.admin.listUsuarios()
 			]);
 			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value)) {

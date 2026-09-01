@@ -22,8 +22,25 @@ export interface DashboardDiretoriaDTO {
   totalEscalasAtivas: number;
 }
 
+const ESPECIALIDADES_ODONTO = [
+  'endodontia',
+  'periodontia',
+  'cirurgia bucomaxilofacial',
+  'bucomaxilo',
+  'odontopediatria',
+  'pacientes com necessidades especiais (pne)',
+  'pne',
+  'prótese dentária',
+  'protese dentaria',
+  'estomatologia',
+  'ortodontia preventiva',
+  'odontologia',
+  'saúde bucal',
+  'saude bucal',
+];
+
 export class MetricasDashboardDiretoriaUseCase {
-  async exec(scope: AccessScope): Promise<DashboardDiretoriaDTO> {
+  async exec(scope: AccessScope, centro?: string): Promise<DashboardDiretoriaDTO> {
     const now = new Date();
     const todayStr = now.toISOString().substring(0, 10);
     const startOfToday = new Date(`${todayStr}T00:00:00.000Z`);
@@ -34,16 +51,51 @@ export class MetricasDashboardDiretoriaUseCase {
     const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1, 0, 0, 0, 0));
     const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
 
+    const centroNorm = centro ? centro.toUpperCase() : undefined;
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
     const whereBase: any = {
-      canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
       deletadoEm: null,
+      ...(centro
+        ? ehCeo
+          ? {
+              OR: [
+                { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+                { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
+                { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Periodont', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } },
+                { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } },
+              ],
+            }
+          : {
+              OR: [
+                { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+                { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
+                {
+                  AND: [
+                    { canalRoteamento: null, destinoRegulacao: null },
+                    { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
+                    { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
+                    { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+                  ],
+                },
+              ],
+            }
+        : {
+            canalRoteamento: { in: [CanalRoteamento.CENTRO_ESPECIALIDADES, CanalRoteamento.CENTRO_ODONTOLOGICO] },
+          }),
     };
 
     if (scope.kind === 'PREFEITURA') {
       whereBase.ubs = { prefeituraId: scope.prefeituraId };
     }
 
-    const [agendamentosHoje, agendamentosMes, escalasCount] = await Promise.all([
+    const [agendamentosHoje, agendamentosMes, escalas] = await Promise.all([
       prisma.encaminhamento.findMany({
         where: {
           ...whereBase,
@@ -64,13 +116,22 @@ export class MetricasDashboardDiretoriaUseCase {
           ubs: { select: { nome: true } },
         },
       }),
-      prisma.escalaEspecialista.count({
+      prisma.escalaEspecialista.findMany({
         where: {
           ativo: true,
           ...(scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}),
         },
+        select: { especialidade: true },
       }),
     ]);
+
+    const totalEscalasAtivas = centro
+      ? escalas.filter((e) => {
+          const esp = e.especialidade.toLowerCase();
+          const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+          return ehCeo ? eOdonto : !eOdonto;
+        }).length
+      : escalas.length;
 
     // Calculate Today metrics
     let aguardando = 0;
@@ -123,7 +184,7 @@ export class MetricasDashboardDiretoriaUseCase {
       },
       distribuicaoPorEspecialidade: distEspecialidade,
       distribuicaoPorUbs: distUbs,
-      totalEscalasAtivas: escalasCount,
+      totalEscalasAtivas,
     };
   }
 }

@@ -138,7 +138,7 @@
 			const [resCentro, resTodos, resEscalas] = await Promise.all([
 				api.centroRecepcao.listAgendaDia({ data: dataAgenda, centro: centroParam }).catch(() => null),
 				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
-				api.centroRecepcao.listEscalas().catch(() => [])
+				api.centroRecepcao.listEscalas({ centro: centroParam }).catch(() => [])
 			]);
 
 			// Carrega escalas oficiais cadastradas no banco

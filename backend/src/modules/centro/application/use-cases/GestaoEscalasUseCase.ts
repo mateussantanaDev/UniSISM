@@ -19,8 +19,25 @@ export interface EscalaEspecialistaDTO {
   ativo?: boolean;
 }
 
+const ESPECIALIDADES_ODONTO = [
+  'endodontia',
+  'periodontia',
+  'cirurgia bucomaxilofacial',
+  'bucomaxilo',
+  'odontopediatria',
+  'pacientes com necessidades especiais (pne)',
+  'pne',
+  'prótese dentária',
+  'protese dentaria',
+  'estomatologia',
+  'ortodontia preventiva',
+  'odontologia',
+  'saúde bucal',
+  'saude bucal',
+];
+
 export class GestaoEscalasUseCase {
-  async listarEscalas(scope: AccessScope): Promise<EscalaEspecialistaDTO[]> {
+  async listarEscalas(scope: AccessScope, centro?: string): Promise<EscalaEspecialistaDTO[]> {
     const where: any = { ativo: true };
     if (scope.kind === 'PREFEITURA') {
       where.prefeituraId = scope.prefeituraId;
@@ -31,7 +48,7 @@ export class GestaoEscalasUseCase {
       orderBy: { medicoNome: 'asc' },
     });
 
-    return escalas.map((e) => ({
+    const dtoArray = escalas.map((e) => ({
       id: e.id,
       medicoId: e.medicoId ?? undefined,
       medicoNome: e.medicoNome,
@@ -47,6 +64,17 @@ export class GestaoEscalasUseCase {
       status: (e.status as any) || 'ATIVA',
       ativo: e.ativo,
     }));
+
+    if (!centro) return dtoArray;
+
+    const centroNorm = centro.toUpperCase();
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
+    return dtoArray.filter((e) => {
+      const esp = e.especialidade.toLowerCase();
+      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+      return ehCeo ? eOdonto : !eOdonto;
+    });
   }
 
   async criarEscala(data: EscalaEspecialistaDTO, scope: AccessScope, atendenteId: string): Promise<EscalaEspecialistaDTO> {

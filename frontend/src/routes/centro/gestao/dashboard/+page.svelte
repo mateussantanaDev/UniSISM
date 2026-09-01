@@ -31,7 +31,7 @@
 		carregando = true;
 		erro = '';
 		try {
-			const res = await api.centroGestao.obterDashboard();
+			const res = await api.centroGestao.obterDashboard({ centro: centroAtivo });
 			dashboardData = res;
 		} catch (e: any) {
 			console.error(e);
