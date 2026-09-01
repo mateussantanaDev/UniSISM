@@ -322,7 +322,7 @@ export function alocarVagaPorProfissionalEEscala(params: {
 	agendamentosExistentes?: AgendamentoOcupado[];
 	escalasCustomizadas?: EscalaProfissionalCentro[];
 	dataBase?: Date;
-}): ResultadoAlocacaoAutomatica {
+}): ResultadoAlocacaoAutomatica | null {
 	const {
 		centro,
 		medicoNome,
@@ -332,6 +332,10 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		escalasCustomizadas,
 		dataBase = new Date()
 	} = params;
+
+	if (!medicoNome && !especialidade) {
+		return null;
+	}
 
 	const escalasAtivas = (escalasCustomizadas && escalasCustomizadas.length > 0)
 		? escalasCustomizadas
@@ -351,7 +355,7 @@ export function alocarVagaPorProfissionalEEscala(params: {
 	}
 
 	if (!escala) {
-		escala = escalasAtivas[0];
+		return null;
 	}
 
 	const centroNomeCompleto = centro === 'CEO'
@@ -365,9 +369,9 @@ export function alocarVagaPorProfissionalEEscala(params: {
 
 	switch (prioridade) {
 		case 'EMERGENCIA':
-			diasOffsetInicial = 0; // Mesmo dia ou primeiro dia de escala útil
-			prazoLegalSus = 'Atendimento Imediato (Até 24 horas)';
-			fundamentacao = `Portaria SUS: Demanda de emergência com risco iminente de agravo. Alocado no primeiro horário livre da escala de ${escala.nome}.`;
+			diasOffsetInicial = 0; // Mesmo dia ou primeiro dia de escala útil imediato
+			prazoLegalSus = 'Atendimento Imediato (Mesmo Dia / 24h)';
+			fundamentacao = `Portaria SUS: Demanda de emergência com risco iminente de agravo. Alocado no primeiro horário imediato da escala de ${escala.nome}.`;
 			break;
 		case 'URGENTE':
 			diasOffsetInicial = 1; // 1 a 3 dias úteis
@@ -376,13 +380,13 @@ export function alocarVagaPorProfissionalEEscala(params: {
 			break;
 		case 'PRIORITARIA':
 			diasOffsetInicial = 7; // 7 a 10 dias
-			prazoLegalSus = 'Até 7 a 10 dias';
-			fundamentacao = `Portaria SUS: Prioridade legal (Idosos, Gestantes, PNE ou Suspeita Oncológica). Escala de ${escala.nome}.`;
+			prazoLegalSus = 'Prioridade Legal SUS (7 a 10 dias)';
+			fundamentacao = `Portaria SUS: Prioridade legal (Idosos 60+, Gestantes, PCD, TEA ou Doença Crônica). Escala de ${escala.nome}.`;
 			break;
 		case 'ELETIVA':
 		default:
 			diasOffsetInicial = 14; // 14 a 30 dias
-			prazoLegalSus = '15 a 30 dias úteis';
+			prazoLegalSus = 'Demanda Eletiva Regular (15 a 30 dias)';
 			fundamentacao = `Portaria SUS: Atendimento ambulatorial programado. Escala regular de ${escala.nome}.`;
 			break;
 	}
@@ -412,13 +416,21 @@ export function alocarVagaPorProfissionalEEscala(params: {
 
 			const horasOcupadas = new Set(ocupadosNoDia.map(ag => ag.hora));
 
-			// Busca o primeiro slot livre do turno do médico
+			// Se for EMERGÊNCIA e for hoje/primeiro dia de atendimento:
+			// Se houver slot livre, pega o primeiro. Se estiver lotado, insere como encaixe de emergência no primeiro slot do dia!
 			for (const slot of slotsDoTurno) {
 				if (!horasOcupadas.has(slot)) {
 					diaEncontrado = dataIso;
 					horaEncontrada = slot;
 					break;
 				}
+			}
+
+			if (!diaEncontrado && prioridade === 'EMERGENCIA') {
+				// Encaixe prioritário no primeiro horário do médico no dia
+				diaEncontrado = dataIso;
+				horaEncontrada = slotsDoTurno[0] || escala.horarioInicio;
+				break;
 			}
 
 			if (diaEncontrado && horaEncontrada) {

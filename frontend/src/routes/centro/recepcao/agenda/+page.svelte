@@ -281,12 +281,14 @@
 			dataBase: new Date()
 		});
 
-		novaDataRealocacao = otimizado.data;
-		novoHorarioRealocacao = otimizado.hora;
-		if (otimizado.medicoNome) {
-			novoMedicoRealocacao = otimizado.medicoNome;
+		if (otimizado) {
+			novaDataRealocacao = otimizado.data;
+			novoHorarioRealocacao = otimizado.hora;
+			if (otimizado.medicoNome) {
+				novoMedicoRealocacao = otimizado.medicoNome;
+			}
+			motivoRealocacao = `[ALOCAÇÃO DETERMINÍSTICA ${otimizado.centro}] ${otimizado.justificativaEscala}`;
 		}
-		motivoRealocacao = `[ALOCAÇÃO DETERMINÍSTICA ${otimizado.centro}] ${otimizado.justificativaEscala}`;
 	}
 
 	async function executarRealocacao() {
