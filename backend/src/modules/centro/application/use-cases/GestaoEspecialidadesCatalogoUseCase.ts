@@ -13,8 +13,25 @@ export interface EspecialidadeCatalogoDTO {
   ativa?: boolean;
 }
 
+const ESPECIALIDADES_ODONTO = [
+  'endodontia',
+  'periodontia',
+  'cirurgia bucomaxilofacial',
+  'bucomaxilo',
+  'odontopediatria',
+  'pacientes com necessidades especiais (pne)',
+  'pne',
+  'prótese dentária',
+  'protese dentaria',
+  'estomatologia',
+  'ortodontia preventiva',
+  'odontologia',
+  'saúde bucal',
+  'saude bucal',
+];
+
 export class GestaoEspecialidadesCatalogoUseCase {
-  async listarEspecialidades(scope: AccessScope): Promise<EspecialidadeCatalogoDTO[]> {
+  async listarEspecialidades(scope: AccessScope, centro?: string): Promise<EspecialidadeCatalogoDTO[]> {
     const where: any = { ativa: true };
     if (scope.kind === 'PREFEITURA') {
       where.prefeituraId = scope.prefeituraId;
@@ -25,7 +42,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
       orderBy: { nome: 'asc' },
     });
 
-    return lista.map((e) => ({
+    const dtoArray = lista.map((e) => ({
       id: e.id,
       nome: e.nome,
       codigoSigtap: e.codigoSigtap,
@@ -35,6 +52,17 @@ export class GestaoEspecialidadesCatalogoUseCase {
       preparoRequerido: e.preparoRequerido,
       ativa: e.ativa,
     }));
+
+    if (!centro) return dtoArray;
+
+    const centroNorm = centro.toUpperCase();
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
+    return dtoArray.filter((e) => {
+      const esp = e.nome.toLowerCase();
+      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+      return ehCeo ? eOdonto : !eOdonto;
+    });
   }
 
   async criarEspecialidade(data: EspecialidadeCatalogoDTO, scope: AccessScope, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {

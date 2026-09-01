@@ -1741,8 +1741,8 @@ export class CentroGestaoApi {
   }
 
   /** Listar catálogo de especialidades e procedimento SIGTAP (GET /v1/centro/gestao/especialidades). */
-  listEspecialidades(): Promise<EspecialidadeSigtapCentro[]> {
-    return this.api.get<EspecialidadeSigtapCentro[]>('/centro/gestao/especialidades');
+  listEspecialidades(query?: { centro?: string }): Promise<EspecialidadeSigtapCentro[]> {
+    return this.api.get<EspecialidadeSigtapCentro[]>('/centro/gestao/especialidades', query as Record<string, unknown> | undefined);
   }
 
   /** Habilitar nova especialidade no catálogo (POST /v1/centro/gestao/especialidades). */

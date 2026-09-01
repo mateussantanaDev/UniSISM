@@ -149,8 +149,14 @@
 		{ codigo: '02.04.01.018-0', nome: 'Radiografia Periapical / Interproximal' }
 	];
 
+	let procedimentosDoBanco = $state<{ codigo: string; nome: string }[]>([]);
+
 	let procedimentosSigtapSugeridos = $derived(
-		ehCeo ? procedimentosSigtapOdonto : procedimentosSigtapMedicos
+		procedimentosDoBanco.length > 0
+			? procedimentosDoBanco
+			: ehCeo
+				? procedimentosSigtapOdonto
+				: procedimentosSigtapMedicos
 	);
 
 	function adicionarProcedimento() {
@@ -527,6 +533,17 @@
 			}
 		} catch (e) {
 			console.info('[UniSISM] Erro ao carregar perfil do médico conectado.', e);
+		}
+		try {
+			const procs = await api.centroGestao.listEspecialidades({ centro: centroAtivo }).catch(() => []);
+			if (Array.isArray(procs) && procs.length > 0) {
+				procedimentosDoBanco = procs.map(p => ({
+					codigo: p.codigoSigtap || '00.00.00.000-0',
+					nome: p.nome
+				}));
+			}
+		} catch (e) {
+			console.info('[UniSISM] Erro ao carregar catálogo SIGTAP.', e);
 		}
 		carregarAgendaDoDia();
 	});

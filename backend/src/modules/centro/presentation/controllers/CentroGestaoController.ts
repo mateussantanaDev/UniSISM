@@ -170,7 +170,8 @@ export class CentroGestaoController {
 
   getEspecialidades = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const lista = await this.especialidadesUC.listarEspecialidades(scope);
+    const centro = req.query.centro as string | undefined;
+    const lista = await this.especialidadesUC.listarEspecialidades(scope, centro);
     res.json(lista);
   };
 
