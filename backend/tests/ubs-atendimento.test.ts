@@ -87,7 +87,7 @@ async function runUbsAtendimentoTests() {
 
   // Test 4: Consulta do Painel de TV (Sala de Espera)
   const painelUC = new ObterUltimasChamadasPainelUbsUseCase(repo);
-  const painelRes = await painelUC.exec(ubsId, 5);
+  const painelRes = await painelUC.exec({ ubsId, limite: 5 });
   assert.ok(painelRes.chamadaAtual !== null, 'Painel TV deve exibir a chamada atual');
   assert.strictEqual(painelRes.chamadaAtual?.atendimentoId, at2.id);
   console.log('✅ Endpoint do Painel TV retornou chamada atual para reprodução em áudio e vídeo');

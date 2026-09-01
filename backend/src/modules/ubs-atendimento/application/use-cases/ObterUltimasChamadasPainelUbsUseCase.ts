@@ -18,16 +18,16 @@ export interface ObterUltimasChamadasPainelUbsOutput {
 export class ObterUltimasChamadasPainelUbsUseCase {
   constructor(private readonly repo: FilaUbsRepository = filaUbsRepository) {}
 
-  async exec(input: ObterUltimasChamadasPainelUbsInput, scope: AccessScope): Promise<ObterUltimasChamadasPainelUbsOutput> {
+  async exec(input: ObterUltimasChamadasPainelUbsInput, scope?: AccessScope): Promise<ObterUltimasChamadasPainelUbsOutput> {
     let ubsId = input.ubsId;
     let ubsNome = 'UBS Municipal';
     let prefeituraNome = 'Secretaria Municipal de Saúde';
 
-    if (!ubsId && scope.kind === 'UBS') {
+    if (!ubsId && scope && scope.kind === 'UBS') {
       ubsId = scope.ubsId;
     }
 
-    if (!ubsId && scope.kind === 'PREFEITURA') {
+    if (!ubsId && scope && scope.kind === 'PREFEITURA') {
       const ubs = await prisma.ubs.findFirst({
         where: { prefeituraId: scope.prefeituraId, ativa: true },
         include: { prefeitura: true },

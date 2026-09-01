@@ -142,36 +142,6 @@
 	let horaRetroativa = $state('08:00');
 	let statusRetroativo = $state<'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU'>('CONCLUIDO');
 
-	// Vínculo a Encaminhamento SUS & Particulares
-	let tipoEncaminhamento = $state<'SUS_REGULADO' | 'PARTICULAR' | 'SEM_ANEXO'>('SEM_ANEXO');
-	let encaminhamentosDisponiveis = $state<{ id: string; protocolo: string; especialidade: string; dataAgendamento?: string }[]>([]);
-	let encaminhamentoSelecionadoId = $state<string | null>(null);
-	let anexoParticularFoto = $state<string | null>(null);
-	let anexoParticularNome = $state<string>('');
-	let cameraAbertaBalcao = $state(false);
-	let inputFileInput = $state<HTMLInputElement | null>(null);
-
-	function simularCapturaFotoParticular() {
-		anexoParticularFoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-		anexoParticularNome = `encaminhamento_particular_${Date.now()}.png`;
-		tipoEncaminhamento = 'PARTICULAR';
-	}
-
-	function handleUploadFileParticular(e: Event) {
-		const target = e.target as HTMLInputElement;
-		const file = target.files?.[0];
-		if (file) {
-			const reader = new FileReader();
-			reader.onload = (ev) => {
-				anexoParticularFoto = (ev.target?.result as string) || 'uploaded';
-				anexoParticularNome = file.name;
-				tipoEncaminhamento = 'PARTICULAR';
-			};
-			reader.readAsDataURL(file);
-			target.value = '';
-		}
-	}
-
 	onDestroy(() => {
 		if (timerMensagem) clearTimeout(timerMensagem);
 	});
@@ -228,7 +198,6 @@
 			pacienteId = null;
 			ultimoCpfPesquisado = '';
 			erroBusca = '';
-			encaminhamentosDisponiveis = [];
 		}
 	}
 
@@ -282,33 +251,9 @@
 				pacienteEnd = res.paciente.endereco || '';
 				pacienteNomeMae = res.paciente.nomeMae || '';
 				pacienteRacaCor = (res.paciente.racaCor as RacaCor) || '';
-
-				// Carrega encaminhamentos SUS ativos DO PACIENTE ESPECÍFICO
-				try {
-					const encs = pacienteId 
-						? await api.encaminhamentos.list({ pacienteId, status: 'APROVADO', limit: 10 }).catch(() => [])
-						: [];
-					if (Array.isArray(encs) && encs.length > 0) {
-						encaminhamentosDisponiveis = encs.map(e => ({
-							id: e.id,
-							protocolo: e.protocolo,
-							especialidade: e.solicitacao?.especialidadeSolicitada || '',
-							dataAgendamento: e.agendamentoPrevisto || undefined
-						}));
-						tipoEncaminhamento = 'SUS_REGULADO';
-						encaminhamentoSelecionadoId = encaminhamentosDisponiveis[0].id;
-						especialidade = encaminhamentosDisponiveis[0].especialidade || especialidade;
-					} else {
-						encaminhamentosDisponiveis = [];
-					}
-				} catch (eEnc) {
-					console.info('[UniSISM] Busca de encaminhamentos executada localmente.', eEnc);
-					encaminhamentosDisponiveis = [];
-				}
 			} else {
 				pacienteExiste = false;
 				pacienteId = null;
-				encaminhamentosDisponiveis = [];
 				erroBusca = 'CPF não cadastrado. Preencha os campos abaixo para registrar um novo paciente.';
 			}
 		} catch (e) {
@@ -388,24 +333,6 @@
 		erroAgendamento = '';
 		sucessoAgendamento = '';
 
-		// REGRAS 2, 3 e 4: Definição do Status de Alocação da Vaga
-		let statusAlocacao = 'ALOCADO';
-		let mensagemAlocacaoResumo = '';
-
-		if (tipoEncaminhamento === 'SEM_ANEXO' || (tipoEncaminhamento === 'PARTICULAR' && !anexoParticularFoto)) {
-			// REGRA 2: Caso não tenha anexo de encaminhamento a vaga fica esperando aprovação do gestor TFD
-			statusAlocacao = 'AGUARDANDO_GESTOR_TFD';
-			mensagemAlocacaoResumo = '⚠ Sem anexo de encaminhamento: A solicitação foi registrada mas ficou AGUARDANDO APROVAÇÃO MANUL DO GESTOR TFD.';
-		} else if (tipoEncaminhamento === 'SUS_REGULADO' && encaminhamentoSelecionadoId) {
-			// REGRA 3: Se o atendente selecionar um encaminhamento SUS disponível, o paciente é aceito de imediato
-			statusAlocacao = 'ALOCADO';
-			mensagemAlocacaoResumo = '✓ Encaminhamento SUS Regulado Vinculado: Paciente ACEITO DE IMEDIATO com vaga alocada!';
-		} else if (tipoEncaminhamento === 'PARTICULAR' && anexoParticularFoto) {
-			// REGRA 4: Encaminhamento particular com Foto/Scanner enviado garante a vaga de certeza
-			statusAlocacao = 'ALOCADO';
-			mensagemAlocacaoResumo = '✓ Encaminhamento Particular Digitalizado (Foto/Scanner): VAGA GARANTIDA E ALOCADA DE CERTEZA!';
-		}
-
 		let dataCalculada = '';
 		let horaCalculada = '';
 		if (modoData === 'RETROATIVO') {
@@ -428,7 +355,7 @@
 		}
 
 		const nomeMedicoFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || 'Especialista';
-		const notaAgendamento = `Médico: ${nomeMedicoFinal} às ${horaCalculada} | ${mensagemAlocacaoResumo} | [ESCALA ${centroSelecionado}]: ${alocacaoOtimizadaBalcao?.justificativaEscala || 'Alocação programada'} | Obs: ${recomendacoes.trim() || 'Nenhuma'}` + (modoData === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
+		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Especialista: ${nomeMedicoFinal} às ${horaCalculada} | [ESCALA ${centroSelecionado}]: ${alocacaoOtimizadaBalcao?.justificativaEscala || 'Alocação programada'} | Obs: ${recomendacoes.trim() || 'Nenhuma'}` + (modoData === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
 		try {
 			// 1. Prepara dados do Paciente
@@ -865,116 +792,6 @@
 							</select>
 						</div>
 					{/if}
-
-					<!-- Comprovação de Encaminhamento (Alocação Automática x Aprovação Gestor) -->
-					<div class="flex flex-col gap-2 border border-blue-200 bg-blue-50/60 p-3 font-mono text-xs">
-						<span class="font-bold text-blue-900 uppercase tracking-widest text-[9px] flex items-center justify-between">
-							<span>📄 ORIGEM DO ENCAMINHAMENTO (REGRAS DE ALOCAÇÃO)</span>
-							<span class="text-[9px] text-blue-800 font-normal">Alocação Automática x Aprovação</span>
-						</span>
-
-						<div class="grid grid-cols-3 gap-1.5 font-mono text-[10px]">
-							<button
-								type="button"
-								onclick={() => tipoEncaminhamento = 'SUS_REGULADO'}
-								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'SUS_REGULADO' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
-							>
-								✓ SUS REGULADO ({encaminhamentosDisponiveis.length})
-							</button>
-							<button
-								type="button"
-								onclick={() => tipoEncaminhamento = 'PARTICULAR'}
-								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'PARTICULAR' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
-							>
-								📷 PARTICULAR (FOTO/SCAN)
-							</button>
-							<button
-								type="button"
-								onclick={() => tipoEncaminhamento = 'SEM_ANEXO'}
-								class="px-2 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center text-center {tipoEncaminhamento === 'SEM_ANEXO' ? 'border-amber-700 bg-amber-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
-							>
-								⏳ SEM ANEXO
-							</button>
-						</div>
-
-						<!-- Opcão 1: Encaminhamento SUS Regulado selecionado -->
-						{#if tipoEncaminhamento === 'SUS_REGULADO'}
-							<div class="flex flex-col gap-1 border-t border-blue-200 pt-2 font-sans">
-								{#if encaminhamentosDisponiveis.length > 0}
-									<label for="enc-sel-sus" class="font-mono text-[9px] font-bold text-blue-900 uppercase">
-										Selecione o Encaminhamento SUS Regulado do Paciente *
-									</label>
-									<select id="enc-sel-sus" bind:value={encaminhamentoSelecionadoId} class="border border-blue-300 bg-white p-1.5 text-xs font-bold font-mono">
-										{#each encaminhamentosDisponiveis as enc}
-											<option value={enc.id}>Protocolo {enc.protocolo} · {enc.especialidade} {enc.dataAgendamento ? `(Agendado: ${enc.dataAgendamento})` : ''}</option>
-										{/each}
-									</select>
-									<div class="text-[10px] text-emerald-800 font-mono font-bold mt-0.5">
-										✓ PACIENTE ACEITO DE IMEDIATO (VAGA ALOCADA DE CERTEZA COM ENCAMINHAMENTO SUS)
-									</div>
-								{:else}
-									<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-900">
-										⚠ Nenhum encaminhamento SUS regulado encontrado para este CPF. Escolha "📷 PARTICULAR" para fotografar/escanear o pedido físico ou "⏳ SEM ANEXO" para aguardar gestor.
-									</div>
-								{/if}
-							</div>
-						{/if}
-
-						<!-- Opção 2: Encaminhamento Particular com Foto / Scanner -->
-						{#if tipoEncaminhamento === 'PARTICULAR'}
-							<div class="flex flex-col gap-2 border-t border-purple-200 pt-2 font-sans">
-								<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950">
-									<strong>📷 Encaminhamento de Médico Particular:</strong> Fotografe ou escaneie o pedido físico trazido pelo paciente para garantir a vaga de certeza e alocação imediata.
-								</div>
-
-								<div class="flex items-center gap-2">
-									<input
-										type="file"
-										accept="image/*,.pdf"
-										bind:this={inputFileInput}
-										onchange={handleUploadFileParticular}
-										class="hidden"
-									/>
-
-									<button
-										type="button"
-										onclick={() => inputFileInput?.click()}
-										class="border border-purple-900 bg-purple-900 text-white px-3 py-1.5 font-mono text-xs font-bold uppercase"
-									>
-										📁 Anexar Arquivo / Scanner
-									</button>
-
-									<button
-										type="button"
-										onclick={simularCapturaFotoParticular}
-										class="border border-purple-900 bg-white text-purple-950 px-3 py-1.5 font-mono text-xs font-bold uppercase hover:bg-purple-50"
-									>
-										📷 Tirar Foto (Câmera)
-									</button>
-								</div>
-
-								{#if anexoParticularFoto}
-									<div class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 p-2 text-[11px] font-mono text-emerald-900 font-bold">
-										<span>✓ DOCUMENTO ANEXADO: {anexoParticularNome || 'Foto_Encaminhamento.png'}</span>
-										<span class="text-[9px] bg-emerald-700 text-white px-1.5 py-0.5 uppercase">VAGA GARANTIDA DE CERTEZA</span>
-									</div>
-								{:else}
-									<div class="text-[10px] text-purple-800 font-mono italic">
-										* Faça a foto ou scanner do documento particular para garantir a alocação imediata da vaga.
-									</div>
-								{/if}
-							</div>
-						{/if}
-
-						<!-- Opção 3: Sem Anexo de Encaminhamento -->
-						{#if tipoEncaminhamento === 'SEM_ANEXO'}
-							<div class="border-t border-amber-300 pt-2 font-sans">
-								<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950">
-									⏳ <strong>Sem Anexo de Encaminhamento:</strong> A solicitação será registrada no sistema, mas a vaga <strong>NÃO será alocada automaticamente</strong>. Ela ficará em estado de espera aguardando avaliação e aprovação manual do <strong>Gestor TFD</strong>.
-								</div>
-							</div>
-						{/if}
-					</div>
 
 					<!-- Modo de Agendamento (Data Futura Otimizada vs Retorno/Data Manual vs Retroativo / Migração de Papel) -->
 					<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-2.5">
