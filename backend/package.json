@@ -29,6 +29,7 @@
     "pec:graphql": "ts-node-dev --transpile-only scripts/pec/pec-graphql-scraper.ts",
     "pec:import": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --commit",
     "pec:import:dry": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --dry-run",
+    "pec:provision-contas": "ts-node-dev --transpile-only scripts/pec/pec-provision-contas.ts",
     "pec:debug": "ts-node-dev --transpile-only scripts/pec/pec-debug-1export.ts"
   },
   "dependencies": {

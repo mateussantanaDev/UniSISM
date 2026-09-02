@@ -83,11 +83,42 @@ export class LoginPacienteUseCase {
     userAgent?: string,
   ): Promise<LoginPacienteOutput> {
     const cpfDigits = normalizarCpf(cpf);
-    const conta = await prisma.pacienteConta.findUnique({ where: { cpf: cpfDigits } });
+    let conta = await prisma.pacienteConta.findUnique({ where: { cpf: cpfDigits } });
+
+    // Just-In-Time Provisioning: Se o cidadão foi importado do PEC mas ainda não
+    // tem PacienteConta, provisionamos a conta automaticamente com senha inicial = CPF.
     if (!conta) {
-      throw Unauthorized('AUTH_INVALID_CREDENTIALS', 'CPF ou senha inválidos');
+      const paciente = await prisma.paciente.findFirst({
+        where: {
+          OR: [
+            { cpf: cpfDigits },
+            { cpf: formatarCpf(cpfDigits) }
+          ],
+          deletadoEm: null,
+        },
+        include: { ubs: true },
+      });
+
+      if (paciente) {
+        const senhaHashInicial = await this.hasher.hash(cpfDigits);
+        conta = await prisma.pacienteConta.create({
+          data: {
+            cpf: cpfDigits,
+            cpfFormatado: formatarCpf(cpfDigits),
+            nome: paciente.nome,
+            telefone: paciente.telefone || null,
+            senhaHash: senhaHashInicial,
+            senhaProvisoria: true,
+            ativo: true,
+            ubsVinculadaId: paciente.ubsId,
+          },
+        });
+      } else {
+        throw Unauthorized('AUTH_INVALID_CREDENTIALS', 'CPF ou senha inválidos');
+      }
     }
-    // Contas criadas automaticamente no primeiro encaminhamento já nascem
+
+    // Contas criadas automaticamente no primeiro encaminhamento ou PEC já nascem
     // ATIVAS com senha = CPF (senhaProvisoria=true). O app do paciente deve
     // forçar a troca no primeiro login. Só bloqueia se o admin desativar.
     if (!conta.ativo) {
