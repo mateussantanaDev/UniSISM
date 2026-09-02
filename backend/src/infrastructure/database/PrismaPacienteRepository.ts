@@ -7,6 +7,8 @@ import { prisma } from './prisma';
 import type {
   IPacienteRepository,
   ListarPacientesFiltro,
+  PacientesMetricas,
+  ResultadoPaginadoPacientes,
 } from '../../domain/repositories/IPacienteRepository';
 import type { PacienteCompleto, PacienteResumo } from '../../domain/entities/Paciente';
 import { grupoSanguineoToDominio, ymd } from './mappers';
@@ -41,8 +43,12 @@ function rowParaResumo(
 }
 
 export class PrismaPacienteRepository implements IPacienteRepository {
-  async listar(filtro: ListarPacientesFiltro): Promise<PacienteResumo[]> {
+  private buildWhere(filtro: ListarPacientesFiltro): Prisma.PacienteWhereInput {
     const where: Prisma.PacienteWhereInput = { ...whereByScopePaciente(filtro.scope) };
+
+    if (filtro.ubsId && filtro.ubsId !== 'TODAS') {
+      where.ubsId = filtro.ubsId;
+    }
 
     if (filtro.q && filtro.q.trim().length > 0) {
       const q = filtro.q.trim();
@@ -51,6 +57,7 @@ export class PrismaPacienteRepository implements IPacienteRepository {
         { nomeSocial: { contains: q, mode: 'insensitive' } },
         { cpf: { contains: q } },
         { cartaoSus: { contains: q } },
+        { nomeMae: { contains: q, mode: 'insensitive' } },
         { equipeSaudeFamilia: { contains: q, mode: 'insensitive' } },
       ];
     }
@@ -74,6 +81,15 @@ export class PrismaPacienteRepository implements IPacienteRepository {
       ];
     }
 
+    return where;
+  }
+
+  async listar(filtro: ListarPacientesFiltro): Promise<PacienteResumo[]> {
+    const where = this.buildWhere(filtro);
+    const limit = filtro.limit ?? 200;
+    const page = filtro.page ?? 1;
+    const skip = (page - 1) * limit;
+
     const rows = await prisma.paciente.findMany({
       where,
       include: {
@@ -93,10 +109,91 @@ export class PrismaPacienteRepository implements IPacienteRepository {
         atendimentos: { orderBy: { data: 'desc' }, take: 1, select: { data: true } },
       },
       orderBy: { nome: 'asc' },
-      take: 200,
+      skip,
+      take: limit,
     });
 
     return rows.map(rowParaResumo);
+  }
+
+  async listarPaginado(filtro: ListarPacientesFiltro): Promise<ResultadoPaginadoPacientes> {
+    const where = this.buildWhere(filtro);
+    const page = Math.max(1, filtro.page ?? 1);
+    const limit = Math.min(200, Math.max(1, filtro.limit ?? 50));
+    const skip = (page - 1) * limit;
+
+    const [total, rows] = await Promise.all([
+      prisma.paciente.count({ where }),
+      prisma.paciente.findMany({
+        where,
+        include: {
+          ubs: { select: { nome: true } },
+          _count: {
+            select: {
+              condicoesCronicas: { where: { ativo: true } },
+              encaminhamentos: {
+                where: {
+                  status: {
+                    in: [StatusPrisma.AGUARDANDO_REGULACAO, StatusPrisma.PENDENCIA_DOCUMENTO],
+                  },
+                },
+              },
+            },
+          },
+          atendimentos: { orderBy: { data: 'desc' }, take: 1, select: { data: true } },
+        },
+        orderBy: { nome: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    return {
+      itens: rows.map(rowParaResumo),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  async contarMetricas(scope: AccessScope): Promise<PacientesMetricas> {
+    const baseWhere = whereByScopePaciente(scope);
+    const limite90d = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    const [totalCadastrados, totalCronicos, totalEncAtivos, totalSemAtendimento90d] = await Promise.all([
+      prisma.paciente.count({ where: baseWhere }),
+      prisma.paciente.count({
+        where: {
+          ...baseWhere,
+          condicoesCronicas: { some: { ativo: true } },
+        },
+      }),
+      prisma.encaminhamento.count({
+        where: {
+          paciente: baseWhere,
+          status: { in: [StatusPrisma.AGUARDANDO_REGULACAO, StatusPrisma.PENDENCIA_DOCUMENTO] },
+        },
+      }),
+      prisma.paciente.count({
+        where: {
+          ...baseWhere,
+          OR: [
+            { atendimentos: { none: {} } },
+            { atendimentos: { every: { data: { lt: limite90d } } } },
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      totalCadastrados,
+      totalCronicos,
+      totalEncAtivos,
+      totalSemAtendimento90d,
+    };
   }
 
   async buscarPorId(id: string, scope: AccessScope): Promise<PacienteCompleto | null> {

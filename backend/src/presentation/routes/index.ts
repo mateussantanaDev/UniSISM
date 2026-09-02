@@ -153,6 +153,7 @@ export function buildRoutes(deps: Deps): Router {
   router.get('/anexos/:id/download', authenticate, deps.anexos.getDownload);
 
   // ----- Pacientes -----
+  router.get('/pacientes/metricas', authenticate, deps.pacientes.getMetricas);
   router.get('/pacientes', authenticate, deps.pacientes.getList);
   // Busca por CPF — usado no fluxo de consolidação do encaminhamento
   // pra pré-preencher o form e listar campos faltantes.

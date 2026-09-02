@@ -61,6 +61,8 @@ import type {
   ListarRecomendacoesQuery,
   ListEncaminhamentosQuery,
   ListPacientesQuery,
+  PacientesPaginadosResponse,
+  PacientesMetricasResponse,
   ListUbsQuery,
   ListUsuariosQuery,
   LoginRequest,
@@ -563,6 +565,17 @@ class PacientesApi {
 
   list(query?: ListPacientesQuery): Promise<PacienteResumo[]> {
     return this.api.get<PacienteResumo[]>('/pacientes', query as Record<string, unknown>);
+  }
+
+  listPaginado(query?: ListPacientesQuery): Promise<PacientesPaginadosResponse> {
+    return this.api.get<PacientesPaginadosResponse>('/pacientes', {
+      ...(query as Record<string, unknown>),
+      paginado: 'true',
+    });
+  }
+
+  metricas(): Promise<PacientesMetricasResponse> {
+    return this.api.get<PacientesMetricasResponse>('/pacientes/metricas');
   }
 
   byId(id: string): Promise<PacienteCompleto> {

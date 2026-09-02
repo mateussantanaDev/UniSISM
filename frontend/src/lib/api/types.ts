@@ -569,6 +569,25 @@ export interface ListPacientesQuery {
   filtro?: FiltroPacienteEspecial;
   equipeId?: string;
   microarea?: string;
+  ubsId?: string;
+  page?: number;
+  limit?: number;
+  paginado?: boolean;
+}
+
+export interface PacientesPaginadosResponse {
+  itens: PacienteResumo[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PacientesMetricasResponse {
+  totalCadastrados: number;
+  totalCronicos: number;
+  totalEncAtivos: number;
+  totalSemAtendimento90d: number;
 }
 
 /**

@@ -12,9 +12,29 @@ export interface ListarPacientesFiltro {
   filtro?: FiltroPacienteEspecial;
   equipeId?: string;
   microarea?: string;
+  ubsId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ResultadoPaginadoPacientes {
+  itens: PacienteResumo[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PacientesMetricas {
+  totalCadastrados: number;
+  totalCronicos: number;
+  totalEncAtivos: number;
+  totalSemAtendimento90d: number;
 }
 
 export interface IPacienteRepository {
   listar(filtro: ListarPacientesFiltro): Promise<PacienteResumo[]>;
+  listarPaginado(filtro: ListarPacientesFiltro): Promise<ResultadoPaginadoPacientes>;
   buscarPorId(id: string, scope: AccessScope): Promise<PacienteCompleto | null>;
+  contarMetricas(scope: AccessScope): Promise<PacientesMetricas>;
 }

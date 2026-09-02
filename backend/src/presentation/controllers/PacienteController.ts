@@ -40,6 +40,10 @@ const listarSchema = z.object({
   filtro: z.enum(['COM_CRONICAS', 'COM_ENCAMINHAMENTOS', 'SEM_ATENDIMENTO_90D']).optional(),
   equipeId: z.string().optional(),
   microarea: z.string().optional(),
+  ubsId: z.string().optional(),
+  page: z.coerce.number().min(1).default(1).optional(),
+  limit: z.coerce.number().min(1).max(500).default(50).optional(),
+  paginado: z.enum(['true', 'false']).optional(),
 });
 
 export class PacienteController {
@@ -57,17 +61,39 @@ export class PacienteController {
     res.json(out);
   };
 
+  getMetricas = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const m = await this.list.metricas(scope);
+    res.json(m);
+  };
+
   getList = async (req: Request, res: Response): Promise<void> => {
     const q = listarSchema.parse(req.query);
     const scope = scopeFromRequest(req);
-    const lista = await this.list.exec({
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 50;
+
+    const paginado = await this.list.execPaginado({
       scope,
+      page,
+      limit,
       ...(q.q ? { q: q.q } : {}),
       ...(q.filtro ? { filtro: q.filtro } : {}),
       ...(q.equipeId ? { equipeId: q.equipeId } : {}),
       ...(q.microarea ? { microarea: q.microarea } : {}),
+      ...(q.ubsId ? { ubsId: q.ubsId } : {}),
     });
-    res.json(lista);
+
+    res.setHeader('x-total-count', paginado.total.toString());
+    res.setHeader('x-page', paginado.page.toString());
+    res.setHeader('x-limit', paginado.limit.toString());
+    res.setHeader('x-total-pages', paginado.totalPages.toString());
+
+    if (q.paginado === 'true') {
+      res.json(paginado);
+    } else {
+      res.json(paginado.itens);
+    }
   };
 
   getById = async (req: Request, res: Response): Promise<void> => {

@@ -4,7 +4,7 @@
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import { api } from '$lib/api';
 	import type { PacienteResumo } from '$lib/domain/models/Paciente';
-	import type { FiltroPacienteEspecial } from '$lib/api/types';
+	import type { FiltroPacienteEspecial, PacientesMetricasResponse } from '$lib/api/types';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
@@ -13,17 +13,76 @@
 	let lista = $state<PacienteResumo[]>([]);
 	let carregando = $state(true);
 	let busca = $state('');
+	let paginaAtual = $state(1);
+	let limite = $state(50);
+	let totalRegistros = $state(0);
+	let totalPaginas = $state(1);
+
+	let metricas = $state<PacientesMetricasResponse>({
+		totalCadastrados: 0,
+		totalCronicos: 0,
+		totalEncAtivos: 0,
+		totalSemAtendimento90d: 0
+	});
 
 	type FiltroEspecial = 'TODOS' | FiltroPacienteEspecial;
 	let filtro = $state<FiltroEspecial>('TODOS');
 
-	onMount(async () => {
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+	async function carregarMetricas() {
 		try {
-			lista = await api.pacientes.list();
+			metricas = await api.pacientes.metricas();
+		} catch (err) {
+			console.error('Erro ao carregar metricas:', err);
+		}
+	}
+
+	async function carregarPacientes() {
+		carregando = true;
+		try {
+			const res = await api.pacientes.listPaginado({
+				page: paginaAtual,
+				limit: limite,
+				q: busca.trim() || undefined,
+				filtro: filtro === 'TODOS' ? undefined : filtro
+			});
+			lista = res.itens;
+			totalRegistros = res.total;
+			totalPaginas = res.totalPages;
+			paginaAtual = res.page;
+		} catch (err) {
+			console.error('Erro ao carregar pacientes:', err);
 		} finally {
 			carregando = false;
 		}
+	}
+
+	onMount(() => {
+		carregarMetricas();
+		carregarPacientes();
 	});
+
+	function aoMudarBusca(valor: string) {
+		busca = valor;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			paginaAtual = 1;
+			carregarPacientes();
+		}, 300);
+	}
+
+	function aoMudarFiltro(f: FiltroEspecial) {
+		filtro = f;
+		paginaAtual = 1;
+		carregarPacientes();
+	}
+
+	function irParaPagina(p: number) {
+		if (p < 1 || p > totalPaginas || p === paginaAtual) return;
+		paginaAtual = p;
+		carregarPacientes();
+	}
 
 	function idade(iso: string): number {
 		const hoje = new Date();
@@ -49,39 +108,6 @@
 		return `Há ${Math.floor(dias / 365)} anos`;
 	}
 
-	let filtrada = $derived.by(() => {
-		let base = lista;
-
-		if (filtro === 'COM_CRONICAS') {
-			base = base.filter((p) => p.condicoesCronicasAtivas > 0);
-		} else if (filtro === 'COM_ENCAMINHAMENTOS') {
-			base = base.filter((p) => p.encaminhamentosAtivos > 0);
-		} else if (filtro === 'SEM_ATENDIMENTO_90D') {
-			base = base.filter((p) => diasDesde(p.ultimoAtendimento) > 90);
-		}
-
-		if (busca) {
-			const q = busca.toLowerCase();
-			base = base.filter(
-				(p) =>
-					p.nome.toLowerCase().includes(q) ||
-					p.cpf.includes(busca) ||
-					p.cartaoSus.includes(busca) ||
-					(p.equipeSaudeFamilia ?? '').toLowerCase().includes(q)
-			);
-		}
-
-		return base;
-	});
-
-	let totalCronicos = $derived(lista.filter((p) => p.condicoesCronicasAtivas > 0).length);
-	let totalEncAtivos = $derived(
-		lista.reduce((acc, p) => acc + p.encaminhamentosAtivos, 0)
-	);
-	let totalAbandono = $derived(
-		lista.filter((p) => diasDesde(p.ultimoAtendimento) > 90).length
-	);
-
 	const filtros: { valor: FiltroEspecial; label: string; tone: string }[] = [
 		{ valor: 'TODOS', label: 'Todos', tone: 'border-slate-300' },
 		{ valor: 'COM_CRONICAS', label: 'Com Condições Crônicas', tone: 'border-amber-600' },
@@ -95,40 +121,40 @@
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
 		<MetricCard
 			label="Pacientes Cadastrados"
-			value={lista.length}
+			value={metricas.totalCadastrados || totalRegistros}
 			sublabel={auth.me?.unidade ? `Vinculados à ${auth.me.unidade}` : 'Rede municipal'}
 		/>
 		<MetricCard
 			label="Com Condições Crônicas"
-			value={totalCronicos}
+			value={metricas.totalCronicos}
 			sublabel="HiperDia · Diabéticos · outros"
 			accent="warning"
 		/>
 		<MetricCard
 			label="Encaminhamentos Ativos"
-			value={totalEncAtivos}
+			value={metricas.totalEncAtivos}
 			sublabel="Aguardando ou com pendência"
 			accent="default"
 		/>
 		<MetricCard
 			label="Sem Atendimento >90d"
-			value={totalAbandono}
+			value={metricas.totalSemAtendimento90d}
 			sublabel="Busca ativa recomendada"
 			accent="critical"
 		/>
 	</section>
 
 	<!-- Lista -->
-	<div class="border border-slate-200 bg-white">
+	<div class="border border-slate-200 bg-white shadow-sm">
 		<PanelHeader
 			title="Pacientes do Posto"
-			subtitle="Prontuário Eletrônico do Cidadão — vinculados à UBS CENTRAL"
+			subtitle="Prontuário Eletrônico do Cidadão — base municipal completa"
 			index="01"
 		>
 			<span
 				class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] tracking-widest text-slate-600 uppercase"
 			>
-				{filtrada.length} / {lista.length} REGISTROS
+				{totalRegistros.toLocaleString('pt-BR')} PACIENTES
 			</span>
 		</PanelHeader>
 
@@ -143,8 +169,9 @@
 				<input
 					id="busca"
 					type="text"
-					bind:value={busca}
-					placeholder="Nome, CPF, Cartão SUS, equipe..."
+					value={busca}
+					oninput={(e) => aoMudarBusca((e.target as HTMLInputElement).value)}
+					placeholder="Buscar por Nome, CPF, Cartão SUS, Mãe ou Equipe..."
 					class="flex-1 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 				/>
 			</div>
@@ -153,7 +180,7 @@
 				{#each filtros as f (f.valor)}
 					<button
 						type="button"
-						onclick={() => (filtro = f.valor)}
+						onclick={() => aoMudarFiltro(f.valor)}
 						class="border px-2.5 py-1 font-mono text-[10px] font-bold tracking-widest uppercase transition-colors
 							{filtro === f.valor
 							? 'border-blue-900 bg-blue-900 text-white'
@@ -174,31 +201,31 @@
 						<th class="border-r border-slate-200 px-3 py-2">Nome</th>
 						<th class="border-r border-slate-200 px-3 py-2">CPF</th>
 						<th class="border-r border-slate-200 px-3 py-2">Cartão SUS</th>
-						<th class="border-r border-slate-200 px-3 py-2">Idade</th>
-						<th class="border-r border-slate-200 px-3 py-2">Equipe ESF</th>
-						<th class="border-r border-slate-200 px-3 py-2">Crônicas</th>
-						<th class="border-r border-slate-200 px-3 py-2">Enc. Ativos</th>
+						<th class="border-r border-slate-200 px-3 py-2">Idade / Sexo</th>
+						<th class="border-r border-slate-200 px-3 py-2">Equipe ESF / UBS</th>
+						<th class="border-r border-slate-200 px-3 py-2 text-center">Crônicas</th>
+						<th class="border-r border-slate-200 px-3 py-2 text-center">Enc. Ativos</th>
 						<th class="border-r border-slate-200 px-3 py-2">Último Atendimento</th>
 						<th class="px-3 py-2">Ação</th>
 					</tr>
 				</thead>
 				<tbody class="font-mono">
 					{#if carregando}
-						{#each Array(6) as _, i (i)}
+						{#each Array(8) as _, i (i)}
 							<tr class="border-b border-slate-100">
 								<td colspan="9" class="px-3 py-3">
 									<div class="h-3 w-full animate-pulse bg-slate-100"></div>
 								</td>
 							</tr>
 						{/each}
-					{:else if filtrada.length === 0}
+					{:else if lista.length === 0}
 						<tr>
 							<td colspan="9" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
 								Nenhum paciente encontrado com os filtros aplicados.
 							</td>
 						</tr>
 					{:else}
-						{#each filtrada as p (p.id)}
+						{#each lista as p (p.id)}
 							{@const abandono = diasDesde(p.ultimoAtendimento) > 90}
 							<tr
 								class="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
@@ -211,13 +238,16 @@
 									{p.cpf}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
-									{p.cartaoSus}
+									{p.cartaoSus || '—'}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
 									{idade(p.dataNascimento)}a · {p.sexo}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
-									{p.equipeSaudeFamilia ?? '—'}
+									<div>{p.unidadeVinculada}</div>
+									{#if p.equipeSaudeFamilia}
+										<div class="text-[10px] text-slate-500">{p.equipeSaudeFamilia}</div>
+									{/if}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-center">
 									{#if p.condicoesCronicasAtivas > 0}
@@ -260,6 +290,67 @@
 					{/if}
 				</tbody>
 			</table>
+		</div>
+
+		<!-- Paginação -->
+		<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+			<div class="font-mono text-slate-600">
+				Mostrando <strong class="text-slate-900">{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> pacientes
+			</div>
+
+			<div class="flex items-center gap-1">
+				<button
+					type="button"
+					onclick={() => irParaPagina(1)}
+					disabled={paginaAtual <= 1}
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					title="Primeira página"
+				>
+					«
+				</button>
+				<button
+					type="button"
+					onclick={() => irParaPagina(paginaAtual - 1)}
+					disabled={paginaAtual <= 1}
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					title="Página anterior"
+				>
+					‹ Anterior
+				</button>
+
+				<span class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900">
+					Pág. {paginaAtual} de {totalPaginas}
+				</span>
+
+				<button
+					type="button"
+					onclick={() => irParaPagina(paginaAtual + 1)}
+					disabled={paginaAtual >= totalPaginas}
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					title="Próxima página"
+				>
+					Próxima ›
+				</button>
+				<button
+					type="button"
+					onclick={() => irParaPagina(totalPaginas)}
+					disabled={paginaAtual >= totalPaginas}
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					title="Última página"
+				>
+					»
+				</button>
+
+				<select
+					bind:value={limite}
+					onchange={() => { paginaAtual = 1; carregarPacientes(); }}
+					class="ml-2 border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700 outline-none"
+				>
+					<option value={25}>25 / pág</option>
+					<option value={50}>50 / pág</option>
+					<option value={100}>100 / pág</option>
+				</select>
+			</div>
 		</div>
 	</div>
 </div>
