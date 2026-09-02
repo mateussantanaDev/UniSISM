@@ -14,6 +14,7 @@
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node-dev --transpile-only prisma/seed.ts",
     "db:seed:prod": "node dist/prisma/seed.js",
+    "db:reset-prod": "ts-node-dev --transpile-only scripts/reset-production.ts",
     "minio:init": "ts-node-dev --transpile-only scripts/init-minio.ts",
     "db:setup-triggers": "ts-node-dev --transpile-only scripts/setup-db-triggers.ts",
     "db:backfill-motoristas": "ts-node-dev --transpile-only scripts/backfill-motoristas.ts",
