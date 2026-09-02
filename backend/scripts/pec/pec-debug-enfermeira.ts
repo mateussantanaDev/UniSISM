@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
-import { PEC, sleep } from './pec-common';
+import { PEC, sleep, getLaunchOptions } from './pec-common';
 
 const SS = '/tmp/pec-enfermeira';
 fs.mkdirSync(SS, { recursive: true });
@@ -44,10 +44,7 @@ async function loginBase(page: Page) {
 
 async function main() {
   console.log('🔍 INVESTIGAÇÃO · perfis Enfermeira disponíveis\n');
-  const browser = await chromium.launch({
-    headless: process.env.PEC_HEADLESS !== 'false',
-    channel: 'chrome',
-  });
+  const browser = await chromium.launch(getLaunchOptions());
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await ctx.newPage();
   try {
