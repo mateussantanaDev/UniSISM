@@ -161,23 +161,22 @@ async function tentarBaixarPronto(
     return { baixado: false, pendente: status.text.includes('processamento') || status.text.includes('Aguarde') };
   }
 
-  // Qooxdoo usa XHR pra baixar — interceptamos a request via route, refetch e salvamos body
+  // Qooxdoo usa XHR/download — interceptamos a request via route, refetch e salvamos body
   try {
     const downloadPath = path.join(CSV_DIR, `${taskKey}.csv`);
     const ctx = page.context();
     const fs = await import('node:fs');
 
     const bodyPromise = new Promise<Buffer>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('timeout 60s no /esus/download')), 60_000);
-      ctx.route('**/esus/download?**', async (route) => {
+      const timer = setTimeout(() => reject(new Error('timeout 180s no download')), 180_000);
+      ctx.route('**/*download*', async (route) => {
         try {
           const r = await route.fetch();
           const body = await r.body();
           clearTimeout(timer);
           resolve(body);
           await route.fulfill({ status: 200, contentType: 'text/plain', body: '' });
-          // remove o handler depois pra próxima request não duplicar
-          await ctx.unroute('**/esus/download?**');
+          await ctx.unroute('**/*download*').catch(() => {});
         } catch (e) {
           clearTimeout(timer);
           reject(e as Error);
@@ -186,7 +185,7 @@ async function tentarBaixarPronto(
     });
 
     const frame = page.frameLocator('iframe');
-    await frame.locator('div[title="Baixar CSV"]').first().click({ timeout: 10_000 });
+    await frame.locator('div[title="Baixar CSV"]').first().click({ timeout: 15_000 });
     const buffer = await bodyPromise;
     fs.writeFileSync(downloadPath, buffer);
     return { baixado: true, pendente: false, path: downloadPath };
