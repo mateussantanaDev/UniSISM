@@ -180,8 +180,8 @@
 				<input
 					id="busca"
 					type="text"
-					value={busca}
-					oninput={(e) => aoMudarBusca((e.target as HTMLInputElement).value)}
+					bind:value={busca}
+					oninput={() => aoMudarBusca(busca)}
 					placeholder="Buscar por Nome, CPF, Cartão SUS, Mãe ou Equipe..."
 					class="flex-1 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 				/>
