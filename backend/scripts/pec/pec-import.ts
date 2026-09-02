@@ -103,11 +103,18 @@ if (!isMainThread) {
 
     try {
       // Worker importa Prisma dinâmico pra ter conexão isolada
-      const { PrismaClient } = await import('@prisma/client');
-      const wPrisma = new PrismaClient();
+      let PrismaClientClass: any;
+      try {
+        const mod = await import('../../generated/prisma');
+        PrismaClientClass = mod.PrismaClient;
+      } catch {
+        const mod = await import('@prisma/client');
+        PrismaClientClass = mod.PrismaClient;
+      }
+      const wPrisma = new PrismaClientClass();
 
       let rows: any[] = [];
-      const isJsonl = file.endsWith('.jsonl') || file.endsWith('.json');
+      const isJsonl = file.endsWith('.jsonl');
 
       if (isJsonl) {
         const lines = fs.readFileSync(file, 'utf-8').split(/\r?\n/).filter(Boolean);
@@ -205,6 +212,10 @@ if (!isMainThread) {
             });
           }
           insertedCount++;
+
+          if (i > 0 && i % 2500 === 0) {
+            parentPort?.postMessage({ kind: 'progress', file, current: i, total: rows.length, inserted: insertedCount });
+          }
         }
       }
 
@@ -270,11 +281,13 @@ if (!isMainThread) {
             workerData: { file, ubsMap, prefeituraId, dryRun: DRY_RUN },
             execArgv: ['-r', 'ts-node/register/transpile-only'],
           });
-          w.on('message', (msg: { kind: string; file?: string; rows?: number; processed?: number; inserted?: number; error?: string }) => {
-            if (msg.kind === 'done') {
+          w.on('message', (msg: { kind: string; file?: string; rows?: number; processed?: number; inserted?: number; current?: number; total?: number; error?: string }) => {
+            if (msg.kind === 'progress') {
+              log('INFO', `⏳ [${path.basename(msg.file ?? '')}] progresso: ${msg.current}/${msg.total} (${msg.inserted} inseridos)`);
+            } else if (msg.kind === 'done') {
               counters.processed += msg.processed ?? 0;
               counters.inserted += msg.inserted ?? 0;
-              log('INFO', `✓ worker concluiu ${path.basename(msg.file ?? '')} · ${msg.processed} rows`);
+              log('INFO', `✓ worker concluiu ${path.basename(msg.file ?? '')} · ${msg.inserted} inseridos / ${msg.processed} rows`);
             } else if (msg.kind === 'error') {
               counters.errors++;
               log('ERROR', `✗ worker erro ${msg.file}: ${msg.error}`);
@@ -304,7 +317,7 @@ if (!isMainThread) {
       ? fs.readdirSync(CSV_DIR).filter(f => f.endsWith('.csv')).map(f => path.join(CSV_DIR, f))
       : [];
     const jsonlFiles = fs.existsSync(PACIENTES_DIR)
-      ? fs.readdirSync(PACIENTES_DIR).filter(f => f.endsWith('.jsonl') || f.endsWith('.json')).map(f => path.join(PACIENTES_DIR, f))
+      ? fs.readdirSync(PACIENTES_DIR).filter(f => f.endsWith('.jsonl')).map(f => path.join(PACIENTES_DIR, f))
       : [];
     const allFiles = [...csvFiles, ...jsonlFiles];
     log('INFO', `${allFiles.length} arquivos encontrados (${csvFiles.length} CSVs, ${jsonlFiles.length} JSONLs)`);
