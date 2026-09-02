@@ -41,16 +41,23 @@
 	async function carregarPacientes() {
 		carregando = true;
 		try {
-			const res = await api.pacientes.listPaginado({
+			const res: any = await api.pacientes.listPaginado({
 				page: paginaAtual,
 				limit: limite,
 				q: busca.trim() || undefined,
 				filtro: filtro === 'TODOS' ? undefined : filtro
 			});
-			lista = res.itens;
-			totalRegistros = res.total;
-			totalPaginas = res.totalPages;
-			paginaAtual = res.page;
+
+			if (Array.isArray(res)) {
+				lista = res;
+				totalRegistros = metricas.totalCadastrados || (res.length >= limite ? paginaAtual * limite + 1 : res.length);
+				totalPaginas = Math.max(1, Math.ceil(totalRegistros / limite));
+			} else if (res && typeof res === 'object') {
+				lista = res.itens ?? [];
+				totalRegistros = res.total ?? (metricas.totalCadastrados || lista.length);
+				totalPaginas = res.totalPages ?? Math.max(1, Math.ceil(totalRegistros / limite));
+				paginaAtual = res.page ?? paginaAtual;
+			}
 		} catch (err) {
 			console.error('Erro ao carregar pacientes:', err);
 		} finally {

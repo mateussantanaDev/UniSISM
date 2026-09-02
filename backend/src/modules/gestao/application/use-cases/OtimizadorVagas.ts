@@ -96,7 +96,10 @@ export async function findDoctorAsync(
       // Busca por especialidade
       if (especialidade) {
         const matchSpec = escalas.find(
-          (e) => e.especialidade.toLowerCase() === especialidade.toLowerCase(),
+          (e) =>
+            e.especialidade.toLowerCase() === especialidade.toLowerCase() ||
+            e.especialidade.toLowerCase().includes(especialidade.toLowerCase()) ||
+            especialidade.toLowerCase().includes(e.especialidade.toLowerCase()),
         );
         if (matchSpec) {
           return {
@@ -111,17 +114,19 @@ export async function findDoctorAsync(
         }
       }
 
-      // Retorna a primeira escala cadastrada
-      const primeira = escalas[0]!;
-      return {
-        nome: primeira.medicoNome,
-        crm: primeira.crm,
-        especialidade: primeira.especialidade,
-        diasSemana: parseDiasSemana(primeira.diasSemana),
-        horaInicio: parseHora(primeira.horarioInicio, 8),
-        horaFim: parseHora(primeira.horarioFim, 17),
-        duracaoMinutos: primeira.duracaoMinutos,
-      };
+      // Se não buscou por especialidade ou profissional específico, retorna a primeira escala
+      if (!especialidade && !profissional) {
+        const primeira = escalas[0]!;
+        return {
+          nome: primeira.medicoNome,
+          crm: primeira.crm,
+          especialidade: primeira.especialidade,
+          diasSemana: parseDiasSemana(primeira.diasSemana),
+          horaInicio: parseHora(primeira.horarioInicio, 8),
+          horaFim: parseHora(primeira.horarioFim, 17),
+          duracaoMinutos: primeira.duracaoMinutos,
+        };
+      }
     }
   } catch (err) {
     // Fallback gracioso se o banco estiver desconectado ou em migração

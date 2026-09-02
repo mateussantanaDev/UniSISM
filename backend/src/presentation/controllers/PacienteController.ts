@@ -89,7 +89,7 @@ export class PacienteController {
     res.setHeader('x-limit', paginado.limit.toString());
     res.setHeader('x-total-pages', paginado.totalPages.toString());
 
-    if (q.paginado === 'true') {
+    if (q.paginado === 'true' || req.query.page !== undefined || req.query.limit !== undefined) {
       res.json(paginado);
     } else {
       res.json(paginado.itens);

@@ -27,10 +27,28 @@ export interface SlotAlocadoResult {
   tipoServico: string;
 }
 
+export interface SlotHorarioItem {
+  hora: string;
+  disponivel: boolean;
+  motivo?: string;
+}
+
+export interface DiaDisponibilidadeSlot {
+  data: string; // YYYY-MM-DD
+  dataFormatada: string; // DD/MM/AAAA
+  diaSemana: string; // "Segunda-feira"
+  diasAteData: number;
+  totalSlots: number;
+  slotsLivres: number;
+  slotsOcupados: number;
+  slots: SlotHorarioItem[];
+}
+
 export interface CalcularAlocacaoVagaOutput {
   sucesso: boolean;
   mensagem?: string;
   alocacao?: SlotAlocadoResult;
+  gradeDisponibilidade?: DiaDisponibilidadeSlot[];
 }
 
 const DIAS_MAP: Record<string, number> = {
@@ -306,9 +324,54 @@ export class CalcularAlocacaoVagaCentroUseCase {
       tentativas++;
     }
 
-    if (!dataIsoFinal || !horaFinal) {
-      dataIsoFinal = formatarDataIso(dataCalculada);
-      horaFinal = escalaSelecionada.horarioInicio || '08:00';
+    const NOMES_DIAS = [
+      'Domingo',
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+    ];
+
+    // 6. Gera a Grade Completa de Disponibilidade (Dias e Horários Livres da Escala do Especialista)
+    const gradeDisponibilidade: DiaDisponibilidadeSlot[] = [];
+    const hojeZero = new Date();
+    hojeZero.setHours(0, 0, 0, 0);
+
+    const cursorGrade = new Date(hojeZero);
+    for (let d = 0; d < 35; d++) {
+      const diaSemanaIndex = cursorGrade.getDay();
+      if (diasAtendimento.includes(diaSemanaIndex)) {
+        const iso = formatarDataIso(cursorGrade);
+        const dataBr = formatarDataBr(iso);
+        const diaSemanaNome = NOMES_DIAS[diaSemanaIndex] || 'Dia Útil';
+
+        const slotsDoDia: SlotHorarioItem[] = slotsPadrao.map((slot) => {
+          const chave = `${iso}_${slot}`;
+          const ocupado = slotsOcupados.has(chave);
+          return {
+            hora: slot,
+            disponivel: !ocupado,
+            motivo: ocupado ? 'Horário já reservado por outro paciente' : undefined,
+          };
+        });
+
+        const livres = slotsDoDia.filter((s) => s.disponivel).length;
+        const ocupados = slotsDoDia.length - livres;
+
+        gradeDisponibilidade.push({
+          data: iso,
+          dataFormatada: dataBr,
+          diaSemana: diaSemanaNome,
+          diasAteData: d,
+          totalSlots: slotsDoDia.length,
+          slotsLivres: livres,
+          slotsOcupados: ocupados,
+          slots: slotsDoDia,
+        });
+      }
+      cursorGrade.setDate(cursorGrade.getDate() + 1);
     }
 
     const justificativaCompleta = `${justificativaTexto} Profissional: ${escalaSelecionada.medicoNome} (${escalaSelecionada.crm}), escala em ${escalaSelecionada.diasSemana.join(', ')} das ${escalaSelecionada.horarioInicio} às ${escalaSelecionada.horarioFim}. Vaga alocada no ${consultorioNome}.`;
@@ -329,6 +392,7 @@ export class CalcularAlocacaoVagaCentroUseCase {
         duracaoMinutos: escalaSelecionada.duracaoMinutos || 20,
         tipoServico: escalaSelecionada.tipoServico || 'CONSULTA',
       },
+      gradeDisponibilidade,
     };
   }
 }

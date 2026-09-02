@@ -1360,8 +1360,11 @@ export interface AgendarBalcaoCentroRequest {
   solicitacao: SolicitacaoMedica;
   nota?: string;
   medicoDesejado?: string;
+  dataAgendada?: string;
+  horaAgendada?: string;
   dataAgendamento?: string;
   horaAgendamento?: string;
+  consultorio?: string;
   status?: string;
 }
 
@@ -1570,6 +1573,23 @@ export interface CalcularSlotCentroRequest {
   dataBase?: string;
 }
 
+export interface SlotHorarioItem {
+  hora: string;
+  disponivel: boolean;
+  motivo?: string;
+}
+
+export interface DiaDisponibilidadeSlot {
+  data: string; // YYYY-MM-DD
+  dataFormatada: string; // DD/MM/AAAA
+  diaSemana: string; // "Segunda-feira"
+  diasAteData: number;
+  totalSlots: number;
+  slotsLivres: number;
+  slotsOcupados: number;
+  slots: SlotHorarioItem[];
+}
+
 export interface CalcularSlotCentroResponse {
   sucesso: boolean;
   mensagem?: string;
@@ -1587,6 +1607,7 @@ export interface CalcularSlotCentroResponse {
     duracaoMinutos: number;
     tipoServico: string;
   };
+  gradeDisponibilidade?: DiaDisponibilidadeSlot[];
 }
 
 export interface RemanejamentoLoteCentroRequest {

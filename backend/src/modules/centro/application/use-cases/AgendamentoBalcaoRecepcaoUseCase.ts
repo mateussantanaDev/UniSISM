@@ -29,6 +29,9 @@ export interface AgendamentoBalcaoInput {
   };
   nota?: string;
   medicoDesejado?: string;
+  dataAgendada?: string; // YYYY-MM-DD
+  horaAgendada?: string; // HH:MM
+  consultorio?: string;
   ubsId?: string;
   atendente: {
     id: string;
@@ -85,7 +88,16 @@ export class AgendamentoBalcaoRecepcaoUseCase {
     let profissionalAgendado = input.medicoDesejado || input.solicitacao.medicoSolicitante || 'Especialista da Escala';
     let localAg = ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades (CEM)';
 
-    if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
+    if (input.dataAgendada && input.horaAgendada) {
+      agendamentoPrevisto = new Date(`${input.dataAgendada}T${input.horaAgendada}:00`);
+      if (input.consultorio) localAg = input.consultorio;
+      else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
+        localAg = resultadoAlocacao.alocacao.consultorio;
+      }
+      if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao?.medicoNome) {
+        profissionalAgendado = input.medicoDesejado || resultadoAlocacao.alocacao.medicoNome;
+      }
+    } else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
       const aloc = resultadoAlocacao.alocacao;
       agendamentoPrevisto = new Date(`${aloc.data}T${aloc.hora}:00`);
       profissionalAgendado = aloc.medicoNome;

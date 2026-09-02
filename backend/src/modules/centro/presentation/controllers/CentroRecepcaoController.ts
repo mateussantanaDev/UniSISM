@@ -64,6 +64,9 @@ const balcaoSchema = z.object({
   }),
   nota: z.string().optional(),
   medicoDesejado: z.string().optional(),
+  dataAgendada: z.string().optional(),
+  horaAgendada: z.string().optional(),
+  consultorio: z.string().optional(),
   ubsId: z.string().optional(),
 });
 
@@ -284,6 +287,9 @@ export class CentroRecepcaoController {
         solicitacao: body.solicitacao,
         nota: body.nota,
         medicoDesejado: body.medicoDesejado,
+        dataAgendada: body.dataAgendada,
+        horaAgendada: body.horaAgendada,
+        consultorio: body.consultorio,
         ubsId: body.ubsId,
         atendente: {
           id: atendente.id,

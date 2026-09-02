@@ -9,7 +9,9 @@
 		Sexo,
 		RacaCor,
 		EscalaMedicoCentro,
-		CalcularSlotCentroResponse
+		CalcularSlotCentroResponse,
+		DiaDisponibilidadeSlot,
+		SlotHorarioItem
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
@@ -66,8 +68,20 @@
 	let escalasDoBanco = $state<EscalaMedicoCentro[]>([]);
 	let carregandoEscalas = $state(true);
 
-	// Estado da Alocação Calculada no Servidor
+	// Estado da Alocação e Grade de Disponibilidade calculada no Backend
 	let alocacaoOtimizadaBalcao = $state<CalcularSlotCentroResponse['alocacao'] | null>(null);
+	let gradeDisponibilidade = $state<DiaDisponibilidadeSlot[]>([]);
+	let diaSelecionadoGrade = $state<string | null>(null);
+	let slotEscolhido = $state<{
+		data: string;
+		dataFormatada: string;
+		hora: string;
+		consultorio: string;
+		diaSemana?: string;
+		medicoNome?: string;
+		isRecomendado?: boolean;
+	} | null>(null);
+
 	let calculandoSlotBackend = $state(false);
 	let mensagemSlotBackend = $state('');
 
@@ -121,7 +135,7 @@
 
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
-	let medicoSelecionado = $state<{ id?: string; medicoId?: string; nome: string; especialidade: string; registro: string } | null>(null);
+	let medicoSelecionado = $state<{ id?: string; medicoId?: string; nome: string; especialidade: string; registro: string; diasSemana?: string[]; horarioInicio?: string; horarioFim?: string } | null>(null);
 
 	// Filtra especialistas pela especialidade selecionada (se houver) e texto de busca
 	let medicosFiltrados = $derived(
@@ -142,7 +156,7 @@
 		}
 	}
 
-	function selecionarMedico(med: { id?: string; medicoId?: string; nome: string; especialidade: string; registro: string }) {
+	function selecionarMedico(med: { id?: string; medicoId?: string; nome: string; especialidade: string; registro: string; diasSemana?: string[]; horarioInicio?: string; horarioFim?: string }) {
 		medicoSelecionado = med;
 		buscaMedico = med.nome;
 		especialidade = med.especialidade;
@@ -154,10 +168,13 @@
 		buscaMedico = '';
 	}
 
-	// Alocação Automática Reativa via Backend API
+	// Alocação Automática e Busca da Grade de Disponibilidade da Escala via Backend
 	async function calcularSlotBackend() {
 		if (!especialidade && !medicoSelecionado) {
 			alocacaoOtimizadaBalcao = null;
+			gradeDisponibilidade = [];
+			slotEscolhido = null;
+			diaSelecionadoGrade = null;
 			mensagemSlotBackend = '';
 			return;
 		}
@@ -178,14 +195,34 @@
 
 			if (res && res.sucesso && res.alocacao) {
 				alocacaoOtimizadaBalcao = res.alocacao;
+				gradeDisponibilidade = res.gradeDisponibilidade || [];
 				mensagemSlotBackend = '';
+
+				// Mantém ou define o slot escolhido
+				if (!slotEscolhido || slotEscolhido.medicoNome !== res.alocacao.medicoNome) {
+					slotEscolhido = {
+						data: res.alocacao.data,
+						dataFormatada: res.alocacao.dataFormatada,
+						hora: res.alocacao.hora,
+						consultorio: res.alocacao.consultorio,
+						medicoNome: res.alocacao.medicoNome,
+						isRecomendado: true
+					};
+					diaSelecionadoGrade = res.alocacao.data;
+				}
 			} else {
 				alocacaoOtimizadaBalcao = null;
+				gradeDisponibilidade = [];
+				slotEscolhido = null;
+				diaSelecionadoGrade = null;
 				mensagemSlotBackend = res?.mensagem || 'Nenhum slot disponível com os critérios selecionados.';
 			}
 		} catch (err: any) {
 			alocacaoOtimizadaBalcao = null;
-			mensagemSlotBackend = err?.message || 'Falha ao consultar algoritmo de alocação no servidor.';
+			gradeDisponibilidade = [];
+			slotEscolhido = null;
+			diaSelecionadoGrade = null;
+			mensagemSlotBackend = err?.message || 'Falha ao consultar grade de disponibilidade do especialista no servidor.';
 		} finally {
 			calculandoSlotBackend = false;
 		}
@@ -200,11 +237,40 @@
 		calcularSlotBackend();
 	});
 
-	// Opções de Agendamento Manual / Retorno / Histórico (Escondido por padrão via checkbox)
-	let habilitarAgendamentoManual = $state(false);
-	let tipoAgendamentoManual = $state<'MANUAL' | 'RETROATIVO'>('MANUAL');
-	let dataManual = $state(new Date().toISOString().substring(0, 10));
-	let horaManual = $state('08:00');
+	// Dia selecionado atualmente na grade
+	let diaGradeAtual = $derived(
+		gradeDisponibilidade.find(d => d.data === diaSelecionadoGrade) || (gradeDisponibilidade.length > 0 ? gradeDisponibilidade[0] : null)
+	);
+
+	function selecionarSlotGrade(dia: DiaDisponibilidadeSlot, slot: SlotHorarioItem) {
+		if (!slot.disponivel) return;
+		diaSelecionadoGrade = dia.data;
+		slotEscolhido = {
+			data: dia.data,
+			dataFormatada: dia.dataFormatada,
+			hora: slot.hora,
+			consultorio: alocacaoOtimizadaBalcao?.consultorio || (ehCeo ? 'CADEIRA ODONTOLÓGICA 01' : 'CONSULTÓRIO 01'),
+			diaSemana: dia.diaSemana,
+			medicoNome: medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome,
+			isRecomendado: false
+		};
+	}
+
+	function selecionarSlotRecomendado() {
+		if (!alocacaoOtimizadaBalcao) return;
+		diaSelecionadoGrade = alocacaoOtimizadaBalcao.data;
+		slotEscolhido = {
+			data: alocacaoOtimizadaBalcao.data,
+			dataFormatada: alocacaoOtimizadaBalcao.dataFormatada,
+			hora: alocacaoOtimizadaBalcao.hora,
+			consultorio: alocacaoOtimizadaBalcao.consultorio,
+			medicoNome: alocacaoOtimizadaBalcao.medicoNome,
+			isRecomendado: true
+		};
+	}
+
+	// Opção de Lançamento de Ficha Antiga (Retroativo)
+	let habilitarRetroativo = $state(false);
 	let dataRetroativa = $state(new Date().toISOString().substring(0, 10));
 	let horaRetroativa = $state('08:00');
 	let statusRetroativo = $state<'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU'>('CONCLUIDO');
@@ -315,43 +381,42 @@
 			return;
 		}
 
+		if (!habilitarRetroativo && !slotEscolhido && !alocacaoOtimizadaBalcao) {
+			erroAgendamento = 'Nenhum dia/horário da escala do especialista foi selecionado.';
+			return;
+		}
+
 		processandoAgendamento = true;
 		erroAgendamento = '';
 		sucessoAgendamento = '';
 
 		let dataCalculada = '';
 		let horaCalculada = '';
+		let consultorioCalculado = '';
 
-		if (habilitarAgendamentoManual) {
-			if (tipoAgendamentoManual === 'RETROATIVO') {
-				if (!dataRetroativa) {
-					erroAgendamento = 'Informe a data do agendamento retroativo.';
-					processandoAgendamento = false;
-					return;
-				}
-				dataCalculada = dataRetroativa;
-				horaCalculada = horaRetroativa || '08:00';
-			} else {
-				if (!dataManual) {
-					erroAgendamento = 'Informe a data escolhida para a consulta de retorno.';
-					processandoAgendamento = false;
-					return;
-				}
-				dataCalculada = dataManual;
-				horaCalculada = horaManual || '08:00';
+		if (habilitarRetroativo) {
+			if (!dataRetroativa) {
+				erroAgendamento = 'Informe a data do agendamento retroativo.';
+				processandoAgendamento = false;
+				return;
 			}
+			dataCalculada = dataRetroativa;
+			horaCalculada = horaRetroativa || '08:00';
+			consultorioCalculado = ehCeo ? 'Cadeira 01' : 'Consultório 01';
+		} else if (slotEscolhido) {
+			dataCalculada = slotEscolhido.data;
+			horaCalculada = slotEscolhido.hora;
+			consultorioCalculado = slotEscolhido.consultorio;
 		} else if (alocacaoOtimizadaBalcao) {
 			dataCalculada = alocacaoOtimizadaBalcao.data;
 			horaCalculada = alocacaoOtimizadaBalcao.hora;
-		} else {
-			dataCalculada = new Date().toISOString().substring(0, 10);
-			horaCalculada = '08:00';
+			consultorioCalculado = alocacaoOtimizadaBalcao.consultorio;
 		}
 
 		const nomeProfissionalFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || 'Especialista da Escala';
 		const crmProfissionalFinal = medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm || (ehCeo ? 'CRO 0000' : 'CRM 0000');
 
-		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} às ${horaCalculada} | Prioridade: ${prioridade} | [ESCALA ${centroSelecionado}]: ${alocacaoOtimizadaBalcao?.justificativaEscala || 'Alocação direta'} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarAgendamentoManual && tipoAgendamentoManual === 'RETROATIVO' ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
+		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarRetroativo ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
 		try {
 			// 1. Prepara dados do Paciente
@@ -392,7 +457,7 @@
 				cidDescricao: ehCeo ? 'Avaliação Odontológica Especializada' : 'Consulta Especializada Direta',
 				justificativaClinica: `Atendimento presencial no balcão do ${nomeOrgao}`,
 				prioridade,
-				dataSolicitacao: (habilitarAgendamentoManual && tipoAgendamentoManual === 'RETROATIVO') ? dataCalculada : new Date().toISOString().substring(0, 10),
+				dataSolicitacao: habilitarRetroativo ? dataCalculada : new Date().toISOString().substring(0, 10),
 				tipoServico,
 				procedimentoSolicitado: tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined
 			};
@@ -402,7 +467,7 @@
 			let horaFinal = horaCalculada;
 
 			try {
-				if (habilitarAgendamentoManual && tipoAgendamentoManual === 'RETROATIVO' && pacienteId) {
+				if (habilitarRetroativo && pacienteId) {
 					const resRetro = await api.centroRecepcao.agendarBalcaoRetroativo({
 						pacienteId,
 						especialidade: especialidade.trim(),
@@ -421,10 +486,11 @@
 						solicitacao: solicitacaoPayload,
 						nota: notaAgendamento,
 						medicoDesejado: nomeProfissionalFinal,
-						dataAgendamento: dataCalculada,
-						horaAgendamento: horaCalculada,
-						status: (habilitarAgendamentoManual && tipoAgendamentoManual === 'RETROATIVO') ? statusRetroativo : undefined
-					} as any);
+						dataAgendada: dataCalculada,
+						horaAgendada: horaCalculada,
+						consultorio: consultorioCalculado,
+						status: habilitarRetroativo ? statusRetroativo : undefined
+					});
 
 					if (resBalcao && resBalcao.encaminhamento) {
 						protocoloFinal = resBalcao.encaminhamento.protocolo;
@@ -448,36 +514,32 @@
 				});
 			}
 
-			sucessoAgendamento = `Agendamento confirmado com sucesso na grade do centro!\n\nProtocolo: ${protocoloFinal || 'AGD-' + Date.now().toString().slice(-6)}\nData Agendada: ${new Date(dataFinal + 'T12:00:00').toLocaleDateString('pt-BR')}\nHorário do Slot: ${horaFinal}\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nUnidade: ${nomeOrgao}`;
-			
-			if (timerMensagem) clearTimeout(timerMensagem);
-			timerMensagem = setTimeout(() => { sucessoAgendamento = ''; }, 8000);
+			sucessoAgendamento = `Protocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nEspecialidade: ${especialidade.toUpperCase()}\nData Agendada: ${dataCalculada} às ${horaCalculada}\nLocal: ${consultorioCalculado || nomeOrgao}`;
 
-			// Limpa formulário para próximo atendimento
+			// Limpa formulário
 			pacienteCpf = '';
 			pacienteNome = '';
 			pacienteSus = '';
 			pacienteNasc = '';
-			pacienteSexo = 'M';
 			pacienteTel = '';
 			pacienteEnd = '';
 			pacienteNomeMae = '';
 			pacienteRacaCor = '';
-			especialidade = '';
-			medicoSelecionado = null;
-			buscaMedico = '';
+			pacienteId = null;
+			pacienteExiste = false;
+			ultimoCpfPesquisado = '';
 			procedimentoSolicitado = '';
 			recomendacoes = '';
-			ultimoCpfPesquisado = '';
-			habilitarAgendamentoManual = false;
-			alocacaoOtimizadaBalcao = null;
-			mensagemSlotBackend = '';
-		} catch (e) {
-			console.error(e);
-			if (e instanceof ApiError) {
-				erroAgendamento = e.message || 'Falha ao processar agendamento.';
+			habilitarRetroativo = false;
+
+			// Rola suavemente para o topo
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		} catch (err: any) {
+			console.error(err);
+			if (err instanceof ApiError) {
+				erroAgendamento = `Erro (${err.status}): ${err.message}`;
 			} else {
-				erroAgendamento = 'Falha na comunicação com o servidor.';
+				erroAgendamento = err.message || 'Falha ao confirmar agendamento no balcão.';
 			}
 		} finally {
 			processandoAgendamento = false;
@@ -485,16 +547,52 @@
 	}
 </script>
 
-<div class="flex flex-col gap-4 font-mono text-xs">
-	<!-- Alerta se não houver escalas cadastradas no banco -->
+<svelte:head>
+	<title>AGENDAMENTO DE BALCÃO · {centroSelecionado} · UNISISM</title>
+</svelte:head>
+
+<div class="flex flex-col gap-4 font-sans text-xs">
+	<!-- Topo com Identificação do Centro e Acesso Rápido -->
+	<div class="border border-slate-200 bg-white p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+		<div class="flex items-center gap-3">
+			<span class="text-2xl">{iconeConsulta}</span>
+			<div>
+				<h1 class="text-base font-bold font-mono text-slate-900 tracking-tight uppercase">
+					Agendamento de Balcão & Retorno · {centroSelecionado}
+				</h1>
+				<p class="text-slate-500 text-xs">
+					{nomeOrgao} — Alocação em tempo real baseada na Escala Oficial do Especialista
+				</p>
+			</div>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<a
+				href="/{centroSelecionado.toLowerCase()}/recepcao/agenda"
+				class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-semibold px-3 py-1.5 uppercase transition-colors"
+			>
+				Agenda do Dia →
+			</a>
+			<a
+				href="/{centroSelecionado.toLowerCase()}/recepcao/fila"
+				class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-semibold px-3 py-1.5 uppercase transition-colors"
+			>
+				Fila de Espera →
+			</a>
+		</div>
+	</div>
+
+	<!-- Aviso quando não há escalas cadastradas -->
 	{#if !carregandoEscalas && escalasDoBanco.length === 0}
-		<div class="border-2 border-amber-600 bg-amber-50 p-3.5 text-amber-950 font-sans text-xs flex items-center justify-between shadow-xs">
+		<div class="border-2 border-amber-600 bg-amber-50 p-4 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
 			<div class="flex items-center gap-2.5">
-				<span class="text-base font-bold text-amber-700">⚠️</span>
+				<span class="text-xl">⚠️</span>
 				<div>
-					<div class="font-bold text-amber-900 font-mono text-[11px] uppercase">Nenhuma escala profissional cadastrada no banco de dados</div>
-					<div class="text-[11px] text-amber-800">
-						Para o algoritmo do servidor calcular as vagas automaticamente, cadastre os profissionais, dias e turnos de atendimento na <strong>Matriz de Vagas & Escalas</strong>.
+					<div class="font-mono font-bold text-xs uppercase tracking-wide text-amber-900">
+						NENHUMA ESCALA ATIVA ENCONTRADA NO BANCO DE DADOS
+					</div>
+					<div class="text-xs text-amber-800 mt-0.5">
+						Cadastre a grade de médicos/dentistas na tela de <strong>Matriz de Vagas & Escalas</strong> para habilitar a busca de horários.
 					</div>
 				</div>
 			</div>
@@ -522,7 +620,7 @@
 
 	<div class="grid grid-cols-1 md:grid-cols-12 gap-4">
 		<!-- Painel 01: Dados do Paciente -->
-		<div class="border border-slate-200 bg-white md:col-span-6">
+		<div class="border border-slate-200 bg-white md:col-span-5">
 			<PanelHeader title="Dados do Paciente (Identificação e Cadastro)" index="01" />
 			
 			<div class="p-4 flex flex-col gap-3 font-sans text-xs">
@@ -673,10 +771,10 @@
 			</div>
 		</div>
 
-		<!-- Painel 02: Dados do Agendamento Especializado -->
-		<div class="border border-slate-200 bg-white md:col-span-6 flex flex-col justify-between">
+		<!-- Painel 02: Dados do Atendimento & Busca na Escala do Especialista -->
+		<div class="border border-slate-200 bg-white md:col-span-7 flex flex-col justify-between">
 			<div>
-				<PanelHeader title="Dados do Agendamento Especializado" index="02" />
+				<PanelHeader title="Atendimento Especializado & Escala do Especialista" index="02" />
 				
 				<div class="p-4 flex flex-col gap-3.5 font-sans text-xs">
 					<!-- Identificação da Unidade -->
@@ -859,35 +957,40 @@
 						</div>
 					</div>
 
-					<!-- Card Dinâmico: Resultado da Alocação Automática de Slots pelo Backend -->
+					<!-- Card do Slot Escolhido para Agendamento -->
 					{#if calculandoSlotBackend}
-						<div class="border border-blue-300 bg-blue-50 p-3 text-center text-blue-900 font-mono text-xs flex items-center justify-center gap-2 animate-pulse">
+						<div class="border border-blue-300 bg-blue-50 p-4 text-center text-blue-900 font-mono text-xs flex items-center justify-center gap-2 animate-pulse">
 							<span>⚡</span>
-							<span>[CALCULANDO ALOCAÇÃO DE VAGA NO SERVIDOR BACKEND...]</span>
+							<span>[BUSCANDO DISPONIBILIDADE NA ESCALA DO ESPECIALISTA...]</span>
 						</div>
-					{:else if alocacaoOtimizadaBalcao}
-						<div class="border-2 {prioridade === 'EMERGENCIA' ? 'border-red-800 bg-red-50/90 text-red-950' : prioridade === 'URGENTE' ? 'border-orange-700 bg-orange-50/90 text-orange-950' : 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} p-3 flex flex-col gap-1.5 font-mono text-xs shadow-xs">
+					{:else if slotEscolhido}
+						<div class="border-2 {prioridade === 'EMERGENCIA' ? 'border-red-800 bg-red-50/90 text-red-950' : prioridade === 'URGENTE' ? 'border-orange-700 bg-orange-50/90 text-orange-950' : 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} p-3.5 flex flex-col gap-2 font-mono text-xs shadow-xs">
 							<div class="flex items-center justify-between">
 								<span class="font-bold uppercase text-[10px] flex items-center gap-1.5">
-									<span>⚡ ALOCAÇÃO DETERMINÍSTICA DO BACKEND ({centroSelecionado})</span>
+									<span>✓ HORÁRIO SELECIONADO NA ESCALA</span>
 								</span>
-								<span class="{prioridade === 'EMERGENCIA' ? 'bg-red-800 text-white' : prioridade === 'URGENTE' ? 'bg-orange-800 text-white' : 'bg-emerald-800 text-white'} font-bold px-1.5 py-0.5 text-[9px] uppercase">
-									{alocacaoOtimizadaBalcao.prazoLegalSus}
+								<span class="{slotEscolhido.isRecomendado ? 'bg-blue-900 text-white' : 'bg-emerald-800 text-white'} font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
+									{slotEscolhido.isRecomendado ? '⚡ SUGESTÃO AUTOMÁTICA SUS' : '🎯 ESCOLHIDO NA GRADE'}
 								</span>
 							</div>
 
-							<div class="text-sm font-black font-sans mt-0.5 flex items-center gap-2">
-								<span>📅 {alocacaoOtimizadaBalcao.dataFormatada}</span>
+							<div class="text-base font-black font-sans flex items-center gap-2 text-slate-900">
+								<span>📅 {slotEscolhido.dataFormatada}</span>
 								<span>·</span>
-								<span>⏰ {alocacaoOtimizadaBalcao.hora} (SLOT LIVRE)</span>
+								<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono font-bold">⏰ {slotEscolhido.hora} (SLOT CONFIRMADO)</span>
 							</div>
 
-							<div class="text-[11px] font-bold">
-								📍 {alocacaoOtimizadaBalcao.consultorio} · {alocacaoOtimizadaBalcao.medicoNome} ({alocacaoOtimizadaBalcao.crm})
-							</div>
-
-							<div class="text-[10px] border-t border-slate-300/60 pt-1 font-sans leading-tight opacity-90">
-								{alocacaoOtimizadaBalcao.justificativaEscala}
+							<div class="text-[11px] font-bold text-slate-800 flex items-center justify-between">
+								<span>📍 {slotEscolhido.consultorio} · {medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome} ({medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm})</span>
+								{#if !slotEscolhido.isRecomendado && alocacaoOtimizadaBalcao}
+									<button
+										type="button"
+										onclick={selecionarSlotRecomendado}
+										class="text-[9px] text-blue-900 underline hover:font-black uppercase"
+									>
+										[Voltar à sugestão inicial]
+									</button>
+								{/if}
 							</div>
 						</div>
 					{:else if mensagemSlotBackend}
@@ -897,95 +1000,145 @@
 						</div>
 					{:else}
 						<div class="border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 font-mono text-[11px]">
-							⚡ Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para calcular automaticamente o próximo slot livre na grade da escala do servidor.
+							⚡ Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para visualizar os dias e horários livres na escala.
 						</div>
 					{/if}
 
-					<!-- Checkbox Discreto: Agendamento Manual / Retorno / Retroativo -->
+					<!-- SELETOR VISUAL DA ESCALA DO ESPECIALISTA (DIAS E HORÁRIOS LIVRES) -->
+					{#if gradeDisponibilidade.length > 0}
+						<div class="border border-slate-300 bg-slate-50 p-3 flex flex-col gap-3 font-mono text-xs">
+							<div class="flex items-center justify-between border-b border-slate-200 pb-2">
+								<div class="flex flex-col">
+									<span class="font-bold text-slate-900 uppercase text-[10px] flex items-center gap-1.5">
+										<span>🗓️ GRADE DA ESCALA: DIAS E HORÁRIOS DISPONÍVEIS</span>
+									</span>
+									<span class="text-[10px] text-slate-500 font-sans">
+										Especialista: <strong>{medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome}</strong> ({medicoSelecionado?.especialidade || alocacaoOtimizadaBalcao?.especialidade})
+									</span>
+								</div>
+								<span class="text-[9px] font-bold text-slate-600 uppercase bg-white border border-slate-200 px-2 py-0.5">
+									Próximos {gradeDisponibilidade.length} dias de escala
+								</span>
+							</div>
+
+							<!-- Barra de Dias de Atendimento -->
+							<div class="flex flex-col gap-1">
+								<span class="text-[9px] font-bold uppercase text-slate-600">
+									1. Selecione a data de atendimento do especialista:
+								</span>
+								<div class="flex gap-1.5 overflow-x-auto pb-1 pt-0.5">
+									{#each gradeDisponibilidade as dia (dia.data)}
+										<button
+											type="button"
+											onclick={() => diaSelecionadoGrade = dia.data}
+											class="flex flex-col items-center justify-center p-2 border text-center transition-all min-w-[85px] {diaSelecionadoGrade === dia.data ? 'border-blue-900 bg-blue-900 text-white shadow-xs font-bold scale-[1.02]' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+										>
+											<span class="text-[10px] font-mono uppercase {diaSelecionadoGrade === dia.data ? 'text-blue-200' : 'text-slate-500'}">
+												{dia.diaSemana.substring(0, 3)}
+											</span>
+											<span class="text-xs font-bold font-mono">
+												{dia.dataFormatada.substring(0, 5)}
+											</span>
+											<span class="mt-1 text-[8px] px-1 py-0.2 uppercase font-bold {diaSelecionadoGrade === dia.data ? 'bg-blue-800 text-white' : dia.slotsLivres > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+												{dia.slotsLivres > 0 ? `${dia.slotsLivres} livres` : 'Lotado'}
+											</span>
+										</button>
+									{/each}
+								</div>
+							</div>
+
+							<!-- Grade de Horários Livres do Dia Selecionado -->
+							{#if diaGradeAtual}
+								<div class="border border-slate-200 bg-white p-3 flex flex-col gap-2">
+									<div class="flex items-center justify-between text-[10px] border-b border-slate-100 pb-1.5">
+										<span class="font-bold text-slate-800 uppercase">
+											2. Horários em {diaGradeAtual.diaSemana}, {diaGradeAtual.dataFormatada}:
+										</span>
+										<div class="flex items-center gap-2 text-[9px]">
+											<span class="flex items-center gap-1 text-emerald-800 font-bold">
+												<span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span> Livre
+											</span>
+											<span class="flex items-center gap-1 text-slate-400">
+												<span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span> Ocupado
+											</span>
+										</div>
+									</div>
+
+									<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 pt-1">
+										{#each diaGradeAtual.slots as slot}
+											{@const isSelecionado = slotEscolhido?.data === diaGradeAtual.data && slotEscolhido?.hora === slot.hora}
+											<button
+												type="button"
+												disabled={!slot.disponivel}
+												onclick={() => selecionarSlotGrade(diaGradeAtual!, slot)}
+												class="py-1.5 px-2 text-center text-xs font-mono font-bold border transition-all flex flex-col items-center justify-center gap-0.5
+													{isSelecionado
+													? 'border-emerald-800 bg-emerald-700 text-white ring-2 ring-emerald-500 shadow-xs'
+													: slot.disponivel
+													? 'border-emerald-300 bg-emerald-50/60 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-500 cursor-pointer'
+													: 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'}"
+												title={slot.disponivel ? `Selecionar horário ${slot.hora}` : slot.motivo || 'Horário ocupado'}
+											>
+												<span>{slot.hora}</span>
+												<span class="text-[8px] uppercase tracking-tighter {isSelecionado ? 'text-emerald-100 font-black' : slot.disponivel ? 'text-emerald-700' : 'text-slate-400'}">
+													{isSelecionado ? '✓ ATUAL' : slot.disponivel ? 'Livre' : 'Ocupado'}
+												</span>
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					<!-- Checkbox Discreto: Lançamento de Ficha Antiga (Retroativo) -->
 					<div class="flex flex-col gap-2 border-t border-slate-200 pt-2.5">
 						<label class="flex items-center gap-2 cursor-pointer select-none font-mono text-xs text-slate-700 hover:text-slate-900">
 							<input
 								type="checkbox"
-								bind:checked={habilitarAgendamentoManual}
+								bind:checked={habilitarRetroativo}
 								class="w-4 h-4 text-blue-900 border-slate-300 focus:ring-0"
 							/>
-							<span class="font-bold">Agendamento Manual ou Registro Retroativo (Definir data manualmente)</span>
+							<span class="font-bold">Lançar Ficha Antiga de Papel (Registro Histórico Retroativo)</span>
 						</label>
 
-						{#if habilitarAgendamentoManual}
-							<div class="flex flex-col gap-2.5 bg-slate-50 border border-slate-300 p-3 font-mono text-xs mt-1">
-								<div class="grid grid-cols-2 gap-1.5 text-[10px]">
-									<button
-										type="button"
-										onclick={() => tipoAgendamentoManual = 'MANUAL'}
-										class="px-2 py-1.5 font-bold uppercase border transition-colors {tipoAgendamentoManual === 'MANUAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
-									>
-										📅 CONSULTA DE RETORNO / MANUAL
-									</button>
-									<button
-										type="button"
-										onclick={() => tipoAgendamentoManual = 'RETROATIVO'}
-										class="px-2 py-1.5 font-bold uppercase border transition-colors {tipoAgendamentoManual === 'RETROATIVO' ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
-									>
-										🔙 FICHA ANTIGA (RETROATIVO)
-									</button>
+						{#if habilitarRetroativo}
+							<div class="flex flex-col gap-2.5 bg-amber-50/60 border border-amber-300 p-3 font-mono text-xs mt-1">
+								<div class="text-[10px] font-bold text-amber-900 uppercase">
+									🔙 Digitalização de Ficha Antiga de Papel (Data Histórica)
 								</div>
-
-								{#if tipoAgendamentoManual === 'MANUAL'}
-									<div class="grid grid-cols-2 gap-2 pt-1 font-mono">
-										<div class="flex flex-col gap-1">
-											<label for="man-dt" class="text-[9px] font-bold text-slate-700 uppercase">Data Escolhida *</label>
-											<input
-												id="man-dt"
-												type="date"
-												bind:value={dataManual}
-												class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
-											/>
-										</div>
-										<div class="flex flex-col gap-1">
-											<label for="man-hr" class="text-[9px] font-bold text-slate-700 uppercase">Horário da Consulta *</label>
-											<input
-												id="man-hr"
-												type="time"
-												bind:value={horaManual}
-												class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
-											/>
-										</div>
+								<div class="grid grid-cols-3 gap-2 pt-1 font-mono">
+									<div class="flex flex-col gap-1">
+										<label for="ret-dt" class="text-[9px] font-bold text-slate-700 uppercase">Data do Atendimento *</label>
+										<input
+											id="ret-dt"
+											type="date"
+											bind:value={dataRetroativa}
+											class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
+										/>
 									</div>
-								{:else}
-									<div class="grid grid-cols-3 gap-2 pt-1 font-mono">
-										<div class="flex flex-col gap-1">
-											<label for="ret-dt" class="text-[9px] font-bold text-slate-700 uppercase">Data *</label>
-											<input
-												id="ret-dt"
-												type="date"
-												bind:value={dataRetroativa}
-												class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
-											/>
-										</div>
-										<div class="flex flex-col gap-1">
-											<label for="ret-hr" class="text-[9px] font-bold text-slate-700 uppercase">Horário</label>
-											<input
-												id="ret-hr"
-												type="time"
-												bind:value={horaRetroativa}
-												class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
-											/>
-										</div>
-										<div class="flex flex-col gap-1">
-											<label for="ret-st" class="text-[9px] font-bold text-slate-700 uppercase">Status</label>
-											<select
-												id="ret-st"
-												bind:value={statusRetroativo}
-												class="border border-slate-300 bg-white px-1.5 py-1.5 outline-none text-xs font-mono font-bold"
-											>
-												<option value="CONCLUIDO">✓ Concluído</option>
-												<option value="AGUARDANDO">⏳ Aguardando</option>
-												<option value="FALTOU">❌ Faltou</option>
-											</select>
-										</div>
+									<div class="flex flex-col gap-1">
+										<label for="ret-hr" class="text-[9px] font-bold text-slate-700 uppercase">Horário</label>
+										<input
+											id="ret-hr"
+											type="time"
+											bind:value={horaRetroativa}
+											class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
+										/>
 									</div>
-								{/if}
+									<div class="flex flex-col gap-1">
+										<label for="ret-st" class="text-[9px] font-bold text-slate-700 uppercase">Status do Registro</label>
+										<select
+											id="ret-st"
+											bind:value={statusRetroativo}
+											class="border border-slate-300 bg-white px-1.5 py-1.5 outline-none text-xs font-mono font-bold"
+										>
+											<option value="CONCLUIDO">✓ Concluído</option>
+											<option value="AGUARDANDO">⏳ Aguardando</option>
+											<option value="FALTOU">❌ Faltou</option>
+										</select>
+									</div>
+								</div>
 							</div>
 						{/if}
 					</div>
@@ -1018,7 +1171,7 @@
 					<button
 						type="button"
 						onclick={agendarBalcao}
-						disabled={processandoAgendamento}
+						disabled={processandoAgendamento || (!habilitarRetroativo && !slotEscolhido)}
 						class="bg-blue-900 hover:bg-blue-950 text-white border border-blue-900 px-6 py-2.5 font-bold uppercase tracking-wider disabled:opacity-50 transition-colors"
 					>
 						{processandoAgendamento ? 'PROCESSANDO...' : 'CONFIRMAR E AGENDAR NO BALCÃO ↵'}
