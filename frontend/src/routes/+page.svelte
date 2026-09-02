@@ -8,7 +8,7 @@
 	let rotaDestino = $state('/login');
 
 	// Estado do seletor interativo de módulos
-	let moduloAtivo = $state<'sms' | 'ubs' | 'cem' | 'ceo' | 'tfd' | 'tv' | 'app'>('sms');
+	let moduloAtivo = $state<'sms' | 'ubs' | 'cem' | 'ceo' | 'tfd' | 'motorista' | 'tv' | 'app'>('sms');
 
 	// ─── INTERATIVIDADE MÓDULO REGULAÇÃO (SMS) ────────────────────────────────
 	let filtroPrioridadeSms = $state<'TODAS' | 'URGENTE' | 'ALTA' | 'ELETIVA'>('TODAS');
@@ -69,6 +69,30 @@
 		{ assento: 4, nome: 'PACIENTE M. S.', dest: 'Maternidade de Alta Complexidade', acom: 'SIM', status: 'Confirmado' },
 		{ assento: 5, nome: 'PACIENTE F. A.', dest: 'Hospital de Ortopedia', acom: 'NÃO', status: 'Confirmado' }
 	];
+
+	// ─── INTERATIVIDADE MÓDULO UNISISM MOTORISTA (APP MOTORISTA) ─────────────
+	let motoristaKmInicial = $state('142.350');
+	let motoristaKmFinal = $state('142.685');
+	let motoristaStatusViagem = $state<'EM_TRANSITO' | 'CONCLUIDA'>('EM_TRANSITO');
+	let passageirosMotorista = $state([
+		{ id: 'PAS-01', nome: 'MARIA APARECIDA DA SILVA', acompanhante: 'José da Silva (Filho)', status: 'EMBARCOU', destino: 'Hospital Regional (Oncologia)' },
+		{ id: 'PAS-02', nome: 'SEVERINO RAMOS DE SOUZA', acompanhante: 'Sem acompanhante', status: 'EMBARCOU', destino: 'Hospital Universitário (Cardiologia)' },
+		{ id: 'PAS-03', nome: 'ANTONIO PEREIRA LIMA', acompanhante: 'Ana Lima (Esposa)', status: 'PENDENTE', destino: 'Centro de Ortopedia' }
+	]);
+
+	function alternarPresencaPassageiro(id: string) {
+		passageirosMotorista = passageirosMotorista.map(p => {
+			if (p.id === id) {
+				const proximo = p.status === 'EMBARCOU' ? 'DESEMBARCOU' : p.status === 'DESEMBARCOU' ? 'AUSENTE' : 'EMBARCOU';
+				return { ...p, status: proximo };
+			}
+			return p;
+		});
+	}
+
+	function alternarStatusViagemMotorista() {
+		motoristaStatusViagem = motoristaStatusViagem === 'EM_TRANSITO' ? 'CONCLUIDA' : 'EM_TRANSITO';
+	}
 
 	// ─── INTERATIVIDADE PAINEL DE ESPERA COM VOZ ─────────────────────────────
 	let testandoVoz = $state(false);
@@ -595,6 +619,17 @@
 
 				<button
 					type="button"
+					onclick={() => (moduloAtivo = 'motorista')}
+					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
+					{moduloAtivo === 'motorista'
+						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
+						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
+				>
+					UniSISM Motorista
+				</button>
+
+				<button
+					type="button"
 					onclick={() => (moduloAtivo = 'tv')}
 					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
 					{moduloAtivo === 'tv'
@@ -935,6 +970,111 @@
 										Assento disponível para alocação na regulação do transporte.
 									</div>
 								{/if}
+							</div>
+						</div>
+					</div>
+				{:else if moduloAtivo === 'motorista'}
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-blue-900 uppercase">[APP DO MOTORISTA · UNISISM MOTORISTA]</span>
+								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Diário de Bordo & Presença de Passageiros</h3>
+							</div>
+							<div class="flex items-center gap-2">
+								<span class="border border-emerald-600 bg-emerald-50 text-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase">
+									[OFFLINE FIRST · SQLite]
+								</span>
+								<button
+									type="button"
+									onclick={alternarStatusViagemMotorista}
+									class="border-2 border-blue-900 bg-blue-900 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-blue-800 cursor-pointer min-h-[36px]"
+								>
+									{motoristaStatusViagem === 'EM_TRANSITO' ? 'Concluir Viagem' : 'Reabrir Viagem'}
+								</button>
+							</div>
+						</div>
+
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+							<!-- Painel do Diário de Bordo (KM e Viagem) -->
+							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4 space-y-4">
+								<div class="text-[10px] text-slate-500 uppercase font-bold">CONTROLE DE BORDO & QUILOMETRAGEM</div>
+								
+								<div class="bg-white border border-slate-200 p-3 shadow-sm space-y-2">
+									<div class="flex justify-between items-center text-xs">
+										<span class="text-slate-600">VIAGEM:</span>
+										<strong class="text-blue-900">VG-2026-084</strong>
+									</div>
+									<div class="flex justify-between items-center text-xs">
+										<span class="text-slate-600">VEÍCULO:</span>
+										<strong class="text-slate-900">Van Renault Master (PE-2026)</strong>
+									</div>
+									<div class="flex justify-between items-center text-xs">
+										<span class="text-slate-600">DESTINO:</span>
+										<strong class="text-slate-900">Polo Regional / Hospitais</strong>
+									</div>
+									<div class="flex justify-between items-center text-xs pt-1 border-t border-slate-100">
+										<span class="text-slate-600">STATUS:</span>
+										<span class="border px-1.5 py-0.5 text-[9px] font-bold uppercase
+										{motoristaStatusViagem === 'EM_TRANSITO' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-emerald-600 bg-emerald-50 text-emerald-700'}">
+											{motoristaStatusViagem === 'EM_TRANSITO' ? 'EM TRÂNSITO' : 'VIAGEM CONCLUÍDA'}
+										</span>
+									</div>
+								</div>
+
+								<!-- Odômetro e Prestação de Contas -->
+								<div class="bg-blue-950 border border-blue-900 p-3 text-white space-y-2">
+									<div class="text-[10px] text-blue-200 font-bold uppercase">ODÔMETRO DIGITAL (PRESTAÇÃO DE CONTAS)</div>
+									<div class="grid grid-cols-2 gap-2 text-xs">
+										<div class="bg-blue-900/60 p-2 border border-blue-800">
+											<div class="text-[9px] text-blue-300">KM INICIAL (PARTIDA)</div>
+											<div class="text-sm font-bold text-white mt-0.5">{motoristaKmInicial} km</div>
+										</div>
+										<div class="bg-blue-900/60 p-2 border border-blue-800">
+											<div class="text-[9px] text-emerald-400">KM FINAL (CHEGADA)</div>
+											<div class="text-sm font-bold text-white mt-0.5">{motoristaKmFinal} km</div>
+										</div>
+									</div>
+									<div class="text-[10px] text-blue-200 text-right pt-1">
+										Total Percorrido: <strong class="text-emerald-400">335 km rodados</strong>
+									</div>
+								</div>
+							</div>
+
+							<!-- Lista de Passageiros e Embarque -->
+							<div class="lg:col-span-7 border border-slate-200 bg-white p-4 space-y-3">
+								<div class="flex items-center justify-between border-b border-slate-200 pb-2">
+									<span class="text-xs font-bold text-slate-700 uppercase">MANIFESTO DE EMBARQUE & PRESENÇA:</span>
+									<span class="text-[10px] text-slate-500 font-bold">3 PASSAGEIROS</span>
+								</div>
+
+								<div class="space-y-2">
+									{#each passageirosMotorista as p}
+										<div class="border border-slate-200 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
+											<div>
+												<div class="font-bold text-sm text-slate-900">{p.nome}</div>
+												<div class="text-[10px] text-slate-500">Acomp: {p.acompanhante} · Destino: {p.destino}</div>
+											</div>
+											<div class="flex items-center gap-2">
+												<span class="border px-2 py-0.5 text-[9px] font-bold uppercase
+												{p.status === 'EMBARCOU' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : p.status === 'DESEMBARCOU' ? 'border-blue-600 bg-blue-50 text-blue-700' : p.status === 'AUSENTE' ? 'border-red-600 bg-red-50 text-red-700' : 'border-amber-600 bg-amber-50 text-amber-700'}">
+													{p.status}
+												</span>
+												<button
+													type="button"
+													onclick={() => alternarPresencaPassageiro(p.id)}
+													class="border border-slate-300 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700 uppercase hover:bg-slate-200 cursor-pointer"
+												>
+													Alternar Status
+												</button>
+											</div>
+										</div>
+									{/each}
+								</div>
+
+								<div class="border border-dashed border-slate-200 p-2.5 bg-slate-50 text-[10px] text-slate-600 flex items-center justify-between">
+									<span>Controle de Abastecimento & Despesas:</span>
+									<strong class="text-blue-900 font-mono">Diesel S10 / Comprovante Anexado</strong>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1372,6 +1512,7 @@
 					<li><a href="/login" class="hover:text-white transition-colors">Especialidades Médicas</a></li>
 					<li><a href="/login" class="hover:text-white transition-colors">Odontologia Especializada</a></li>
 					<li><a href="/login" class="hover:text-white transition-colors">Transporte Sanitário (TFD)</a></li>
+					<li><a href="/login" class="hover:text-white transition-colors">UniSISM Motorista (App)</a></li>
 					<li><a href="/tv" class="hover:text-white transition-colors">Painel de Sala de Espera</a></li>
 					<li><a href="/login" class="hover:text-white transition-colors">UniSISM Paciente (App)</a></li>
 				</ul>
