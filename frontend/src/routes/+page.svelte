@@ -138,7 +138,7 @@
 		}
 	}
 
-	// ─── INTERATIVIDADE APP DO CIDADÃO ───────────────────────────────────────
+	// ─── INTERATIVIDADE APP DO PACIENTE (UNISISM PACIENTE) ───────────────────
 	let telaAppAtiva = $state<'consultas' | 'viagens' | 'vacinas'>('consultas');
 
 	// ─── FAQ ─────────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@
 	const faqs = [
 		{
 			pergunta: 'Como o UniSISM sincroniza os dados da rede municipal?',
-			resposta: 'A integração ocorre por barramento digital unificado e seguro. O sistema mantém sincronizados os históricos clínicos, cadastros de cidadãos, agendamentos e registros de vacinação entre todas as unidades de atendimento em tempo real.'
+			resposta: 'A integração ocorre por barramento digital unificado e seguro. O sistema mantém sincronizados os históricos clínicos, cadastros de pacientes, agendamentos e registros de vacinação entre todas as unidades de atendimento em tempo real.'
 		},
 		{
 			pergunta: 'É necessário adquirir servidores locais ou novos equipamentos?',
@@ -202,7 +202,7 @@
 	<title>UniSISM · Sistema Integrado de Saúde Municipal</title>
 	<meta
 		name="description"
-		content="Plataforma integrada de regulação em saúde, prontuário digital e gestão clínica que conecta Unidades Básicas, Centros de Especialidades, Frotas de Transporte, Painéis de Espera e o Cidadão."
+		content="Plataforma integrada de regulação em saúde, prontuário digital e gestão clínica que conecta Unidades Básicas, Centros de Especialidades, Frotas de Transporte, Painéis de Espera e o App do Paciente (UniSISM Paciente)."
 	/>
 	<meta name="keywords" content="saúde pública municipal, regulação em saúde, prontuário eletrônico, gestão de saúde, atendimento especializado, regulação municipal" />
 	<meta name="author" content="UniSISM - Sistema Integrado de Saúde Municipal" />
@@ -356,8 +356,8 @@
 							<div class="text-[10px] text-slate-500 font-bold uppercase mt-1">Trilhas Imutáveis</div>
 						</div>
 						<div class="border border-slate-200 bg-slate-50 p-3 shadow-sm">
-							<div class="font-bold text-blue-900 text-sm">[04] CIDADÃO</div>
-							<div class="text-[10px] text-slate-500 font-bold uppercase mt-1">Portal Digital</div>
+							<div class="font-bold text-blue-900 text-sm">[04] PACIENTE</div>
+							<div class="text-[10px] text-slate-500 font-bold uppercase mt-1">UniSISM Paciente</div>
 						</div>
 					</div>
 				</div>
@@ -410,8 +410,8 @@
 							</div>
 
 							<div class="border border-blue-700 bg-blue-900/90 p-2.5 flex items-center justify-between text-[11px]">
-								<span class="text-blue-200 font-bold">Painel de Chamada & App do Cidadão</span>
-								<span class="text-blue-300 text-[10px]">Acesso Multicanal</span>
+								<span class="text-blue-200 font-bold">Painel de Chamada & UniSISM Paciente</span>
+								<span class="text-blue-300 text-[10px]">App do Paciente</span>
 							</div>
 						</div>
 					</div>
@@ -612,7 +612,7 @@
 						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 				>
-					App do Cidadão
+					UniSISM Paciente
 				</button>
 			</div>
 
@@ -977,8 +977,8 @@
 					<div class="space-y-6 font-mono">
 						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
 							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[APP DO CIDADÃO]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Acompanhamento Transparente</h3>
+								<span class="text-xs font-bold text-blue-900 uppercase">[APP DO PACIENTE · UNISISM PACIENTE]</span>
+								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Acompanhamento do Paciente</h3>
 							</div>
 							<div class="flex items-center gap-1.5">
 								<button
@@ -1011,7 +1011,7 @@
 						<div class="flex justify-center">
 							<div class="w-full max-w-sm border-2 border-blue-900 bg-blue-950 p-4 text-white shadow-md">
 								<div class="text-[10px] text-blue-200 text-center pb-2 border-b border-blue-800 font-bold uppercase">
-									PORTAL DO CIDADÃO
+									UNISISM PACIENTE · PORTAL DO PACIENTE
 								</div>
 
 								<div class="py-4 space-y-3 text-xs">
@@ -1062,7 +1062,7 @@
 					<div class="text-2xl font-black text-blue-900 mb-1">Fila Zero</div>
 					<div class="text-xs font-bold text-slate-700 mb-2 uppercase">Na Madrugada</div>
 					<p class="text-xs text-slate-600 font-sans leading-relaxed">
-						O cidadão é agendado diretamente na unidade básica de origem, sem necessidade de filas presenciais na madrugada para marcação.
+						O paciente é agendado diretamente na unidade básica de origem, sem necessidade de filas presenciais na madrugada para marcação.
 					</p>
 				</div>
 
@@ -1373,6 +1373,7 @@
 					<li><a href="/login" class="hover:text-white transition-colors">Odontologia Especializada</a></li>
 					<li><a href="/login" class="hover:text-white transition-colors">Transporte Sanitário (TFD)</a></li>
 					<li><a href="/tv" class="hover:text-white transition-colors">Painel de Sala de Espera</a></li>
+					<li><a href="/login" class="hover:text-white transition-colors">UniSISM Paciente (App)</a></li>
 				</ul>
 			</div>
 
