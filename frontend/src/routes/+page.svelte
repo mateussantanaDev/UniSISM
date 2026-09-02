@@ -7,167 +7,313 @@
 	let usuarioLogado = $state<{ nome: string; role: string; email: string } | null>(null);
 	let rotaDestino = $state('/login');
 
-	// Estado do seletor interativo de módulos
+	// Estado do seletor de módulos
 	let moduloAtivo = $state<'sms' | 'ubs' | 'cem' | 'ceo' | 'tfd' | 'motorista' | 'tv' | 'app'>('sms');
 
-	// ─── INTERATIVIDADE MÓDULO REGULAÇÃO (SMS) ────────────────────────────────
-	let filtroPrioridadeSms = $state<'TODAS' | 'URGENTE' | 'ALTA' | 'ELETIVA'>('TODAS');
-	let listaRegulacaoSms = $state([
-		{ id: 'REG-01', paciente: 'MARIA APARECIDA DA SILVA', ubs: 'Unidade Central', especialidade: 'Cardiologia', prioridade: 'URGENTE', status: 'PENDENTE', cid: 'I10 (Hipertensão)' },
-		{ id: 'REG-02', paciente: 'JOSE CARLOS RODRIGUES', ubs: 'Unidade Rural', especialidade: 'Ortopedia', prioridade: 'ALTA', status: 'PENDENTE', cid: 'M54.5 (Lombalgia Crônica)' },
-		{ id: 'REG-03', paciente: 'SEVERINA FERREIRA SANTOS', ubs: 'Unidade Distrito Norte', especialidade: 'Dermatologia', prioridade: 'ELETIVA', status: 'PENDENTE', cid: 'L70.0 (Acne Vulgar)' },
-		{ id: 'REG-04', paciente: 'ANTONIO PEREIRA LIMA', ubs: 'Unidade Distrito Sul', especialidade: 'Neurologia', prioridade: 'URGENTE', status: 'APROVADO', cid: 'G40.9 (Epilepsia)' }
-	]);
-
-	function aprovarEncaminhamentoSms(id: string) {
-		listaRegulacaoSms = listaRegulacaoSms.map((item) =>
-			item.id === id ? { ...item, status: 'APROVADO' } : item
-		);
-	}
-
-	// ─── INTERATIVIDADE MÓDULO UBS ───────────────────────────────────────────
-	let buscaUbs = $state('MARIA');
-	const pacientesExemploUbs = [
-		{ nome: 'MARIA APARECIDA DA SILVA', cpf: '042.***.***-09', cartao: '7061.****.****.560', condicoes: ['Hipertensão', 'Diabética'], ubs: 'Unidade Central', status: 'Acolhida' },
-		{ nome: 'MARIA DAS DORES GOMES', cpf: '019.***.***-22', cartao: '7004.****.****.190', condicoes: ['Gestante 24 semanas', 'Pré-Natal Ativo'], ubs: 'Unidade Central', status: 'Aguardando Atendimento' },
-		{ nome: 'JOSEFA MARIA DE SOUZA', cpf: '055.***.***-30', cartao: '7028.****.****.763', condicoes: ['Idosa 78 anos', 'Asma'], ubs: 'Unidade Rural', status: 'Encaminhamento Emitido' },
-		{ nome: 'JOSE CARLOS DOS SANTOS', cpf: '491.***.***-53', cartao: '7085.****.****.377', condicoes: ['Lombalgia'], ubs: 'Unidade Distrito Norte', status: 'Acolhido' }
-	];
-
-	let pacientesFiltradosUbs = $derived(
-		pacientesExemploUbs.filter((p) =>
-			p.nome.toLowerCase().includes(buscaUbs.toLowerCase()) ||
-			p.cpf.includes(buscaUbs) ||
-			p.cartao.includes(buscaUbs)
-		)
-	);
-
-	// ─── INTERATIVIDADE MÓDULO CEM ───────────────────────────────────────────
-	let consultorioCemAtivo = $state('CONS-01');
-	let abaSoapAtiva = $state<'S' | 'O' | 'A' | 'P'>('A');
-
-	// ─── INTERATIVIDADE MÓDULO CEO ───────────────────────────────────────────
-	let denteSelecionado = $state<number>(16);
-	let statusDentes = $state<Record<number, { status: string; procedimento: string }>>({
-		16: { status: 'TRATAMENTO_CANAL', procedimento: 'Endodontia Molar' },
-		21: { status: 'RESTAURADO', procedimento: 'Restauração Resina' },
-		36: { status: 'EXTRACAO_RECOMENDADA', procedimento: 'Cirurgia Oral Menor' },
-		46: { status: 'HIGIDO', procedimento: 'Hígido / Sem Alteração' }
-	});
-
-	function alterarStatusDente(st: string, proc: string) {
-		statusDentes[denteSelecionado] = { status: st, procedimento: proc };
-	}
-
-	// ─── INTERATIVIDADE MÓDULO TFD ───────────────────────────────────────────
-	let rotaTfdAtiva = $state<'polo1' | 'polo2'>('polo1');
-	let assentoSelecionado = $state<number>(1);
-	const passageirosTfd = [
-		{ assento: 1, nome: 'PACIENTE A. R.', dest: 'Hospital Regional (Oncologia)', acom: 'SIM', status: 'Confirmado' },
-		{ assento: 2, nome: 'PACIENTE J. M.', dest: 'Hospital Universitário (Cardiologia)', acom: 'NÃO', status: 'Confirmado' },
-		{ assento: 3, nome: 'PACIENTE A. L.', dest: 'Centro Cardiológico', acom: 'SIM', status: 'Confirmado' },
-		{ assento: 4, nome: 'PACIENTE M. S.', dest: 'Maternidade de Alta Complexidade', acom: 'SIM', status: 'Confirmado' },
-		{ assento: 5, nome: 'PACIENTE F. A.', dest: 'Hospital de Ortopedia', acom: 'NÃO', status: 'Confirmado' }
-	];
-
-	// ─── INTERATIVIDADE MÓDULO UNISISM MOTORISTA (APP MOTORISTA) ─────────────
-	let motoristaKmInicial = $state('142.350');
-	let motoristaKmFinal = $state('142.685');
-	let motoristaStatusViagem = $state<'EM_TRANSITO' | 'CONCLUIDA'>('EM_TRANSITO');
-	let passageirosMotorista = $state([
-		{ id: 'PAS-01', nome: 'MARIA APARECIDA DA SILVA', acompanhante: 'José da Silva (Filho)', status: 'EMBARCOU', destino: 'Hospital Regional (Oncologia)' },
-		{ id: 'PAS-02', nome: 'SEVERINO RAMOS DE SOUZA', acompanhante: 'Sem acompanhante', status: 'EMBARCOU', destino: 'Hospital Universitário (Cardiologia)' },
-		{ id: 'PAS-03', nome: 'ANTONIO PEREIRA LIMA', acompanhante: 'Ana Lima (Esposa)', status: 'PENDENTE', destino: 'Centro de Ortopedia' }
-	]);
-
-	function alternarPresencaPassageiro(id: string) {
-		passageirosMotorista = passageirosMotorista.map(p => {
-			if (p.id === id) {
-				const proximo = p.status === 'EMBARCOU' ? 'DESEMBARCOU' : p.status === 'DESEMBARCOU' ? 'AUSENTE' : 'EMBARCOU';
-				return { ...p, status: proximo };
-			}
-			return p;
-		});
-	}
-
-	function alternarStatusViagemMotorista() {
-		motoristaStatusViagem = motoristaStatusViagem === 'EM_TRANSITO' ? 'CONCLUIDA' : 'EM_TRANSITO';
-	}
-
-	// ─── INTERATIVIDADE PAINEL DE ESPERA COM VOZ ─────────────────────────────
-	let testandoVoz = $state(false);
-	let feedbackVoz = $state('');
-
-	function tocarChimeHospitalar(): void {
-		try {
-			const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-			if (!AudioContextClass) return;
-			const ctx = new AudioContextClass();
-			const now = ctx.currentTime;
-
-			const osc1 = ctx.createOscillator();
-			const gain1 = ctx.createGain();
-			osc1.type = 'sine';
-			osc1.frequency.setValueAtTime(587.33, now);
-			gain1.gain.setValueAtTime(0.18, now);
-			gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-			osc1.connect(gain1);
-			gain1.connect(ctx.destination);
-			osc1.start(now);
-			osc1.stop(now + 0.5);
-
-			const osc2 = ctx.createOscillator();
-			const gain2 = ctx.createGain();
-			osc2.type = 'sine';
-			osc2.frequency.setValueAtTime(880.0, now + 0.15);
-			gain2.gain.setValueAtTime(0.22, now + 0.15);
-			gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-			osc2.connect(gain2);
-			gain2.connect(ctx.destination);
-			osc2.start(now + 0.15);
-			osc2.stop(now + 0.7);
-		} catch {}
-	}
-
-	function dispararChamadaVozDemo(nome = 'SEVERINO RAMOS DE SOUZA', local = 'CONSULTÓRIO ZERO DOIS, ORTOPEDIA') {
-		testandoVoz = true;
-		feedbackVoz = `Sintetizando voz: "Atenção: ${nome}, favor dirigir-se ao ${local}."`;
-
-		tocarChimeHospitalar();
-
-		if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-			window.speechSynthesis.cancel();
-			const texto = `Atenção: Paciente ${nome}. Favor dirigir-se ao ${local}.`;
-			const utterance = new SpeechSynthesisUtterance(texto);
-			utterance.lang = 'pt-BR';
-			utterance.rate = 0.95;
-			utterance.pitch = 1.05;
-
-			const vozes = window.speechSynthesis.getVoices();
-			const vozPt = vozes.find((v) => v.lang.includes('pt') && (v.name.toLowerCase().includes('maria') || v.name.toLowerCase().includes('luciana') || v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('brasil')));
-			if (vozPt) utterance.voice = vozPt;
-
-			utterance.onend = () => {
-				testandoVoz = false;
-				setTimeout(() => (feedbackVoz = ''), 3000);
-			};
-
-			setTimeout(() => {
-				window.speechSynthesis.speak(utterance);
-			}, 600);
-		} else {
-			setTimeout(() => {
-				testandoVoz = false;
-			}, 2000);
+	// ─── ESPECIFICAÇÃO COMPLETA DOS MÓDULOS ─────────────────────────────────
+	const modulos = {
+		sms: {
+			id: 'sms',
+			tag: '[REGULAÇÃO MUNICIPAL · SMS]',
+			titulo: 'Central de Regulação & Fila Única',
+			subtitulo: 'Gestão equitativa de vagas para consultas e exames especializados',
+			missao: 'Centralizar toda a demanda de média e alta complexidade do município, garantindo alocação de vagas por gravidade clínica, fim do direcionamento manual e cumprimento estrito da matriz de cotas.',
+			gargaloResolvido: 'Acaba com o apadrinhamento, filas presenciais de madrugada e perdas de pedidos médicos em papel.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Classificação de Risco & Prioridade Clínica',
+					desc: 'Médicos reguladores avaliam cada encaminhamento classificando entre Urgente, Alta e Eletiva com fundamentação clínica e CID-10.'
+				},
+				{
+					num: '02',
+					titulo: 'Matriz de Cotas por Unidade de Saúde',
+					desc: 'Distribuição transparente e proporcional de vagas mensais por UBS, garantindo equidade no acesso para a zona urbana e rural.'
+				},
+				{
+					num: '03',
+					titulo: 'Despacho Eletrônico & Devolutiva Rápida',
+					desc: 'Aprovação direta de vagas, solicitação de laudos complementares ou cancelamento fundamentado sem trânsito de papéis físicos.'
+				},
+				{
+					num: '04',
+					titulo: 'Fila Única Auditável em Tempo Real',
+					desc: 'Algoritmo que organiza as solicitações por ordem cronológica e gravidade, registrando trilhas imutáveis para órgãos de controle.'
+				}
+			],
+			entregaveis: [
+				'Mapa diário de demanda reprimida por especialidade',
+				'Trilha de auditoria com autor, data e justificativa de cada despacho',
+				'Relatório de absenteísmo e faltas por unidade de saúde',
+				'Comprovante digital de agendamento regulado'
+			],
+			fluxo: 'UBS emite solicitação digital ➔ Médico Regulador analisa gravidade ➔ Vaga é alocada no CEM/CEO/TFD ➔ Notificação automática ao paciente'
+		},
+		ubs: {
+			id: 'ubs',
+			tag: '[ATENÇÃO BÁSICA · POSTOS DE SAÚDE]',
+			titulo: 'Acolhimento & Prontuário na Atenção Básica',
+			subtitulo: 'Porta de entrada integrada da saúde com prontuário clínico individual',
+			missao: 'Digitalizar o atendimento na Atenção Básica com acolhimento ágil, prontuário individualizado perpétuo e emissão direta de encaminhamentos para a rede regulada.',
+			gargaloResolvido: 'Elimina fichas de papel rasuradas, duplicidade de cadastros e extravio de históricos clínicos prévios.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Recepção e Fila de Acolhimento',
+					desc: 'Controle de fluxo de chegada na unidade básica com triagem rápida e chamada organizada para a equipe de enfermagem e médicos.'
+				},
+				{
+					num: '02',
+					titulo: 'Dossiê Clínico Perpétuo do Paciente',
+					desc: 'Cadastro unificado com histórico de consultas, evolução de enfermagem, vacinas aplicadas e condições crônicas acompanhadas.'
+				},
+				{
+					num: '03',
+					titulo: 'Emissão Digital de Encaminhamentos',
+					desc: 'O profissional de saúde prescreve e encaminha o paciente durante a consulta, anexando exames e laudos diretamente no sistema.'
+				},
+				{
+					num: '04',
+					titulo: 'Rastreabilidade da Linha de Cuidado',
+					desc: 'A equipe da UBS acompanha o andamento de cada encaminhamento emitido até a realização da consulta no especialista.'
+				}
+			],
+			entregaveis: [
+				'Prontuário eletrônico completo e sincronizado em toda a rede',
+				'Painel de acompanhamento de grupos prioritários (Hipertensos, Diabéticos, Gestantes)',
+				'Histórico de vacinação municipal integrado',
+				'Comprovante de atendimento com registro de profissional'
+			],
+			fluxo: 'Munícipe chega à UBS ➔ Acolhimento & Triagem ➔ Consulta Médica ➔ Encaminhamento emitido digitalmente para a Regulação'
+		},
+		cem: {
+			id: 'cem',
+			tag: '[ESPECIALIDADES MÉDICAS · CEM]',
+			titulo: 'Centro de Especialidades Médicas',
+			subtitulo: 'Ambulatório de especialidades, prontuário SOAP e produção médica',
+			missao: 'Gerenciar o atendimento secundário municipal com escalas de médicos especialistas, prontuário clínico estruturado no padrão SOAP e faturamento por procedimento.',
+			gargaloResolvido: 'Elimina o absenteísmo descontrolado de especialistas e a falta de retorno (contra-referência) para os médicos da família.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Gestão de Escalas e Consultórios',
+					desc: 'Configuração flexível de agendas por especialista, dia da semana, consultório físico e tempo médio de consulta.'
+				},
+				{
+					num: '02',
+					titulo: 'Prontuário Estruturado SOAP',
+					desc: 'Registro clínico padronizado em Subjetivo, Objetivo, Avaliação com CID-10 e Plano Terapêutico com indicação de procedimentos.'
+				},
+				{
+					num: '03',
+					titulo: 'Histórico Integrado da Rede',
+					desc: 'O médico especialista visualiza exames e prescrições emitidas previamente pelas UBSs sem necessidade de reimpressão de documentos.'
+				},
+				{
+					num: '04',
+					titulo: 'Produção Ambulatorial & Contra-Referência',
+					desc: 'Apuração automática de procedimentos realizados e emissão digital de orientações de continuidade de cuidado para a UBS de origem.'
+				}
+			],
+			entregaveis: [
+				'Relatório consolidado de produção médica por procedimento',
+				'Prontuário estruturado no padrão SOAP com assinatura digital',
+				'Índice de aproveitamento de agenda e tempo médio de atendimento',
+				'Guia de contra-referência digital para a equipe da Atenção Básica'
+			],
+			fluxo: 'Paciente regulado chega ao CEM ➔ Confirmação de presença ➔ Chamada na TV ➔ Atendimento SOAP ➔ Contra-referência emitida'
+		},
+		ceo: {
+			id: 'ceo',
+			tag: '[ODONTOLOGIA ESPECIALIZADA · CEO]',
+			titulo: 'Centro de Especialidades Odontológicas',
+			subtitulo: 'Odontologia de média complexidade, odontograma e gestão de cadeiras',
+			missao: 'Estruturar os serviços odontológicos especializados com odontograma gráfico dente a dente, gestão de cadeiras clínicas e apuração de procedimentos cirúrgicos.',
+			gargaloResolvido: 'Substitui anotações manuais em fichas dentárias por prontuário gráfico digital interativo com histórico de intervenções.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Odontograma Digital Dente a Dente',
+					desc: 'Mapeamento visual da arcada dentária (dentes 11 a 48) registrando procedimentos executados e planejados por elemento.'
+				},
+				{
+					num: '02',
+					titulo: 'Especialidades Odontológicas Avançadas',
+					desc: 'Fluxos clínicos dedicados para Endodontia (Canal), Periodontia, Cirurgia Oral Menor, Estomatologia e Prótese Dentária.'
+				},
+				{
+					num: '03',
+					titulo: 'Gestão de Cadeiras Odontológicas',
+					desc: 'Controle de ocupação e escalas de cirurgiões-dentistas por setor clínico, cadeira e turno de atendimento.'
+				},
+				{
+					num: '04',
+					titulo: 'Apuração de Produção Odontológica',
+					desc: 'Consolidação de procedimentos realizados por profissional para prestação de contas e relatórios gerenciais.'
+				}
+			],
+			entregaveis: [
+				'Odontograma gráfico atualizado em tempo real',
+				'Relatório de produção odontológica especializada',
+				'Controle de tempo de cadeira e produtividade clínica',
+				'Histórico de cirurgias orais e tratamentos endodônticos'
+			],
+			fluxo: 'Triagem na Atenção Básica ➔ Regulação para o CEO ➔ Alocação na Cadeira ➔ Registro no Odontograma ➔ Alta ou Retorno'
+		},
+		tfd: {
+			id: 'tfd',
+			tag: '[TRANSPORTE SANITÁRIO · TFD]',
+			titulo: 'Gestão de Viagens, Frotas & Ajuda de Custo',
+			subtitulo: 'Logística de transporte sanitário para polos de alta complexidade',
+			missao: 'Planejar, regular e monitorar as viagens de pacientes que necessitam de atendimento fora do município, com controle de poltronas, despesas e auditoria de combustível.',
+			gargaloResolvido: 'Elimina o controle precário de viagens em planilhas soltas e a falta de comprovação de despesas com ajuda de custo.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Roteirização para Polos Regionais',
+					desc: 'Organização de viagens diárias para hospitais de alta complexidade, centros de oncologia e maternidades de referência.'
+				},
+				{
+					num: '02',
+					titulo: 'Mapa de Poltronas & Passageiros',
+					desc: 'Alocação ordenada de munícipes e acompanhantes autorizados em veículos específicos (vans, micro-ônibus e ambulâncias).'
+				},
+				{
+					num: '03',
+					titulo: 'Ajuda de Custo & Diárias',
+					desc: 'Controle financeiro e comprovação de concessão de ajuda de custo para alimentação e estadia conforme a legislação municipal.'
+				},
+				{
+					num: '04',
+					titulo: 'Controle de Frota & Abastecimento',
+					desc: 'Registro de quilometragem, vistorias periódicas, consumo de combustível e manutenções preventivas dos veículos.'
+				}
+			],
+			entregaveis: [
+				'Manifesto oficial de viagem com relação de passageiros e hospitais',
+				'Recibos e relatórios de prestação de contas de ajuda de custo',
+				'Relatório gerencial de consumo de combustível e manutenção de frota',
+				'Histórico individual de viagens sanitárias por paciente'
+			],
+			fluxo: 'Solicitação de transporte na regulação ➔ Alocação de poltrona e rota ➔ Emissão do manifesto ➔ Despacho com o motorista'
+		},
+		motorista: {
+			id: 'motorista',
+			tag: '[APP DO MOTORISTA · OFFLINE FIRST]',
+			titulo: 'UniSISM Motorista (App Mobile)',
+			subtitulo: 'Diário de bordo eletrônico, controle de KM e embarque offline',
+			missao: 'Empoderar os motoristas da saúde com um aplicativo nativo que funciona mesmo sem sinal de internet em rodovias e estradas rurais, registrando a viagem do início ao fim.',
+			gargaloResolvido: 'Elimina anotações em papel de KM e listas manuais de passageiros que se perdiam nas viagens intermunicipais.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Operação 100% Offline (SQLite Local)',
+					desc: 'Funciona perfeitamente em trechos sem sinal de celular nas rodovias, realizando sincronização automática assim que reconectar.'
+				},
+				{
+					num: '02',
+					titulo: 'Diário de Bordo & KM Digital',
+					desc: 'Registro obrigatório do KM Inicial na saída e KM Final no retorno para auditoria de rodagem e prestação de contas transparente.'
+				},
+				{
+					num: '03',
+					titulo: 'Check-in de Passageiros nos Pontos de Parada',
+					desc: 'Marcação rápida de presença (Embarcou, Desembarcou ou Ausente) em cada hospital ou ponto de parada da rota.'
+				},
+				{
+					num: '04',
+					titulo: 'Comprovantes de Abastecimento em Trânsito',
+					desc: 'Fotografia e anexação digital de notas fiscais de combustível e comprovantes de pedágio diretamente no celular.'
+				}
+			],
+			entregaveis: [
+				'Diário de bordo digital assinado pelo condutor ao final da viagem',
+				'Manifesto de presença com horários exatos de embarque e desembarque',
+				'Comprovantes fiscais digitalizados para ressarcimento contábil',
+				'Relatório de consumo KM/litro por veículo'
+			],
+			fluxo: 'Motorista inicia viagem no app ➔ Registra KM Inicial ➔ Faz check-in dos passageiros nos pontos ➔ Registra KM Final e despesas'
+		},
+		tv: {
+			id: 'tv',
+			tag: '[SALA DE ESPERA · SMART TV]',
+			titulo: 'Painel de Chamada com Voz Humanizada',
+			subtitulo: 'Painel audiovisual para Smart TVs em salas de recepção',
+			missao: 'Transformar a sala de espera em um ambiente organizado e humanizado, chamando os pacientes por sinal sonoro harmônico e sintetizador de voz em português brasileiro.',
+			gargaloResolvido: 'Acaba com os gritos e chamadas manuais nos corredores, trazendo dignidade e acessibilidade para idosos e pacientes iletrados.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Sinal Sonoro Suave (Chime Hospitalar)',
+					desc: 'Aviso sonoro harmônico que atrai a atenção da recepção de forma acolhedora, sem causar sustos ou poluição sonora.'
+				},
+				{
+					num: '02',
+					titulo: 'Síntese de Voz Humanizada em Português',
+					desc: 'Pronúncia clara do nome do paciente, número do consultório ou cadeira odontológica e nome do profissional responsável.'
+				},
+				{
+					num: '03',
+					titulo: 'Exibição Visual de Alto Contraste',
+					desc: 'Tipografia ampla de alta legibilidade para televisores de qualquer tamanho, com sinalização clara de prioridades legais.'
+				},
+				{
+					num: '04',
+					titulo: 'Isolamento por Setor de Atendimento',
+					desc: 'Painéis independentes: o painel do CEM gerencia consultórios médicos; o painel do CEO gerencia cadeiras odontológicas.'
+				}
+			],
+			entregaveis: [
+				'Ambiente de recepção humanizado e livre de ruídos desnecessários',
+				'Redução da ansiedade e do tempo de espera percebido pelos pacientes',
+				'Acessibilidade plena para pacientes com dificuldades visuais ou analfabetos',
+				'Fluxo de chamadas sincronizado com o prontuário do médico/dentista'
+			],
+			fluxo: 'Médico clica em "Chamar Próximo" no prontuário ➔ Smart TV toca o sinal ➔ Voz anuncia o paciente ➔ Paciente entra no consultório'
+		},
+		app: {
+			id: 'app',
+			tag: '[APP DO PACIENTE · UNISISM PACIENTE]',
+			titulo: 'UniSISM Paciente (App do Paciente)',
+			subtitulo: 'Transparência, agendamentos e carteira vacinal na mão do munícipe',
+			missao: 'Conectar o paciente diretamente à rede municipal de saúde pelo smartphone, permitindo acompanhar o andamento de suas consultas, viagens do TFD e vacinas.',
+			gargaloResolvido: 'Acaba com o munícipe sem saber se seu pedido foi aprovado, com viagens perdidas e com a perda de cartões de papel.',
+			capacidades: [
+				{
+					num: '01',
+					titulo: 'Consulta de Agendamentos e Exames',
+					desc: 'Visualização da posição na regulação e confirmação de data, horário, médico e local da consulta especializada.'
+				},
+				{
+					num: '02',
+					titulo: 'Detalhes de Viagem e Transporte (TFD)',
+					desc: 'Acesso antecipado ao horário de partida, ponto de embarque, veículo e poltrona designada para o deslocamento.'
+				},
+				{
+					num: '03',
+					titulo: 'Carteira Vacinal Digital Integrada',
+					desc: 'Histórico completo de vacinas aplicadas nas unidades municipais com registro de doses, lotes e datas de aplicação.'
+				},
+				{
+					num: '04',
+					titulo: 'Lembretes & Confirmação de Presença',
+					desc: 'Notificações que lembram o munícipe da consulta, permitindo confirmar presença ou liberar a vaga com antecedência.'
+				}
+			],
+			entregaveis: [
+				'Canal digital oficial e transparente entre o cidadão e a Secretaria de Saúde',
+				'Comprovantes de agendamento sempre disponíveis no celular',
+				'Histórico unificado de saúde acessível a qualquer momento',
+				'Redução drástica do absenteísmo por esquecimento'
+			],
+			fluxo: 'Consulta é regulada ➔ Paciente recebe aviso no celular ➔ Confirma presença ➔ Realiza a consulta e acompanha seu histórico'
 		}
-	}
+	};
 
-	// ─── INTERATIVIDADE APP DO PACIENTE (UNISISM PACIENTE) ───────────────────
-	let telaAppAtiva = $state<'consultas' | 'viagens' | 'vacinas'>('consultas');
+	let infoAtiva = $derived(modulos[moduloAtivo]);
 
-	// ─── FAQ ─────────────────────────────────────────────────────────────────
+	// FAQ
 	let faqAberta = $state<number | null>(0);
-
 	const faqs = [
 		{
 			pergunta: 'Como o UniSISM sincroniza os dados da rede municipal?',
@@ -344,7 +490,7 @@
 					</h1>
 
 					<p class="text-base sm:text-lg leading-relaxed text-slate-600 font-medium">
-						O <strong class="text-blue-950 font-bold">UniSISM</strong> conecta toda a rede de saúde: do acolhimento na Atenção Básica à regulação de vagas especializadas, gestão de frotas sanitárias e prontuário unificado sem perdas de papel.
+						O <strong class="text-blue-950 font-bold">UniSISM</strong> conecta toda a rede de saúde: do acolhimento na Atenção Básica à regulação de vagas especializadas, gestão de frotas sanitárias, aplicativos móveis e prontuário unificado sem perdas de papel.
 					</p>
 
 					<!-- Dual Call To Action -->
@@ -425,17 +571,17 @@
 							<div class="grid grid-cols-2 gap-2">
 								<div class="border border-blue-800 bg-blue-900/60 p-2.5 text-[11px]">
 									<div class="text-amber-300 font-bold">ESPECIALIDADES</div>
-									<div class="text-blue-100 text-[10px] pt-1">Consultórios médicos e odontologia.</div>
+									<div class="text-blue-100 text-[10px] pt-1">Consultórios CEM & Odonto CEO.</div>
 								</div>
 								<div class="border border-blue-800 bg-blue-900/60 p-2.5 text-[11px]">
 									<div class="text-emerald-300 font-bold">TRANSPORTE TFD</div>
-									<div class="text-blue-100 text-[10px] pt-1">Frotas, viagens e passageiros.</div>
+									<div class="text-blue-100 text-[10px] pt-1">Frotas & App Motorista.</div>
 								</div>
 							</div>
 
 							<div class="border border-blue-700 bg-blue-900/90 p-2.5 flex items-center justify-between text-[11px]">
-								<span class="text-blue-200 font-bold">Painel de Chamada & UniSISM Paciente</span>
-								<span class="text-blue-300 text-[10px]">App do Paciente</span>
+								<span class="text-blue-200 font-bold">Painel TV & UniSISM Paciente</span>
+								<span class="text-blue-300 text-[10px]">Acesso Multicanal</span>
 							</div>
 						</div>
 					</div>
@@ -547,638 +693,146 @@
 	</section>
 
 	<!-- ═════════════════════════════════════════════════════════════════════ -->
-	<!-- VITRINE DE MÓDULOS (MOBILE FIRST COM TABS DINÂMICAS)                  -->
+	<!-- ESPECIFICAÇÃO E ARQUITETURA DETALHADA DOS MÓDULOS                    -->
 	<!-- ═════════════════════════════════════════════════════════════════════ -->
 	<section id="modulos" class="border-b border-slate-200 bg-white py-12 sm:py-20">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6">
 			<div class="text-left sm:text-center max-w-3xl mx-auto mb-8 sm:mb-12">
 				<div class="inline-flex items-center gap-2 border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] font-mono font-bold tracking-widest text-slate-800 uppercase mb-3 shadow-sm">
-					Módulos Especializados
+					Arquitetura Modular da Rede
 				</div>
 				<h2 class="font-sans text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
-					Explore as Funcionalidades do Sistema
+					O Que Cada Módulo do UniSISM Entrega
 				</h2>
+				<p class="text-slate-600 text-sm sm:text-base mt-2 font-medium">
+					Entenda com profundidade o papel de cada nó do sistema na operação diária da Secretaria Municipal de Saúde.
+				</p>
 			</div>
 
-			<!-- Tabs com Scroll Horizontal Fluído no Mobile -->
-			<div class="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'sms')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'sms'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Regulação
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'ubs')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'ubs'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Atenção Básica
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'cem')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'cem'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Especialidades Médicas
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'ceo')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'ceo'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Odontologia
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'tfd')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'tfd'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Transporte TFD
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'motorista')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'motorista'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					UniSISM Motorista
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'tv')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'tv'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					Painel de Espera
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (moduloAtivo = 'app')}
-					class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
-					{moduloAtivo === 'app'
-						? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
-						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
-				>
-					UniSISM Paciente
-				</button>
+			<!-- Seletor de Módulos em Tabs (Mobile First) -->
+			<div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
+				{#each Object.values(modulos) as m}
+					<button
+						type="button"
+						onclick={() => (moduloAtivo = m.id as any)}
+						class="shrink-0 border-2 px-3.5 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer min-h-[44px]
+						{moduloAtivo === m.id
+							? 'border-blue-900 bg-blue-900 text-white shadow-[2px_2px_0px_0px_#172554]'
+							: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
+					>
+						{m.id === 'sms' ? 'Regulação (SMS)' : m.id === 'ubs' ? 'Atenção Básica' : m.id === 'cem' ? 'Especialidades (CEM)' : m.id === 'ceo' ? 'Odontologia (CEO)' : m.id === 'tfd' ? 'Transporte (TFD)' : m.id === 'motorista' ? 'UniSISM Motorista' : m.id === 'tv' ? 'Painel de Espera' : 'UniSISM Paciente'}
+					</button>
+				{/each}
 			</div>
 
-			<!-- Painel de Demonstração Interativo -->
-			<div class="border border-slate-200 bg-white p-4 sm:p-8 shadow-sm">
-				{#if moduloAtivo === 'sms'}
-					<div class="space-y-6">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="font-mono text-xs font-bold text-blue-900 uppercase">[REGULAÇÃO MUNICIPAL]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Fila Única e Despacho de Vagas</h3>
-							</div>
-							<div class="flex flex-wrap items-center gap-1.5 font-mono text-xs">
-								<span class="text-slate-500 font-bold text-[10px]">PRIORIDADE:</span>
-								{#each ['TODAS', 'URGENTE', 'ALTA', 'ELETIVA'] as p}
-									<button
-										type="button"
-										onclick={() => (filtroPrioridadeSms = p as any)}
-										class="border px-2 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer
-										{filtroPrioridadeSms === p ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
-									>
-										{p}
-									</button>
-								{/each}
-							</div>
+			<!-- Card Detalhado do Módulo Ativo -->
+			<div class="border-2 border-blue-900 bg-white shadow-[4px_4px_0px_0px_#1e3a8a] p-6 sm:p-8 font-mono">
+				<!-- Cabeçalho do Módulo -->
+				<div class="border-b border-slate-200 pb-6 mb-6">
+					<div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+						<span class="text-xs font-bold text-blue-900 uppercase tracking-wider">{infoAtiva.tag}</span>
+						<span class="border border-emerald-600 bg-emerald-50 text-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase">
+							[MÓDULO TOTALMENTE INTEGRADO]
+						</span>
+					</div>
+					<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-900">{infoAtiva.titulo}</h3>
+					<p class="font-sans text-sm sm:text-base text-slate-600 font-medium mt-1">{infoAtiva.subtitulo}</p>
+					
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 text-xs font-sans">
+						<div class="bg-blue-50/70 p-3 border border-blue-200">
+							<strong class="font-mono font-bold text-blue-950 block uppercase text-[11px] mb-1">Missão Operacional:</strong>
+							<p class="text-slate-700 leading-relaxed">{infoAtiva.missao}</p>
 						</div>
-
-						<div class="overflow-x-auto -mx-4 sm:mx-0">
-							<table class="w-full text-left font-mono text-xs border border-slate-200">
-								<thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
-									<tr>
-										<th class="p-2.5">ID</th>
-										<th class="p-2.5">PACIENTE</th>
-										<th class="p-2.5">ORIGEM</th>
-										<th class="p-2.5">ESPECIALIDADE</th>
-										<th class="p-2.5">PRIORIDADE</th>
-										<th class="p-2.5">STATUS</th>
-										<th class="p-2.5 text-right">AÇÃO</th>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-slate-200 bg-white">
-									{#each listaRegulacaoSms.filter(i => filtroPrioridadeSms === 'TODAS' || i.prioridade === filtroPrioridadeSms) as enc}
-										<tr class="hover:bg-slate-50">
-											<td class="p-2.5 font-bold text-blue-900">{enc.id}</td>
-											<td class="p-2.5 font-bold text-slate-900">{enc.paciente}</td>
-											<td class="p-2.5 text-slate-600">{enc.ubs}</td>
-											<td class="p-2.5">
-												<span class="font-bold text-slate-900">{enc.especialidade}</span>
-												<span class="block text-[10px] text-slate-500">{enc.cid}</span>
-											</td>
-											<td class="p-2.5">
-												<span class="border px-1.5 py-0.5 text-[9px] font-bold uppercase
-												{enc.prioridade === 'URGENTE' ? 'border-red-600 bg-red-50 text-red-700' : enc.prioridade === 'ALTA' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-emerald-600 bg-emerald-50 text-emerald-700'}">
-													{enc.prioridade}
-												</span>
-											</td>
-											<td class="p-2.5">
-												<span class="font-bold {enc.status === 'APROVADO' ? 'text-emerald-700' : 'text-slate-600'}">
-													{enc.status}
-												</span>
-											</td>
-											<td class="p-2.5 text-right">
-												{#if enc.status === 'PENDENTE'}
-													<button
-														type="button"
-														onclick={() => aprovarEncaminhamentoSms(enc.id)}
-														class="border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white uppercase hover:bg-blue-800 cursor-pointer"
-													>
-														Aprovar Vaga ✓
-													</button>
-												{:else}
-													<span class="text-emerald-700 font-bold text-[10px]">[VAGA ALOCADA]</span>
-												{/if}
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
+						<div class="bg-emerald-50/70 p-3 border border-emerald-200">
+							<strong class="font-mono font-bold text-emerald-950 block uppercase text-[11px] mb-1">Gargalo Eliminado:</strong>
+							<p class="text-slate-700 leading-relaxed">{infoAtiva.gargaloResolvido}</p>
 						</div>
 					</div>
-				{:else if moduloAtivo === 'ubs'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[ATENÇÃO BÁSICA]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Busca Rápida de Prontuário</h3>
-							</div>
-							<div class="flex items-center gap-2">
-								<label for="buscaSimulada" class="text-xs font-bold text-slate-600">BUSCA:</label>
-								<input
-									id="buscaSimulada"
-									type="text"
-									bind:value={buscaUbs}
-									placeholder="Nome, CPF ou Cartão..."
-									class="border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 outline-none w-full sm:w-64 focus:border-blue-900"
-								/>
-							</div>
-						</div>
+				</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							{#each pacientesFiltradosUbs as p}
-								<div class="border border-slate-200 bg-white p-4 shadow-sm">
-									<div class="flex justify-between items-start">
-										<div>
-											<span class="font-bold text-sm text-slate-900">{p.nome}</span>
-											<div class="text-[10px] text-slate-500 mt-0.5">CPF: {p.cpf} · Reg: {p.cartao}</div>
-										</div>
-										<span class="border border-slate-300 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-800 uppercase">
-											{p.status}
-										</span>
-									</div>
-
-									<div class="mt-3 pt-3 border-t border-slate-200 flex flex-wrap items-center gap-1.5">
-										{#each p.condicoes as c}
-											<span class="bg-blue-50 text-blue-900 px-2 py-0.5 text-[9px] font-bold">
-												[●] {c}
-											</span>
-										{/each}
-									</div>
+				<!-- Grid de Capacidades Chave -->
+				<div class="mb-8">
+					<div class="text-xs font-bold text-slate-700 uppercase mb-4 tracking-wider">
+						[CAPACIDADES E FLUXOS OPERACIONAIS]:
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{#each infoAtiva.capacidades as cap}
+							<div class="border border-slate-200 bg-slate-50 p-4 space-y-1.5 shadow-sm">
+								<div class="flex items-center gap-2">
+									<span class="border border-blue-900 bg-blue-900 text-white font-mono text-[10px] font-bold px-1.5 py-0.2">
+										{cap.num}
+									</span>
+									<h4 class="font-sans font-bold text-sm text-slate-900">{cap.titulo}</h4>
 								</div>
+								<p class="text-xs text-slate-600 font-sans leading-relaxed pt-1">
+									{cap.desc}
+								</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Entregáveis & Fluxo na Rede -->
+				<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-6 border-t border-slate-200 text-xs">
+					<!-- Entregáveis da Gestão -->
+					<div class="lg:col-span-6 border border-slate-200 bg-slate-50 p-4 space-y-3">
+						<div class="text-xs font-bold text-blue-900 uppercase">[ENTREGÁVEIS & AUDITORIA]:</div>
+						<ul class="space-y-2 font-sans text-xs text-slate-700">
+							{#each infoAtiva.entregaveis as ent}
+								<li class="flex items-start gap-2">
+									<span class="text-emerald-700 font-mono font-bold">✓</span>
+									<span>{ent}</span>
+								</li>
 							{/each}
+						</ul>
+					</div>
+
+					<!-- Fluxo de Ponta a Ponta -->
+					<div class="lg:col-span-6 border border-blue-900 bg-blue-950 p-4 text-white space-y-3">
+						<div class="text-xs font-bold text-blue-200 uppercase">[ESTEIRA DE ATENDIMENTO NA REDE]:</div>
+						<p class="font-sans text-xs leading-relaxed text-blue-100">
+							{infoAtiva.fluxo}
+						</p>
+						<div class="pt-2 border-t border-blue-800 text-[10px] text-blue-300 font-mono">
+							Status do Barramento: Sincronização em tempo real entre UBS, SMS, CEM, CEO, TFD, Motorista e Paciente.
 						</div>
 					</div>
-				{:else if moduloAtivo === 'cem'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[CENTRO DE ESPECIALIDADES]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Consultórios & Prontuário SOAP</h3>
-							</div>
-							<div class="flex items-center gap-2">
-								<span class="text-xs font-bold text-slate-600">CONSULTÓRIO:</span>
-								<select
-									bind:value={consultorioCemAtivo}
-									class="border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 outline-none focus:border-blue-900"
-								>
-									<option value="CONS-01">01 — Cardiologia</option>
-									<option value="CONS-02">02 — Ortopedia</option>
-									<option value="CONS-03">03 — Ginecologia</option>
-								</select>
-							</div>
-						</div>
+				</div>
+			</div>
 
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4 space-y-3">
-								<div class="text-[10px] text-slate-500 uppercase font-bold">PACIENTE EM ATENDIMENTO</div>
-								<div class="bg-white border border-slate-200 p-3 shadow-sm">
-									<div class="font-bold text-base text-slate-900">SEVERINO RAMOS DE SOUZA</div>
-									<div class="text-xs text-slate-600 mt-0.5">64 anos · Masculino</div>
-									<div class="text-[11px] text-blue-900 font-bold mt-2">Motivo: Avaliação Cardiológica</div>
-								</div>
-
-								<button
-									type="button"
-									onclick={() => dispararChamadaVozDemo('SEVERINO RAMOS DE SOUZA', 'CONSULTÓRIO ZERO UM, CARDIOLOGIA')}
-									disabled={testandoVoz}
-									class="w-full border-2 border-blue-900 bg-blue-900 text-white font-bold py-2.5 text-xs uppercase flex items-center justify-center gap-2 hover:bg-blue-800 cursor-pointer disabled:opacity-50 min-h-[44px]"
-								>
-									<span>CHAMAR NO PAINEL DE ESPERA</span>
-								</button>
-								{#if feedbackVoz}
-									<div class="text-[10px] text-emerald-800 font-bold text-center">
-										{feedbackVoz}
-									</div>
-								{/if}
-							</div>
-
-							<div class="lg:col-span-7 border border-slate-200 bg-white p-4">
-								<div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-3">
-									<span class="text-xs font-bold text-slate-700 uppercase">REGISTRO SOAP:</span>
-									{#each ['S', 'O', 'A', 'P'] as tab}
-										<button
-											type="button"
-											onclick={() => (abaSoapAtiva = tab as any)}
-											class="border px-2.5 py-0.5 text-xs font-bold uppercase transition-colors cursor-pointer
-											{abaSoapAtiva === tab ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-50 text-slate-700'}"
-										>
-											{tab === 'S' ? 'Subjetivo' : tab === 'O' ? 'Objetivo' : tab === 'A' ? 'Avaliação' : 'Plano'}
-										</button>
-									{/each}
-								</div>
-
-								<div class="text-xs leading-relaxed text-slate-800">
-									{#if abaSoapAtiva === 'S'}
-										<p><strong>Queixa Principal:</strong> Paciente relata dispneia aos médios esforços. Sem queixas de dor torácica aguda em repouso. Uso contínuo de anti-hipertensivo.</p>
-									{:else if abaSoapAtiva === 'O'}
-										<p><strong>Exame Físico:</strong> PA: 130x85 mmHg. FC: 72 bpm. Ausculta cardíaca com ritmo regular em dois tempos. Murmúrio vesicular presente bilateralmente.</p>
-									{:else if abaSoapAtiva === 'A'}
-										<p><strong>Hipótese Diagnóstica (CID-10):</strong> I35.0 (Estenose Valvar Aórtica) + I10 (Hipertensão Arterial Sistêmica).</p>
-									{:else if abaSoapAtiva === 'P'}
-										<p><strong>Conduta:</strong> Solicitado Ecocardiograma Transtorácico. Mantida medicação e agendado retorno ambulatorial.</p>
-									{/if}
-								</div>
-							</div>
-						</div>
+			<!-- Matriz Resumo dos 8 Módulos (Visão Geral da Rede) -->
+			<div class="mt-12">
+				<div class="text-left sm:text-center mb-6">
+					<div class="inline-flex items-center gap-2 border border-slate-300 bg-slate-100 px-3 py-1 text-[10px] font-mono font-bold tracking-widest text-slate-700 uppercase">
+						Visão Panorâmica
 					</div>
-				{:else if moduloAtivo === 'ceo'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+					<h3 class="font-sans text-xl sm:text-2xl font-black text-slate-900 mt-1">
+						A Malha Completa de Saúde do Município
+					</h3>
+				</div>
+
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+					{#each Object.values(modulos) as m}
+						<button
+							type="button"
+							onclick={() => (moduloAtivo = m.id as any)}
+							class="text-left border p-4 transition-all cursor-pointer flex flex-col justify-between
+							{moduloAtivo === m.id
+								? 'border-blue-900 bg-blue-50/80 shadow-[2px_2px_0px_0px_#1e3a8a]'
+								: 'border-slate-200 bg-white hover:bg-slate-50'}"
+						>
 							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[ODONTOLOGIA ESPECIALIZADA]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Odontograma Digital</h3>
+								<div class="text-[10px] text-blue-900 font-bold uppercase">{m.tag.split('·')[0].replace('[', '')}</div>
+								<h4 class="font-sans font-bold text-sm text-slate-900 mt-1">{m.titulo}</h4>
+								<p class="text-[11px] text-slate-600 font-sans mt-2 leading-relaxed">{m.subtitulo}</p>
 							</div>
-							<div class="text-xs font-bold text-slate-600">
-								CADEIRA 01 · ENDODONTIA
+							<div class="mt-4 pt-2 border-t border-slate-200 text-[10px] text-blue-900 font-bold flex items-center justify-between">
+								<span>Ver Detalhes</span>
+								<span>→</span>
 							</div>
-						</div>
-
-						<div class="border border-slate-200 bg-slate-50 p-4">
-							<div class="text-[10px] text-slate-500 uppercase font-bold mb-3">SELEÇÃO DE ELEMENTO DENTÁRIO:</div>
-							<div class="grid grid-cols-4 sm:grid-cols-8 gap-2 text-center">
-								{#each [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28] as d}
-									<button
-										type="button"
-										onclick={() => (denteSelecionado = d)}
-										class="border p-2 font-bold text-xs transition-all cursor-pointer min-h-[44px]
-										{denteSelecionado === d ? 'border-blue-900 bg-blue-900 text-white shadow-sm' : 'border-slate-300 bg-white text-slate-800'}"
-									>
-										<div>#{d}</div>
-										<div class="text-[8px] uppercase mt-1">
-											{statusDentes[d]?.status === 'TRATAMENTO_CANAL' ? 'CANAL' : statusDentes[d]?.status === 'RESTAURADO' ? 'REST.' : statusDentes[d]?.status === 'EXTRACAO_RECOMENDADA' ? 'EXTRAIR' : 'HÍGIDO'}
-										</div>
-									</button>
-								{/each}
-							</div>
-						</div>
-
-						<div class="border border-slate-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-							<div>
-								<div class="text-xs text-slate-600 font-bold">ELEMENTO: <strong class="text-slate-900 text-sm">DENTE #{denteSelecionado}</strong></div>
-								<div class="text-xs text-slate-800 mt-1">Procedimento: <strong>{statusDentes[denteSelecionado]?.procedimento || 'Hígido / Sem Alteração'}</strong></div>
-							</div>
-
-							<div class="flex flex-wrap items-center gap-2">
-								<button
-									type="button"
-									onclick={() => alterarStatusDente('TRATAMENTO_CANAL', 'Tratamento Endodôntico (Canal)')}
-									class="border border-blue-900 bg-blue-900 text-white px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-blue-800 cursor-pointer min-h-[40px]"
-								>
-									+ Indicar Canal
-								</button>
-								<button
-									type="button"
-									onclick={() => alterarStatusDente('RESTAURADO', 'Restauração Estética')}
-									class="border border-slate-300 bg-slate-100 text-slate-900 px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-slate-200 cursor-pointer min-h-[40px]"
-								>
-									+ Restaurar
-								</button>
-								<button
-									type="button"
-									onclick={() => alterarStatusDente('HIGIDO', 'Hígido / Sem Alteração')}
-									class="border border-slate-300 bg-white text-slate-600 px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-slate-50 cursor-pointer min-h-[40px]"
-								>
-									Limpar
-								</button>
-							</div>
-						</div>
-					</div>
-				{:else if moduloAtivo === 'tfd'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[TRANSPORTE SANITÁRIO TFD]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Manifesto de Viagem & Frotas</h3>
-							</div>
-							<div class="flex items-center gap-2">
-								<button
-									type="button"
-									onclick={() => (rotaTfdAtiva = 'polo1')}
-									class="border-2 px-3 py-1 text-xs font-bold uppercase transition-colors cursor-pointer min-h-[40px]
-									{rotaTfdAtiva === 'polo1' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
-								>
-									Polo Regional
-								</button>
-								<button
-									type="button"
-									onclick={() => (rotaTfdAtiva = 'polo2')}
-									class="border-2 px-3 py-1 text-xs font-bold uppercase transition-colors cursor-pointer min-h-[40px]
-									{rotaTfdAtiva === 'polo2' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
-								>
-									Polo Alta Complexidade
-								</button>
-							</div>
-						</div>
-
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4">
-								<div class="text-[10px] text-slate-500 font-bold uppercase mb-3">VEÍCULO DE TRANSPORTE (16 LUGARES)</div>
-								<div class="grid grid-cols-4 gap-2 text-center text-xs">
-									{#each Array.from({ length: 16 }, (_, i) => i + 1) as assento}
-										<button
-											type="button"
-											onclick={() => (assentoSelecionado = assento)}
-											class="border p-2 font-bold transition-all cursor-pointer min-h-[44px]
-											{assentoSelecionado === assento ? 'border-blue-900 bg-blue-900 text-white shadow-sm' : assento <= 5 ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-slate-300 bg-white text-slate-400'}"
-										>
-											<div>P{assento}</div>
-											<div class="text-[8px] uppercase mt-0.5">{assento <= 5 ? 'OCUPADO' : 'LIVRE'}</div>
-										</button>
-									{/each}
-								</div>
-							</div>
-
-							<div class="lg:col-span-7 border border-slate-200 bg-white p-4 text-xs space-y-3">
-								<div class="font-bold text-slate-900 flex justify-between">
-									<span>PASSAGEIRO POLTRONA #{assentoSelecionado}</span>
-									<span class="text-emerald-700 font-bold">[CONFIRMADO]</span>
-								</div>
-
-								{#if assentoSelecionado <= 5}
-									{@const pas = passageirosTfd[assentoSelecionado - 1]}
-									<div class="border border-slate-200 bg-slate-50 p-3 space-y-1.5">
-										<div>Identificação: <strong class="text-slate-900">{pas.nome}</strong></div>
-										<div>Destino: <strong>{pas.dest}</strong></div>
-										<div>Acompanhante: <strong>{pas.acom}</strong></div>
-										<div>Status: <strong class="text-emerald-700">{pas.status}</strong></div>
-									</div>
-								{:else}
-									<div class="border border-dashed border-slate-300 p-6 text-center text-slate-500">
-										Assento disponível para alocação na regulação do transporte.
-									</div>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{:else if moduloAtivo === 'motorista'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[APP DO MOTORISTA · UNISISM MOTORISTA]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Diário de Bordo & Presença de Passageiros</h3>
-							</div>
-							<div class="flex items-center gap-2">
-								<span class="border border-emerald-600 bg-emerald-50 text-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase">
-									[OFFLINE FIRST · SQLite]
-								</span>
-								<button
-									type="button"
-									onclick={alternarStatusViagemMotorista}
-									class="border-2 border-blue-900 bg-blue-900 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-blue-800 cursor-pointer min-h-[36px]"
-								>
-									{motoristaStatusViagem === 'EM_TRANSITO' ? 'Concluir Viagem' : 'Reabrir Viagem'}
-								</button>
-							</div>
-						</div>
-
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-							<!-- Painel do Diário de Bordo (KM e Viagem) -->
-							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4 space-y-4">
-								<div class="text-[10px] text-slate-500 uppercase font-bold">CONTROLE DE BORDO & QUILOMETRAGEM</div>
-								
-								<div class="bg-white border border-slate-200 p-3 shadow-sm space-y-2">
-									<div class="flex justify-between items-center text-xs">
-										<span class="text-slate-600">VIAGEM:</span>
-										<strong class="text-blue-900">VG-2026-084</strong>
-									</div>
-									<div class="flex justify-between items-center text-xs">
-										<span class="text-slate-600">VEÍCULO:</span>
-										<strong class="text-slate-900">Van Renault Master (PE-2026)</strong>
-									</div>
-									<div class="flex justify-between items-center text-xs">
-										<span class="text-slate-600">DESTINO:</span>
-										<strong class="text-slate-900">Polo Regional / Hospitais</strong>
-									</div>
-									<div class="flex justify-between items-center text-xs pt-1 border-t border-slate-100">
-										<span class="text-slate-600">STATUS:</span>
-										<span class="border px-1.5 py-0.5 text-[9px] font-bold uppercase
-										{motoristaStatusViagem === 'EM_TRANSITO' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-emerald-600 bg-emerald-50 text-emerald-700'}">
-											{motoristaStatusViagem === 'EM_TRANSITO' ? 'EM TRÂNSITO' : 'VIAGEM CONCLUÍDA'}
-										</span>
-									</div>
-								</div>
-
-								<!-- Odômetro e Prestação de Contas -->
-								<div class="bg-blue-950 border border-blue-900 p-3 text-white space-y-2">
-									<div class="text-[10px] text-blue-200 font-bold uppercase">ODÔMETRO DIGITAL (PRESTAÇÃO DE CONTAS)</div>
-									<div class="grid grid-cols-2 gap-2 text-xs">
-										<div class="bg-blue-900/60 p-2 border border-blue-800">
-											<div class="text-[9px] text-blue-300">KM INICIAL (PARTIDA)</div>
-											<div class="text-sm font-bold text-white mt-0.5">{motoristaKmInicial} km</div>
-										</div>
-										<div class="bg-blue-900/60 p-2 border border-blue-800">
-											<div class="text-[9px] text-emerald-400">KM FINAL (CHEGADA)</div>
-											<div class="text-sm font-bold text-white mt-0.5">{motoristaKmFinal} km</div>
-										</div>
-									</div>
-									<div class="text-[10px] text-blue-200 text-right pt-1">
-										Total Percorrido: <strong class="text-emerald-400">335 km rodados</strong>
-									</div>
-								</div>
-							</div>
-
-							<!-- Lista de Passageiros e Embarque -->
-							<div class="lg:col-span-7 border border-slate-200 bg-white p-4 space-y-3">
-								<div class="flex items-center justify-between border-b border-slate-200 pb-2">
-									<span class="text-xs font-bold text-slate-700 uppercase">MANIFESTO DE EMBARQUE & PRESENÇA:</span>
-									<span class="text-[10px] text-slate-500 font-bold">3 PASSAGEIROS</span>
-								</div>
-
-								<div class="space-y-2">
-									{#each passageirosMotorista as p}
-										<div class="border border-slate-200 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
-											<div>
-												<div class="font-bold text-sm text-slate-900">{p.nome}</div>
-												<div class="text-[10px] text-slate-500">Acomp: {p.acompanhante} · Destino: {p.destino}</div>
-											</div>
-											<div class="flex items-center gap-2">
-												<span class="border px-2 py-0.5 text-[9px] font-bold uppercase
-												{p.status === 'EMBARCOU' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : p.status === 'DESEMBARCOU' ? 'border-blue-600 bg-blue-50 text-blue-700' : p.status === 'AUSENTE' ? 'border-red-600 bg-red-50 text-red-700' : 'border-amber-600 bg-amber-50 text-amber-700'}">
-													{p.status}
-												</span>
-												<button
-													type="button"
-													onclick={() => alternarPresencaPassageiro(p.id)}
-													class="border border-slate-300 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700 uppercase hover:bg-slate-200 cursor-pointer"
-												>
-													Alternar Status
-												</button>
-											</div>
-										</div>
-									{/each}
-								</div>
-
-								<div class="border border-dashed border-slate-200 p-2.5 bg-slate-50 text-[10px] text-slate-600 flex items-center justify-between">
-									<span>Controle de Abastecimento & Despesas:</span>
-									<strong class="text-blue-900 font-mono">Diesel S10 / Comprovante Anexado</strong>
-								</div>
-							</div>
-						</div>
-					</div>
-				{:else if moduloAtivo === 'tv'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[PAINEL DE SALA DE ESPERA]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Chamador Visual & Voz</h3>
-							</div>
-							<button
-								type="button"
-								onclick={() => dispararChamadaVozDemo('MARIA DAS DORES GOMES', 'CONSULTÓRIO ZERO TRÊS, GINECOLOGIA')}
-								disabled={testandoVoz}
-								class="border-2 border-blue-900 bg-blue-900 text-white px-4 py-2 text-xs font-bold uppercase hover:bg-blue-800 cursor-pointer disabled:opacity-50 min-h-[44px]"
-							>
-								TESTAR CHAMADA DE VOZ
-							</button>
-						</div>
-
-						<div class="border-2 border-blue-900 bg-blue-950 p-6 text-white text-center shadow-md">
-							<div class="flex justify-between items-center text-xs text-blue-200 border-b border-blue-800 pb-2">
-								<span>CENTRO DE ESPECIALIDADES</span>
-								<span class="text-emerald-400 font-bold">[PAINEL ATIVO]</span>
-							</div>
-
-							<div class="my-6 border border-blue-700 bg-blue-900/60 p-6">
-								<div class="text-xs text-blue-200 font-bold tracking-widest uppercase">CHAMANDO AGORA</div>
-								<div class="text-xl sm:text-3xl font-black text-white mt-2">SEVERINO RAMOS DE SOUZA</div>
-								<div class="text-sm font-bold text-emerald-400 mt-3">CONSULTÓRIO 02 — ORTOPEDIA</div>
-							</div>
-
-							<div class="flex justify-between items-center text-[10px] text-blue-300">
-								<span>Atendimento Regulado</span>
-								<span>Prioridade Legal Atendida</span>
-							</div>
-						</div>
-					</div>
-				{:else if moduloAtivo === 'app'}
-					<div class="space-y-6 font-mono">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-							<div>
-								<span class="text-xs font-bold text-blue-900 uppercase">[APP DO PACIENTE · UNISISM PACIENTE]</span>
-								<h3 class="font-sans text-lg sm:text-xl font-bold text-slate-900">Acompanhamento do Paciente</h3>
-							</div>
-							<div class="flex items-center gap-1.5">
-								<button
-									type="button"
-									onclick={() => (telaAppAtiva = 'consultas')}
-									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer min-h-[36px]
-									{telaAppAtiva === 'consultas' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-800'}"
-								>
-									Consultas
-								</button>
-								<button
-									type="button"
-									onclick={() => (telaAppAtiva = 'viagens')}
-									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer min-h-[36px]
-									{telaAppAtiva === 'viagens' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-800'}"
-								>
-									Viagens
-								</button>
-								<button
-									type="button"
-									onclick={() => (telaAppAtiva = 'vacinas')}
-									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer min-h-[36px]
-									{telaAppAtiva === 'vacinas' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-800'}"
-								>
-									Vacinas
-								</button>
-							</div>
-						</div>
-
-						<div class="flex justify-center">
-							<div class="w-full max-w-sm border-2 border-blue-900 bg-blue-950 p-4 text-white shadow-md">
-								<div class="text-[10px] text-blue-200 text-center pb-2 border-b border-blue-800 font-bold uppercase">
-									UNISISM PACIENTE · PORTAL DO PACIENTE
-								</div>
-
-								<div class="py-4 space-y-3 text-xs">
-									{#if telaAppAtiva === 'consultas'}
-										<div class="bg-blue-900/60 border border-blue-700 p-3">
-											<div class="text-[9px] text-emerald-400 font-bold uppercase">[CONSULTA CONFIRMADA]</div>
-											<div class="font-bold text-sm text-white mt-0.5">Cardiologia · Centro Médico</div>
-											<div class="text-[10px] text-blue-200 mt-1">Horário: 08:30h · Consultório 01</div>
-										</div>
-									{:else if telaAppAtiva === 'viagens'}
-										<div class="bg-blue-900/60 border border-blue-700 p-3">
-											<div class="text-[9px] text-blue-300 font-bold uppercase">[TRANSPORTE CONFIRMADO]</div>
-											<div class="font-bold text-sm text-white mt-0.5">Hospital Regional</div>
-											<div class="text-[10px] text-blue-200 mt-1">Saída: 05:00h · Ponto Central</div>
-										</div>
-									{:else if telaAppAtiva === 'vacinas'}
-										<div class="bg-blue-900/60 border border-blue-700 p-3 space-y-1">
-											<div class="text-[9px] text-emerald-400 font-bold uppercase">[CARTEIRA VACINAL DIGITAL]</div>
-											<div class="text-[11px] text-white">✓ Vacina Covid Bivalente (Registrada)</div>
-											<div class="text-[11px] text-white">✓ Vacina Influenza Trivalente (Campanha)</div>
-										</div>
-									{/if}
-								</div>
-							</div>
-						</div>
-					</div>
-				{/if}
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</section>
