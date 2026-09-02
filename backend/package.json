@@ -26,6 +26,7 @@
     "test:e2e": "ts-node --transpile-only tests/e2e-fluxo-integrado.test.ts",
     "typecheck": "tsc --noEmit",
     "pec:export": "ts-node-dev --transpile-only scripts/pec/pec-export-all.ts",
+    "pec:graphql": "ts-node-dev --transpile-only scripts/pec/pec-graphql-scraper.ts",
     "pec:import": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --commit",
     "pec:import:dry": "ts-node-dev --transpile-only scripts/pec/pec-import.ts --dry-run",
     "pec:debug": "ts-node-dev --transpile-only scripts/pec/pec-debug-1export.ts"

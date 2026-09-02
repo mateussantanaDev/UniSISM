@@ -106,48 +106,61 @@ if (!isMainThread) {
       const { PrismaClient } = await import('@prisma/client');
       const wPrisma = new PrismaClient();
 
-      // Detecta charset (tenta UTF-8 → senão Win-1252)
-      let content = fs.readFileSync(file, 'utf-8');
-      if (content.includes('')) {
-        const raw = fs.readFileSync(file);
-        try {
-          content = raw.toString('latin1');
-        } catch {}
+      let rows: any[] = [];
+      const isJsonl = file.endsWith('.jsonl') || file.endsWith('.json');
+
+      if (isJsonl) {
+        const lines = fs.readFileSync(file, 'utf-8').split(/\r?\n/).filter(Boolean);
+        rows = lines.map(l => {
+          try { return JSON.parse(l); } catch { return null; }
+        }).filter(Boolean);
+      } else {
+        // Detecta charset (tenta UTF-8 → senão Win-1252)
+        let content = fs.readFileSync(file, 'utf-8');
+        if (content.includes('')) {
+          const raw = fs.readFileSync(file);
+          try {
+            content = raw.toString('latin1');
+          } catch {}
+        }
+        rows = parseCsv(content);
       }
-      const rows = parseCsv(content);
+
       parentPort?.postMessage({ kind: 'parsed', file, rows: rows.length });
 
       const fileName = path.basename(file).toLowerCase();
       const defaultUbsId = Object.values(ubsMap)[0];
       let insertedCount = 0;
 
-      // ─── 1. CADASTRO INDIVIDUAL / PACIENTES ────────────────────────
-      if (fileName.includes('cadastro-individual') || fileName.includes('cidadao') || fileName.includes('paciente')) {
+      // ─── 1. CADASTRO INDIVIDUAL / PACIENTES (CSV ou JSONL GraphQL) ─
+      if (isJsonl || fileName.includes('cadastro-individual') || fileName.includes('cidadao') || fileName.includes('paciente')) {
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
-          const rawNome = getVal(row, 'Nome do Cidadão', 'Nome', 'NO_CIDADAO', 'Nome Cidadão', 'Nome Completo');
+          const rawNome = isJsonl ? row.nome : getVal(row, 'Nome do Cidadão', 'Nome', 'NO_CIDADAO', 'Nome Cidadão', 'Nome Completo');
           if (!rawNome) continue;
 
-          const rawCpf = cleanDigits(getVal(row, 'CPF', 'NU_CPF', 'Cpf'));
-          const rawCns = cleanDigits(getVal(row, 'CNS', 'Cartão Nacional de Saúde', 'Cartao SUS', 'NU_CNS', 'Cns'));
+          const rawCpf = cleanDigits(isJsonl ? row.cpf : getVal(row, 'CPF', 'NU_CPF', 'Cpf'));
+          const rawCns = cleanDigits(isJsonl ? row.cns : getVal(row, 'CNS', 'Cartão Nacional de Saúde', 'Cartao SUS', 'NU_CNS', 'Cns'));
           const cpfFinal = rawCpf.length === 11 ? rawCpf : (rawCns ? `CNS-${rawCns}` : `TEMP-${Date.now()}-${i}`);
           const cnsFinal = rawCns.length === 15 ? rawCns : (rawCpf.length === 11 ? `999${rawCpf.slice(0, 12)}` : null);
 
-          const dataNascimento = parseDate(getVal(row, 'Data de Nascimento', 'DT_NASCIMENTO', 'Nascimento', 'Data Nascimento'));
-          const sexoStr = getVal(row, 'Sexo', 'DS_SEXO', 'Gênero').toUpperCase();
+          const dataNascimento = parseDate(isJsonl ? row.dataNascimento : getVal(row, 'Data de Nascimento', 'DT_NASCIMENTO', 'Nascimento', 'Data Nascimento'));
+          const sexoStr = String(isJsonl ? (row.sexo || '') : getVal(row, 'Sexo', 'DS_SEXO', 'Gênero')).toUpperCase();
           const sexo = sexoStr.startsWith('M') ? 'MASCULINO' : (sexoStr.startsWith('F') ? 'FEMININO' : 'OUTRO');
 
-          const nomeMae = getVal(row, 'Nome da Mãe', 'Nome Mãe', 'NO_MAE') || null;
-          const telefone = getVal(row, 'Telefone Celular', 'Telefone', 'Celular', 'NU_TELEFONE_CELULAR') || null;
-          const endereco = getVal(row, 'Logradouro', 'Endereço', 'DS_LOGRADOURO', 'Endereco') || null;
-          const bairro = getVal(row, 'Bairro', 'NO_BAIRRO') || null;
-          const cep = cleanDigits(getVal(row, 'CEP', 'NU_CEP')) || null;
-          const microarea = getVal(row, 'Microárea', 'Microarea', 'NU_MICRO_AREA') || null;
-          const equipeSaudeFamilia = getVal(row, 'Equipe', 'Nome da Equipe', 'DS_EQUIPE') || null;
-          const agenteComunitario = getVal(row, 'Agente Comunitário', 'ACS', 'NO_PROFISSIONAL') || null;
+          const nomeMae = (isJsonl ? row.nomeMae : getVal(row, 'Nome da Mãe', 'Nome Mãe', 'NO_MAE')) || null;
+          const telefone = (isJsonl ? (row.telefoneCelular || row.telefoneResidencial) : getVal(row, 'Telefone Celular', 'Telefone', 'Celular', 'NU_TELEFONE_CELULAR')) || null;
+          const endereco = (isJsonl ? row.endereco : getVal(row, 'Logradouro', 'Endereço', 'DS_LOGRADOURO', 'Endereco')) || null;
+          const bairro = (isJsonl ? row.bairro : getVal(row, 'Bairro', 'NO_BAIRRO')) || null;
+          const cep = cleanDigits(isJsonl ? row.cep : getVal(row, 'CEP', 'NU_CEP')) || null;
+          const microarea = (isJsonl ? row.microarea : getVal(row, 'Microárea', 'Microarea', 'NU_MICRO_AREA')) || null;
+          const equipeSaudeFamilia = (isJsonl ? row.equipe : getVal(row, 'Equipe', 'Nome da Equipe', 'DS_EQUIPE')) || null;
+          const agenteComunitario = (isJsonl ? row.acs : getVal(row, 'Agente Comunitário', 'ACS', 'NO_PROFISSIONAL')) || null;
 
           // Resolve UBS por correspondência de nome/INE
-          const rawUbs = getVal(row, 'Unidade de Saúde', 'Unidade', 'UBS', 'CNES', 'INE', 'NO_UNIDADE_SAUDE');
+          const rawUbs = isJsonl
+            ? (row.cidadaoVinculacaoEquipe?.unidadeSaude?.nome || '')
+            : getVal(row, 'Unidade de Saúde', 'Unidade', 'UBS', 'CNES', 'INE', 'NO_UNIDADE_SAUDE');
           const matchedUbsSlug = Object.keys(ubsMap).find(k => k.includes(slug(rawUbs)) || slug(rawUbs).includes(k));
           const ubsId = (matchedUbsSlug ? ubsMap[matchedUbsSlug] : null) || defaultUbsId;
 
@@ -290,15 +303,18 @@ if (!isMainThread) {
     const csvFiles = fs.existsSync(CSV_DIR)
       ? fs.readdirSync(CSV_DIR).filter(f => f.endsWith('.csv')).map(f => path.join(CSV_DIR, f))
       : [];
-    log('INFO', `${csvFiles.length} CSVs encontrados`);
+    const jsonlFiles = fs.existsSync(PACIENTES_DIR)
+      ? fs.readdirSync(PACIENTES_DIR).filter(f => f.endsWith('.jsonl') || f.endsWith('.json')).map(f => path.join(PACIENTES_DIR, f))
+      : [];
+    const allFiles = [...csvFiles, ...jsonlFiles];
+    log('INFO', `${allFiles.length} arquivos encontrados (${csvFiles.length} CSVs, ${jsonlFiles.length} JSONLs)`);
 
-    // TODO: incluir JSONs do deep-scraper em outra fase
-    if (csvFiles.length === 0) {
-      log('WARN', 'Nenhum CSV encontrado — rode pec-export-all.ts primeiro');
+    if (allFiles.length === 0) {
+      log('WARN', 'Nenhum arquivo encontrado em data/pec-csv ou data/pec-pacientes — rode pec-export-all.ts ou pec-graphql-scraper.ts primeiro');
       return;
     }
 
-    await runWorkerPool(csvFiles, ubsMap, prefeituraId);
+    await runWorkerPool(allFiles, ubsMap, prefeituraId);
   }
 
   main()
