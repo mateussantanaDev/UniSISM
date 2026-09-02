@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../src/infrastructure/database/prisma';
 import { CSV_DIR, PACIENTES_DIR, UBS_AGUAS_BELAS, log, slug } from './pec-common';
 
@@ -62,6 +63,12 @@ function parseRow(line: string, sep: string): string[] {
 
 function cleanDigits(s?: string): string {
   return (s || '').replace(/\D/g, '');
+}
+
+function formatarCpf(val: string): string {
+  const d = cleanDigits(val);
+  if (d.length !== 11) return val;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
 function parseDate(s?: string): Date {
@@ -210,6 +217,30 @@ if (!isMainThread) {
                 ubsId,
               },
             });
+
+            // Criação automática simultânea do usuário no App do Paciente (PacienteConta)
+            if (rawCpf.length === 11) {
+              const senhaHash = await bcrypt.hash(rawCpf, 8);
+              await wPrisma.pacienteConta.upsert({
+                where: { cpf: rawCpf },
+                update: {
+                  nome: rawNome,
+                  cpfFormatado: formatarCpf(rawCpf),
+                  telefone: telefone || undefined,
+                  ubsVinculadaId: ubsId,
+                },
+                create: {
+                  cpf: rawCpf,
+                  cpfFormatado: formatarCpf(rawCpf),
+                  nome: rawNome,
+                  telefone: telefone || null,
+                  senhaHash,
+                  senhaProvisoria: true,
+                  ativo: true,
+                  ubsVinculadaId: ubsId,
+                },
+              });
+            }
           }
           insertedCount++;
 

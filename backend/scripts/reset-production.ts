@@ -1,50 +1,54 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
-import fs from 'node:fs';
-import path from 'node:path';
 import { prisma } from '../src/infrastructure/database/prisma';
-import { PACIENTES_DIR, UBS_AGUAS_BELAS } from './pec/pec-common';
 
 /**
- * RESET DE PRODUÇÃO · UNISISM (Águas Belas / PE)
+ * RESET TOTAL DO UNISISM · BANCO VIRGEM PARA PRODUÇÃO
  *
- * 1. Zera dados transacionais e de teste (filas, agendamentos, encaminhamentos, viagens, sessões, logs).
- * 2. Garante a infraestrutura oficial da Prefeitura de Águas Belas.
- * 3. Garante as 13 Unidades Básicas de Saúde (UBSs).
- * 4. Garante a infraestrutura do CEM (Centro de Especialidades Médicas) e CEO (Centro de Especialidades Odontológicas).
- * 5. Injeta o usuário Administrador / Desenvolvedor Global:
- *      Email: mateushenrivieira@gmail.com
- *      Senha: Aguasbelas#1
- *      Role:  DESENVOLVEDOR (Acesso irrestrito)
- * 6. Preserva os 58.312 pacientes do PEC e suas respectivas contas de acesso.
+ * 1. Limpa ABSOLUTAMENTE TUDO (centros, consultórios, cadeiras, especialidades,
+ *    escalas, atendimentos, encaminhamentos, tfd, pacientes, contas de app,
+ *    ubss, prefeituras e atendentes de teste).
+ * 2. Injeta APENAS e EXCLUSIVAMENTE o usuário Desenvolvedor / Administrador Global:
+ *      - Email:     mateushenrivieira@gmail.com
+ *      - Senha:     Aguasbelas#1
+ *      - Role:      DESENVOLVEDOR (Acesso irrestrito a todos os módulos)
+ *      - Matrícula: SMS-DEV-001
+ *      - Nome:      Mateus Henrique Vieira
+ *
+ * O banco fica 100% zerado e pronto para receber a coleta e importação limpa do PEC.
  */
 
 const EMAIL_ADMIN = 'mateushenrivieira@gmail.com';
 const SENHA_ADMIN = 'Aguasbelas#1';
 const NOME_ADMIN = 'Mateus Henrique Vieira';
 const MATRICULA_ADMIN = 'SMS-DEV-001';
+const CPF_ADMIN = '00000000191';
 
 async function main() {
   console.log('════════════════════════════════════════════════════════════════');
-  console.log('🚀 INICIANDO RESET DE PRODUÇÃO — UNISISM ÁGUAS BELAS');
+  console.log('🧹 INICIANDO RESET TOTAL DO BANCO DE DADOS (ZERO ABSOLUTO)');
   console.log('════════════════════════════════════════════════════════════════');
 
   // ────────────────────────────────────────────────────────────────
-  // 1. Limpeza de tabelas transacionais e operacionais de teste
+  // 1. ZERAR ABSOLUTAMENTE TODAS AS TABELAS
   // ────────────────────────────────────────────────────────────────
-  console.log('\n🧹 1. Limpando dados transacionais e registros de teste...');
+  console.log('\n[1/3] Deletando todos os dados operacionais, clínicos e cadastrais...');
 
-  // CEM / CEO
+  // CEM / CEO / Especialidades
   await prisma.atendimentoProcedimentoRealizado.deleteMany().catch(() => {});
   await prisma.agendamentoCentro.deleteMany().catch(() => {});
   await prisma.escalaEspecialista.deleteMany().catch(() => {});
+  await prisma.salaConsultorio.deleteMany().catch(() => {});
+  await prisma.especialidadeCatalogo.deleteMany().catch(() => {});
+  await prisma.cotaUbs.deleteMany().catch(() => {});
 
   // Encaminhamentos & Triagem
   await prisma.eventoTimeline.deleteMany().catch(() => {});
   await prisma.anexoDocumento.deleteMany().catch(() => {});
   await prisma.encaminhamento.deleteMany().catch(() => {});
-  await prisma.relatorio.deleteMany().catch(() => {});
+  await prisma.especialidadeRecomendacao.deleteMany().catch(() => {});
   await prisma.relatorioAudit.deleteMany().catch(() => {});
+  await prisma.relatorio.deleteMany().catch(() => {});
 
   // Atendimentos UBS & Prontuários
   await prisma.atendimento.deleteMany().catch(() => {});
@@ -56,7 +60,7 @@ async function main() {
   await prisma.medicamentoEmUso.deleteMany().catch(() => {});
   await prisma.pacienteProntuarioAudit.deleteMany().catch(() => {});
 
-  // TFD Módulo
+  // TFD Módulo Completo
   await prisma.anexoSolicitacaoTFD.deleteMany().catch(() => {});
   await prisma.solicitacaoTFD.deleteMany().catch(() => {});
   await prisma.tfdPacienteSolicitacao.deleteMany().catch(() => {});
@@ -66,18 +70,29 @@ async function main() {
   await prisma.saldoAjuste.deleteMany().catch(() => {});
   await prisma.saldoVeiculo.deleteMany().catch(() => {});
   await prisma.viagemFrota.deleteMany().catch(() => {});
+  await prisma.veiculoTFD.deleteMany().catch(() => {});
+  await prisma.motoristaTFD.deleteMany().catch(() => {});
   await prisma.tfdAuditLog.deleteMany().catch(() => {});
   await prisma.tfdIdempotencyKey.deleteMany().catch(() => {});
   await prisma.aporteSaldoFrota.deleteMany().catch(() => {});
   await prisma.aporteSaldoAjudaCusto.deleteMany().catch(() => {});
+  await prisma.saldoAjudaCustoAjuste.deleteMany().catch(() => {});
+  await prisma.saldoAjudaCustoMes.deleteMany().catch(() => {});
 
-  // Sessões, Notificações & Auditoria
+  // App do Paciente / Notificações / Banners
   await prisma.sessaoPaciente.deleteMany().catch(() => {});
   await prisma.pacienteRefreshToken.deleteMany().catch(() => {});
   await prisma.pacienteRecoveryToken.deleteMany().catch(() => {});
   await prisma.pacienteDispositivo.deleteMany().catch(() => {});
   await prisma.notificacaoPaciente.deleteMany().catch(() => {});
   await prisma.smsBannerView.deleteMany().catch(() => {});
+  await prisma.smsBanner.deleteMany().catch(() => {});
+
+  // Contas de Pacientes e Prontuários de Pacientes
+  await prisma.pacienteConta.deleteMany().catch(() => {});
+  await prisma.paciente.deleteMany().catch(() => {});
+
+  // Sessões e Segurança de Atendentes
   await prisma.sessao.deleteMany().catch(() => {});
   await prisma.refreshToken.deleteMany().catch(() => {});
   await prisma.passwordResetCode.deleteMany().catch(() => {});
@@ -85,181 +100,84 @@ async function main() {
   await prisma.auditoriaLog.deleteMany().catch(() => {});
   await prisma.atividadeAtendente.deleteMany().catch(() => {});
   await prisma.outboxEvent.deleteMany().catch(() => {});
+  await prisma.configuracaoIntegracao.deleteMany().catch(() => {});
+  await prisma.medicoAtendente.deleteMany().catch(() => {});
 
-  // Limpar outros atendentes mantendo a base zerada para os usuários de produção
-  await prisma.atendente.deleteMany({
-    where: { email: { not: EMAIL_ADMIN } },
-  }).catch(() => {});
+  // Limpar Atendentes, UBSs e Prefeituras
+  await prisma.atendente.deleteMany().catch(() => {});
+  await prisma.ubs.deleteMany().catch(() => {});
+  await prisma.prefeitura.deleteMany().catch(() => {});
 
-  console.log('✓ Tabelas transacionais e operacionais zeradas com sucesso.');
-
-  // ────────────────────────────────────────────────────────────────
-  // 2. Garantir Prefeitura Municipal de Águas Belas
-  // ────────────────────────────────────────────────────────────────
-  console.log('\n🏛️ 2. Configurando Prefeitura Municipal de Águas Belas...');
-
-  const prefeitura = await prisma.prefeitura.upsert({
-    where: { cnpj: '11286374000131' },
-    update: {
-      nome: 'Prefeitura Municipal de Águas Belas',
-      municipio: 'Águas Belas',
-      uf: 'PE',
-      ativa: true,
-    },
-    create: {
-      nome: 'Prefeitura Municipal de Águas Belas',
-      municipio: 'Águas Belas',
-      uf: 'PE',
-      cnpj: '11286374000131',
-      ativa: true,
-    },
-  });
-  console.log(`✓ Prefeitura OK: ${prefeitura.nome} (ID: ${prefeitura.id})`);
+  console.log('✓ Banco de dados 100% limpo e zerado.');
 
   // ────────────────────────────────────────────────────────────────
-  // 3. Garantir as 13 UBSs Oficiais
+  // 2. INJETAR O USUÁRIO ADMINISTRADOR GLOBAL ÚNICO
   // ────────────────────────────────────────────────────────────────
-  console.log('\n🏥 3. Configurando as 13 Unidades Básicas de Saúde...');
-
-  const ubsMap: Record<string, string> = {};
-  for (let i = 0; i < UBS_AGUAS_BELAS.length; i++) {
-    const u = UBS_AGUAS_BELAS[i];
-    const cnes = u.ine || `2600${String(i + 1).padStart(3, '0')}`;
-    const createdUbs = await prisma.ubs.upsert({
-      where: { cnes },
-      update: {
-        nome: u.nome,
-        municipio: 'Águas Belas',
-        uf: 'PE',
-        ativa: true,
-        prefeituraId: prefeitura.id,
-      },
-      create: {
-        nome: u.nome,
-        municipio: 'Águas Belas',
-        uf: 'PE',
-        cnes,
-        endereco: `Águas Belas · PE`,
-        ativa: true,
-        prefeituraId: prefeitura.id,
-      },
-    });
-    ubsMap[u.nome] = createdUbs.id;
-  }
-  console.log(`✓ 13 UBSs municipais ativas e vinculadas à Prefeitura.`);
-
-  // ────────────────────────────────────────────────────────────────
-  // 4. Garantir Estrutura do CEM e CEO
-  // ────────────────────────────────────────────────────────────────
-  console.log('\n🏥 4. Configurando Consultórios e Cadeiras Odontológicas (CEM / CEO)...');
-
-  await prisma.salaConsultorio.deleteMany().catch(() => {});
-
-  // Consultórios CEM
-  const salasCem = [
-    { codigo: 'CONS-01', nome: 'Consultório 01 — Cardiologia / Clínica', ala: 'Ala A · Médica', especialidade: 'Cardiologia' },
-    { codigo: 'CONS-02', nome: 'Consultório 02 — Ortopedia / Traumatologia', ala: 'Ala A · Médica', especialidade: 'Ortopedia' },
-    { codigo: 'CONS-03', nome: 'Consultório 03 — Ginecologia & Obstetrícia', ala: 'Ala B · Saúde da Mulher', especialidade: 'Ginecologia' },
-    { codigo: 'CONS-04', nome: 'Consultório 04 — Pediatria Especializada', ala: 'Ala B · Pediatria', especialidade: 'Pediatria' },
-    { codigo: 'CONS-05', nome: 'Consultório 05 — Psiquiatria & Saúde Mental', ala: 'Ala C · Psicossocial', especialidade: 'Psiquiatria' },
-    { codigo: 'CONS-06', nome: 'Consultório 06 — Dermatologia & Pequenas Cirurgias', ala: 'Ala C · Cirúrgica', especialidade: 'Dermatologia' },
-  ];
-
-  for (const s of salasCem) {
-    await prisma.salaConsultorio.create({
-      data: {
-        codigo: s.codigo,
-        nome: s.nome,
-        ala: s.ala,
-        especialidadePrincipal: s.especialidade,
-        status: 'DISPONIVEL',
-        equipamentos: ['Maca Clínica', 'Negatoscópio', 'Esfigmomanômetro', 'Computador / Prontuário'],
-        prefeituraId: prefeitura.id,
-      },
-    });
-  }
-
-  // Cadeiras Odontológicas CEO
-  const cadeirasCeo = [
-    { codigo: 'CAD-01', nome: 'Cadeira Odontológica 01 — Endodontia', ala: 'Setor A · Endodontia', especialidade: 'Endodontia' },
-    { codigo: 'CAD-02', nome: 'Cadeira Odontológica 02 — Cirurgia Bucomaxilofacial', ala: 'Setor A · Cirurgia Oral', especialidade: 'Cirurgia Oral Menor' },
-    { codigo: 'CAD-03', nome: 'Cadeira Odontológica 03 — Periodontia & Diagnóstico', ala: 'Setor B · Periodontia', especialidade: 'Periodontia' },
-    { codigo: 'CAD-04', nome: 'Cadeira Odontológica 04 — Odontopediatria / PNE', ala: 'Setor B · Especial', especialidade: 'Odontopediatria' },
-  ];
-
-  for (const c of cadeirasCeo) {
-    await prisma.salaConsultorio.create({
-      data: {
-        codigo: c.codigo,
-        nome: c.nome,
-        ala: c.ala,
-        especialidadePrincipal: c.especialidade,
-        status: 'DISPONIVEL',
-        equipamentos: ['Equipo Odontológico Completo', 'Ultrassom Odontológico', 'Fotopolimerizador', 'Raio-X Odontológico Digital'],
-        prefeituraId: prefeitura.id,
-      },
-    });
-  }
-  console.log(`✓ 6 Consultórios CEM e 4 Cadeiras Odontológicas CEO criados.`);
-
-  // ────────────────────────────────────────────────────────────────
-  // 5. Injetar Usuário Administrador Oficial
-  // ────────────────────────────────────────────────────────────────
-  console.log('\n👑 5. Injetando Usuário Administrador Oficial...');
+  console.log('\n[2/3] Injetando o Usuário Administrador Global...');
 
   const senhaHash = await bcrypt.hash(SENHA_ADMIN, 10);
 
-  const admin = await prisma.atendente.upsert({
-    where: { email: EMAIL_ADMIN },
-    update: {
-      nome: NOME_ADMIN,
-      matricula: MATRICULA_ADMIN,
-      senhaHash,
-      cargo: 'DESENVOLVEDOR',
-      funcao: 'Administrador Global · UNISISM',
-      role: 'DESENVOLVEDOR',
-      ativo: true,
-      bloqueadoAte: null,
-      senhaAlteradaEm: new Date(),
-    },
-    create: {
+  const admin = await prisma.atendente.create({
+    data: {
       email: EMAIL_ADMIN,
       nome: NOME_ADMIN,
       matricula: MATRICULA_ADMIN,
-      cpf: '00000000191',
+      cpf: CPF_ADMIN,
       senhaHash,
       cargo: 'DESENVOLVEDOR',
-      funcao: 'Administrador Global · UNISISM',
+      funcao: 'Administrador Geral da Plataforma UNISISM',
       role: 'DESENVOLVEDOR',
       ativo: true,
-      ubsId: null,
-      prefeituraId: null,
+      ubsId: null,         // GLOBAL — sem restrição de UBS
+      prefeituraId: null,  // GLOBAL — sem restrição de Prefeitura
     },
   });
-  console.log(`✓ Administrador garantido: ${admin.nome} (${admin.email})`);
+
+  console.log(`✓ Administrador criado com sucesso: ${admin.nome} (${admin.email})`);
 
   // ────────────────────────────────────────────────────────────────
-  // 6. Base de Pacientes
+  // 3. AUDITORIA FINAL DO ESTADO DO BANCO
   // ────────────────────────────────────────────────────────────────
-  const totalPacientes = await prisma.paciente.count({ where: { deletadoEm: null } });
-  const totalContas = await prisma.pacienteConta.count();
-  console.log(`\n👥 6. Base de Pacientes:`);
-  console.log(`   - Total no Prontuário PEC: ${totalPacientes.toLocaleString('pt-BR')} cidadãos`);
-  console.log(`   - Total de Contas de App:  ${totalContas.toLocaleString('pt-BR')} contas`);
+  console.log('\n[3/3] Verificando integridade pós-reset...');
+
+  const stats = {
+    atendentes: await prisma.atendente.count(),
+    prefeituras: await prisma.prefeitura.count(),
+    ubs: await prisma.ubs.count(),
+    pacientes: await prisma.paciente.count(),
+    pacienteContas: await prisma.pacienteConta.count(),
+    salasConsultorios: await prisma.salaConsultorio.count(),
+    especialidades: await prisma.especialidadeCatalogo.count(),
+    escalas: await prisma.escalaEspecialista.count(),
+    agendamentosCentro: await prisma.agendamentoCentro.count(),
+    encaminhamentos: await prisma.encaminhamento.count(),
+    atendimentos: await prisma.atendimento.count(),
+    viagensTfd: await prisma.viagemFrota.count(),
+  };
+
+  console.log('\n📊 ESTADO FINAL DO BANCO DE DADOS:');
+  for (const [k, v] of Object.entries(stats)) {
+    const isExpected = (k === 'atendentes' && v === 1) || (k !== 'atendentes' && v === 0);
+    console.log(`   ${isExpected ? '✅' : '❌'} ${k.padEnd(22)}: ${v}`);
+  }
+
+  if (stats.atendentes !== 1) {
+    throw new Error('Falha: esperado exatamente 1 atendente no banco!');
+  }
 
   console.log('\n════════════════════════════════════════════════════════════════');
-  console.log('✅ AMBIENTE 100% PRONTO PARA PRODUÇÃO!');
+  console.log('🎉 UNISISM ZERADO COM SUCESSO · PRONTO PARA PRODUÇÃO!');
   console.log('════════════════════════════════════════════════════════════════');
-  console.log(`  URL:         https://unisism.vercel.app`);
-  console.log(`  Login Admin: ${EMAIL_ADMIN}`);
+  console.log(`  Painel:      https://unisism.vercel.app`);
+  console.log(`  Login:       ${EMAIL_ADMIN}`);
   console.log(`  Senha:       ${SENHA_ADMIN}`);
-  console.log(`  Perfil:      DESENVOLVEDOR (Acesso total)`);
+  console.log(`  Perfil:      DESENVOLVEDOR (Acesso Global)`);
   console.log('════════════════════════════════════════════════════════════════\n');
 
   await prisma.$disconnect();
 }
 
 main().catch((err) => {
-  console.error('✗ Erro no reset de produção:', err);
+  console.error('✗ Erro no reset total:', err);
   process.exit(1);
 });
