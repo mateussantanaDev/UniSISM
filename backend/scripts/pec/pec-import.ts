@@ -148,12 +148,12 @@ if (!isMainThread) {
 
           const rawCpf = cleanDigits(isJsonl ? row.cpf : getVal(row, 'CPF', 'NU_CPF', 'Cpf'));
           const rawCns = cleanDigits(isJsonl ? row.cns : getVal(row, 'CNS', 'Cartão Nacional de Saúde', 'Cartao SUS', 'NU_CNS', 'Cns'));
-          const cpfFinal = rawCpf.length === 11 ? rawCpf : (rawCns ? `CNS-${rawCns}` : `TEMP-${Date.now()}-${i}`);
-          const cnsFinal = rawCns.length === 15 ? rawCns : (rawCpf.length === 11 ? `999${rawCpf.slice(0, 12)}` : null);
+          const validCns = rawCns.length === 15 ? rawCns : null;
+          const cpfFinal = rawCpf.length === 11 ? rawCpf : (validCns ? `CNS-${validCns}` : `TEMP-${isJsonl ? (row.id || i) : i}`);
 
           const dataNascimento = parseDate(isJsonl ? row.dataNascimento : getVal(row, 'Data de Nascimento', 'DT_NASCIMENTO', 'Nascimento', 'Data Nascimento'));
           const sexoStr = String(isJsonl ? (row.sexo || '') : getVal(row, 'Sexo', 'DS_SEXO', 'Gênero')).toUpperCase();
-          const sexo = sexoStr.startsWith('M') ? 'MASCULINO' : (sexoStr.startsWith('F') ? 'FEMININO' : 'OUTRO');
+          const sexo = sexoStr.startsWith('M') ? 'M' : (sexoStr.startsWith('F') ? 'F' : 'OUTRO');
 
           const nomeMae = (isJsonl ? row.nomeMae : getVal(row, 'Nome da Mãe', 'Nome Mãe', 'NO_MAE')) || null;
           const telefone = (isJsonl ? (row.telefoneCelular || row.telefoneResidencial) : getVal(row, 'Telefone Celular', 'Telefone', 'Celular', 'NU_TELEFONE_CELULAR')) || null;
@@ -176,7 +176,7 @@ if (!isMainThread) {
               where: { cpf: cpfFinal },
               update: {
                 nome: rawNome,
-                cartaoSus: cnsFinal,
+                cartaoSus: validCns || undefined,
                 dataNascimento,
                 sexo: sexo as any,
                 nomeMae,
@@ -194,7 +194,7 @@ if (!isMainThread) {
               create: {
                 nome: rawNome,
                 cpf: cpfFinal,
-                cartaoSus: cnsFinal,
+                cartaoSus: validCns || undefined,
                 dataNascimento,
                 sexo: sexo as any,
                 nomeMae,
