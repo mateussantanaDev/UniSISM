@@ -55,6 +55,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Acessar Terminal · UniSISM</title>
+</svelte:head>
+
 <div class="border border-slate-200 bg-white">
 	<!-- Cabeçalho do form -->
 	<div class="border-b border-slate-200 bg-slate-50 px-6 py-4">

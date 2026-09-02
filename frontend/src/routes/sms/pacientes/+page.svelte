@@ -144,6 +144,10 @@
 	];
 </script>
 
+<svelte:head>
+	<title>Pacientes da Rede Municipal · UniSISM</title>
+</svelte:head>
+
 <div class="flex flex-col gap-4">
 	<!-- KPIs municipais -->
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">

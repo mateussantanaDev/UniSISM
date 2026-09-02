@@ -123,6 +123,10 @@
 	];
 </script>
 
+<svelte:head>
+	<title>Pacientes do Posto · PEC · UniSISM</title>
+</svelte:head>
+
 <div class="flex flex-col gap-4">
 	<!-- Métricas -->
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">

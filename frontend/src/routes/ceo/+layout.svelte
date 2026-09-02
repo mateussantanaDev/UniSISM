@@ -155,6 +155,10 @@
 	let meta = $derived(pageTitles[page.url.pathname] ?? { label: 'CENTRO DE ESPECIALIDADES ODONTOLÓGICAS (CEO)', crumb: 'CEO' });
 </script>
 
+<svelte:head>
+	<title>{meta.label} · CEO · UniSISM</title>
+</svelte:head>
+
 <div class="flex h-screen w-screen overflow-hidden bg-slate-100 font-mono text-slate-900">
 	<SidebarCeo />
 

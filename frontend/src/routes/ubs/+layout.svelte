@@ -235,6 +235,10 @@
 	);
 </script>
 
+<svelte:head>
+	<title>{pageInfo.label} · UBS · UniSISM</title>
+</svelte:head>
+
 {#if autenticando}
 	<div class="flex h-screen items-center justify-center bg-slate-50">
 		<div class="flex flex-col items-center gap-3">
