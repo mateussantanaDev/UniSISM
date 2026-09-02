@@ -143,6 +143,28 @@
 	// ─── INTERATIVIDADE APP DO CIDADÃO ───────────────────────────────────────
 	let telaAppAtiva = $state<'consultas' | 'viagens' | 'vacinas' | 'avisos'>('consultas');
 
+	// ─── FAQ GOVERNAMENTAL ───────────────────────────────────────────────────
+	let faqAberta = $state<number | null>(0);
+
+	const faqs = [
+		{
+			pergunta: 'Como o UniSISM se integra com o e-SUS APS e a base do PEC?',
+			resposta: 'A integração é nativa. O UniSISM sincroniza os prontuários, cadastros individuais de cidadãos (CNS/CPF), vacinas e condições de saúde em tempo real via barramento seguro, sem necessidade de recadastramento manual.'
+		},
+		{
+			pergunta: 'É necessário adquirir servidores locais ou computadores novos?',
+			resposta: 'Não. O UniSISM roda 100% em nuvem de alta disponibilidade, com interface leve e otimizada que funciona perfeitamente em computadores já existentes nas UBSs, tablets e smartphones da equipe de saúde.'
+		},
+		{
+			pergunta: 'O sistema atende às exigências do Tribunal de Contas (TCE/TCU) e CFM?',
+			resposta: 'Sim. Todas as transações médicas e regulatórias possuem trilhas de auditoria imutáveis criptografadas no PostgreSQL. Além disso, as autorizações e recibos de ajuda de custo do TFD contam com validação ICP-Brasil.'
+		},
+		{
+			pergunta: 'Qual o tempo médio de implantação e treinamento em um município?',
+			resposta: 'O processo completo leva de 7 a 15 dias úteis. Nossa equipe cuida da carga inicial da base de dados dos munícipes, configuração das UBSs/cotas e capacitação presencial ou remota dos operadores.'
+		}
+	];
+
 	// Formulário de Demonstração B2G
 	let formNome = $state('');
 	let formMunicipio = $state('');
@@ -150,6 +172,7 @@
 	let formCargo = $state('Secretário(a) de Saúde');
 	let formEmail = $state('');
 	let formTelefone = $state('');
+	let formPorte = $state('30.000 a 100.000 habitantes');
 	let enviandoForm = $state(false);
 	let formEnviado = $state(false);
 	let protocoloDemonstracao = $state('');
@@ -209,11 +232,50 @@
 </script>
 
 <svelte:head>
-	<title>UniSISM · Sistema Operacional de Saúde Pública Municipal</title>
+	<title>UniSISM · Sistema Integrado de Saúde Pública Municipal (SUS B2G)</title>
 	<meta
 		name="description"
-		content="Plataforma integrada de regulação em tempo real, prontuário digital e atendimento clínico que conecta UBSs, Centros de Especialidades (CEM/CEO), Frotas TFD, Painéis Smart TV e o Cidadão."
+		content="O Sistema Operacional da Saúde Pública Municipal que integra UBSs, Centros Especializados (CEM/CEO), Regulação em Tempo Real, TFD com assinatura digital e Chamador por Smart TV."
 	/>
+	<meta name="keywords" content="saúde pública, SUS, regulação municipal, prontuário eletrônico, e-SUS, PEC, CEM, CEO, TFD, telemedicina, gestão de saúde pública, prefeituras" />
+	<meta name="author" content="UniSISM Governança em Saúde" />
+	<link rel="canonical" href="https://unisism.vercel.app/" />
+
+	<!-- OpenGraph -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://unisism.vercel.app/" />
+	<meta property="og:title" content="UniSISM · Sistema Integrado de Saúde Pública Municipal" />
+	<meta property="og:description" content="Plataforma integrada de regulação em tempo real, prontuário digital e atendimento clínico para prefeituras e secretarias de saúde." />
+	<meta property="og:image" content="https://unisism.vercel.app/og-unisism.png" />
+	<meta property="og:locale" content="pt_BR" />
+
+	<!-- Twitter Cards -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="UniSISM · Sistema Integrado de Saúde Pública Municipal" />
+	<meta name="twitter:description" content="Regulação em tempo real, gestão de cotas por UBS, frotas TFD e prontuário digital em conformidade total com LGPD e CFM." />
+	<meta name="twitter:image" content="https://unisism.vercel.app/og-unisism.png" />
+
+	<!-- JSON-LD Structured Data -->
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "SoftwareApplication",
+			"name": "UniSISM",
+			"applicationCategory": "HealthApplication",
+			"operatingSystem": "Web, iOS, Android",
+			"description": "Sistema Operacional Integrado de Regulação e Atenção à Saúde Pública Municipal (SUS).",
+			"offers": {
+				"@type": "Offer",
+				"price": "0",
+				"priceCurrency": "BRL"
+			},
+			"author": {
+				"@type": "Organization",
+				"name": "UniSISM Governança em Saúde",
+				"url": "https://unisism.vercel.app"
+			}
+		}
+	</script>
 </svelte:head>
 
 <div class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-900 selection:text-white">
@@ -267,6 +329,7 @@
 				<a href="#solucao" class="hover:text-blue-900 transition-colors">O Que Resolvemos</a>
 				<a href="#modulos" class="hover:text-blue-900 transition-colors">Módulos Interativos</a>
 				<a href="#case" class="hover:text-blue-900 transition-colors">Case Águas Belas</a>
+				<a href="#faq" class="hover:text-blue-900 transition-colors">Dúvidas Frequentes</a>
 				<a href="#seguranca" class="hover:text-blue-900 transition-colors">Auditoria & LGPD</a>
 				<a href="#demonstracao" class="text-blue-700 hover:text-blue-900 transition-colors">Implantar</a>
 			</nav>
@@ -325,7 +388,7 @@
 					<div class="flex flex-wrap items-center gap-4 pt-2">
 						<a
 							href="/login"
-							class="flex items-center gap-3 border-2 border-slate-950 bg-blue-900 px-6 py-3.5 font-mono text-sm font-bold tracking-wider text-white shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+							class="flex items-center gap-3 border-2 border-slate-950 bg-blue-900 px-6 py-3.5 font-mono text-sm font-bold tracking-wider text-white shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer"
 						>
 							<span>ACESSAR O SISTEMA</span>
 							<span class="text-lg leading-none">→</span>
@@ -333,7 +396,7 @@
 
 						<a
 							href="#demonstracao"
-							class="flex items-center gap-2 border-2 border-slate-800 bg-white px-6 py-3.5 font-mono text-sm font-bold tracking-wider text-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,0.1)] transition-all hover:bg-slate-50"
+							class="flex items-center gap-2 border-2 border-slate-800 bg-white px-6 py-3.5 font-mono text-sm font-bold tracking-wider text-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,0.1)] transition-all hover:bg-slate-50 cursor-pointer"
 						>
 							<span>AGENDAR DEMONSTRAÇÃO B2G</span>
 						</a>
@@ -1196,17 +1259,17 @@
 			<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 				<div class="lg:col-span-6 space-y-6">
 					<div class="inline-flex items-center gap-2 border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] font-mono font-bold tracking-widest text-slate-700 uppercase">
-						Validação em Ambiente Real
+						Validação em Ambiente Real · SUS Brasil
 					</div>
 					<h2 class="font-sans text-3xl sm:text-4xl font-black tracking-tight text-slate-950">
 						Case Oficial: Prefeitura Municipal de Águas Belas / PE
 					</h2>
 					<p class="text-slate-600 text-base sm:text-lg leading-relaxed font-medium">
-						No Agreste Pernambucano, Águas Belas integrou 100% da sua base do <strong>PEC e-SUS Cloud</strong> com o UniSISM. Hoje, os 58.312 cidadãos distribuídos entre a sede urbana, distritos rurais, comunidades quilombolas e a Terra Indígena Fulni-ô contam com regulação justa e acolhimento digno.
+						No Agreste Meridional Pernambucano, Águas Belas integrou 100% da sua base do <strong>PEC e-SUS Cloud</strong> com o UniSISM. Hoje, os 58.312 cidadãos distribuídos entre a sede urbana, distritos rurais, comunidades quilombolas e a Terra Indígena Fulni-ô contam com regulação justa, ágil e acolhimento humanizado.
 					</p>
 
-					<div class="border-l-4 border-blue-900 pl-4 py-1 italic text-slate-700 text-sm font-medium">
-						"A integração do UniSISM eliminou a necessidade do cidadão da zona rural se deslocar de madrugada até a secretaria para marcar uma consulta com especialista ou solicitar viagem de TFD."
+					<div class="border-l-4 border-blue-900 pl-4 py-2 bg-slate-50 italic text-slate-800 text-sm font-medium">
+						"A integração do UniSISM eliminou a necessidade do cidadão da zona rural se deslocar de madrugada até a secretaria para marcar uma consulta com especialista ou solicitar viagem de TFD. Tudo é regulado eletronicamente."
 					</div>
 
 					<div class="grid grid-cols-3 gap-3 font-mono text-center">
@@ -1228,36 +1291,73 @@
 				<div class="lg:col-span-6">
 					<div class="border-2 border-slate-900 bg-slate-50 p-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] font-mono">
 						<div class="border-b border-slate-300 pb-3 mb-4 flex justify-between items-center text-xs">
-							<span class="font-bold text-slate-900">MAPA DA REDE DE ATENÇÃO MUNICIPAL</span>
+							<span class="font-bold text-slate-900">REDE MUNICIPAL DE ATENÇÃO À SAÚDE</span>
 							<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 font-bold">13/13 ONLINE</span>
 						</div>
 						<div class="space-y-2 text-xs">
 							<div class="flex items-center justify-between border border-slate-200 bg-white p-2">
-								<span>1. USF Zilda Arns (Sede)</span>
-								<span class="text-emerald-600 font-bold">● CONECTADO</span>
+								<span>1. USF Zilda Arns (Sede Urbana)</span>
+								<span class="text-emerald-600 font-bold">● SINCRONIZADO</span>
 							</div>
 							<div class="flex items-center justify-between border border-slate-200 bg-white p-2">
-								<span>2. USF Manoel Monteiro (Curral Novo)</span>
-								<span class="text-emerald-600 font-bold">● CONECTADO</span>
+								<span>2. USF Manoel Monteiro (Distrito Curral Novo)</span>
+								<span class="text-emerald-600 font-bold">● SINCRONIZADO</span>
 							</div>
 							<div class="flex items-center justify-between border border-slate-200 bg-white p-2">
-								<span>3. USF Belarmino Rodrigues (Tanque)</span>
-								<span class="text-emerald-600 font-bold">● CONECTADO</span>
+								<span>3. USF Belarmino Rodrigues (Tanque do Celso)</span>
+								<span class="text-emerald-600 font-bold">● SINCRONIZADO</span>
 							</div>
 							<div class="flex items-center justify-between border border-slate-200 bg-white p-2">
-								<span>4. USF Povo Indígena Fulni-ô</span>
-								<span class="text-emerald-600 font-bold">● CONECTADO</span>
+								<span>4. USF Povo Indígena Fulni-ô (Aldeia)</span>
+								<span class="text-emerald-600 font-bold">● SINCRONIZADO</span>
 							</div>
 							<div class="flex items-center justify-between border border-slate-200 bg-white p-2">
-								<span>5. USF Comunidade Quilombola</span>
-								<span class="text-emerald-600 font-bold">● CONECTADO</span>
+								<span>5. USF Comunidade Quilombola Menino Jesus</span>
+								<span class="text-emerald-600 font-bold">● SINCRONIZADO</span>
 							</div>
 							<div class="text-[11px] text-slate-500 text-center pt-2 font-bold">
-								+ 8 Unidades Básicas Municipais Sincronizadas
+								+ 8 Unidades de Saúde Básica Integradas à Central de Regulação
 							</div>
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ═════════════════════════════════════════════════════════════════════ -->
+	<!-- PERGUNTAS FREQUENTES (FAQ GOVERNAMENTAL)                              -->
+	<!-- ═════════════════════════════════════════════════════════════════════ -->
+	<section id="faq" class="border-b border-slate-200 bg-slate-100/60 py-16 sm:py-24">
+		<div class="mx-auto max-w-4xl px-4 sm:px-6">
+			<div class="text-center mb-12">
+				<div class="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-1 text-[11px] font-mono font-bold tracking-widest text-slate-700 uppercase mb-3">
+					Tira-Dúvidas para Gestores
+				</div>
+				<h2 class="font-sans text-3xl sm:text-4xl font-black tracking-tight text-slate-950">
+					Perguntas Frequentes de Secretários(as) e Prefeitos(as)
+				</h2>
+			</div>
+
+			<div class="space-y-4 font-mono">
+				{#each faqs as faq, i}
+					<div class="border-2 border-slate-900 bg-white shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+						<button
+							type="button"
+							onclick={() => (faqAberta = faqAberta === i ? null : i)}
+							class="w-full flex items-center justify-between p-5 text-left font-bold text-sm text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer"
+						>
+							<span class="font-sans font-black text-base sm:text-lg">{faq.pergunta}</span>
+							<span class="font-mono text-lg text-blue-900">{faqAberta === i ? '−' : '+'}</span>
+						</button>
+
+						{#if faqAberta === i}
+							<div class="p-5 pt-0 border-t border-slate-200 text-xs sm:text-sm text-slate-600 leading-relaxed font-sans font-medium">
+								{faq.resposta}
+							</div>
+						{/if}
+					</div>
+				{/each}
 			</div>
 		</div>
 	</section>
@@ -1321,27 +1421,44 @@
 						Leve o UniSISM para o seu Município
 					</h2>
 					<p class="text-slate-600 text-sm sm:text-base mt-2 font-medium">
-						Preencha os dados institucionais abaixo para agendar uma apresentação executiva para a Prefeitura e Secretaria de Saúde.
+						Preencha os dados institucionais abaixo para gerar um diagnóstico preliminar e agendar uma apresentação executiva para a Prefeitura e Secretaria de Saúde.
 					</p>
 				</div>
 
 				{#if formEnviado}
-					<div class="border-2 border-emerald-900 bg-emerald-50 p-6 text-center space-y-3 font-mono">
-						<div class="text-2xl">🎉</div>
-						<div class="text-base font-bold text-emerald-900">SOLICITAÇÃO DE IMPLANTAÇÃO REGISTRADA!</div>
-						<div class="text-xs text-slate-700">
-							Protocolo: <strong>{protocoloDemonstracao}</strong>
+					<div class="border-2 border-emerald-900 bg-emerald-50 p-6 space-y-4 font-mono">
+						<div class="text-center">
+							<div class="text-3xl mb-1">🏛️</div>
+							<div class="text-lg font-bold text-emerald-900">DIAGNÓSTICO PRELIMINAR REGISTRADO COM SUCESSO!</div>
+							<div class="text-xs text-slate-700 mt-1">
+								Protocolo Oficial: <strong class="text-slate-950 font-mono text-sm">{protocoloDemonstracao}</strong>
+							</div>
 						</div>
-						<p class="text-xs text-slate-600 max-w-md mx-auto">
-							Nossa equipe de engenharia e regulação entrará em contato com a Secretaria Municipal de Saúde de <strong>{formMunicipio}/{formUf}</strong> em até 24 horas úteis.
-						</p>
-						<button
-							type="button"
-							onclick={() => (formEnviado = false)}
-							class="border border-emerald-900 bg-emerald-800 text-white px-4 py-1.5 text-xs font-bold uppercase mt-2 hover:bg-emerald-900 cursor-pointer"
-						>
-							Enviar Nova Solicitação
-						</button>
+
+						<div class="border border-emerald-300 bg-white p-4 text-xs space-y-2 text-slate-800">
+							<div class="font-bold text-blue-900 border-b border-slate-200 pb-1">RESUMO DO PLANO DE IMPLANTAÇÃO MUNICIPAL:</div>
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+								<div>Município Solicitante: <strong>{formMunicipio} / {formUf}</strong></div>
+								<div>Gestor(a): <strong>{formNome}</strong> ({formCargo})</div>
+								<div>Porte Estimado: <strong>{formPorte}</strong></div>
+								<div>Contato Registrado: <strong>{formEmail}</strong> · {formTelefone}</div>
+							</div>
+							<div class="mt-2 text-[11px] text-slate-600 bg-slate-50 p-2.5 border border-slate-200">
+								✓ Previsão de economia operacional: <strong>R$ 150.000 a R$ 400.000/ano</strong> em rotas TFD e agendamentos.<br/>
+								✓ Tempo estimado para carga e ativação do e-SUS PEC: <strong>7 a 10 dias úteis</strong>.<br/>
+								✓ Suporte técnico e capacitação presencial inclusos.
+							</div>
+						</div>
+
+						<div class="text-center pt-2">
+							<button
+								type="button"
+								onclick={() => (formEnviado = false)}
+								class="border border-emerald-900 bg-emerald-800 text-white px-5 py-2 text-xs font-bold uppercase hover:bg-emerald-900 cursor-pointer"
+							>
+								Registrar Outro Município
+							</button>
+						</div>
 					</div>
 				{:else}
 					<form onsubmit={submeterDemonstracao} class="space-y-4">
@@ -1412,12 +1529,29 @@
 									<option value="RN">Rio Grande do Norte (RN)</option>
 									<option value="PI">Piauí (PI)</option>
 									<option value="MA">Maranhão (MA)</option>
+									<option value="MG">Minas Gerais (MG)</option>
+									<option value="SP">São Paulo (SP)</option>
 									<option value="OUTRO">Outro Estado</option>
 								</select>
 							</div>
 						</div>
 
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+							<div>
+								<label for="porte" class="block font-mono text-[11px] font-bold text-slate-700 uppercase mb-1">
+									Porte Populacional *
+								</label>
+								<select
+									id="porte"
+									bind:value={formPorte}
+									class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900"
+								>
+									<option>Até 30.000 habitantes</option>
+									<option>30.000 a 100.000 habitantes</option>
+									<option>Mais de 100.000 habitantes</option>
+								</select>
+							</div>
+
 							<div>
 								<label for="email" class="block font-mono text-[11px] font-bold text-slate-700 uppercase mb-1">
 									E-mail Institucional *
@@ -1455,9 +1589,9 @@
 							>
 								{#if enviandoForm}
 									<span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-									<span>REGISTRANDO PROTOCOLO...</span>
+									<span>GERANDO DIAGNÓSTICO MUNICIPAL...</span>
 								{:else}
-									<span>SOLICITAR DEMONSTRAÇÃO & PROPOSTA B2G</span>
+									<span>SOLICITAR DIAGNÓSTICO & PROPOSTA B2G</span>
 									<span>→</span>
 								{/if}
 							</button>
