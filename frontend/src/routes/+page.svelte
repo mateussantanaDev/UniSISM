@@ -10,6 +10,139 @@
 	// Estado do seletor interativo de módulos
 	let moduloAtivo = $state<'sms' | 'ubs' | 'cem' | 'ceo' | 'tfd' | 'tv' | 'app'>('sms');
 
+	// ─── INTERATIVIDADE MÓDULO SMS ───────────────────────────────────────────
+	let filtroPrioridadeSms = $state<'TODAS' | 'URGENTE' | 'ALTA' | 'ELETIVA'>('TODAS');
+	let listaRegulacaoSms = $state([
+		{ id: 'ENC-01', paciente: 'MARIA APARECIDA DA SILVA', ubs: 'USF Zilda Arns', especialidade: 'Cardiologia', prioridade: 'URGENTE', status: 'PENDENTE', cid: 'I10 (Hipertensão)' },
+		{ id: 'ENC-02', paciente: 'JOSE CARLOS RODRIGUES', ubs: 'USF Curral Novo', especialidade: 'Ortopedia', prioridade: 'ALTA', status: 'PENDENTE', cid: 'M54.5 (Lombalgia Crônica)' },
+		{ id: 'ENC-03', paciente: 'SEVERINA FERREIRA SANTOS', ubs: 'USF Tanque', especialidade: 'Dermatologia', prioridade: 'ELETIVA', status: 'PENDENTE', cid: 'L70.0 (Acne Vulgar)' },
+		{ id: 'ENC-04', paciente: 'ANTONIO PEREIRA LIMA', ubs: 'USF Fulni-ô', especialidade: 'Neurologia', prioridade: 'URGENTE', status: 'APROVADO', cid: 'G40.9 (Epilepsia)' }
+	]);
+
+	function aprovarEncaminhamentoSms(id: string) {
+		listaRegulacaoSms = listaRegulacaoSms.map((item) =>
+			item.id === id ? { ...item, status: 'APROVADO' } : item
+		);
+	}
+
+	// ─── INTERATIVIDADE MÓDULO UBS ───────────────────────────────────────────
+	let buscaUbs = $state('MARIA');
+	const pacientesExemploUbs = [
+		{ nome: 'MARIA APARECIDA DA SILVA', cpf: '042.891.334-09', sus: '7061.0851.2525.560', condicoes: ['Hipertensão (HiperDia)', 'Diabética'], ubs: 'USF Zilda Arns', status: 'Acolhida' },
+		{ nome: 'MARIA DAS DORES GOMES', cpf: '019.452.118-22', sus: '7004.0921.8834.190', condicoes: ['Gestante 24 semanas', 'Pré-Natal Ativo'], ubs: 'USF Zilda Arns', status: 'Aguardando Médico' },
+		{ nome: 'JOSEFA MARIA DE SOUZA', cpf: '055.781.994-30', sus: '7028.0912.4246.763', condicoes: ['Idosa 78 anos', 'Asma'], ubs: 'USF Manoel Monteiro', status: 'Encaminhamento Emitido' },
+		{ nome: 'JOSE CARLOS DOS SANTOS', cpf: '491.572.134-53', sus: '7085.0937.0663.377', condicoes: ['Lombalgia'], ubs: 'USF Curral Novo', status: 'Acolhido' }
+	];
+
+	let pacientesFiltradosUbs = $derived(
+		pacientesExemploUbs.filter((p) =>
+			p.nome.toLowerCase().includes(buscaUbs.toLowerCase()) ||
+			p.cpf.includes(buscaUbs) ||
+			p.sus.includes(buscaUbs)
+		)
+	);
+
+	// ─── INTERATIVIDADE MÓDULO CEM ───────────────────────────────────────────
+	let consultorioCemAtivo = $state('CONS-01');
+	let abaSoapAtiva = $state<'S' | 'O' | 'A' | 'P'>('A');
+
+	// ─── INTERATIVIDADE MÓDULO CEO ───────────────────────────────────────────
+	let denteSelecionado = $state<number>(16);
+	let statusDentes = $state<Record<number, { status: string; procedimento: string }>>({
+		16: { status: 'TRATAMENTO_CANAL', procedimento: '03.07.03.004-3 Endodontia Molar' },
+		21: { status: 'RESTAURADO', procedimento: '03.07.01.002-3 Restauração Resina' },
+		36: { status: 'EXTRACAO_RECOMENDADA', procedimento: '03.07.04.008-1 Cirurgia Oral Menor' },
+		46: { status: 'HIGIDO', procedimento: 'Hígido / Sem Alteração' }
+	});
+
+	function alterarStatusDente(st: string, proc: string) {
+		statusDentes[denteSelecionado] = { status: st, procedimento: proc };
+	}
+
+	// ─── INTERATIVIDADE MÓDULO TFD ───────────────────────────────────────────
+	let rotaTfdAtiva = $state<'recife' | 'garanhuns'>('recife');
+	let assentoSelecionado = $state<number>(1);
+	const passageirosTfd = [
+		{ assento: 1, nome: 'SEVERINA RAMOS', dest: 'IMIP (Oncologia)', acom: 'SIM', status: 'Confirmado' },
+		{ assento: 2, nome: 'JOSEFA MARIA', dest: 'HUOC (Cardio)', acom: 'NÃO', status: 'Confirmado' },
+		{ assento: 3, nome: 'ANTONIO LIMA', dest: 'PROCAPE', acom: 'SIM', status: 'Confirmado' },
+		{ assento: 4, nome: 'MARIA SILVA', dest: 'CISAM (Obstetrícia)', acom: 'SIM', status: 'Pendente Ajuda Custo' },
+		{ assento: 5, nome: 'FRANCISCO ASSIS', dest: 'HRPE (Ortopedia)', acom: 'NÃO', status: 'Confirmado' }
+	];
+
+	// ─── INTERATIVIDADE SMART TV COM SÍNTESE DE VOZ ──────────────────────────
+	let testandoVoz = $state(false);
+	let feedbackVoz = $state('');
+
+	function tocarChimeHospitalar(): void {
+		try {
+			const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+			if (!AudioContextClass) return;
+			const ctx = new AudioContextClass();
+			const now = ctx.currentTime;
+
+			// Tom suave 1
+			const osc1 = ctx.createOscillator();
+			const gain1 = ctx.createGain();
+			osc1.type = 'sine';
+			osc1.frequency.setValueAtTime(587.33, now); // D5
+			gain1.gain.setValueAtTime(0.2, now);
+			gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+			osc1.connect(gain1);
+			gain1.connect(ctx.destination);
+			osc1.start(now);
+			osc1.stop(now + 0.5);
+
+			// Tom suave 2
+			const osc2 = ctx.createOscillator();
+			const gain2 = ctx.createGain();
+			osc2.type = 'sine';
+			osc2.frequency.setValueAtTime(880.0, now + 0.15); // A5
+			gain2.gain.setValueAtTime(0.25, now + 0.15);
+			gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+			osc2.connect(gain2);
+			gain2.connect(ctx.destination);
+			osc2.start(now + 0.15);
+			osc2.stop(now + 0.7);
+		} catch {}
+	}
+
+	function dispararChamadaVozDemo(nome = 'SEVERINO RAMOS DE SOUZA', local = 'CONSULTÓRIO ZERO DOIS, ORTOPEDIA') {
+		testandoVoz = true;
+		feedbackVoz = `Sintetizando voz: "Atenção: ${nome}, favor dirigir-se ao ${local}."`;
+
+		tocarChimeHospitalar();
+
+		if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+			window.speechSynthesis.cancel();
+			const texto = `Atenção: Paciente ${nome}. Favor dirigir-se ao ${local}.`;
+			const utterance = new SpeechSynthesisUtterance(texto);
+			utterance.lang = 'pt-BR';
+			utterance.rate = 0.95;
+			utterance.pitch = 1.05;
+
+			const vozes = window.speechSynthesis.getVoices();
+			const vozPt = vozes.find((v) => v.lang.includes('pt') && (v.name.toLowerCase().includes('maria') || v.name.toLowerCase().includes('luciana') || v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('brasil')));
+			if (vozPt) utterance.voice = vozPt;
+
+			utterance.onend = () => {
+				testandoVoz = false;
+				setTimeout(() => (feedbackVoz = ''), 3000);
+			};
+
+			setTimeout(() => {
+				window.speechSynthesis.speak(utterance);
+			}, 600);
+		} else {
+			setTimeout(() => {
+				testandoVoz = false;
+			}, 2000);
+		}
+	}
+
+	// ─── INTERATIVIDADE APP DO CIDADÃO ───────────────────────────────────────
+	let telaAppAtiva = $state<'consultas' | 'viagens' | 'vacinas' | 'avisos'>('consultas');
+
 	// Formulário de Demonstração B2G
 	let formNome = $state('');
 	let formMunicipio = $state('');
@@ -132,7 +265,7 @@
 			<!-- Navegação Desktop -->
 			<nav class="hidden md:flex items-center gap-6 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase">
 				<a href="#solucao" class="hover:text-blue-900 transition-colors">O Que Resolvemos</a>
-				<a href="#modulos" class="hover:text-blue-900 transition-colors">Módulos</a>
+				<a href="#modulos" class="hover:text-blue-900 transition-colors">Módulos Interativos</a>
 				<a href="#case" class="hover:text-blue-900 transition-colors">Case Águas Belas</a>
 				<a href="#seguranca" class="hover:text-blue-900 transition-colors">Auditoria & LGPD</a>
 				<a href="#demonstracao" class="text-blue-700 hover:text-blue-900 transition-colors">Implantar</a>
@@ -393,19 +526,19 @@
 	</section>
 
 	<!-- ═════════════════════════════════════════════════════════════════════ -->
-	<!-- VITRINE COMPLETA DE MÓDULOS (TABS INTERATIVAS)                        -->
+	<!-- VITRINE COMPLETA DE MÓDULOS (SANDBOX & DEMONSTRAÇÃO INTERATIVA)      -->
 	<!-- ═════════════════════════════════════════════════════════════════════ -->
 	<section id="modulos" class="border-b border-slate-200 bg-slate-100/70 py-16 sm:py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6">
 			<div class="text-center max-w-3xl mx-auto mb-12">
 				<div class="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-1 text-[11px] font-mono font-bold tracking-widest text-slate-700 uppercase mb-3">
-					Arquitetura Modular Integrada
+					Sandbox Interativo ao Vivo
 				</div>
 				<h2 class="font-sans text-3xl sm:text-4xl font-black tracking-tight text-slate-950">
-					Explore os Módulos Especializados do UniSISM
+					Teste as Funcionalidades dos Módulos em Tempo Real
 				</h2>
 				<p class="text-slate-600 text-base sm:text-lg mt-3 font-medium">
-					Cada face do sistema foi projetada especificamente para o fluxo de trabalho de cada ator da saúde pública municipal.
+					Clique nas abas abaixo para interagir com a interface real de regulação, prontuários, chamada de TV e escalas.
 				</p>
 			</div>
 
@@ -414,18 +547,18 @@
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'sms')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'sms'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 				>
-					🏛️ SMS (Regulação & Gestão)
+					🏛️ SMS (Regulação)
 				</button>
 
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'ubs')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'ubs'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
@@ -436,7 +569,7 @@
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'cem')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'cem'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
@@ -447,7 +580,7 @@
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'ceo')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'ceo'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
@@ -458,7 +591,7 @@
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'tfd')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'tfd'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
@@ -469,18 +602,18 @@
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'tv')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'tv'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 				>
-					📺 Smart TV (Chamadas)
+					📺 Smart TV (Chamada por Voz)
 				</button>
 
 				<button
 					type="button"
 					onclick={() => (moduloAtivo = 'app')}
-					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all
+					class="border-2 px-4 py-2.5 font-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer
 					{moduloAtivo === 'app'
 						? 'border-slate-950 bg-blue-900 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
@@ -489,308 +622,474 @@
 				</button>
 			</div>
 
-			<!-- Painel de Detalhe do Módulo Selecionado -->
-			<div class="border-2 border-slate-950 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
+			<!-- Painel Interativo do Módulo Selecionado -->
+			<div class="border-2 border-slate-950 bg-white p-6 sm:p-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
 				{#if moduloAtivo === 'sms'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-blue-900 uppercase">
-								<span>🏛️ MÓDULO SMS · SECRETARIA MUNICIPAL DE SAÚDE</span>
+					<div class="space-y-6">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="font-mono text-xs font-bold text-blue-900 uppercase">🏛️ SIMULADOR DE REGULAÇÃO MUNICIPAL (SMS)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Fila Única e Despacho de Cotas</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Central de Regulação Municipal, Gestão de Cotas e Auditoria em Tempo Real
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								Dá ao Secretário e à equipe de regulação visão 360° de todas as solicitações médicas do município. Permite balancear cotas mensais para as UBSs rurais e urbanas, aprovar encaminhamentos com justificativa clínica e gerar relatórios executivos para o Ministério da Saúde.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Matriz de Cotas por UBS
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Fila Única de Regulação SUS
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Auditoria Imutável de Decisões
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Exportação SIGTAP / BPA / APAC
-								</div>
+							<div class="flex items-center gap-2 font-mono text-xs">
+								<span class="text-slate-500 font-bold">FILTRAR PRIORIDADE:</span>
+								{#each ['TODAS', 'URGENTE', 'ALTA', 'ELETIVA'] as p}
+									<button
+										type="button"
+										onclick={() => (filtroPrioridadeSms = p as any)}
+										class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer
+										{filtroPrioridadeSms === p ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+									>
+										{p}
+									</button>
+								{/each}
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-slate-950 p-4 font-mono text-xs text-slate-300">
-							<div class="border-b border-slate-800 pb-2 text-slate-400 font-bold flex justify-between">
-								<span>DASHBOARD SMS REGULAÇÃO</span>
-								<span class="text-emerald-400">ONLINE</span>
+
+						<div class="overflow-x-auto">
+							<table class="w-full text-left font-mono text-xs border border-slate-200">
+								<thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+									<tr>
+										<th class="p-2.5">ID / PROTOCOLO</th>
+										<th class="p-2.5">PACIENTE</th>
+										<th class="p-2.5">ORIGEM (UBS)</th>
+										<th class="p-2.5">ESPECIALIDADE / CID</th>
+										<th class="p-2.5">PRIORIDADE</th>
+										<th class="p-2.5">STATUS</th>
+										<th class="p-2.5 text-right">AÇÃO REGULATÓRIA</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-slate-200 bg-white">
+									{#each listaRegulacaoSms.filter(i => filtroPrioridadeSms === 'TODAS' || i.prioridade === filtroPrioridadeSms) as enc}
+										<tr class="hover:bg-slate-50">
+											<td class="p-2.5 font-bold text-blue-900">{enc.id}</td>
+											<td class="p-2.5 font-bold text-slate-900">{enc.paciente}</td>
+											<td class="p-2.5 text-slate-600">{enc.ubs}</td>
+											<td class="p-2.5">
+												<span class="font-bold text-slate-900">{enc.especialidade}</span>
+												<span class="block text-[10px] text-slate-500">{enc.cid}</span>
+											</td>
+											<td class="p-2.5">
+												<span class="border px-1.5 py-0.5 text-[9px] font-bold uppercase
+												{enc.prioridade === 'URGENTE' ? 'border-red-600 bg-red-50 text-red-700' : enc.prioridade === 'ALTA' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-emerald-600 bg-emerald-50 text-emerald-700'}">
+													{enc.prioridade}
+												</span>
+											</td>
+											<td class="p-2.5">
+												<span class="font-bold {enc.status === 'APROVADO' ? 'text-emerald-700' : 'text-slate-600'}">
+													{enc.status}
+												</span>
+											</td>
+											<td class="p-2.5 text-right">
+												{#if enc.status === 'PENDENTE'}
+													<button
+														type="button"
+														onclick={() => aprovarEncaminhamentoSms(enc.id)}
+														class="border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white uppercase hover:bg-blue-950 cursor-pointer"
+													>
+														Aprovar Vaga ✓
+													</button>
+												{:else}
+													<span class="text-emerald-700 font-bold text-[10px]">VAGA ALOCADA</span>
+												{/if}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Distribuição de Cotas da Rede -->
+						<div class="border border-slate-200 bg-slate-50 p-4 font-mono text-xs">
+							<div class="font-bold text-slate-800 mb-2 flex justify-between">
+								<span>CONSUMO MENSAL DE COTAS POR UBS</span>
+								<span class="text-blue-900">Total Alocado: 1.450 / 2.000 vagas</span>
 							</div>
-							<div class="py-3 space-y-2">
-								<div class="flex justify-between border-b border-slate-800/60 pb-1">
-									<span class="text-slate-400">Total Pacientes Rede:</span>
-									<span class="font-bold text-white">58.312</span>
+							<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+								<div class="bg-white border border-slate-200 p-2.5">
+									<div class="text-[10px] text-slate-500">USF ZILDA ARNS (SEDE)</div>
+									<div class="font-bold text-slate-900 mt-0.5">85% Consumido (170/200)</div>
+									<div class="w-full bg-slate-100 h-1.5 mt-1.5"><div class="bg-blue-900 h-1.5" style="width: 85%"></div></div>
 								</div>
-								<div class="flex justify-between border-b border-slate-800/60 pb-1">
-									<span class="text-slate-400">Encaminhamentos Ativos:</span>
-									<span class="font-bold text-amber-400">124 em análise</span>
+								<div class="bg-white border border-slate-200 p-2.5">
+									<div class="text-[10px] text-slate-500">USF CURRAL NOVO (RURAL)</div>
+									<div class="font-bold text-slate-900 mt-0.5">42% Consumido (63/150)</div>
+									<div class="w-full bg-slate-100 h-1.5 mt-1.5"><div class="bg-emerald-600 h-1.5" style="width: 42%"></div></div>
 								</div>
-								<div class="flex justify-between border-b border-slate-800/60 pb-1">
-									<span class="text-slate-400">Cotas Especialidades (Mês):</span>
-									<span class="font-bold text-emerald-400">1.450 disponíveis</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-slate-400">Taxa de Resolução Municipal:</span>
-									<span class="font-bold text-blue-400">94.2%</span>
+								<div class="bg-white border border-slate-200 p-2.5">
+									<div class="text-[10px] text-slate-500">USF FULNI-Ô (INDÍGENA)</div>
+									<div class="font-bold text-slate-900 mt-0.5">60% Consumido (90/150)</div>
+									<div class="w-full bg-slate-100 h-1.5 mt-1.5"><div class="bg-amber-600 h-1.5" style="width: 60%"></div></div>
 								</div>
 							</div>
 						</div>
 					</div>
 				{:else if moduloAtivo === 'ubs'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-emerald-700 uppercase">
-								<span>🏥 MÓDULO UBS · ATENÇÃO PRIMÁRIA À SAÚDE (APS)</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-emerald-700 uppercase">🏥 SIMULADOR DE ATENÇÃO BÁSICA (UBS)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Busca Rápida de Prontuário PEC & Acolhimento</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Recepção, Triagem e Prontuário Integrado com e-SUS Cloud
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								A recepção do posto de saúde identifica o cidadão em segundos por Nome, CPF ou Cartão SUS. O médico ou enfermeiro acessa o histórico prévio, emite solicitações de encaminhamento anexando exames e acompanha a posição do paciente na fila regulada.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-emerald-700">✓</span> Busca Instantânea em 58k Cidadãos
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-emerald-700">✓</span> Emissão de Guias com Anexo
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-emerald-700">✓</span> Gestão da Fila de Acolhimento
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-emerald-700">✓</span> Monitoramento HiperDia / Pré-Natal
-								</div>
+							<div class="flex items-center gap-2">
+								<label for="buscaSimulada" class="text-xs font-bold text-slate-600">BUSCAR:</label>
+								<input
+									id="buscaSimulada"
+									type="text"
+									bind:value={buscaUbs}
+									placeholder="Nome, CPF ou CNS..."
+									class="border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700"
+								/>
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-slate-950 p-4 font-mono text-xs text-slate-300">
-							<div class="border-b border-slate-800 pb-2 text-slate-400 font-bold flex justify-between">
-								<span>RECEPÇÃO UBS ZILDA ARNS</span>
-								<span class="text-emerald-400">13 UBSs CONECTADAS</span>
-							</div>
-							<div class="py-3 space-y-2">
-								<div class="border border-slate-800 bg-slate-900 p-2">
-									<div class="text-[10px] text-slate-400">PACIENTE EM ATENDIMENTO:</div>
-									<div class="font-bold text-white text-sm">MARIA APARECIDA DA SILVA</div>
-									<div class="text-[11px] text-emerald-400">CNS: 7061.0851.2525.560 · Hipertensa</div>
+
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{#each pacientesFiltradosUbs as p}
+								<div class="border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-700 transition-colors">
+									<div class="flex justify-between items-start">
+										<div>
+											<span class="font-bold text-sm text-slate-950">{p.nome}</span>
+											<div class="text-[10px] text-slate-500 mt-0.5">CPF: {p.cpf} · CNS: {p.sus}</div>
+										</div>
+										<span class="border border-emerald-600 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800 uppercase">
+											{p.status}
+										</span>
+									</div>
+
+									<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+										{#each p.condicoes as c}
+											<span class="bg-slate-100 text-slate-700 px-2 py-0.5 text-[9px] font-semibold">
+												● {c}
+											</span>
+										{/each}
+									</div>
+
+									<div class="mt-3 flex justify-between items-center text-[10px]">
+										<span class="text-slate-500">Unidade: <strong>{p.ubs}</strong></span>
+										<button
+											type="button"
+											class="text-emerald-700 font-bold hover:underline cursor-pointer"
+											onclick={() => alert(`Abrindo Dossiê Clínico Digital de ${p.nome}...`)}
+										>
+											Abrir Dossiê PEC →
+										</button>
+									</div>
 								</div>
-								<div class="flex justify-between text-[11px]">
-									<span class="text-slate-400">Fila na Recepção:</span>
-									<span class="text-white font-bold">4 aguardando</span>
-								</div>
-							</div>
+							{/each}
 						</div>
 					</div>
 				{:else if moduloAtivo === 'cem'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-blue-900 uppercase">
-								<span>🩺 MÓDULO CEM · CENTRO DE ESPECIALIDADES MÉDICAS</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-blue-900 uppercase">🩺 SIMULADOR DE ATENDIMENTO MÉDICO ESPECIALIZADO (CEM)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Consultórios, Fila e Prontuário SOAP</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Escalas Médicas, Consultórios Especializados e Prontuário SOAP
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								Gestão clínica completa para Cardiologia, Ortopedia, Dermatologia, Ginecologia, Pediatria, Psiquiatria e pequenas cirurgias. Alocação dinâmica de consultórios, agendamento de balcão regulado e laudos imediatos.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> 6 Consultórios Configurados
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Prontuário SOAP & Prescrição
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Registro de Procedimentos SIGTAP
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-blue-900">✓</span> Disparo Direto para Smart TV
-								</div>
+							<div class="flex items-center gap-2">
+								<span class="text-xs font-bold text-slate-600">CONSULTÓRIO:</span>
+								<select
+									bind:value={consultorioCemAtivo}
+									class="border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 outline-none"
+								>
+									<option value="CONS-01">01 — Cardiologia (Dr. Roberto Medeiros)</option>
+									<option value="CONS-02">02 — Ortopedia (Dr. Paulo Mendes)</option>
+									<option value="CONS-03">03 — Ginecologia (Dra. Ana Castro)</option>
+								</select>
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-slate-950 p-4 font-mono text-xs text-slate-300">
-							<div class="border-b border-slate-800 pb-2 text-slate-400 font-bold flex justify-between">
-								<span>ESCALA CEM MÉDICA</span>
-								<span class="text-blue-400">AMB / POLICLÍNICA</span>
+
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+							<!-- Painel do Paciente & Chamada -->
+							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4 space-y-3">
+								<div class="text-[10px] text-slate-500 uppercase font-bold">PACIENTE EM ATENDIMENTO NO CONSULTÓRIO</div>
+								<div class="bg-white border border-slate-300 p-3">
+									<div class="font-bold text-base text-slate-950">SEVERINO RAMOS DE SOUZA</div>
+									<div class="text-xs text-slate-600 mt-0.5">64 anos · Masculino · Curral Novo</div>
+									<div class="text-[11px] text-blue-900 font-bold mt-2">Motivo: Avaliação Cardíaca Pré-Operatória</div>
+								</div>
+
+								<div class="pt-2">
+									<button
+										type="button"
+										onclick={() => dispararChamadaVozDemo('SEVERINO RAMOS DE SOUZA', 'CONSULTÓRIO ZERO UM, CARDIOLOGIA')}
+										disabled={testandoVoz}
+										class="w-full border-2 border-slate-950 bg-blue-900 text-white font-bold py-2.5 text-xs uppercase flex items-center justify-center gap-2 hover:bg-blue-950 cursor-pointer disabled:opacity-50"
+									>
+										<span>🔊 DISPARAR CHAMADA NA SMART TV</span>
+									</button>
+									{#if feedbackVoz}
+										<div class="mt-2 text-[10px] text-emerald-700 font-bold text-center animate-pulse">
+											{feedbackVoz}
+										</div>
+									{/if}
+								</div>
 							</div>
-							<div class="py-3 space-y-2">
-								<div class="border border-slate-800 bg-slate-900 p-2">
-									<div class="text-[10px] text-blue-400">CONSULTÓRIO 01 — CARDIOLOGIA</div>
-									<div class="font-bold text-white text-sm">Dr. Roberto Medeiros (CRM-PE 18492)</div>
-									<div class="text-[11px] text-slate-400">Turno: Manhã (08:00–12:00) · 12 Vagas</div>
+
+							<!-- Prontuário SOAP Interativo -->
+							<div class="lg:col-span-7 border border-slate-200 bg-white p-4">
+								<div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-3">
+									<span class="text-xs font-bold text-slate-700 uppercase">PRONTUÁRIO SOAP:</span>
+									{#each ['S', 'O', 'A', 'P'] as tab}
+										<button
+											type="button"
+											onclick={() => (abaSoapAtiva = tab as any)}
+											class="border px-2.5 py-0.5 text-xs font-bold uppercase transition-colors cursor-pointer
+											{abaSoapAtiva === tab ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}"
+										>
+											{tab === 'S' ? 'Subjetivo' : tab === 'O' ? 'Objetivo' : tab === 'A' ? 'Avaliação' : 'Plano'}
+										</button>
+									{/each}
+								</div>
+
+								<div class="text-xs leading-relaxed text-slate-700">
+									{#if abaSoapAtiva === 'S'}
+										<p><strong>Queixa Principal:</strong> Paciente relata dispneia aos médios esforços há 3 meses. Nega dor precordial em repouso. Em uso de Losartana 50mg 1x/dia.</p>
+									{:else if abaSoapAtiva === 'O'}
+										<p><strong>Exame Físico:</strong> PA: 130x85 mmHg. FC: 72 bpm. Ausculta Cardíaca: RCR em 2T com sopro sistólico em foco aórtico 2+/6+. Sem edemas em MMII.</p>
+									{:else if abaSoapAtiva === 'A'}
+										<p><strong>Hipótese Diagnóstica (CID-10):</strong> I35.0 (Estenose da Valva Aórtica) + I10 (Hipertensão Primária). Risco cirúrgico classificado como Moderado.</p>
+									{:else if abaSoapAtiva === 'P'}
+										<p><strong>Conduta:</strong> Solicitado Ecocardiograma Transtorácico (SIGTAP 02.05.01.003-2). Mantida medicação de base. Retorno agendado para 30 dias.</p>
+									{/if}
 								</div>
 							</div>
 						</div>
 					</div>
 				{:else if moduloAtivo === 'ceo'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-teal-700 uppercase">
-								<span>🦷 MÓDULO CEO · CENTRO DE ESPECIALIDADES ODONTOLÓGICAS</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-teal-700 uppercase">🦷 SIMULADOR DE ESPECIALIDADES ODONTOLÓGICAS (CEO)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Odontograma Digital & Brasil Sorridente</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Odontograma Interativo, Cadeiras Odontológicas e Cirurgia Bucomaxilofacial
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								Projetado para as exigências do Brasil Sorridente. Controle individualizado por cadeira odontológica, especialidades de Endodontia, Periodontia, Cirurgia Oral Menor, Odontopediatria e Pacientes com Necessidades Especiais (PNE).
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-teal-700">✓</span> 4 Cadeiras Odontológicas
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-teal-700">✓</span> Odontograma Gráfico Digital
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-teal-700">✓</span> Escalas por Especialista (CRO)
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-teal-700">✓</span> Faturamento SIA/SUS Odonto
-								</div>
+							<div class="text-xs font-bold text-slate-600">
+								CADEIRA 01 · ENDODONTIA (Dra. Camila Ribeiro CRO-PE 8912)
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-slate-950 p-4 font-mono text-xs text-slate-300">
-							<div class="border-b border-slate-800 pb-2 text-slate-400 font-bold flex justify-between">
-								<span>CEO MUNICIPAL</span>
-								<span class="text-teal-400">BRASIL SORRIDENTE</span>
+
+						<!-- Odontograma Gráfico -->
+						<div class="border border-slate-200 bg-slate-50 p-4">
+							<div class="text-[10px] text-slate-500 uppercase font-bold mb-3">SELECIONE O ELEMENTO DENTÁRIO PARA DIAGNÓSTICO:</div>
+							<div class="grid grid-cols-4 sm:grid-cols-8 gap-2 text-center">
+								{#each [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28] as d}
+									<button
+										type="button"
+										onclick={() => (denteSelecionado = d)}
+										class="border-2 p-2 font-bold text-xs transition-all cursor-pointer
+										{denteSelecionado === d ? 'border-slate-950 bg-teal-900 text-white shadow-sm' : 'border-slate-300 bg-white text-slate-800 hover:bg-teal-50'}"
+									>
+										<div>#{d}</div>
+										<div class="text-[8px] uppercase mt-1">
+											{statusDentes[d]?.status === 'TRATAMENTO_CANAL' ? 'CANAL' : statusDentes[d]?.status === 'RESTAURADO' ? 'REST.' : statusDentes[d]?.status === 'EXTRACAO_RECOMENDADA' ? 'EXTRAIR' : 'HÍGIDO'}
+										</div>
+									</button>
+								{/each}
 							</div>
-							<div class="py-3 space-y-2">
-								<div class="border border-slate-800 bg-slate-900 p-2">
-									<div class="text-[10px] text-teal-400">CADEIRA 01 — ENDODONTIA</div>
-									<div class="font-bold text-white text-sm">Dra. Camila Ribeiro (CRO-PE 8912)</div>
-									<div class="text-[11px] text-slate-400">Tratamento de Canal · Dentes Anteriores/Posteriores</div>
-								</div>
+						</div>
+
+						<!-- Detalhes do Dente Selecionado -->
+						<div class="border border-slate-200 bg-white p-4 flex flex-wrap items-center justify-between gap-4">
+							<div>
+								<div class="text-xs text-slate-500 font-bold">ELEMENTO SELECIONADO: <strong class="text-teal-900 text-sm">DENTE #{denteSelecionado}</strong></div>
+								<div class="text-xs text-slate-800 mt-1">Procedimento Atribuído: <strong>{statusDentes[denteSelecionado]?.procedimento || 'Hígido / Sem Alteração'}</strong></div>
+							</div>
+
+							<div class="flex flex-wrap items-center gap-2">
+								<button
+									type="button"
+									onclick={() => alterarStatusDente('TRATAMENTO_CANAL', '03.07.03.004-3 Tratamento Endodôntico (Canal)')}
+									class="border border-teal-800 bg-teal-800 text-white px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-teal-900 cursor-pointer"
+								>
+									+ Indicar Canal
+								</button>
+								<button
+									type="button"
+									onclick={() => alterarStatusDente('RESTAURADO', '03.07.01.002-3 Restauração Estética')}
+									class="border border-slate-400 bg-slate-100 text-slate-800 px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-slate-200 cursor-pointer"
+								>
+									+ Restaurar
+								</button>
+								<button
+									type="button"
+									onclick={() => alterarStatusDente('HIGIDO', 'Hígido / Sem Alteração')}
+									class="border border-slate-300 bg-white text-slate-600 px-3 py-1.5 text-[10px] font-bold uppercase hover:bg-slate-50 cursor-pointer"
+								>
+									Limpar
+								</button>
 							</div>
 						</div>
 					</div>
 				{:else if moduloAtivo === 'tfd'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-amber-700 uppercase">
-								<span>🚑 MÓDULO TFD · TRATAMENTO FORA DO DOMICÍLIO</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-amber-700 uppercase">🚑 SIMULADOR DE TRATAMENTO FORA DO DOMICÍLIO (TFD)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Manifesto de Viagem, Frota e Passageiros</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Gestão Logística de Frotas, Viagens Intermunicipais e Ajuda de Custo
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								Organiza viagens de pacientes para hospitais de alta complexidade (Recife, Garanhuns, Caruaru). Montagem de lista de passageiros com acompanhantes, rastreio de abastecimentos e prestação de contas com assinatura digital.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-amber-700">✓</span> Escala de Veículos e Motoristas
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-amber-700">✓</span> Assinatura ICP-Brasil de Recibos
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-amber-700">✓</span> Rastreio de Saldo e Combustível
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-amber-700">✓</span> Notificação Push ao Passageiro
-								</div>
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									onclick={() => (rotaTfdAtiva = 'recife')}
+									class="border px-3 py-1 text-xs font-bold uppercase transition-colors cursor-pointer
+									{rotaTfdAtiva === 'recife' ? 'border-slate-950 bg-amber-800 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
+								>
+									Rota Recife (IMIP / HUOC)
+								</button>
+								<button
+									type="button"
+									onclick={() => (rotaTfdAtiva = 'garanhuns')}
+									class="border px-3 py-1 text-xs font-bold uppercase transition-colors cursor-pointer
+									{rotaTfdAtiva === 'garanhuns' ? 'border-slate-950 bg-amber-800 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
+								>
+									Rota Garanhuns (HRDM)
+								</button>
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-slate-950 p-4 font-mono text-xs text-slate-300">
-							<div class="border-b border-slate-800 pb-2 text-slate-400 font-bold flex justify-between">
-								<span>EXPEDIÇÃO TFD</span>
-								<span class="text-amber-400">ROTA RECIFE/PE</span>
-							</div>
-							<div class="py-3 space-y-2">
-								<div class="border border-slate-800 bg-slate-900 p-2">
-									<div class="text-[10px] text-amber-400">VAN EXECUTIVA 16L · PLACA PE-2026</div>
-									<div class="font-bold text-white text-sm">Saída: 03:30h · Destino: IMIP / HUOC</div>
-									<div class="text-[11px] text-slate-400">14 Pacientes + 2 Acompanhantes</div>
+
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+							<!-- Esquema da Van 16 Lugares -->
+							<div class="lg:col-span-5 border border-slate-200 bg-slate-50 p-4">
+								<div class="text-[10px] text-slate-500 font-bold uppercase mb-3">VEÍCULO: VAN MERCEDES SPRINTER 16L (PLACA: PE-2026)</div>
+								<div class="grid grid-cols-4 gap-2 text-center text-xs">
+									{#each Array.from({ length: 16 }, (_, i) => i + 1) as assento}
+										<button
+											type="button"
+											onclick={() => (assentoSelecionado = assento)}
+											class="border p-2 font-bold transition-all cursor-pointer
+											{assentoSelecionado === assento ? 'border-slate-950 bg-amber-700 text-white' : assento <= 5 ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-400'}"
+										>
+											<div>P{assento}</div>
+											<div class="text-[8px] uppercase mt-0.5">{assento <= 5 ? 'OCUPADO' : 'LIVRE'}</div>
+										</button>
+									{/each}
 								</div>
+							</div>
+
+							<!-- Detalhe do Passageiro / Prestação de Contas -->
+							<div class="lg:col-span-7 border border-slate-200 bg-white p-4 text-xs space-y-3">
+								<div class="font-bold text-slate-900 flex justify-between">
+									<span>PASSAGEIRO POLTRONA #{assentoSelecionado}</span>
+									<span class="text-emerald-700">ASSINATURA ICP-BRASIL OK</span>
+								</div>
+
+								{#if assentoSelecionado <= 5}
+									{@const pas = passageirosTfd[assentoSelecionado - 1]}
+									<div class="border border-slate-200 bg-slate-50 p-3 space-y-1.5">
+										<div>Nome: <strong class="text-slate-950">{pas.nome}</strong></div>
+										<div>Hospital de Destino: <strong>{pas.dest}</strong></div>
+										<div>Direito a Acompanhante: <strong>{pas.acom}</strong></div>
+										<div>Status da Ajuda de Custo: <strong class="text-amber-800">{pas.status}</strong></div>
+									</div>
+								{:else}
+									<div class="border border-dashed border-slate-300 p-6 text-center text-slate-400">
+										Assento disponível para alocação na regulação do TFD.
+									</div>
+								{/if}
 							</div>
 						</div>
 					</div>
 				{:else if moduloAtivo === 'tv'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-indigo-700 uppercase">
-								<span>📺 PAINEL SMART TV & CHAMADA SONORA</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-indigo-700 uppercase">📺 SIMULADOR DE SMART TV & CHAMADOR DE VOZ</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Painel de Recepção & Síntese Sonora Hospitalar</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								Chamada em Tela Cheia com Síntese de Voz Humanizada
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								Funciona em qualquer Smart TV ou navegador da sala de espera. Quando o médico ou dentista clica em "Chamar Paciente", a TV emite um sinal sonoro suave e pronuncia o nome do cidadão e o consultório em português brasileiro límpido.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-indigo-700">✓</span> Pareamento Rápido por PIN
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-indigo-700">✓</span> Voz Humanizada Suave
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-indigo-700">✓</span> Destaque de Prioridade (Idoso/PCD)
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-indigo-700">✓</span> Alta Resolução 4K / Full HD
-								</div>
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									onclick={() => dispararChamadaVozDemo('MARIA DAS DORES GOMES', 'CONSULTÓRIO ZERO TRÊS, GINECOLOGIA')}
+									disabled={testandoVoz}
+									class="border-2 border-slate-950 bg-indigo-900 text-white px-4 py-2 text-xs font-bold uppercase hover:bg-indigo-950 cursor-pointer disabled:opacity-50"
+								>
+									▶ TESTAR CHAMADA DE VOZ AO VIVO
+								</button>
 							</div>
 						</div>
-						<div class="lg:col-span-5 border-2 border-slate-900 bg-blue-950 p-5 font-mono text-white text-center">
-							<div class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">PAINEL DE CHAMADA DE VOZ</div>
-							<div class="my-4 border border-blue-800 bg-slate-950/80 p-4">
-								<div class="text-xs text-amber-400 font-bold">● CHAMANDO AGORA</div>
-								<div class="text-lg font-black text-white mt-1">SEVERINO RAMOS DE SOUZA</div>
-								<div class="text-xs text-emerald-400 mt-2">CONSULTÓRIO 02 — ORTOPEDIA</div>
+
+						<!-- Tela da TV Simulada -->
+						<div class="border-4 border-slate-950 rounded-lg bg-slate-950 p-6 text-white text-center shadow-inner">
+							<div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800 pb-2">
+								<span>CENTRO DE ESPECIALIDADES MÉDICAS (CEM)</span>
+								<span class="text-emerald-400 font-bold">● SMART TV ONLINE (PIN: CEM-2026)</span>
 							</div>
-							<div class="text-[10px] text-slate-400 font-mono">PIN: CEM-2026 · Áudio Ativo</div>
+
+							<div class="my-8 border-2 border-blue-600/50 bg-blue-950/30 p-6 rounded">
+								<div class="text-xs text-amber-400 font-bold tracking-widest uppercase">CHAMANDO AGORA</div>
+								<div class="text-2xl sm:text-3xl font-black text-white mt-2">SEVERINO RAMOS DE SOUZA</div>
+								<div class="text-sm font-bold text-emerald-400 mt-3">CONSULTÓRIO 02 — ORTOPEDIA</div>
+								<div class="text-xs text-slate-400 mt-1">Dr. Paulo Mendes · CRM-PE 14920</div>
+							</div>
+
+							<div class="flex justify-between items-center text-[11px] text-slate-400 pt-2">
+								<span>Última chamada: 15:42h</span>
+								<span>Prioridade: Idoso 60+</span>
+							</div>
 						</div>
 					</div>
 				{:else if moduloAtivo === 'app'}
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-						<div class="lg:col-span-7 space-y-4">
-							<div class="inline-flex items-center gap-2 font-mono text-xs font-bold text-sky-700 uppercase">
-								<span>📱 APP DO PACIENTE (ANDROID & IOS)</span>
+					<div class="space-y-6 font-mono">
+						<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+							<div>
+								<span class="text-xs font-bold text-sky-700 uppercase">📱 SIMULADOR DO APLICATIVO DO CIDADÃO (FLUTTER)</span>
+								<h3 class="font-sans text-xl font-bold text-slate-950">Acesso Transparente na Mão do Paciente</h3>
 							</div>
-							<h3 class="font-sans text-2xl sm:text-3xl font-black text-slate-950">
-								A Saúde Municipal na Palma da Mão do Cidadão
-							</h3>
-							<p class="text-slate-600 text-base leading-relaxed">
-								O morador acessa com o CPF, visualiza datas de consultas no CEM/CEO, acompanha o andamento da fila de regulação, consulta o horário da van do TFD e recebe notificações push quando sua vaga for liberada.
-							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-slate-800">
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-sky-700">✓</span> Auto-Provisionamento pelo CPF
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-sky-700">✓</span> Carteira de Vacinação Digital
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-sky-700">✓</span> Notificações de Consulta no App
-								</div>
-								<div class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-2.5 font-bold">
-									<span class="text-sky-700">✓</span> Rastreio do Transporte TFD
-								</div>
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									onclick={() => (telaAppAtiva = 'consultas')}
+									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer
+									{telaAppAtiva === 'consultas' ? 'border-slate-950 bg-sky-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
+								>
+									Consultas
+								</button>
+								<button
+									type="button"
+									onclick={() => (telaAppAtiva = 'viagens')}
+									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer
+									{telaAppAtiva === 'viagens' ? 'border-slate-950 bg-sky-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
+								>
+									Viagens TFD
+								</button>
+								<button
+									type="button"
+									onclick={() => (telaAppAtiva = 'vacinas')}
+									class="border px-2.5 py-1 text-[10px] font-bold uppercase transition-colors cursor-pointer
+									{telaAppAtiva === 'vacinas' ? 'border-slate-950 bg-sky-900 text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}"
+								>
+									Vacinas
+								</button>
 							</div>
 						</div>
-						<div class="lg:col-span-5 flex justify-center">
-							<div class="w-64 border-4 border-slate-950 rounded-2xl bg-slate-950 p-3 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] text-white font-mono">
-								<div class="border-b border-slate-800 pb-2 text-[10px] text-center text-slate-400">
-									UNISISM CIDADÃO
+
+						<div class="flex justify-center">
+							<div class="w-full max-w-sm border-4 border-slate-950 rounded-2xl bg-slate-900 p-4 text-white shadow-[6px_6px_0px_0px_rgba(15,23,42,1)]">
+								<div class="text-[10px] text-slate-400 text-center pb-2 border-b border-slate-800">
+									OLÁ, MARIA APARECIDA (CNS: 7061...)
 								</div>
-								<div class="py-4 space-y-2 text-xs">
-									<div class="bg-blue-900/40 border border-blue-700 p-2 rounded">
-										<div class="text-[9px] text-blue-300">CONSULTA CONFIRMADA</div>
-										<div class="font-bold text-white text-[11px]">Cardiologista · CEM</div>
-										<div class="text-[10px] text-slate-300">Amanhã às 08:30h</div>
-									</div>
-									<div class="bg-slate-900 border border-slate-800 p-2 rounded">
-										<div class="text-[9px] text-amber-400">VIAGEM TFD MARCADA</div>
-										<div class="font-bold text-white text-[11px]">Recife/PE · Van 02</div>
-										<div class="text-[10px] text-slate-300">Saída: 03:30h (Praça)</div>
-									</div>
+
+								<div class="py-4 space-y-3 text-xs">
+									{#if telaAppAtiva === 'consultas'}
+										<div class="bg-blue-950 border border-blue-700 p-3 rounded">
+											<div class="text-[9px] text-emerald-400 font-bold">CONSULTA AGENDADA</div>
+											<div class="font-bold text-sm text-white mt-0.5">Cardiologia · CEM</div>
+											<div class="text-[10px] text-slate-300 mt-1">Data: Quarta-feira, 08:30h</div>
+											<div class="text-[10px] text-slate-400">Local: Consultório 01 (Dr. Roberto)</div>
+										</div>
+									{:else if telaAppAtiva === 'viagens'}
+										<div class="bg-amber-950 border border-amber-700 p-3 rounded">
+											<div class="text-[9px] text-amber-400 font-bold">VIAGEM CONFIRMADA TFD</div>
+											<div class="font-bold text-sm text-white mt-0.5">Recife/PE · Hospital IMIP</div>
+											<div class="text-[10px] text-slate-300 mt-1">Embarque: 03:30h · Praça Central</div>
+											<div class="text-[10px] text-slate-400">Veículo: Van 02 · Motorista: Carlos</div>
+										</div>
+									{:else if telaAppAtiva === 'vacinas'}
+										<div class="bg-emerald-950 border border-emerald-700 p-3 rounded space-y-1">
+											<div class="text-[9px] text-emerald-400 font-bold">CARTEIRA VACINAL DIGITAL</div>
+											<div class="text-[11px] text-white">✓ Covid Bivalente (Aplicada na USF Zilda Arns)</div>
+											<div class="text-[11px] text-white">✓ Influenza Trivalente (Dose Anual)</div>
+										</div>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -822,7 +1121,7 @@
 							<button
 								type="button"
 								onclick={() => (porteSelecionado = 'pequeno')}
-								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors
+								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors cursor-pointer
 								{porteSelecionado === 'pequeno'
 									? 'border-white bg-white text-slate-950'
 									: 'border-blue-800 bg-blue-900/40 text-slate-300 hover:bg-blue-900'}"
@@ -832,7 +1131,7 @@
 							<button
 								type="button"
 								onclick={() => (porteSelecionado = 'medio')}
-								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors
+								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors cursor-pointer
 								{porteSelecionado === 'medio'
 									? 'border-white bg-white text-slate-950'
 									: 'border-blue-800 bg-blue-900/40 text-slate-300 hover:bg-blue-900'}"
@@ -842,7 +1141,7 @@
 							<button
 								type="button"
 								onclick={() => (porteSelecionado = 'grande')}
-								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors
+								class="border px-4 py-2 font-mono text-xs font-bold text-left uppercase transition-colors cursor-pointer
 								{porteSelecionado === 'grande'
 									? 'border-white bg-white text-slate-950'
 									: 'border-blue-800 bg-blue-900/40 text-slate-300 hover:bg-blue-900'}"
@@ -1039,7 +1338,7 @@
 						<button
 							type="button"
 							onclick={() => (formEnviado = false)}
-							class="border border-emerald-900 bg-emerald-800 text-white px-4 py-1.5 text-xs font-bold uppercase mt-2 hover:bg-emerald-900"
+							class="border border-emerald-900 bg-emerald-800 text-white px-4 py-1.5 text-xs font-bold uppercase mt-2 hover:bg-emerald-900 cursor-pointer"
 						>
 							Enviar Nova Solicitação
 						</button>
