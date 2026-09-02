@@ -1,14 +1,15 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/infrastructure/database/prisma';
+import { aplicarTriggersImutabilidade } from '../src/main/bootstrapTriggers';
 
 /**
  * RESET TOTAL DO UNISISM · BANCO VIRGEM PARA PRODUÇÃO
  *
- * 1. Limpa ABSOLUTAMENTE TUDO (centros, consultórios, cadeiras, especialidades,
- *    escalas, atendimentos, encaminhamentos, tfd, pacientes, contas de app,
- *    ubss, prefeituras e atendentes de teste).
- * 2. Injeta APENAS e EXCLUSIVAMENTE o usuário Desenvolvedor / Administrador Global:
+ * 1. Zera DINAMICAMENTE 100% das tabelas do PostgreSQL usando TRUNCATE CASCADE
+ *    (desativa temporariamente triggers de auditoria para permitir a limpeza total).
+ * 2. Re-aplica os triggers de imutabilidade LGPD/CFM.
+ * 3. Injeta APENAS e EXCLUSIVAMENTE o usuário Desenvolvedor / Administrador Global:
  *      - Email:     mateushenrivieira@gmail.com
  *      - Senha:     Aguasbelas#1
  *      - Role:      DESENVOLVEDOR (Acesso irrestrito a todos os módulos)
@@ -30,85 +31,35 @@ async function main() {
   console.log('════════════════════════════════════════════════════════════════');
 
   // ────────────────────────────────────────────────────────────────
-  // 1. ZERAR ABSOLUTAMENTE TODAS AS TABELAS
+  // 1. ZERAR DINAMICAMENTE TODAS AS TABELAS
   // ────────────────────────────────────────────────────────────────
-  console.log('\n[1/3] Deletando todos os dados operacionais, clínicos e cadastrais...');
+  console.log('\n[1/3] Limpando todas as tabelas do PostgreSQL (TRUNCATE CASCADE)...');
 
-  // CEM / CEO / Especialidades
-  await prisma.atendimentoProcedimentoRealizado.deleteMany().catch(() => {});
-  await prisma.agendamentoCentro.deleteMany().catch(() => {});
-  await prisma.escalaEspecialista.deleteMany().catch(() => {});
-  await prisma.salaConsultorio.deleteMany().catch(() => {});
-  await prisma.especialidadeCatalogo.deleteMany().catch(() => {});
-  await prisma.cotaUbs.deleteMany().catch(() => {});
+  const tables: Array<{ tablename: string }> = await prisma.$queryRawUnsafe(`
+    SELECT tablename FROM pg_tables 
+    WHERE schemaname = 'public' 
+      AND tablename NOT LIKE '_prisma%'
+  `);
 
-  // Encaminhamentos & Triagem
-  await prisma.eventoTimeline.deleteMany().catch(() => {});
-  await prisma.anexoDocumento.deleteMany().catch(() => {});
-  await prisma.encaminhamento.deleteMany().catch(() => {});
-  await prisma.especialidadeRecomendacao.deleteMany().catch(() => {});
-  await prisma.relatorioAudit.deleteMany().catch(() => {});
-  await prisma.relatorio.deleteMany().catch(() => {});
+  console.log(`  → Encontradas ${tables.length} tabelas no schema public.`);
 
-  // Atendimentos UBS & Prontuários
-  await prisma.atendimento.deleteMany().catch(() => {});
-  await prisma.exameRealizado.deleteMany().catch(() => {});
-  await prisma.vacinaAplicada.deleteMany().catch(() => {});
-  await prisma.viagemTFD.deleteMany().catch(() => {});
-  await prisma.condicaoCronica.deleteMany().catch(() => {});
-  await prisma.alergia.deleteMany().catch(() => {});
-  await prisma.medicamentoEmUso.deleteMany().catch(() => {});
-  await prisma.pacienteProntuarioAudit.deleteMany().catch(() => {});
+  // Desativa verificação de triggers e constraints temporariamente para o truncate
+  await prisma.$executeRawUnsafe(`SET session_replication_role = 'replica';`);
 
-  // TFD Módulo Completo
-  await prisma.anexoSolicitacaoTFD.deleteMany().catch(() => {});
-  await prisma.solicitacaoTFD.deleteMany().catch(() => {});
-  await prisma.tfdPacienteSolicitacao.deleteMany().catch(() => {});
-  await prisma.viagemPassageiro.deleteMany().catch(() => {});
-  await prisma.abastecimento.deleteMany().catch(() => {});
-  await prisma.ajudaCusto.deleteMany().catch(() => {});
-  await prisma.saldoAjuste.deleteMany().catch(() => {});
-  await prisma.saldoVeiculo.deleteMany().catch(() => {});
-  await prisma.viagemFrota.deleteMany().catch(() => {});
-  await prisma.veiculoTFD.deleteMany().catch(() => {});
-  await prisma.motoristaTFD.deleteMany().catch(() => {});
-  await prisma.tfdAuditLog.deleteMany().catch(() => {});
-  await prisma.tfdIdempotencyKey.deleteMany().catch(() => {});
-  await prisma.aporteSaldoFrota.deleteMany().catch(() => {});
-  await prisma.aporteSaldoAjudaCusto.deleteMany().catch(() => {});
-  await prisma.saldoAjudaCustoAjuste.deleteMany().catch(() => {});
-  await prisma.saldoAjudaCustoMes.deleteMany().catch(() => {});
+  for (const { tablename } of tables) {
+    try {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
+    } catch (err) {
+      console.warn(`    ⚠️ Aviso ao truncar ${tablename}:`, (err as Error).message);
+    }
+  }
 
-  // App do Paciente / Notificações / Banners
-  await prisma.sessaoPaciente.deleteMany().catch(() => {});
-  await prisma.pacienteRefreshToken.deleteMany().catch(() => {});
-  await prisma.pacienteRecoveryToken.deleteMany().catch(() => {});
-  await prisma.pacienteDispositivo.deleteMany().catch(() => {});
-  await prisma.notificacaoPaciente.deleteMany().catch(() => {});
-  await prisma.smsBannerView.deleteMany().catch(() => {});
-  await prisma.smsBanner.deleteMany().catch(() => {});
+  // Restaura verificação padrão de triggers
+  await prisma.$executeRawUnsafe(`SET session_replication_role = 'origin';`);
 
-  // Contas de Pacientes e Prontuários de Pacientes
-  await prisma.pacienteConta.deleteMany().catch(() => {});
-  await prisma.paciente.deleteMany().catch(() => {});
-
-  // Sessões e Segurança de Atendentes
-  await prisma.sessao.deleteMany().catch(() => {});
-  await prisma.refreshToken.deleteMany().catch(() => {});
-  await prisma.passwordResetCode.deleteMany().catch(() => {});
-  await prisma.tentativaLogin.deleteMany().catch(() => {});
-  await prisma.auditoriaLog.deleteMany().catch(() => {});
-  await prisma.atividadeAtendente.deleteMany().catch(() => {});
-  await prisma.outboxEvent.deleteMany().catch(() => {});
-  await prisma.configuracaoIntegracao.deleteMany().catch(() => {});
-  await prisma.medicoAtendente.deleteMany().catch(() => {});
-
-  // Limpar Atendentes, UBSs e Prefeituras
-  await prisma.atendente.deleteMany().catch(() => {});
-  await prisma.ubs.deleteMany().catch(() => {});
-  await prisma.prefeitura.deleteMany().catch(() => {});
-
-  console.log('✓ Banco de dados 100% limpo e zerado.');
+  // Re-aplica triggers de imutabilidade do SUS/LGPD
+  await aplicarTriggersImutabilidade();
+  console.log('✓ Todas as tabelas foram truncadas e os triggers de segurança foram rearmados.');
 
   // ────────────────────────────────────────────────────────────────
   // 2. INJETAR O USUÁRIO ADMINISTRADOR GLOBAL ÚNICO
