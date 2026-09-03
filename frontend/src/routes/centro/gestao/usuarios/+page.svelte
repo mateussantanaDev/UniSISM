@@ -4,6 +4,15 @@
 	import { api, ApiError } from '$lib/api';
 	import type { UsuarioListado, Role, Escopo } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconKey,
+		IconEdit,
+		IconUserPlus,
+		IconShield,
+		IconRefresh
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -260,7 +269,10 @@
 
 	{#if erro}
 		<div class="border border-amber-600 bg-amber-50 p-4 text-amber-900 font-semibold flex items-center justify-between">
-			<span>⚠ {erro}</span>
+			<span class="flex items-center gap-1.5">
+				<IconAlertTriangle size={15} class="text-amber-700 shrink-0" />
+				<span>{erro}</span>
+			</span>
 			<button onclick={carregarUsuarios} class="border border-amber-800 bg-amber-800 text-white px-3 py-1 text-xs uppercase font-bold">
 				Recarregar Dados
 			</button>
@@ -271,12 +283,12 @@
 	<div class="border border-slate-200 bg-white p-3 flex items-center justify-between">
 		{#if isSuperUser}
 			<div class="flex items-center gap-2">
-				<span class="bg-indigo-900 text-white px-2 py-0.5 font-bold text-[10px]">🔓 ESCOPO GLOBAL</span>
+				<span class="bg-indigo-900 text-white px-2 py-0.5 font-bold text-[10px]">ESCOPO GLOBAL</span>
 				<span class="text-slate-700 text-[11px] font-bold">Perfil Administrador/Desenvolvedor — Exibindo todos os usuários cadastrados na rede municipal.</span>
 			</div>
 		{:else}
 			<div class="flex items-center gap-2">
-				<span class="bg-blue-900 text-white px-2 py-0.5 font-bold text-[10px]">🔒 ESCOPO DO CENTRO DE ESPECIALIDADES</span>
+				<span class="bg-blue-900 text-white px-2 py-0.5 font-bold text-[10px]">ESCOPO DO CENTRO</span>
 				<span class="text-slate-700 text-[11px] font-bold">Perfil Gestão do Centro — Exibindo exclusivamente a equipe e profissionais vinculados a esta unidade.</span>
 			</div>
 		{/if}
@@ -379,23 +391,25 @@
 										<div class="flex items-center justify-end gap-1.5">
 											<button
 												onclick={() => abrirEditar(u)}
-												class="border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[10px] font-bold"
+												class="border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[10px] font-bold flex items-center gap-1"
 												title="Editar Credenciais"
 											>
-												✏ Editar
+												<IconEdit size={12} />
+												<span>Editar</span>
 											</button>
 											<button
 												onclick={() => abrirResetSenha(u)}
-												class="border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-2 py-1 text-[10px] font-bold"
+												class="border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-2 py-1 text-[10px] font-bold flex items-center gap-1"
 												title="Resetar Senha"
 											>
-												🔑 Reset Senha
+												<IconKey size={12} />
+												<span>Reset Senha</span>
 											</button>
 											<button
 												onclick={() => toggleStatusUsuario(u)}
 												class="border px-2 py-1 text-[10px] font-bold {u.ativo ? 'border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'}"
 											>
-												{u.ativo ? '🚫 Inativar' : '✓ Ativar'}
+												{u.ativo ? 'Inativar' : 'Ativar'}
 											</button>
 										</div>
 									</td>
@@ -420,8 +434,9 @@
 
 			<div class="p-5 flex flex-col gap-4">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
-						⚠ {erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -474,7 +489,7 @@
 				</div>
 
 				<div class="bg-emerald-50 border border-emerald-300 p-3 text-[11px] text-emerald-950 font-semibold">
-					ℹ O usuário será vinculado diretamente ao <strong>{formTipoUnidade}</strong> e será redirecionado para a face correspondente ao realizar login.
+					O usuário será vinculado diretamente ao <strong>{formTipoUnidade}</strong> e será redirecionado para a face correspondente ao realizar login.
 				</div>
 			</div>
 
@@ -487,7 +502,7 @@
 					disabled={salvando}
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
-					{salvando ? 'Cadastrando...' : '✓ Cadastrar Profissional'}
+					{salvando ? 'Cadastrando...' : 'Cadastrar Profissional'}
 				</button>
 			</div>
 		</div>
@@ -505,8 +520,9 @@
 
 			<div class="p-5 flex flex-col gap-4">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
-						⚠ {erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
 				<div class="flex flex-col gap-1">
@@ -550,7 +566,7 @@
 					disabled={salvando}
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
-					{salvando ? 'Atualizando...' : '✓ Salvar Alterações'}
+					{salvando ? 'Atualizando...' : 'Salvar Alterações'}
 				</button>
 			</div>
 		</div>
@@ -562,14 +578,15 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
 		<div class="w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-amber-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">🔑 Redefinir Senha do Usuário</div>
+				<div class="font-bold uppercase tracking-wider text-xs">Redefinir Senha do Usuário</div>
 				<button onclick={() => modalResetSenhaAberto = false} class="text-amber-200 hover:text-white font-bold text-sm">✕</button>
 			</div>
 
 			<div class="p-5 flex flex-col gap-4">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
-						⚠ {erroModalUsuario}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
 				<div class="text-slate-800">
@@ -590,7 +607,7 @@
 					disabled={salvando}
 					class="border border-amber-900 bg-amber-900 px-5 py-2 font-bold text-white uppercase hover:bg-amber-950 disabled:opacity-50"
 				>
-					{salvando ? 'Enviando...' : '✓ Confirmar Reset'}
+					{salvando ? 'Enviando...' : 'Confirmar Reset'}
 				</button>
 			</div>
 		</div>

@@ -4,6 +4,11 @@
 	import { api } from '$lib/api';
 	import type { Encaminhamento, EventoTimeline } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconShieldCheck,
+		IconDownload,
+		IconSearch
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -141,7 +146,7 @@
 	<section class="border border-indigo-200 bg-indigo-50/70 p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-indigo-950">
 		<div class="flex items-center gap-3">
 			<div class="flex h-9 w-9 items-center justify-center bg-indigo-900 text-white font-bold text-base shadow-xs">
-				🛡️
+				<IconShieldCheck size={20} />
 			</div>
 			<div>
 				<div class="font-bold text-xs">CONFORMIDADE REGULATÓRIA ATIVA ({orgaoRegulador} / LGPD)</div>
@@ -154,21 +159,24 @@
 		<button
 			type="button"
 			onclick={exportarCsv}
-			class="border border-indigo-900 bg-indigo-900 text-white px-3.5 py-1.5 font-bold uppercase hover:bg-indigo-950 text-[11px]"
+			class="border border-indigo-900 bg-indigo-900 text-white px-3.5 py-1.5 font-bold uppercase hover:bg-indigo-950 text-[11px] flex items-center gap-1.5"
 		>
-			📥 Exportar CSV Auditoria
+			<IconDownload size={14} />
+			<span>Exportar CSV Auditoria</span>
 		</button>
 	</section>
 
 	<!-- Barra de Controles e Filtros -->
 	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
 		<div class="flex flex-1 items-center gap-2">
-			<input
-				type="text"
-				bind:value={busca}
-				placeholder="🔍 Buscar por Ação, Operador, Paciente ou Protocolo..."
-				class="w-full max-w-md border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
-			/>
+			<div class="relative w-full max-w-md">
+				<input
+					type="text"
+					bind:value={busca}
+					placeholder="Buscar por Ação, Operador, Paciente ou Protocolo..."
+					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+				/>
+			</div>
 
 			<select
 				bind:value={filtroAcao}

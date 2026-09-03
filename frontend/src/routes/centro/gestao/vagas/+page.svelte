@@ -5,6 +5,18 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconSearch,
+		IconDeviceMobile,
+		IconRefresh,
+		IconCalendar,
+		IconStethoscope,
+		IconDental,
+		IconClock,
+		IconBuildingHospital
+	} from '@tabler/icons-svelte';
 	import { ESPECIALIDADES_CEM, ESPECIALIDADES_CEO } from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	const auth = useAuth();
@@ -83,6 +95,7 @@
 	let novoHorarioInicio = $state('08:00');
 	let novoHorarioFim = $state('12:00');
 	let novaDuracao = $state(20);
+	let novasVagas = $state(12);
 
 	let modalFeriasAberto = $state(false);
 	let escalaFerias = $state<EscalaEspecialista | null>(null);
@@ -226,29 +239,15 @@
 			if (escalasRes.status === 'fulfilled' && Array.isArray(escalasRes.value)) {
 				escalasList = escalasRes.value as any[];
 			}
-			if (profissionaisRes.status === 'fulfilled' && Array.isArray(profissionaisRes.value) && profissionaisRes.value.length > 0) {
+			if (profissionaisRes.status === 'fulfilled' && Array.isArray(profissionaisRes.value)) {
 				listaProfissionais = profissionaisRes.value;
 			} else {
-				listaProfissionais = ehCeo ? [
-					{ id: 'prof-ceo-1', nome: 'Dra. Camila Cirurgiã-Dentista', registroProfissional: '6543-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Endodontia' },
-					{ id: 'prof-ceo-2', nome: 'Dr. Lucas Bucomaxilo', registroProfissional: '7890-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Cirurgia Bucomaxilofacial' },
-					{ id: 'prof-ceo-3', nome: 'Dra. Mariana Periodontista', registroProfissional: '8123-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Periodontia' },
-					{ id: 'prof-ceo-4', nome: 'Dr. Thiago Odontopediatra', registroProfissional: '9456-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Odontopediatria' },
-					{ id: 'prof-ceo-5', nome: 'Dra. Renata Prótese Dentária', registroProfissional: '5678-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Prótese Dentária' }
-				] : [
-					{ id: 'prof-cem-1', nome: 'Dr. Carlos Eduardo Silva', registroProfissional: '14820-PE', conselho: 'CRM', cargo: 'Médico Cardiologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Cardiologia' },
-					{ id: 'prof-cem-2', nome: 'Dra. Juliana Mendes Souza', registroProfissional: '18934-PE', conselho: 'CRM', cargo: 'Médica Oftalmologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Oftalmologia' },
-					{ id: 'prof-cem-3', nome: 'Dr. Roberto Almeida Santos', registroProfissional: '21055-PE', conselho: 'CRM', cargo: 'Médico Ortopedista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Ortopedia' },
-					{ id: 'prof-cem-4', nome: 'Dra. Fernanda Lima Castro', registroProfissional: '17402-PE', conselho: 'CRM', cargo: 'Médica Dermatologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Dermatologia' },
-					{ id: 'prof-cem-5', nome: 'Dr. Marcos Vinicius Costa', registroProfissional: '23110-PE', conselho: 'CRM', cargo: 'Médico Neurologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Neurologia' },
-					{ id: 'prof-cem-6', nome: 'Dra. Beatriz Santos Oliveira', registroProfissional: '19876-PE', conselho: 'CRM', cargo: 'Médica Pneumologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Pneumologia' }
-				];
+				listaProfissionais = [];
 			}
 			if (especialidadesRes.status === 'fulfilled' && Array.isArray(especialidadesRes.value) && especialidadesRes.value.length > 0) {
 				listaEspecialidadesCentro = especialidadesRes.value as any[];
 			} else {
-				const defaults = ehCeo ? ESPECIALIDADES_CEO : ESPECIALIDADES_CEM;
-				listaEspecialidadesCentro = defaults.map((nome, idx) => ({ id: `esp-def-${idx + 1}`, nome }));
+				listaEspecialidadesCentro = [];
 			}
 		} catch (err) {
 			console.info('[UniSISM] Carregando dados do centro.', err);
@@ -560,7 +559,7 @@
 										</span>
 									{:else if ubs.status === 'ALERTA'}
 										<span class="border border-amber-600 bg-amber-50 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
-											⚠ CRÍTICO
+											CRÍTICO
 										</span>
 									{:else}
 										<span class="border border-red-700 bg-red-50 text-red-900 px-2 py-0.5 text-[10px] font-bold">
@@ -595,9 +594,10 @@
 					<button
 						type="button"
 						onclick={() => abrirModalDispararAviso()}
-						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider"
+						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
 					>
-						📱 Disparar Aviso ao App (Falta / Mudança)
+						<IconDeviceMobile size={14} />
+						<span>Disparar Aviso ao App</span>
 					</button>
 
 					<button
@@ -611,11 +611,12 @@
 			</PanelHeader>
 
 			<!-- Busca de Especialista -->
-			<div class="p-4 border-b border-slate-200 bg-slate-50 font-sans">
+			<div class="p-4 border-b border-slate-200 bg-slate-50 font-sans flex items-center gap-2">
+				<IconSearch size={16} class="text-slate-400 shrink-0" />
 				<input
 					type="text"
 					bind:value={buscaEspecialista}
-					placeholder="🔍 Filtrar médico por nome ou especialidade..."
+					placeholder="Filtrar médico por nome ou especialidade..."
 					class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-blue-900"
 				/>
 			</div>
@@ -691,9 +692,10 @@
 									<button
 										type="button"
 										onclick={() => abrirModalDispararAviso(esc.medicoNome)}
-										class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-2.5 py-1 text-[10px] font-bold uppercase"
+										class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-2.5 py-1 text-[10px] font-bold uppercase flex items-center gap-1"
 									>
-										📲 Avisar Pacientes
+										<IconDeviceMobile size={12} />
+										<span>Avisar Pacientes</span>
 									</button>
 									<button
 										type="button"
@@ -717,8 +719,9 @@
 			<PanelHeader title="Ferramenta de Remanejamento Emergencial de Pacientes" index="03" />
 
 			<div class="p-6 font-sans text-xs flex flex-col gap-6">
-				<div class="border border-amber-300 bg-amber-50 p-4 text-amber-900 font-mono text-xs">
-					⚠ <strong>Painel de Domínio Absoluto do Diretor:</strong> Permite mover a demanda agendada de um médico/dia afetado por imprevistos (licença, congresso) diretamente para a agenda de outro especialista ou nova data, disparando notificação por SMS aos pacientes.
+				<div class="border border-amber-300 bg-amber-50 p-4 text-amber-900 font-mono text-xs flex items-center gap-2">
+					<IconAlertTriangle size={16} class="text-amber-700 shrink-0" />
+					<span><strong>Painel de Domínio do Gestor:</strong> Permite mover a demanda agendada de um profissional/dia afetado diretamente para a agenda de outro especialista ou nova data, disparando notificação aos pacientes.</span>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -780,9 +783,10 @@
 						type="button"
 						onclick={executarRemanejamentoEmLote}
 						disabled={processandoRemanejamento}
-						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-6 py-3 font-mono font-bold text-xs uppercase tracking-wider disabled:opacity-50"
+						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-6 py-3 font-mono font-bold text-xs uppercase tracking-wider disabled:opacity-50 flex items-center gap-2"
 					>
-						{processandoRemanejamento ? 'Reorganizando Fila...' : '🔄 Executar Remanejamento em Lote'}
+						<IconRefresh size={14} class={processandoRemanejamento ? 'animate-spin' : ''} />
+						<span>{processandoRemanejamento ? 'Reorganizando Fila...' : 'Executar Remanejamento em Lote'}</span>
 					</button>
 				</div>
 			</div>
@@ -823,8 +827,9 @@
 					{/each}
 				</div>
 			{:else}
-				<div class="border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 font-sans">
-					⚠️ <strong>Nenhuma especialidade cadastrada:</strong> Acesse o módulo de <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold text-amber-950">Catálogo de Especialidades</a> para cadastrar as especialidades ofertadas pelo {siglaOrgao} antes de definir a distribuição de cotas.
+				<div class="border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 font-sans flex items-center gap-2">
+					<IconAlertTriangle size={16} class="text-amber-700 shrink-0" />
+					<span><strong>Nenhuma especialidade cadastrada:</strong> Acesse o módulo de <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold text-amber-950">Catálogo de Especialidades</a> para cadastrar as especialidades ofertadas pelo {siglaOrgao} antes de definir a distribuição de cotas.</span>
 				</div>
 			{/if}
 
@@ -915,8 +920,8 @@
 			<div class="flex flex-col gap-1">
 				<label for="esc-tipo" class="text-[10px] font-bold text-slate-600 uppercase">Tipo de Atendimento *</label>
 				<select id="esc-tipo" bind:value={novoTipoServico} class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white">
-					<option value="CONSULTA">{ehCeo ? '🦷 CONSULTA ODONTOLÓGICA' : '🩺 CONSULTA MÉDICA'}</option>
-					<option value="PROCEDIMENTO">🔬 PROCEDIMENTO / CIRURGIA</option>
+					<option value="CONSULTA">{ehCeo ? 'CONSULTA ODONTOLÓGICA' : 'CONSULTA MÉDICA'}</option>
+					<option value="PROCEDIMENTO">PROCEDIMENTO / CIRURGIA</option>
 				</select>
 			</div>
 		</div>
@@ -936,18 +941,32 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-3 gap-3">
+		<div class="grid grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-ini" class="text-[10px] font-bold text-slate-600 uppercase">Início Turno</label>
-				<input id="esc-ini" type="time" bind:value={novoHorarioInicio} class="border border-slate-300 p-2 text-xs" />
+				<label for="esc-h-ini" class="text-[10px] font-bold text-slate-600 uppercase">Horário Início *</label>
+				<input id="esc-h-ini" type="time" bind:value={novoHorarioInicio} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
 			</div>
 			<div class="flex flex-col gap-1">
-				<label for="esc-fim" class="text-[10px] font-bold text-slate-600 uppercase">Fim Turno</label>
-				<input id="esc-fim" type="time" bind:value={novoHorarioFim} class="border border-slate-300 p-2 text-xs" />
+				<label for="esc-h-fim" class="text-[10px] font-bold text-slate-600 uppercase">Horário Fim *</label>
+				<input id="esc-h-fim" type="time" bind:value={novoHorarioFim} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
 			</div>
+		</div>
+
+		<div class="grid grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-dur" class="text-[10px] font-bold text-slate-600 uppercase">Min / Consulta</label>
-				<input id="esc-dur" type="number" bind:value={novaDuracao} min="10" step="5" class="border border-slate-300 p-2 text-xs" />
+				<label for="esc-dur" class="text-[10px] font-bold text-slate-600 uppercase">Duração por Paciente</label>
+				<select id="esc-dur" bind:value={novaDuracao} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white">
+					<option value={15}>15 minutos</option>
+					<option value={20}>20 minutos (Padrão CEM)</option>
+					<option value={30}>30 minutos (Padrão CEO)</option>
+					<option value={40}>40 minutos</option>
+					<option value={60}>60 minutos (Procedimento)</option>
+				</select>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<label for="esc-vagas" class="text-[10px] font-bold text-slate-600 uppercase">Capacidade Vagas / Turno</label>
+				<input id="esc-vagas" type="number" bind:value={novasVagas} min="1" max="50" class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
 			</div>
 		</div>
 
@@ -991,7 +1010,7 @@
 				</label>
 				<label for="opt-rem-sms" class="flex items-center gap-2 cursor-pointer font-sans text-xs border border-slate-200 p-2 bg-slate-50">
 					<input id="opt-rem-sms" type="radio" bind:group={acaoPacientesAfetados} value="FILA_AVISO_SMS" />
-					<span>Retornar para fila com notificação SMS ao paciente</span>
+					<span>Retornar para fila com notificação aos pacientes</span>
 				</label>
 			</div>
 
@@ -1007,7 +1026,7 @@
 	{/if}
 </Modal>
 
-<!-- MODAL 4: Disparar Notificação / Aviso de Ausência / Mudança ao Paciente -->
+<!-- MODAL 4: Disparo Massivo de Avisos ao App do Paciente / SMS -->
 {#if modalDispararAvisoAberto}
 	<Modal
 		isOpen={modalDispararAvisoAberto}
@@ -1017,13 +1036,14 @@
 		maxWidth="md"
 	>
 		<div class="flex flex-col gap-4 font-mono text-xs">
-			<div class="border border-purple-300 bg-purple-50 p-3 text-purple-950 font-sans text-xs">
-				📲 <strong>Disparo Massivo aos Pacientes:</strong> Envia notificação instantânea para o <strong>App do Paciente UniSISM</strong>, SMS e WhatsApp para todos os cidadãos agendados com o médico selecionado na data informada.
+			<div class="border border-purple-300 bg-purple-50 p-3 text-purple-950 font-sans text-xs flex items-center gap-2">
+				<IconDeviceMobile size={16} class="text-purple-900 shrink-0" />
+				<span><strong>Disparo aos Pacientes:</strong> Envia notificação instantânea para o <strong>App do Paciente UniSISM</strong>, SMS e WhatsApp para todos os cidadãos agendados com o profissional selecionado na data informada.</span>
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
 				<div class="flex flex-col gap-1">
-					<label for="aviso-med" class="text-[10px] font-bold text-slate-600 uppercase">Médico Especialista *</label>
+					<label for="aviso-med" class="text-[10px] font-bold text-slate-600 uppercase">Profissional Especialista *</label>
 					<select id="aviso-med" bind:value={avisoMedicoNome} onchange={atualizarTextoPreviewAviso} class="border border-slate-300 p-2 text-xs font-sans bg-white">
 						{#each opcoesMedicos as med}
 							<option value={med.nome}>{med.nome} ({med.especialidade})</option>
@@ -1040,9 +1060,9 @@
 			<div class="flex flex-col gap-1">
 				<label for="aviso-motivo" class="text-[10px] font-bold text-slate-600 uppercase">Motivo do Aviso ao Paciente *</label>
 				<select id="aviso-motivo" bind:value={avisoTipoMotivo} onchange={atualizarTextoPreviewAviso} class="border border-slate-300 p-2 text-xs font-bold bg-white">
-					<option value="FALTA_MEDICA">🚨 FALTA MÉDICA DE URGÊNCIA / AUSÊNCIA IMPREVISTA</option>
-					<option value="MUDANCA_DIA">📅 MUDANÇA DE DIA / HORÁRIO DE ATENDIMENTO</option>
-					<option value="FERIAS_LICENCA">🏖️ FÉRIAS / LICENÇA MÉDICA DO PROFISSIONAL</option>
+					<option value="FALTA_MEDICA">FALTA / AUSÊNCIA IMPREVISTA DO PROFISSIONAL</option>
+					<option value="MUDANCA_DIA">MUDANÇA DE DIA / HORÁRIO DE ATENDIMENTO</option>
+					<option value="FERIAS_LICENCA">FÉRIAS / LICENÇA DO PROFISSIONAL</option>
 				</select>
 			</div>
 
@@ -1072,15 +1092,15 @@
 				<div class="flex items-center gap-4 font-sans text-xs">
 					<label class="flex items-center gap-1.5 cursor-pointer">
 						<input type="checkbox" bind:checked={avisoCanais.app} />
-						<span class="font-bold text-purple-900">📲 App do Paciente (Push)</span>
+						<span class="font-bold text-purple-900">App do Paciente (Push)</span>
 					</label>
 					<label class="flex items-center gap-1.5 cursor-pointer">
 						<input type="checkbox" bind:checked={avisoCanais.sms} />
-						<span>💬 SMS Direct</span>
+						<span>SMS Direct</span>
 					</label>
 					<label class="flex items-center gap-1.5 cursor-pointer">
 						<input type="checkbox" bind:checked={avisoCanais.whatsapp} />
-						<span>🟢 WhatsApp Bot</span>
+						<span>WhatsApp Bot</span>
 					</label>
 				</div>
 			</div>
@@ -1093,9 +1113,10 @@
 					type="button"
 					onclick={dispararAvisoPacientes}
 					disabled={disparandoAviso}
-					class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-5 py-2 font-bold text-xs uppercase disabled:opacity-50"
+					class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-5 py-2 font-bold text-xs uppercase disabled:opacity-50 flex items-center gap-1.5"
 				>
-					{disparandoAviso ? 'Enviando...' : '📲 Disparar Notificação ao App'}
+					<IconDeviceMobile size={14} />
+					<span>{disparandoAviso ? 'Enviando...' : 'Disparar Notificação ao App'}</span>
 				</button>
 			</div>
 		</div>

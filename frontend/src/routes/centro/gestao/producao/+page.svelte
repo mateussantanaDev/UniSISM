@@ -4,6 +4,13 @@
 	import { api, ApiError } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconFileText,
+		IconPlus,
+		IconBulb
+	} from '@tabler/icons-svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
@@ -490,8 +497,9 @@
 			<PanelHeader title="Central de Relatórios Executivos e Prestação de Contas" index="02" />
 
 			<div class="p-6 font-sans text-xs flex flex-col gap-6">
-				<div class="border border-slate-200 bg-slate-50 p-4 font-mono text-xs">
-					📋 Selecione o relatório desejado para prestação de contas com a Secretaria Municipal de Saúde, SUS ou Tribunal de Contas:
+				<div class="border border-slate-200 bg-slate-50 p-4 font-mono text-xs flex items-center gap-2">
+					<IconFileText size={15} class="text-blue-900 shrink-0" />
+					<span>Selecione o relatório desejado para prestação de contas com a Secretaria Municipal de Saúde, SUS ou Tribunal de Contas:</span>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono">
@@ -586,7 +594,8 @@
 			<div class="p-4 flex flex-col gap-4 font-sans text-xs">
 				<div class="border border-purple-300 bg-purple-50 p-4 text-purple-950 font-mono text-xs flex flex-col gap-1">
 					<div class="font-bold uppercase tracking-wider flex items-center gap-2">
-						<span>💡 AUDITORIA & REGISTRO RETROATIVO DE PROCEDIMENTOS</span>
+						<IconBulb size={15} class="text-purple-900" />
+						<span>AUDITORIA & REGISTRO RETROATIVO DE PROCEDIMENTOS</span>
 						<span class="bg-purple-900 text-white text-[9px] px-2 py-0.5 font-normal">GESTOR / FATURAMENTO</span>
 					</div>
 					<div>
@@ -762,11 +771,15 @@
 
 			<!-- Formulário para Inserção -->
 			<div class="flex flex-col gap-3 border-t border-slate-200 pt-3">
-				<span class="font-bold text-purple-950 uppercase text-[11px]">➕ Adicionar Novo Procedimento SIGTAP</span>
+				<span class="font-bold text-purple-950 uppercase text-[11px] flex items-center gap-1">
+					<IconPlus size={13} />
+					<span>Adicionar Novo Procedimento SIGTAP</span>
+				</span>
 				
 				{#if erroModalAjuste}
-					<div class="border border-rose-200 bg-rose-50 p-2 text-rose-900 font-bold">
-						⚠ {erroModalAjuste}
+					<div class="border border-rose-200 bg-rose-50 p-2 text-rose-900 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+						<span>{erroModalAjuste}</span>
 					</div>
 				{/if}
 

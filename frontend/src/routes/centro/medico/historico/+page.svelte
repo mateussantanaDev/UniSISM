@@ -3,6 +3,13 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconSearch,
+		IconFileText,
+		IconPrinter,
+		IconPill,
+		IconCheck
+	} from '@tabler/icons-svelte';
 	import { calcularIdadeExata } from '$lib/presentation/utils/stringUtils';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
@@ -160,9 +167,10 @@
 		</div>
 		<button
 			onclick={carregarHistorico}
-			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase hover:bg-blue-950 shrink-0"
+			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase hover:bg-blue-950 shrink-0 flex items-center gap-1.5"
 		>
-			🔍 Filtrar Prontuários
+			<IconSearch size={14} />
+			<span>Filtrar Prontuários</span>
 		</button>
 	</section>
 
@@ -215,9 +223,10 @@
 									<td class="p-3 text-right">
 										<button
 											onclick={() => abrirPep(item)}
-											class="border border-blue-900 bg-blue-900 text-white px-3 py-1 text-[10px] font-bold uppercase hover:bg-blue-950"
+											class="border border-blue-900 bg-blue-900 text-white px-3 py-1 text-[10px] font-bold uppercase hover:bg-blue-950 flex items-center gap-1.5 ml-auto"
 										>
-											📄 Ver Prontuário PEP
+											<IconFileText size={13} />
+											<span>Ver Prontuário PEP</span>
 										</button>
 									</td>
 								</tr>
@@ -236,7 +245,8 @@
 		<div class="w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-5 py-3 text-white sticky top-0 z-10">
 				<div class="font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-					<span>📄 PRONTUÁRIO ELETRÔNICO DO PACIENTE (PEP)</span>
+					<IconFileText size={15} />
+					<span>PRONTUÁRIO ELETRÔNICO DO PACIENTE (PEP)</span>
 					<span class="bg-emerald-700 text-white px-2 py-0.5 text-[9px]">ASSINADO DIGITALMENTE</span>
 				</div>
 				<button onclick={() => modalPepAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
@@ -284,14 +294,20 @@
 
 					{#if atendimentoSelecionado.prescricao}
 						<div class="bg-emerald-50 border border-emerald-200 p-3">
-							<span class="font-bold text-emerald-900 uppercase text-[10px] block mb-1">💊 RECEITUÁRIO MÉDICO PRESCRITO</span>
+							<span class="font-bold text-emerald-900 uppercase text-[10px] block mb-1 flex items-center gap-1">
+								<IconPill size={13} />
+								<span>RECEITUÁRIO MÉDICO PRESCRITO</span>
+							</span>
 							<pre class="text-emerald-950 font-mono text-xs whitespace-pre-wrap">{atendimentoSelecionado.prescricao}</pre>
 						</div>
 					{/if}
 
 					{#if atendimentoSelecionado.atestadoEmitido}
 						<div class="bg-amber-50 border border-amber-200 p-3">
-							<span class="font-bold text-amber-900 uppercase text-[10px] block mb-1">📄 ATESTADO / LAUDO MÉDICO</span>
+							<span class="font-bold text-amber-900 uppercase text-[10px] block mb-1 flex items-center gap-1">
+								<IconFileText size={13} />
+								<span>ATESTADO / LAUDO MÉDICO</span>
+							</span>
 							<p class="text-amber-950 font-sans text-xs">{atendimentoSelecionado.atestadoEmitido}</p>
 						</div>
 					{/if}
@@ -301,8 +317,9 @@
 			<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 sticky bottom-0">
 				<span class="text-[10px] text-slate-500">Documento assinado eletronicamente via UniSISM PEP.</span>
 				<div class="flex gap-2">
-					<button onclick={() => imprimirDocumento('PEP')} class="border border-slate-400 bg-white px-4 py-2 font-bold hover:bg-slate-100">
-						🖨 Imprimir PEP
+					<button onclick={() => imprimirDocumento('PEP')} class="border border-slate-400 bg-white px-4 py-2 font-bold hover:bg-slate-100 flex items-center gap-1.5">
+						<IconPrinter size={14} />
+						<span>Imprimir PEP</span>
 					</button>
 					<button onclick={() => modalPepAberto = false} class="border border-blue-900 bg-blue-900 text-white px-5 py-2 font-bold uppercase hover:bg-blue-950">
 						Fechar

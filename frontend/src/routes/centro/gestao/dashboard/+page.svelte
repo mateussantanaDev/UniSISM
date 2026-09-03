@@ -4,6 +4,13 @@
 	import { api, ApiError } from '$lib/api';
 	import type { DashboardGestaoCentroResponse } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconAlertTriangle,
+		IconUsers,
+		IconCalendar,
+		IconBuildingHospital,
+		IconFileText
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -63,7 +70,10 @@
 
 	{#if erro}
 		<div class="border border-amber-600 bg-amber-50 p-4 text-amber-900 font-semibold flex items-center justify-between">
-			<span>⚠ {erro}</span>
+			<span class="flex items-center gap-1.5">
+				<IconAlertTriangle size={15} class="text-amber-700 shrink-0" />
+				<span>{erro}</span>
+			</span>
 			<button onclick={carregarDashboard} class="border border-amber-800 bg-amber-800 text-white px-3 py-1 text-xs uppercase font-bold">
 				Tentar Novamente
 			</button>
@@ -208,19 +218,31 @@
 			<div class="text-xs font-bold tracking-widest text-slate-400 uppercase">COMANDOS RÁPIDOS DA DIRETORIA</div>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-3">
 				<a href="/centro/gestao/usuarios" class="border border-slate-700 bg-slate-800 p-3 hover:bg-slate-700 flex flex-col gap-1">
-					<span class="font-bold text-xs text-white">👥 Gestão de Equipes & Usuários</span>
+					<span class="font-bold text-xs text-white flex items-center gap-1.5">
+						<IconUsers size={14} />
+						<span>Gestão de Equipes & Usuários</span>
+					</span>
 					<span class="text-[10px] text-slate-400">Cadastrar, editar credenciais e perfis de médicos e atendentes.</span>
 				</a>
 				<a href="/centro/gestao/vagas" class="border border-slate-700 bg-slate-800 p-3 hover:bg-slate-700 flex flex-col gap-1">
-					<span class="font-bold text-xs text-white">📅 Matriz de Vagas & Escalas</span>
+					<span class="font-bold text-xs text-white flex items-center gap-1.5">
+						<IconCalendar size={14} />
+						<span>Matriz de Vagas & Escalas</span>
+					</span>
 					<span class="text-[10px] text-slate-400">Redefinir cotas de UBSs e escalas de médicos por turno.</span>
 				</a>
 				<a href="/centro/gestao/salas" class="border border-slate-700 bg-slate-800 p-3 hover:bg-slate-700 flex flex-col gap-1">
-					<span class="font-bold text-xs text-white">🏥 Consultórios & Infraestrutura</span>
+					<span class="font-bold text-xs text-white flex items-center gap-1.5">
+						<IconBuildingHospital size={14} />
+						<span>Consultórios & Infraestrutura</span>
+					</span>
 					<span class="text-[10px] text-slate-400">Gerenciar salas físicas do Centro de Especialidades.</span>
 				</a>
 				<a href="/centro/gestao/producao" class="border border-slate-700 bg-slate-800 p-3 hover:bg-slate-700 flex flex-col gap-1">
-					<span class="font-bold text-xs text-white">📑 Relatórios Oficiais & Auditoria</span>
+					<span class="font-bold text-xs text-white flex items-center gap-1.5">
+						<IconFileText size={14} />
+						<span>Relatórios Oficiais & Auditoria</span>
+					</span>
 					<span class="text-[10px] text-slate-400">Exportar BPA/SUS e consultar logs imutáveis do CFM.</span>
 				</a>
 			</div>

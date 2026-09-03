@@ -3,6 +3,16 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconInfoCircle,
+		IconBuildingHospital,
+		IconUser,
+		IconDental,
+		IconStethoscope,
+		IconTools
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -169,12 +179,18 @@
 					</div>
 
 					{#if sala.medicoAlocado}
-						<div class="mt-3 bg-blue-50 border border-blue-200 p-2 text-blue-900 font-semibold text-[11px]">
-							{ehCeo ? '🦷 Cirurgião-Dentista' : '👨‍⚕️ Médico'} em Turno: <strong>{sala.medicoAlocado}</strong> ({sala.medicoCrm})
+						<div class="mt-3 bg-blue-50 border border-blue-200 p-2 text-blue-900 font-semibold text-[11px] flex items-center gap-1.5">
+							{#if ehCeo}
+								<IconDental size={14} class="text-blue-900 shrink-0" />
+							{:else}
+								<IconStethoscope size={14} class="text-blue-900 shrink-0" />
+							{/if}
+							<span>{ehCeo ? 'Cirurgião-Dentista' : 'Médico'} em Turno: <strong>{sala.medicoAlocado}</strong> ({sala.medicoCrm})</span>
 						</div>
 					{:else}
-						<div class="mt-3 bg-slate-50 border border-slate-200 p-2 text-slate-500 font-mono text-[10px]">
-							ℹ Sem profissional alocado na escala hoje
+						<div class="mt-3 bg-slate-50 border border-slate-200 p-2 text-slate-500 font-mono text-[10px] flex items-center gap-1.5">
+							<IconInfoCircle size={12} class="text-slate-400 shrink-0" />
+							<span>Sem profissional alocado na escala hoje</span>
 						</div>
 					{/if}
 
@@ -188,8 +204,9 @@
 					</div>
 
 					{#if sala.observacoes}
-						<div class="mt-3 text-[10px] text-amber-900 bg-amber-50 p-2 border border-amber-200">
-							📌 {sala.observacoes}
+						<div class="mt-3 text-[10px] text-amber-900 bg-amber-50 p-2 border border-amber-200 flex items-center gap-1">
+							<IconInfoCircle size={12} class="text-amber-700 shrink-0" />
+							<span>{sala.observacoes}</span>
 						</div>
 					{/if}
 				</div>
@@ -211,9 +228,10 @@
 						</button>
 						<button
 							onclick={() => alterarStatusSala(sala, 'MANUTENCAO')}
-							class="border border-rose-700 bg-rose-50 text-rose-900 px-2 py-0.5 font-bold hover:bg-rose-100"
+							class="border border-rose-700 bg-rose-50 text-rose-900 px-2 py-0.5 font-bold hover:bg-rose-100 flex items-center gap-1"
 						>
-							Manutenção
+							<IconTools size={11} />
+							<span>Manutenção</span>
 						</button>
 					</div>
 				</div>
@@ -239,8 +257,9 @@
 
 			<div class="p-5 flex flex-col gap-4">
 				{#if erroModalSala}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold">
-						⚠ {erroModalSala}
+					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+						<span>{erroModalSala}</span>
 					</div>
 				{/if}
 				<div class="grid grid-cols-2 gap-3">

@@ -6,6 +6,17 @@
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconSearch,
+		IconCalendar,
+		IconClock,
+		IconUser,
+		IconBuildingHospital,
+		IconBolt,
+		IconRefresh
+	} from '@tabler/icons-svelte';
+	import {
 		alocarVagaPorProfissionalEEscala,
 		ESCALAS_PADRAO_CEM,
 		ESCALAS_PADRAO_CEO,
@@ -367,9 +378,9 @@
 					bind:value={filtroStatusAgendamento}
 					class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-mono font-bold"
 				>
-					<option value="AGUARDANDO">⏳ AGUARDANDO AGENDAMENTO ({totalFila})</option>
-					<option value="AGENDADO">📅 JÁ AGENDADOS / REMARCAR ({totalAgendados})</option>
-					<option value="TODOS">📋 TODOS OS REGISTROS ({encaminhamentos.length})</option>
+					<option value="AGUARDANDO">AGUARDANDO AGENDAMENTO ({totalFila})</option>
+					<option value="AGENDADO">JÁ AGENDADOS / REMARCAR ({totalAgendados})</option>
+					<option value="TODOS">TODOS OS REGISTROS ({encaminhamentos.length})</option>
 				</select>
 			</div>
 
@@ -472,7 +483,7 @@
 										onclick={() => abrirAgendamento(enc)}
 										class="{enc.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-2.5 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
 									>
-										{enc.agendamentoPrevisto ? '🔄 Remarcar' : 'Agendar'}
+										{enc.agendamentoPrevisto ? 'Remarcar' : 'Agendar'}
 									</button>
 								</td>
 							</tr>
@@ -488,25 +499,23 @@
 				<div>
 					Exibindo {(paginaExibida - 1) * itensPorPagina + 1} - {Math.min(paginaExibida * itensPorPagina, ordenados.length)} de {ordenados.length}
 				</div>
-				<div class="flex items-center gap-1">
+				<div class="flex gap-1">
 					<button
 						type="button"
+						onclick={() => paginaExibida = Math.max(1, paginaExibida - 1)}
 						disabled={paginaExibida === 1}
-						onclick={() => paginaAtual = paginaExibida - 1}
-						class="border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+						class="border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
 					>
-						&larr; Ant
+						Anterior
 					</button>
-					<span class="px-3 py-1 border border-slate-300 bg-white text-slate-900">
-						{paginaExibida} / {totalPaginas}
-					</span>
+					<span class="px-2 py-1 font-bold">{paginaExibida} / {totalPaginas}</span>
 					<button
 						type="button"
-						disabled={paginaExibida >= totalPaginas}
-						onclick={() => paginaAtual = paginaExibida + 1}
-						class="border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+						onclick={() => paginaExibida = Math.min(totalPaginas, paginaExibida + 1)}
+						disabled={paginaExibida === totalPaginas}
+						class="border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
 					>
-						Próx &rarr;
+						Próxima
 					</button>
 				</div>
 			</div>
@@ -514,20 +523,24 @@
 	</div>
 </div>
 
-<!-- Modal de Agendamento (B2G Brutalist Heavy) -->
-{#if modalAgendamento && selecionado}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 font-mono">
-		<div class="w-full max-w-md border-2 border-slate-900 bg-white p-6 shadow-[8px_8px_0_rgba(15,23,42,0.15)] rounded-none">
-			<div class="mb-4 border-b border-slate-200 pb-3 flex items-center justify-between">
-				<h2 class="text-base font-bold text-slate-900 uppercase">
-					Otimizar e Agendar Consulta
-				</h2>
-				<button type="button" onclick={fecharAgendamento} class="text-slate-400 hover:text-slate-900 font-bold">
-					[X] CLOSE
+<!-- Modal: Agendamento / Alocação na Grade -->
+{#if modalAgendamentoAberto && selecionado}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+		<div class="w-full max-w-lg border-2 border-slate-900 bg-white font-mono shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
+			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
+				<div class="font-bold uppercase tracking-wider text-xs">
+					{selecionado.agendamentoPrevisto ? 'Remarcação de Consulta' : 'Agendamento em Grade do Especialista'}
+				</div>
+				<button
+					type="button"
+					onclick={fecharAgendamento}
+					class="text-slate-400 hover:text-white font-bold"
+				>
+					✕
 				</button>
 			</div>
 
-			<div class="flex flex-col gap-4 text-xs">
+			<div class="flex flex-col gap-4 text-xs p-5 max-h-[80vh] overflow-y-auto">
 				<div class="border border-slate-200 bg-slate-50 p-3 leading-tight font-sans text-slate-800">
 					<div class="font-mono text-[9px] text-slate-500 font-bold tracking-widest uppercase">Paciente em Fila</div>
 					<div class="text-sm font-bold text-slate-900 mt-0.5">{selecionado.paciente.nome}</div>
@@ -541,11 +554,12 @@
 					<div class="font-mono text-[10px] text-slate-600">Especialidade · {selecionado.solicitacao.especialidadeSolicitada}</div>
 				</div>
 
-
-
 				<!-- Identificação do Órgão -->
 				<div class="border border-slate-300 bg-slate-100 p-2 font-mono text-xs flex items-center justify-between">
-					<span class="font-bold text-slate-700 uppercase text-[10px]">🏢 UNIDADE ASSISTENCIAL:</span>
+					<span class="font-bold text-slate-700 uppercase text-[10px] flex items-center gap-1">
+						<IconBuildingHospital size={12} class="text-blue-900" />
+						<span>UNIDADE ASSISTENCIAL:</span>
+					</span>
 					<span class="font-bold text-slate-900">{nomeOrgao}</span>
 				</div>
 
@@ -558,49 +572,55 @@
 						<button
 							type="button"
 							onclick={() => modoSelecaoData = 'AUTO'}
-							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors {modoSelecaoData === 'AUTO' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors flex items-center justify-center gap-1.5 {modoSelecaoData === 'AUTO' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
 						>
-							⚡ Auto (Escala do Médico)
+							<IconBolt size={13} />
+							<span>Auto (Escala)</span>
 						</button>
 						<button
 							type="button"
 							onclick={() => modoSelecaoData = 'MANUAL'}
-							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors {modoSelecaoData === 'MANUAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+							class="px-2 py-1.5 font-bold uppercase text-[11px] border transition-colors flex items-center justify-center gap-1.5 {modoSelecaoData === 'MANUAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
 						>
-							📅 Remarcar / Data Manual
+							<IconCalendar size={13} />
+							<span>Data Manual</span>
 						</button>
 					</div>
-
-					{#if modoSelecaoData === 'MANUAL'}
-						<div class="grid grid-cols-2 gap-2 border-t border-slate-300 pt-2 mt-1">
-							<div class="flex flex-col gap-1">
-								<label for="man-data" class="text-[9px] font-bold text-slate-700 uppercase">Nova Data *</label>
-								<input
-									id="man-data"
-									type="date"
-									bind:value={dataAgendamentoManual}
-									class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
-								/>
-							</div>
-							<div class="flex flex-col gap-1">
-								<label for="man-hora" class="text-[9px] font-bold text-slate-700 uppercase">Horário *</label>
-								<input
-									id="man-hora"
-									type="time"
-									bind:value={horaAgendamentoManual}
-									class="border border-purple-400 bg-white px-2 py-1 outline-none text-xs font-bold font-mono"
-								/>
-							</div>
-						</div>
-					{/if}
 				</div>
 
-				<!-- Médico especialista dropdown com busca -->
+				{#if modoSelecaoData === 'MANUAL'}
+					<div class="grid grid-cols-2 gap-3 border border-purple-200 bg-purple-50/50 p-2.5">
+						<div class="flex flex-col gap-1">
+							<label for="data-manual" class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+								Data do Agendamento *
+							</label>
+							<input
+								id="data-manual"
+								type="date"
+								bind:value={dataAgendamentoManual}
+								min={new Date().toISOString().substring(0, 10)}
+								class="border border-slate-300 bg-white p-1.5 text-xs font-mono outline-none focus:border-purple-900"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							<label for="hora-manual" class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+								Horário Previsto *
+							</label>
+							<input
+								id="hora-manual"
+								type="time"
+								bind:value={horaAgendamentoManual}
+								class="border border-slate-300 bg-white p-1.5 text-xs font-mono outline-none focus:border-purple-900"
+							/>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Seleção do Profissional / Especialista -->
 				<div class="flex flex-col gap-1 relative">
 					<label for="medico-search" class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
-						Profissional / Especialista da Escala <span class="text-red-700">*</span>
+						{rotuloProfissional} *
 					</label>
-					
 					<button
 						id="medico-search"
 						type="button"
@@ -613,11 +633,12 @@
 
 					{#if dropdownAberto}
 						<div class="absolute z-10 left-0 right-0 top-full mt-1 border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)] max-h-48 overflow-y-auto">
-							<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0">
+							<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0 flex items-center gap-1.5">
+								<IconSearch size={14} class="text-slate-400 shrink-0" />
 								<input
 									type="text"
 									bind:value={buscaMedico}
-									placeholder="🔍 Digite para pesquisar..."
+									placeholder="Digite para pesquisar..."
 									class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs"
 									onclick={(e) => e.stopPropagation()}
 								/>
@@ -651,15 +672,17 @@
 					<div class="border-2 border-emerald-700 bg-emerald-50/80 p-3 flex flex-col gap-1.5 font-mono text-xs shadow-xs">
 						<div class="flex items-center justify-between">
 							<span class="font-bold text-emerald-950 uppercase text-[10px] flex items-center gap-1">
-								<span>⚡ ALOCAÇÃO DETERMINÍSTICA DE ESCALA</span>
+								<IconBolt size={12} class="text-emerald-900" />
+								<span>ALOCAÇÃO DETERMINÍSTICA DE ESCALA</span>
 							</span>
 							<span class="bg-emerald-700 text-white font-bold px-1.5 py-0.5 text-[9px] uppercase">{alocacaoInteligente.prazoLegalSus}</span>
 						</div>
-						<div class="text-sm font-black text-emerald-900 font-sans mt-0.5">
-							📅 {alocacaoInteligente.dataFormatada} às {alocacaoInteligente.hora}
+						<div class="text-sm font-black text-emerald-900 font-sans mt-0.5 flex items-center gap-1.5">
+							<IconCalendar size={15} class="text-emerald-900" />
+							<span>{alocacaoInteligente.dataFormatada} às {alocacaoInteligente.hora}</span>
 						</div>
 						<div class="text-[11px] text-emerald-950 font-bold">
-							📍 {alocacaoInteligente.consultorio} · {alocacaoInteligente.medicoNome} ({alocacaoInteligente.registro})
+							{alocacaoInteligente.consultorio} · {alocacaoInteligente.medicoNome} ({alocacaoInteligente.registro})
 						</div>
 						<div class="text-[10px] text-emerald-800 border-t border-emerald-200 pt-1 font-sans leading-tight">
 							{alocacaoInteligente.justificativaEscala}
@@ -677,14 +700,15 @@
 						rows="3"
 						bind:value={notaAgendamento}
 						disabled={processandoAgendamento}
-						placeholder="Ex: Trazer comprovante de residência e exames cardíacos."
+						placeholder="Ex: Trazer comprovante de residência e exames anteriores."
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-sm text-slate-900 outline-none focus:border-blue-900 resize-none"
 					></textarea>
 				</div>
 
 				{#if erroModal}
-					<div class="border border-red-700 bg-red-50 px-3 py-2 text-red-800 font-bold">
-						{erroModal}
+					<div class="border border-red-700 bg-red-50 px-3 py-2 text-red-800 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+						<span>{erroModal}</span>
 					</div>
 				{/if}
 
@@ -703,7 +727,7 @@
 						disabled={processandoAgendamento}
 						class="{selecionado?.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-4 py-2 font-bold uppercase"
 					>
-						{processandoAgendamento ? 'Salvando...' : (selecionado?.agendamentoPrevisto ? '🔄 Confirmar Remarcação' : 'Confirmar e Agendar')}
+						{processandoAgendamento ? 'Salvando...' : (selecionado?.agendamentoPrevisto ? 'Confirmar Remarcação' : 'Confirmar e Agendar')}
 					</button>
 				</div>
 			</div>

@@ -8,6 +8,7 @@
 	import ModalDossiePaciente from '$lib/presentation/components/centro/ModalDossiePaciente.svelte';
 	import ImprimirProntuario from '$lib/presentation/components/prontuario/ImprimirProntuario.svelte';
 	import type { PacienteCompleto } from '$lib/domain/models/Paciente';
+	import { IconSearch, IconFileText } from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -152,7 +153,7 @@
 			<input
 				type="text"
 				bind:value={busca}
-				placeholder="🔍 Buscar por Nome do Paciente, CPF ou Cartão SUS..."
+				placeholder="Buscar por Nome do Paciente, CPF ou Cartão SUS..."
 				class="w-full max-w-md border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
 			/>
 
@@ -230,9 +231,10 @@
 								<button
 									type="button"
 									onclick={() => abrirDossie(pac.id)}
-									class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 hover:bg-slate-100 uppercase"
+									class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 hover:bg-slate-100 uppercase flex items-center gap-1.5 ml-auto"
 								>
-									📄 Dossiê PEC
+									<IconFileText size={13} />
+									<span>Dossiê Prontuário</span>
 								</button>
 							</td>
 						</tr>

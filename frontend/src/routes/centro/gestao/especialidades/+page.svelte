@@ -3,6 +3,15 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconSearch,
+		IconStethoscope,
+		IconDental,
+		IconFlask,
+		IconFileText
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -201,12 +210,18 @@
 						<tr class="hover:bg-slate-50">
 							<td class="p-3">
 								{#if esp.tipoServico === 'PROCEDIMENTO'}
-									<span class="bg-purple-100 text-purple-900 border border-purple-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
-										🔬 PROCEDIMENTO
+									<span class="bg-purple-100 text-purple-900 border border-purple-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider flex items-center gap-1 w-fit">
+										<IconFlask size={11} />
+										<span>PROCEDIMENTO</span>
 									</span>
 								{:else}
-									<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
-										🩺 CONSULTA
+									<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider flex items-center gap-1 w-fit">
+										{#if ehCeo}
+											<IconDental size={11} />
+										{:else}
+											<IconStethoscope size={11} />
+										{/if}
+										<span>CONSULTA</span>
 									</span>
 								{/if}
 							</td>
@@ -221,8 +236,9 @@
 							<td class="p-3 text-slate-700">
 								<div class="flex flex-col gap-1">
 									{#each esp.documentosObrigatorios as doc}
-										<div class="text-[10px] bg-amber-50 border border-amber-200 text-amber-900 p-1 font-sans">
-											📄 {doc}
+										<div class="text-[10px] bg-amber-50 border border-amber-200 text-amber-900 p-1 font-sans flex items-center gap-1">
+											<IconFileText size={11} class="shrink-0" />
+											<span>{doc}</span>
 										</div>
 									{/each}
 									<div class="text-[10px] text-slate-500 italic mt-0.5">Preparo: {esp.preparoRequerido || 'Nenhum'}</div>
@@ -267,16 +283,17 @@
 
 			<div class="p-5 flex flex-col gap-4">
 				{#if erroModal}
-					<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900">
-						⚠ {erroModal}
+					<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900 flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+						<span>{erroModal}</span>
 					</div>
 				{/if}
 
 				<div class="flex flex-col gap-1">
 					<label for="esp-tipo" class="font-bold text-slate-700 text-[11px]">Tipo de Serviço *</label>
 					<select id="esp-tipo" bind:value={formTipoServico} class="border border-slate-300 p-2 text-xs font-bold bg-white">
-						<option value="CONSULTA">🩺 CONSULTA MÉDICA ESPECIALIZADA</option>
-						<option value="PROCEDIMENTO">🔬 PROCEDIMENTO DIAGNÓSTICO / TERAPÊUTICO</option>
+						<option value="CONSULTA">{ehCeo ? 'CONSULTA ODONTOLÓGICA ESPECIALIZADA' : 'CONSULTA MÉDICA ESPECIALIZADA'}</option>
+						<option value="PROCEDIMENTO">PROCEDIMENTO DIAGNÓSTICO / TERAPÊUTICO</option>
 					</select>
 				</div>
 

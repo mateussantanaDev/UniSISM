@@ -6,6 +6,7 @@
 	import { api, ApiError } from '$lib/api';
 	import type { MeResponse } from '$lib/api/types';
 	import { rbac, setAuthContext } from '$lib/presentation/contexts/authContext';
+	import { IconArrowsExchange } from '@tabler/icons-svelte';
 
 	let { children } = $props();
 
@@ -156,8 +157,9 @@
 				</div>
 				<div class="flex items-center gap-4 font-mono text-xs">
 					{#if me?.role === 'ADMIN' || me?.role === 'DESENVOLVEDOR'}
-						<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline">
-							🔄 Alternar para Centro Médico (CEM) →
+						<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline flex items-center gap-1">
+							<IconArrowsExchange size={14} />
+							<span>Alternar para Centro Médico (CEM) →</span>
 						</a>
 						<span class="text-slate-300">|</span>
 					{/if}

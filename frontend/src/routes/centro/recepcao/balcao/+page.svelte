@@ -15,6 +15,21 @@
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconSearch,
+		IconCalendar,
+		IconClock,
+		IconUser,
+		IconBuildingHospital,
+		IconBolt,
+		IconRefresh,
+		IconPrinter,
+		IconStethoscope,
+		IconDental,
+		IconFlask
+	} from '@tabler/icons-svelte';
+	import {
 		ESPECIALIDADES_CEM,
 		ESPECIALIDADES_CEO,
 		type TipoCentro,
@@ -22,12 +37,11 @@
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	// Centro Selecionado determinado 100% pelo órgão / rota (CEM vs CEO)
-	let centroSelecionado = $derived<TipoCentro>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let centroSelecionado: TipoCentro = $derived(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroSelecionado === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
 	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
 	let rotuloConsulta = $derived(ehCeo ? 'CONSULTA ODONTOLÓGICA' : 'CONSULTA MÉDICA');
-	let iconeConsulta = $derived(ehCeo ? '🦷' : '🩺');
 
 	// Dados do Paciente (sem valores mockados)
 	let pacienteCpf = $state('');
@@ -586,13 +600,13 @@
 	{#if !carregandoEscalas && escalasDoBanco.length === 0}
 		<div class="border-2 border-amber-600 bg-amber-50 p-4 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
 			<div class="flex items-center gap-2.5">
-				<span class="text-xl">⚠️</span>
+				<IconAlertTriangle size={20} class="text-amber-700 shrink-0" />
 				<div>
 					<div class="font-mono font-bold text-xs uppercase tracking-wide text-amber-900">
-						NENHUMA ESCALA ATIVA ENCONTRADA NO BANCO DE DADOS
+						Nenhuma Escala de Atendimento Ativa no {siglaOrgao}
 					</div>
-					<div class="text-xs text-amber-800 mt-0.5">
-						Cadastre a grade de médicos/dentistas na tela de <strong>Matriz de Vagas & Escalas</strong> para habilitar a busca de horários.
+					<div class="text-xs text-amber-800 font-sans mt-0.5">
+						Cadastre profissionais e suas escalas na Matriz de Vagas para habilitar o agendamento de balcão.
 					</div>
 				</div>
 			</div>
@@ -779,7 +793,10 @@
 				<div class="p-4 flex flex-col gap-3.5 font-sans text-xs">
 					<!-- Identificação da Unidade -->
 					<div class="border border-slate-300 bg-slate-100 p-2 font-mono text-xs flex items-center justify-between">
-						<span class="font-bold text-slate-700 uppercase text-[10px]">🏢 UNIDADE:</span>
+						<span class="font-bold text-slate-700 uppercase text-[10px] flex items-center gap-1">
+							<IconBuildingHospital size={12} class="text-blue-900" />
+							<span>UNIDADE:</span>
+						</span>
 						<span class="font-bold text-slate-900">{nomeOrgao}</span>
 					</div>
 
@@ -794,7 +811,11 @@
 								onclick={() => tipoServico = 'CONSULTA'}
 								class="px-3 py-2 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'CONSULTA' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>{iconeConsulta}</span>
+								{#if ehCeo}
+									<IconDental size={14} />
+								{:else}
+									<IconStethoscope size={14} />
+								{/if}
 								<span>{rotuloConsulta}</span>
 							</button>
 							<button
@@ -802,7 +823,7 @@
 								onclick={() => tipoServico = 'PROCEDIMENTO'}
 								class="px-3 py-2 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'PROCEDIMENTO' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>🔬</span>
+								<IconFlask size={14} />
 								<span>PROCEDIMENTO SIGTAP</span>
 							</button>
 						</div>
@@ -866,7 +887,7 @@
 								{#if medicoSelecionado}
 									{medicoSelecionado.nome} — {medicoSelecionado.especialidade} ({medicoSelecionado.registro})
 								{:else if medicosEspecialistas.length === 0}
-									⚠️ Nenhum profissional cadastrado na escala deste Centro
+									Nenhum profissional cadastrado na escala deste Centro
 								{:else}
 									Selecione o profissional da escala...
 								{/if}
@@ -876,11 +897,12 @@
 
 						{#if dropdownAberto}
 							<div class="absolute z-20 left-0 right-0 top-full mt-1 border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)] max-h-52 overflow-y-auto">
-								<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0">
+								<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0 flex items-center gap-1.5">
+									<IconSearch size={14} class="text-slate-400 shrink-0" />
 									<input
 										type="text"
 										bind:value={buscaMedico}
-										placeholder="🔍 Filtrar profissional por nome ou especialidade..."
+										placeholder="Filtrar profissional por nome ou especialidade..."
 										class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs"
 										onclick={(e) => e.stopPropagation()}
 									/>
@@ -917,7 +939,7 @@
 					<!-- Prioridade Clínica SUS (Diretriz de Alocação de Vagas) -->
 					<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
 						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center justify-between">
-							<span>Prioridade Clínica SUS (Diretriz de Alocação de Vagas) *</span>
+							<span>Prioridade Clínica (Diretriz de Alocação de Vagas) *</span>
 							<span class="text-[9px] text-blue-900 font-normal">Janela de Atendimento</span>
 						</span>
 
@@ -927,7 +949,7 @@
 								onclick={() => prioridade = 'ELETIVA'}
 								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'ELETIVA' ? 'border-emerald-800 bg-emerald-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>🟢 ELETIVA</span>
+								<span>ELETIVA</span>
 								<span class="text-[8px] font-normal {prioridade === 'ELETIVA' ? 'text-emerald-100' : 'text-slate-500'}">15 a 30 dias</span>
 							</button>
 							<button
@@ -935,7 +957,7 @@
 								onclick={() => prioridade = 'PRIORITARIA'}
 								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'PRIORITARIA' ? 'border-amber-800 bg-amber-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>🟡 PRIORITÁRIA</span>
+								<span>PRIORITÁRIA</span>
 								<span class="text-[8px] font-normal {prioridade === 'PRIORITARIA' ? 'text-amber-100' : 'text-slate-500'}">7 a 10 dias (60+, PCD, TEA)</span>
 							</button>
 							<button
@@ -943,7 +965,7 @@
 								onclick={() => prioridade = 'URGENTE'}
 								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'URGENTE' ? 'border-orange-800 bg-orange-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>🟠 URGENTE</span>
+								<span>URGENTE</span>
 								<span class="text-[8px] font-normal {prioridade === 'URGENTE' ? 'text-orange-100' : 'text-slate-500'}">Até 72 horas</span>
 							</button>
 							<button
@@ -951,7 +973,7 @@
 								onclick={() => prioridade = 'EMERGENCIA'}
 								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'EMERGENCIA' ? 'border-red-900 bg-red-900 text-white shadow-xs animate-pulse' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
-								<span>🔴 EMERGÊNCIA</span>
+								<span>EMERGÊNCIA</span>
 								<span class="text-[8px] font-normal {prioridade === 'EMERGENCIA' ? 'text-red-100' : 'text-slate-500'}">Mesmo Dia / Encaixe</span>
 							</button>
 						</div>
@@ -960,28 +982,35 @@
 					<!-- Card do Slot Escolhido para Agendamento -->
 					{#if calculandoSlotBackend}
 						<div class="border border-blue-300 bg-blue-50 p-4 text-center text-blue-900 font-mono text-xs flex items-center justify-center gap-2 animate-pulse">
-							<span>⚡</span>
+							<IconBolt size={16} class="text-blue-900" />
 							<span>[BUSCANDO DISPONIBILIDADE NA ESCALA DO ESPECIALISTA...]</span>
 						</div>
 					{:else if slotEscolhido}
 						<div class="border-2 {prioridade === 'EMERGENCIA' ? 'border-red-800 bg-red-50/90 text-red-950' : prioridade === 'URGENTE' ? 'border-orange-700 bg-orange-50/90 text-orange-950' : 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} p-3.5 flex flex-col gap-2 font-mono text-xs shadow-xs">
 							<div class="flex items-center justify-between">
 								<span class="font-bold uppercase text-[10px] flex items-center gap-1.5">
-									<span>✓ HORÁRIO SELECIONADO NA ESCALA</span>
+									<IconCheck size={14} class="text-emerald-800" />
+									<span>HORÁRIO SELECIONADO NA ESCALA</span>
 								</span>
 								<span class="{slotEscolhido.isRecomendado ? 'bg-blue-900 text-white' : 'bg-emerald-800 text-white'} font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
-									{slotEscolhido.isRecomendado ? '⚡ SUGESTÃO AUTOMÁTICA SUS' : '🎯 ESCOLHIDO NA GRADE'}
+									{slotEscolhido.isRecomendado ? 'SUGESTÃO AUTOMÁTICA' : 'ESCOLHIDO NA GRADE'}
 								</span>
 							</div>
 
 							<div class="text-base font-black font-sans flex items-center gap-2 text-slate-900">
-								<span>📅 {slotEscolhido.dataFormatada}</span>
+								<span class="flex items-center gap-1">
+									<IconCalendar size={16} class="text-slate-700" />
+									<span>{slotEscolhido.dataFormatada}</span>
+								</span>
 								<span>·</span>
-								<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono font-bold">⏰ {slotEscolhido.hora} (SLOT CONFIRMADO)</span>
+								<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono font-bold flex items-center gap-1">
+									<IconClock size={13} />
+									<span>{slotEscolhido.hora} (SLOT CONFIRMADO)</span>
+								</span>
 							</div>
 
 							<div class="text-[11px] font-bold text-slate-800 flex items-center justify-between">
-								<span>📍 {slotEscolhido.consultorio} · {medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome} ({medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm})</span>
+								<span>{slotEscolhido.consultorio} · {medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome} ({medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm})</span>
 								{#if !slotEscolhido.isRecomendado && alocacaoOtimizadaBalcao}
 									<button
 										type="button"
@@ -995,12 +1024,16 @@
 						</div>
 					{:else if mensagemSlotBackend}
 						<div class="border border-amber-600 bg-amber-50 p-3 text-amber-900 font-mono text-xs flex flex-col gap-1">
-							<span class="font-bold">⚠️ RETORNO DO SERVIDOR:</span>
+							<span class="font-bold flex items-center gap-1.5">
+								<IconAlertTriangle size={14} class="text-amber-700" />
+								<span>RETORNO DO SERVIDOR:</span>
+							</span>
 							<span class="font-sans text-[11px]">{mensagemSlotBackend}</span>
 						</div>
 					{:else}
-						<div class="border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 font-mono text-[11px]">
-							⚡ Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para visualizar os dias e horários livres na escala.
+						<div class="border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 font-mono text-[11px] flex items-center justify-center gap-1.5">
+							<IconBolt size={14} class="text-slate-400" />
+							<span>Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para visualizar os dias e horários livres na escala.</span>
 						</div>
 					{/if}
 
@@ -1010,7 +1043,8 @@
 							<div class="flex items-center justify-between border-b border-slate-200 pb-2">
 								<div class="flex flex-col">
 									<span class="font-bold text-slate-900 uppercase text-[10px] flex items-center gap-1.5">
-										<span>🗓️ GRADE DA ESCALA: DIAS E HORÁRIOS DISPONÍVEIS</span>
+										<IconCalendar size={13} class="text-blue-900" />
+										<span>GRADE DA ESCALA: DIAS E HORÁRIOS DISPONÍVEIS</span>
 									</span>
 									<span class="text-[10px] text-slate-500 font-sans">
 										Especialista: <strong>{medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome}</strong> ({medicoSelecionado?.especialidade || alocacaoOtimizadaBalcao?.especialidade})

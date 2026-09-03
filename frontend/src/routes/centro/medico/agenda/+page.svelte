@@ -215,7 +215,7 @@
 		d.setDate(d.getDate() + 30);
 		dataRetornoManual = d.toISOString().substring(0, 10);
 		horaRetornoManual = '09:00';
-		medicoRetornoNome = medicoLogado || 'Dr. Roberto Medeiros';
+		medicoRetornoNome = medicoLogado || auth.me?.nome || 'Profissional do Centro';
 		obsRetorno = 'Retorno para reavaliação de conduta e checagem de exames.';
 		modalRetornoAberto = true;
 	}
