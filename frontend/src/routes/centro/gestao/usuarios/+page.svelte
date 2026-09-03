@@ -118,8 +118,8 @@
 		formEmail = '';
 		formMatricula = '';
 		formPerfil = 'MEDICO';
-		formTipoUnidade = 'CEO';
-		formEspecialidade = 'Cardiologia';
+		formTipoUnidade = siglaOrgao;
+		formEspecialidade = ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada';
 		formRegistroProfissional = '';
 		formSenha = 'Mudar@123';
 		modalNovoAberto = true;
@@ -140,11 +140,11 @@
 				email: formEmail.trim(),
 				matricula: formMatricula.trim() || undefined,
 				role: formPerfil as Role,
-				tipoUnidade: formTipoUnidade,
+				tipoUnidade: siglaOrgao,
 				senha: formSenha.trim()
 			});
 
-			mensagemSucesso = `✓ Usuário ${formNome} cadastrado com sucesso no servidor!`;
+			mensagemSucesso = `✓ Usuário ${formNome} cadastrado com sucesso no ${siglaOrgao}!`;
 			modalNovoAberto = false;
 			await carregarUsuarios();
 			setTimeout(() => (mensagemSucesso = ''), 5000);
@@ -164,7 +164,7 @@
 		formEmail = u.email || '';
 		formMatricula = u.matricula || '';
 		formPerfil = ((u as any).perfil || u.role) as Role;
-		formTipoUnidade = (u.tipoUnidade || 'CEO') as any;
+		formTipoUnidade = (u.tipoUnidade || siglaOrgao) as any;
 		modalEditarAberto = true;
 	}
 
@@ -177,7 +177,7 @@
 				nome: formNome.trim(),
 				email: formEmail.trim(),
 				role: formPerfil as Role,
-				tipoUnidade: formTipoUnidade
+				tipoUnidade: usuarioEdicao.tipoUnidade || siglaOrgao
 			});
 
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;
@@ -465,22 +465,27 @@
 					<div class="flex flex-col gap-1">
 						<label for="usr-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso *</label>
 						<select id="usr-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-							<option value="MEDICO">Médico Especialista</option>
-							<option value="REGULADOR_SMS">Regulador SMS / Recepção</option>
-							<option value="ATENDENTE_UBS">Atendente Recepção</option>
-							<option value="COORDENADOR_UBS">Diretoria / Coordenação</option>
-							<option value="ADMIN">Administrador Geral</option>
+							{#if ehCeo}
+								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
+								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
+								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
+								<option value="REGULADOR_SMS">Regulador do CEO</option>
+								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEO</option>
+							{:else}
+								<option value="MEDICO">Médico Especialista</option>
+								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
+								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
+								<option value="REGULADOR_SMS">Regulador do CEM</option>
+								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEM</option>
+							{/if}
 						</select>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="usr-tipo-unidade" class="font-bold text-slate-700 text-[11px]">Unidade / Face *</label>
-						<select id="usr-tipo-unidade" bind:value={formTipoUnidade} class="border border-emerald-400 bg-emerald-50 text-emerald-950 p-2 text-xs font-bold">
-							<option value="CEO">Centro Odontológico (CEO)</option>
-							<option value="CEM">Centro Médico (CEM)</option>
-							<option value="UBS">Unidade Básica (UBS)</option>
-							<option value="SMS">Secretaria de Saúde (SMS)</option>
-							<option value="TFD">Logística TFD</option>
-						</select>
+						<span class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</span>
+						<div class="border border-blue-900 bg-blue-50 text-blue-950 p-2 text-xs font-bold font-mono flex items-center justify-between">
+							<span>{siglaOrgao} — {nomeOrgao}</span>
+							<span class="bg-blue-900 text-white text-[9px] px-2 py-0.5 uppercase">Automático</span>
+						</div>
 					</div>
 					<div class="flex flex-col gap-1">
 						<label for="usr-senha" class="font-bold text-slate-700 text-[11px]">Senha Temporária *</label>
@@ -488,8 +493,9 @@
 					</div>
 				</div>
 
-				<div class="bg-emerald-50 border border-emerald-300 p-3 text-[11px] text-emerald-950 font-semibold">
-					O usuário será vinculado diretamente ao <strong>{formTipoUnidade}</strong> e será redirecionado para a face correspondente ao realizar login.
+				<div class="bg-blue-50 border border-blue-300 p-3 text-[11px] text-blue-950 font-semibold flex items-center gap-2">
+					<IconShield size={16} class="text-blue-900 shrink-0" />
+					<span>O profissional será alocado automaticamente ao <strong>{nomeOrgao} ({siglaOrgao})</strong> com credenciais de acesso restritas a esta unidade.</span>
 				</div>
 			</div>
 
@@ -537,22 +543,27 @@
 					<div class="flex flex-col gap-1">
 						<label for="ed-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso</label>
 						<select id="ed-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-							<option value="MEDICO">Médico Especialista</option>
-							<option value="REGULADOR_SMS">Regulador SMS / Recepção</option>
-							<option value="ATENDENTE_UBS">Atendente Recepção</option>
-							<option value="COORDENADOR_UBS">Diretoria / Coordenação</option>
-							<option value="ADMIN">Administrador Geral</option>
+							{#if ehCeo}
+								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
+								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
+								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
+								<option value="REGULADOR_SMS">Regulador do CEO</option>
+								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEO</option>
+							{:else}
+								<option value="MEDICO">Médico Especialista</option>
+								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
+								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
+								<option value="REGULADOR_SMS">Regulador do CEM</option>
+								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEM</option>
+							{/if}
 						</select>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="ed-tipo-unidade" class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</label>
-						<select id="ed-tipo-unidade" bind:value={formTipoUnidade} class="border border-emerald-400 bg-emerald-50 text-emerald-950 p-2 text-xs font-bold">
-							<option value="CEO">Centro Odontológico (CEO)</option>
-							<option value="CEM">Centro Médico (CEM)</option>
-							<option value="UBS">Unidade Básica (UBS)</option>
-							<option value="SMS">Secretaria de Saúde (SMS)</option>
-							<option value="TFD">Logística TFD</option>
-						</select>
+						<span class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</span>
+						<div class="border border-slate-300 bg-slate-100 text-slate-800 p-2 text-xs font-bold font-mono flex items-center justify-between">
+							<span>{usuarioEdicao.tipoUnidade || siglaOrgao} — {usuarioEdicao.tipoUnidade === 'CEO' ? 'Centro Odontológico' : usuarioEdicao.tipoUnidade === 'CEM' ? 'Centro Médico' : siglaOrgao}</span>
+							<span class="bg-slate-700 text-white text-[9px] px-2 py-0.5 uppercase">Fixo</span>
+						</div>
 					</div>
 				</div>
 			</div>
