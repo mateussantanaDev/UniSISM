@@ -3,12 +3,19 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
-	import type { PacienteResumo, Encaminhamento } from '$lib/api/types';
+	import type { PacienteResumo, Encaminhamento, PacientesMetricasResponse } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import ModalDossiePaciente from '$lib/presentation/components/centro/ModalDossiePaciente.svelte';
 	import ImprimirProntuario from '$lib/presentation/components/prontuario/ImprimirProntuario.svelte';
 	import type { PacienteCompleto } from '$lib/domain/models/Paciente';
-	import { IconSearch, IconFileText } from '@tabler/icons-svelte';
+	import {
+		IconSearch,
+		IconFileText,
+		IconChevronLeft,
+		IconChevronRight,
+		IconChevronsLeft,
+		IconChevronsRight
+	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
@@ -21,20 +28,62 @@
 	let busca = $state('');
 	let filtroEspecialidade = $state('TODAS');
 
+	let paginaAtual = $state(1);
+	let limite = $state(50);
+	let totalRegistros = $state(0);
+	let totalPaginas = $state(1);
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+	let metricas = $state<PacientesMetricasResponse>({
+		totalCadastrados: 0,
+		totalCronicos: 0,
+		totalEncAtivos: 0,
+		totalSemAtendimento90d: 0
+	});
+
 	// Modal Dossiê & Impressão
 	let modalDossieAberto = $state(false);
 	let pacienteDossie = $state<PacienteCompleto | null>(null);
 	let carregandoDossie = $state(false);
 	let modalImprimirAberto = $state(false);
 
-	onMount(async () => {
+	async function carregarMetricas() {
 		try {
-			const [pacs, encs] = await Promise.all([
-				api.pacientes.list().catch(() => []),
-				api.encaminhamentos.list({ limit: 1000 }).catch(() => [])
-			]);
+			metricas = await api.pacientes.metricas();
+		} catch (err) {
+			console.error('Erro ao carregar metricas:', err);
+		}
+	}
 
-			listaPacientes = pacs;
+	async function carregarPacientes() {
+		carregando = true;
+		try {
+			const res: any = await api.pacientes.listPaginado({
+				page: paginaAtual,
+				limit: limite,
+				q: busca.trim() || undefined
+			});
+
+			if (Array.isArray(res)) {
+				listaPacientes = res;
+				totalRegistros = metricas.totalCadastrados || (res.length >= limite ? paginaAtual * limite + 1 : res.length);
+				totalPaginas = Math.max(1, Math.ceil(totalRegistros / limite));
+			} else if (res && typeof res === 'object') {
+				listaPacientes = res.itens ?? [];
+				totalRegistros = res.total ?? (metricas.totalCadastrados || listaPacientes.length);
+				totalPaginas = res.totalPages ?? Math.max(1, Math.ceil(totalRegistros / limite));
+				paginaAtual = res.page ?? paginaAtual;
+			}
+		} catch (err) {
+			console.error('Erro ao carregar pacientes:', err);
+		} finally {
+			carregando = false;
+		}
+	}
+
+	async function carregarEncaminhamentos() {
+		try {
+			const encs = await api.encaminhamentos.list({ limit: 1000 }).catch(() => []);
 			encaminhamentosCentro = encs.filter((e: Encaminhamento) => {
 				const f = (e.filaDestino as string) || '';
 				const c = (e as any).canalRoteamento || '';
@@ -44,10 +93,32 @@
 					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
 				}
 			});
-		} finally {
-			carregando = false;
+		} catch (err) {
+			console.error('Erro ao carregar encaminhamentos:', err);
 		}
+	}
+
+	onMount(() => {
+		carregarMetricas();
+		carregarEncaminhamentos();
+		carregarPacientes();
 	});
+
+	function aoMudarBusca(e: Event) {
+		const target = e.target as HTMLInputElement;
+		busca = target.value;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			paginaAtual = 1;
+			carregarPacientes();
+		}, 300);
+	}
+
+	function irParaPagina(p: number) {
+		if (p < 1 || p > totalPaginas) return;
+		paginaAtual = p;
+		carregarPacientes();
+	}
 
 	// Mapa de atendimentos vinculados por paciente
 	let mapaAtendimentos = $derived.by(() => {
@@ -77,23 +148,11 @@
 	});
 
 	let filtrados = $derived.by(() => {
-		let res = listaPacientes.filter(p => {
-			const termo = busca.toLowerCase().trim();
-			const matchBusca = !termo ||
-				p.nome.toLowerCase().includes(termo) ||
-				p.cpf.includes(termo) ||
-				(p.cartaoSus && p.cartaoSus.includes(termo));
-
-			if (!matchBusca) return false;
-
-			if (filtroEspecialidade !== 'TODAS') {
-				const info = mapaAtendimentos.get(p.cpf);
-				return info?.ultimaEsp === filtroEspecialidade;
-			}
-
-			return true;
+		if (filtroEspecialidade === 'TODAS') return listaPacientes;
+		return listaPacientes.filter(p => {
+			const info = mapaAtendimentos.get(p.cpf);
+			return info?.ultimaEsp === filtroEspecialidade;
 		});
-		return res;
 	});
 
 	async function abrirDossie(id: string) {
@@ -124,8 +183,10 @@
 	<section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 		<div class="border border-slate-200 bg-white p-4">
 			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">CIDADÃOS NO CADASTRO</div>
-			<div class="mt-2 text-2xl font-black text-slate-900 font-sans">{listaPacientes.length}</div>
-			<div class="mt-1 text-[10px] text-slate-500 font-mono">Base municipal integrada</div>
+			<div class="mt-2 text-2xl font-black text-slate-900 font-sans">
+				{metricas.totalCadastrados ? metricas.totalCadastrados.toLocaleString('pt-BR') : totalRegistros.toLocaleString('pt-BR')}
+			</div>
+			<div class="mt-1 text-[10px] text-slate-500 font-mono">Base municipal integrada (SUS/PEC)</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
@@ -150,12 +211,24 @@
 	<!-- Barra de Controles e Busca -->
 	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
 		<div class="flex flex-1 items-center gap-2">
-			<input
-				type="text"
-				bind:value={busca}
-				placeholder="Buscar por Nome do Paciente, CPF ou Cartão SUS..."
-				class="w-full max-w-md border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
-			/>
+			<div class="relative w-full max-w-md">
+				<input
+					type="text"
+					value={busca}
+					oninput={aoMudarBusca}
+					placeholder="Buscar por Nome, CPF ou Cartão SUS na base de 58 mil cidadãos..."
+					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+				/>
+				{#if busca}
+					<button
+						type="button"
+						onclick={() => { busca = ''; paginaAtual = 1; carregarPacientes(); }}
+						class="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-700 font-bold"
+					>
+						✕
+					</button>
+				{/if}
+			</div>
 
 			{#if especialidadesUnicas.length > 0}
 				<select
@@ -171,7 +244,7 @@
 		</div>
 
 		<div class="text-right text-[11px] text-slate-500 font-mono">
-			Exibindo <strong>{filtrados.length}</strong> de {listaPacientes.length} registros
+			Mostrando <strong>{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong>{totalRegistros.toLocaleString('pt-BR')}</strong> cidadãos
 		</div>
 	</section>
 
@@ -247,6 +320,67 @@
 					{/each}
 				</tbody>
 			</table>
+
+			<!-- Barra de Paginação -->
+			<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+				<div class="font-mono text-slate-600">
+					Mostrando <strong class="text-slate-900">{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> munícipes
+				</div>
+
+				<div class="flex items-center gap-1">
+					<button
+						type="button"
+						onclick={() => irParaPagina(1)}
+						disabled={paginaAtual <= 1}
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						title="Primeira página"
+					>
+						«
+					</button>
+					<button
+						type="button"
+						onclick={() => irParaPagina(paginaAtual - 1)}
+						disabled={paginaAtual <= 1}
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						title="Página anterior"
+					>
+						‹ Anterior
+					</button>
+
+					<span class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900">
+						Pág. {paginaAtual} de {totalPaginas}
+					</span>
+
+					<button
+						type="button"
+						onclick={() => irParaPagina(paginaAtual + 1)}
+						disabled={paginaAtual >= totalPaginas}
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						title="Próxima página"
+					>
+						Próxima ›
+					</button>
+					<button
+						type="button"
+						onclick={() => irParaPagina(totalPaginas)}
+						disabled={paginaAtual >= totalPaginas}
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						title="Última página"
+					>
+						»
+					</button>
+
+					<select
+						bind:value={limite}
+						onchange={() => { paginaAtual = 1; carregarPacientes(); }}
+						class="ml-2 border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700 outline-none"
+					>
+						<option value={25}>25 / pág</option>
+						<option value={50}>50 / pág</option>
+						<option value={100}>100 / pág</option>
+					</select>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>
