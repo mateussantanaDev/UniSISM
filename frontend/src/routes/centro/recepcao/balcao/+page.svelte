@@ -40,6 +40,7 @@
 	let centroSelecionado: TipoCentro = $derived(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroSelecionado === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
+	let siglaOrgao = $derived<'CEM' | 'CEO'>(ehCeo ? 'CEO' : 'CEM');
 	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
 	let rotuloConsulta = $derived(ehCeo ? 'CONSULTA ODONTOLÓGICA' : 'CONSULTA MÉDICA');
 
@@ -569,7 +570,11 @@
 	<!-- Topo com Identificação do Centro e Acesso Rápido -->
 	<div class="border border-slate-200 bg-white p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
 		<div class="flex items-center gap-3">
-			<span class="text-2xl">{iconeConsulta}</span>
+			{#if ehCeo}
+				<IconDental size={28} class="text-emerald-800 shrink-0" />
+			{:else}
+				<IconStethoscope size={28} class="text-blue-900 shrink-0" />
+			{/if}
 			<div>
 				<h1 class="text-base font-bold font-mono text-slate-900 tracking-tight uppercase">
 					Agendamento de Balcão & Retorno · {centroSelecionado}

@@ -17,7 +17,7 @@
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
-	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let siglaOrgao = $derived<'CEM' | 'CEO'>(ehCeo ? 'CEO' : 'CEM');
 	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 

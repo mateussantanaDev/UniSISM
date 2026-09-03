@@ -105,8 +105,26 @@
 	let erroGlobal = $state('');
 	let mensagemSucesso = $state('');
 
-	// Mock/Loaded appointments list
+	// Loaded appointments list
 	let consultas = $state<ConsultaAgenda[]>([]);
+
+	// Filtragem dinâmica de consultas da agenda
+	let filtrados = $derived.by(() => {
+		return consultas.filter(c => {
+			if (filtroStatus !== 'TODOS' && c.status !== filtroStatus) return false;
+			if (busca.trim()) {
+				const q = busca.toLowerCase();
+				return (
+					c.paciente.nome.toLowerCase().includes(q) ||
+					c.paciente.cpf.includes(q) ||
+					c.protocolo.toLowerCase().includes(q) ||
+					c.solicitacao.cid10.toLowerCase().includes(q) ||
+					(c.solicitacao.especialidadeSolicitada && c.solicitacao.especialidadeSolicitada.toLowerCase().includes(q))
+				);
+			}
+			return true;
+		});
+	});
 
 	// Active Consultation State
 	let consultaAtiva = $state<ConsultaAgenda | null>(null);

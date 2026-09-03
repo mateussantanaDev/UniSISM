@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';

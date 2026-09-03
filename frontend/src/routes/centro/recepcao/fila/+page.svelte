@@ -34,6 +34,7 @@
 	let ehCeo = $derived(centroAtivo === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
 
 	// Filtros
 	let busca = $state('');
@@ -524,7 +525,7 @@
 </div>
 
 <!-- Modal: Agendamento / Alocação na Grade -->
-{#if modalAgendamentoAberto && selecionado}
+{#if modalAgendamento && selecionado}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
 		<div class="w-full max-w-lg border-2 border-slate-900 bg-white font-mono shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
