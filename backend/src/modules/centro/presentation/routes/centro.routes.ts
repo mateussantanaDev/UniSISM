@@ -84,6 +84,7 @@ export function buildCentroRoutes(
   router.get('/centro/gestao/cotas', authenticate, gestaoRoles, gestaoController.getCotas);
   router.put('/centro/gestao/cotas/:ubsId', authenticate, gestaoRoles, gestaoController.putCota);
 
+  router.get('/centro/gestao/profissionais', authenticate, gestaoRoles, gestaoController.getProfissionais);
   router.get('/centro/gestao/escalas', authenticate, gestaoRoles, gestaoController.getEscalas);
   router.post('/centro/gestao/escalas', authenticate, gestaoRoles, gestaoController.postEscala);
   router.put('/centro/gestao/escalas/:id', authenticate, gestaoRoles, gestaoController.putEscala);

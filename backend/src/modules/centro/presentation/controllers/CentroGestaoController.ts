@@ -12,6 +12,8 @@ import type { MetricasDashboardDiretoriaUseCase } from '../../application/use-ca
 import type { GestaoSalasUseCase } from '../../application/use-cases/GestaoSalasUseCase';
 import type { GestaoEspecialidadesCatalogoUseCase } from '../../application/use-cases/GestaoEspecialidadesCatalogoUseCase';
 import { NotFound } from '../../../../shared/errors';
+import { prisma } from '../../../../infrastructure/database/prisma';
+import { RoleAtendente } from '../../../../../generated/prisma';
 
 const putCotaSchema = z.object({
   totalCotasMes: z.number().int().min(1),
@@ -84,8 +86,61 @@ export class CentroGestaoController {
 
   getCotas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const cotas = await this.cotasUC.listarCotas(scope);
+    const centro = req.query.centro as string | undefined;
+    const cotas = await this.cotasUC.listarCotas(scope, centro);
     res.json(cotas);
+  };
+
+  getProfissionais = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const centro = req.query.centro as string | undefined;
+    const centroNorm = centro ? centro.toUpperCase() : undefined;
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
+    const where: any = {
+      ativo: true,
+      deletadoEm: null,
+      role: {
+        in: [RoleAtendente.MEDICO, RoleAtendente.MEDICO_ESPECIALISTA, RoleAtendente.REGULADOR_SMS],
+      },
+    };
+
+    if (scope.kind === 'PREFEITURA') {
+      where.prefeituraId = scope.prefeituraId;
+    }
+
+    const usuarios = await prisma.atendente.findMany({
+      where,
+      select: {
+        id: true,
+        nome: true,
+        matricula: true,
+        cargo: true,
+        funcao: true,
+        role: true,
+        tipoUnidade: true,
+      },
+      orderBy: { nome: 'asc' },
+    });
+
+    const lista = usuarios
+      .filter((u) => {
+        if (!centroNorm) return true;
+        const cCargo = (u.cargo + ' ' + u.funcao + ' ' + (u.tipoUnidade || '')).toLowerCase();
+        const eOdonto = cCargo.includes('dentista') || cCargo.includes('odonto') || cCargo.includes('ceo') || cCargo.includes('cro');
+        return ehCeo ? eOdonto : !eOdonto;
+      })
+      .map((u) => ({
+        id: u.id,
+        nome: u.nome,
+        registroProfissional: u.matricula,
+        conselho: ehCeo ? 'CRO' : 'CRM',
+        cargo: u.cargo,
+        role: u.role,
+        especialidade: u.cargo.replace(/^(MÉDICO|CIRURGIÃO-DENTISTA|DENTISTA)\s*(ESPECIALISTA\s*(EM\s*)?)?/i, '').trim() || (ehCeo ? 'Clínica Odontológica' : 'Clínica Geral'),
+      }));
+
+    res.json(lista);
   };
 
   putCota = async (req: Request, res: Response): Promise<void> => {

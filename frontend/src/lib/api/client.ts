@@ -1689,8 +1689,13 @@ export class CentroGestaoApi {
   }
 
   /** Listar cotas mensais das UBSs (GET /v1/centro/gestao/cotas). */
-  listCotas(): Promise<CotaUbsCentro[]> {
-    return this.api.get<CotaUbsCentro[]>('/centro/gestao/cotas');
+  listCotas(query?: { centro?: string }): Promise<CotaUbsCentro[]> {
+    return this.api.get<CotaUbsCentro[]>('/centro/gestao/cotas', query as Record<string, unknown> | undefined);
+  }
+
+  /** Listar profissionais médicos/dentistas do centro (GET /v1/centro/gestao/profissionais). */
+  listProfissionais(query?: { centro?: string }): Promise<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>> {
+    return this.api.get('/centro/gestao/profissionais', query as Record<string, unknown> | undefined);
   }
 
   /** Atualizar matriz de cotas de uma UBS (PUT /v1/centro/gestao/cotas/:ubsId). */
@@ -1761,6 +1766,11 @@ export class CentroGestaoApi {
   /** Habilitar nova especialidade no catálogo (POST /v1/centro/gestao/especialidades). */
   criarEspecialidade(req: Partial<EspecialidadeSigtapCentro>): Promise<EspecialidadeSigtapCentro> {
     return this.api.post<EspecialidadeSigtapCentro>('/centro/gestao/especialidades', req);
+  }
+
+  /** Remover/inativar especialidade do catálogo (DELETE /v1/centro/gestao/especialidades/:id). */
+  excluirEspecialidade(id: string): Promise<{ sucesso: boolean }> {
+    return this.api.delete<{ sucesso: boolean }>(`/centro/gestao/especialidades/${encodeURIComponent(id)}`);
   }
 }
 

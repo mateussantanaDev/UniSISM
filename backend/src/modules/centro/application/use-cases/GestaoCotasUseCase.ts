@@ -13,8 +13,25 @@ export interface CotaUbsDTO {
   especialidades: Record<string, number>;
 }
 
+const ESPECIALIDADES_ODONTO = [
+  'endodontia',
+  'periodontia',
+  'cirurgia bucomaxilofacial',
+  'bucomaxilo',
+  'odontopediatria',
+  'pacientes com necessidades especiais (pne)',
+  'pne',
+  'prótese dentária',
+  'protese dentaria',
+  'estomatologia',
+  'ortodontia preventiva',
+  'odontologia',
+  'saúde bucal',
+  'saude bucal',
+];
+
 export class GestaoCotasUseCase {
-  async listarCotas(scope: AccessScope): Promise<CotaUbsDTO[]> {
+  async listarCotas(scope: AccessScope, centro?: string): Promise<CotaUbsDTO[]> {
     const whereUbs: any = { ativa: true };
     if (scope.kind === 'PREFEITURA') {
       whereUbs.prefeituraId = scope.prefeituraId;
@@ -29,6 +46,29 @@ export class GestaoCotasUseCase {
     });
 
     if (ubsList.length === 0) return [];
+
+    // Busca especialidades cadastradas ativas para a prefeitura/centro
+    const whereEsp: any = { ativa: true };
+    if (scope.kind === 'PREFEITURA') {
+      whereEsp.prefeituraId = scope.prefeituraId;
+    }
+    const espList = await prisma.especialidadeCatalogo.findMany({
+      where: whereEsp,
+      select: { nome: true },
+      orderBy: { nome: 'asc' },
+    });
+
+    const centroNorm = centro ? centro.toUpperCase() : undefined;
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
+    const especialidadesCentro = espList
+      .map((e) => e.nome)
+      .filter((nome) => {
+        if (!centroNorm) return true;
+        const espLower = nome.toLowerCase();
+        const eOdonto = ESPECIALIDADES_ODONTO.some((o) => espLower.includes(o));
+        return ehCeo ? eOdonto : !eOdonto;
+      });
 
     const ubsIds = ubsList.map((u) => u.id);
     const now = new Date();
@@ -73,14 +113,16 @@ export class GestaoCotasUseCase {
       const cotaRecord = cotasMap.get(ubs.id);
       const countAlocadas = alocadasMap.get(ubs.id) ?? 0;
 
-      const totalCotasMes = cotaRecord?.totalCotasMes ?? 350;
-      const especialidades = (cotaRecord?.especialidades as Record<string, number>) || {
-        Cardiologia: 80,
-        Oftalmologia: 100,
-        Dermatologia: 50,
-        Ortopedia: 70,
-        Neurologia: 50,
-      };
+      const storedEsp = (cotaRecord?.especialidades as Record<string, number>) || {};
+      const especialidadesFiltradas: Record<string, number> = {};
+
+      for (const espNome of especialidadesCentro) {
+        especialidadesFiltradas[espNome] = storedEsp[espNome] ?? 0;
+      }
+
+      const totalCotasMes = Object.values(especialidadesFiltradas).length > 0
+        ? Object.values(especialidadesFiltradas).reduce((a, b) => a + b, 0)
+        : (cotaRecord?.totalCotasMes ?? 0);
 
       const disponiveis = Math.max(0, totalCotasMes - countAlocadas);
       let status: 'NORMAL' | 'CRITICO' | 'ESGOTADO' = 'NORMAL';
@@ -94,7 +136,7 @@ export class GestaoCotasUseCase {
         alocadas: countAlocadas,
         disponiveis,
         status,
-        especialidades,
+        especialidades: especialidadesFiltradas,
       };
     });
   }

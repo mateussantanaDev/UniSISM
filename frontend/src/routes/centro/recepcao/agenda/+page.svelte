@@ -2,42 +2,64 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
-	import type { Encaminhamento, PrioridadeClinica, StatusAtendimentoCentro } from '$lib/api/types';
+	import type { Encaminhamento, PrioridadeClinica, StatusAtendimentoCentro, EscalaMedicoCentro } from '$lib/api/types';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import {
 		alocarVagaPorProfissionalEEscala,
-		ESCALAS_PADRAO_CEM,
-		ESCALAS_PADRAO_CEO,
+		gerarSlotsTurno,
 		type TipoCentro,
-		type AgendamentoOcupado
+		type AgendamentoOcupado,
+		type EscalaProfissionalCentro
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
+
+	// Interfaces do Especialista com Escala Estruturada
+	interface EspecialistaAgendaItem {
+		id: string;
+		nome: string;
+		crm: string;
+		especialidade: string;
+		diasSemana: string[];
+		diasSemanaNumeros: number[];
+		diasSemanaFormatado: string;
+		horarioInicio: string;
+		horarioFim: string;
+		duracaoMinutos: number;
+		vagasPorTurno: number;
+		consultorio: string;
+		status: string;
+	}
 
 	let encaminhamentos = $state<Encaminhamento[]>([]);
 	let todosEncaminhamentosMes = $state<Encaminhamento[]>([]);
+	let escalasCarregadas = $state<EscalaMedicoCentro[]>([]);
 	let carregando = $state(true);
 	let erro = $state('');
 	let mensagemSucesso = $state('');
 	let timerMensagem: any = null;
 
-	// Centro Ativo determinado 100% pelo órgão / rota (CEM vs CEO)
+	// Centro Ativo determinado pelo órgão / rota (CEM vs CEO)
 	let centroAtivoAgenda = $derived<TipoCentro>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivoAgenda === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
+	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
+	let rotuloEspaco = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório Médico');
 
-	// Modo de Visualização da Agenda (Lista vs Calendário Mensal vs Grade de Horários)
-	let visaoModo = $state<'LISTA' | 'CALENDARIO' | 'GRADE'>('LISTA');
+	// Modo de Visualização da Agenda (Calendário Mensal por Médico vs Grade de Horários vs Lista)
+	let visaoModo = $state<'CALENDARIO' | 'GRADE' | 'LISTA'>('CALENDARIO');
+
+	// Seletor de Especialista / Médico em foco (ID ou 'TODOS')
+	let medicoSelecionadoId = $state<string>('');
 
 	// Seletor de Data da Agenda
 	let dataAgenda = $state(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD (hoje)
 	let mesCalendario = $state(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0')); // YYYY-MM
 
-	// Filtros adicionais
+	// Filtros complementares
 	let busca = $state('');
-	let filtroEspecialidade = $state('TODAS');
-	let filtroPrioridade = $state('TODAS');
 
 	// Paginação para modo Lista
 	let paginaAtual = $state(1);
@@ -56,79 +78,215 @@
 	let motivoRealocacao = $state('Remanejamento de escala do especialista');
 	let erroModalRealocacao = $state('');
 
-	// Dropdown de Médicos/Dentistas Especialistas do Órgão
-	let medicosEspecialistas = $state<{ nome: string; especialidade: string; registro: string }[]>([]);
-
 	// Modal de Comprovante de Agendamento Oficial
 	let modalComprovanteAberto = $state(false);
 	let comprovanteSelecionado = $state<Encaminhamento | null>(null);
 
-	// Slots horários padrão da grade de atendimento
-	const slotsHorarios = [
-		'07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-		'13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
-	];
+	// Mapeamento de Dias da Semana
+	const DIA_SEMANA_MAP: Record<string, number> = {
+		DOM: 0, DOMINGO: 0,
+		SEG: 1, SEGUNDA: 1,
+		TER: 2, TERCA: 2, TERÇA: 2,
+		QUA: 3, QUARTA: 3,
+		QUI: 4, QUINTA: 4,
+		SEX: 5, SEXTA: 5,
+		SAB: 6, SABADO: 6, SÁBADO: 6
+	};
 
-	/**
-	 * ALGORITMO DETERMINÍSTICO DE ALOCAÇÃO AUTOMÁTICA DE VAGAS COM BASE NA PRIORIDADE SUS
-	 * Segue diretrizes da Portaria de Regulação do Ministério da Saúde / SUS.
-	 */
-	export function calcularAlocacaoPrioridadeSUS(
-		prio: PrioridadeClinica,
-		especialidade: string,
-		dataReferencia?: Date
-	): { data: string; hora: string; prazoDescricao: string; fundamentacao: string } {
-		const base = dataReferencia ? new Date(dataReferencia) : new Date();
-		let diasSoma = 15;
-		let horaSugerida = '09:30';
-		let prazoDesc = 'Até 30 dias corridos';
-		let fundamentacao = 'Portaria SUS: Demanda clínica eletiva com fila regular';
+	const NOMES_DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
-		switch (prio) {
-			case 'EMERGENCIA':
-				diasSoma = 0; // Imediato / Mesmo dia
-				horaSugerida = '08:00';
-				prazoDesc = 'Imediato (Até 24 horas)';
-				fundamentacao = 'Portaria SUS: Risco iminente de agravo severo / Atendimento Imediato';
-				break;
-			case 'URGENTE':
-				diasSoma = 2; // Em até 72 horas úteis
-				horaSugerida = '08:30';
-				prazoDesc = 'Até 72 horas úteis';
-				fundamentacao = 'Portaria SUS: Demanda com risco de cronificação ou descompensação';
-				break;
-			case 'PRIORITARIA':
-				diasSoma = 7; // Até 7 a 10 dias
-				horaSugerida = '09:00';
-				prazoDesc = 'Até 7 a 10 dias';
-				fundamentacao = 'Portaria SUS: Idoso, gestante, oncologia inicial ou vulnerabilidade';
-				break;
-			case 'ELETIVA':
-			default:
-				diasSoma = 15; // 15 a 30 dias
-				horaSugerida = '10:00';
-				prazoDesc = '15 a 30 dias úteis';
-				fundamentacao = 'Portaria SUS: Acompanhamento ambulatorial programado';
-				break;
-		}
-
-		base.setDate(base.getDate() + diasSoma);
-
-		// Pula fins de semana (Sábado -> Segunda, Domingo -> Segunda)
-		if (base.getDay() === 6) {
-			base.setDate(base.getDate() + 2);
-		} else if (base.getDay() === 0) {
-			base.setDate(base.getDate() + 1);
-		}
-
-		const dataStr = base.toISOString().substring(0, 10);
-		return {
-			data: dataStr,
-			hora: horaSugerida,
-			prazoDescricao: prazoDesc,
-			fundamentacao
-		};
+	function formatarDiasSemana(dias: string[]): string {
+		if (!dias || dias.length === 0) return 'Conforme agendamento';
+		const formatados = dias.map(d => {
+			const n = DIA_SEMANA_MAP[d.trim().toUpperCase()];
+			return typeof n === 'number' ? NOMES_DIAS_SEMANA[n].replace('-feira', '') : d;
+		});
+		if (formatados.length === 1) return formatados[0] + 's';
+		if (formatados.length === 2) return `${formatados[0]}s e ${formatados[1]}s`;
+		return formatados.join(', ') + 's';
 	}
+
+	// Extrai horário da consulta formatado HH:MM
+	function extrairHorario(nota: string | undefined): string {
+		if (!nota) return '08:00';
+		const match = nota.match(/(\d{2}:\d{2})/);
+		return match ? match[1] : '08:00';
+	}
+
+	// Identifica o médico atribuído a um agendamento
+	function extrairNomeMedicoAgendamento(enc: Encaminhamento): string {
+		if (enc.profissionalAgendado) return enc.profissionalAgendado;
+		if ((enc as any).profissionalAtribuido) return (enc as any).profissionalAtribuido;
+		if (enc.observacoesRegulacao) {
+			const m = enc.observacoesRegulacao.match(/(?:Médico|Dentista|Profissional|Especialista):\s*([^|,\n]+)/i);
+			if (m && m[1]) return m[1].trim();
+		}
+		return '';
+	}
+
+	// Verifica se um agendamento pertence ao especialista fornecido
+	function agendamentoPertenceAoMedico(enc: Encaminhamento, esp: EspecialistaAgendaItem): boolean {
+		const medicoEnc = extrairNomeMedicoAgendamento(enc).toLowerCase();
+		if (medicoEnc) {
+			return medicoEnc.includes(esp.nome.toLowerCase()) || esp.nome.toLowerCase().includes(medicoEnc);
+		}
+		// Fallback por especialidade se nenhum médico estiver explicitamente citado
+		if (enc.solicitacao?.especialidadeSolicitada) {
+			return enc.solicitacao.especialidadeSolicitada.toLowerCase() === esp.especialidade.toLowerCase();
+		}
+		return false;
+	}
+
+	// Lista Consolidada de Especialistas com suas Escalas
+	let listaEspecialistas = $derived.by<EspecialistaAgendaItem[]>(() => {
+		const list: EspecialistaAgendaItem[] = [];
+		const nomesAdicionados = new Set<string>();
+
+		// 1. Escalas Oficiais cadastradas no Banco de Dados
+		for (const esc of escalasCarregadas) {
+			const nome = esc.medicoNome || 'Especialista';
+			if (!nomesAdicionados.has(nome.toLowerCase())) {
+				nomesAdicionados.add(nome.toLowerCase());
+				const dias = Array.isArray(esc.diasSemana) ? esc.diasSemana : ['SEG', 'QUA'];
+				const diasNums = Array.from(new Set(
+					dias.map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
+				));
+				list.push({
+					id: esc.id || esc.medicoId || nome.toLowerCase().replace(/\s+/g, '-'),
+					nome,
+					crm: esc.crm || (ehCeo ? 'CRO Ativo' : 'CRM Ativo'),
+					especialidade: esc.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
+					diasSemana: dias,
+					diasSemanaNumeros: diasNums,
+					diasSemanaFormatado: formatarDiasSemana(dias),
+					horarioInicio: esc.horarioInicio || '08:00',
+					horarioFim: esc.horarioFim || '12:00',
+					duracaoMinutos: esc.duracaoMinutos || (ehCeo ? 30 : 20),
+					vagasPorTurno: esc.vagasPorTurno || 12,
+					consultorio: (esc as any).consultorio || (ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório Médico 0${list.length + 1}`),
+					status: esc.status || 'ATIVA'
+				});
+			}
+		}
+
+		// 2. Médicos identificados a partir dos agendamentos existentes (se não estiverem nas escalas)
+		for (const enc of todosEncaminhamentosMes) {
+			const nome = extrairNomeMedicoAgendamento(enc);
+			if (nome && !nomesAdicionados.has(nome.toLowerCase())) {
+				nomesAdicionados.add(nome.toLowerCase());
+				const esp = enc.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia' : 'Especialidade');
+				list.push({
+					id: nome.toLowerCase().replace(/\s+/g, '-'),
+					nome,
+					crm: (enc.solicitacao as any)?.crm || (ehCeo ? 'CRO Ativo' : 'CRM Ativo'),
+					especialidade: esp,
+					diasSemana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
+					diasSemanaNumeros: [1, 2, 3, 4, 5],
+					diasSemanaFormatado: 'Segunda a Sexta-feira',
+					horarioInicio: '08:00',
+					horarioFim: '12:00',
+					duracaoMinutos: ehCeo ? 30 : 20,
+					vagasPorTurno: 12,
+					consultorio: ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório Médico 0${list.length + 1}`,
+					status: 'ATIVA'
+				});
+			}
+		}
+
+		// 3. Fallback inteligente se a base estiver vazia
+		if (list.length === 0) {
+			if (ehCeo) {
+				list.push(
+					{
+						id: 'dra-mariana-vasconcelos',
+						nome: 'Dra. Mariana Vasconcelos',
+						crm: 'CRO-PE 8940',
+						especialidade: 'Endodontia',
+						diasSemana: ['SEG', 'QUA'],
+						diasSemanaNumeros: [1, 3],
+						diasSemanaFormatado: 'Segundas e Quartas',
+						horarioInicio: '08:00',
+						horarioFim: '12:00',
+						duracaoMinutos: 40,
+						vagasPorTurno: 8,
+						consultorio: 'Cadeira 01 (Endodontia Especializada)',
+						status: 'ATIVA'
+					},
+					{
+						id: 'dr-andre-santos',
+						nome: 'Dr. André Santos',
+						crm: 'CRO-PE 9120',
+						especialidade: 'Cirurgia Bucomaxilofacial',
+						diasSemana: ['TER', 'QUI'],
+						diasSemanaNumeros: [2, 4],
+						diasSemanaFormatado: 'Terças e Quintas',
+						horarioInicio: '08:00',
+						horarioFim: '12:00',
+						duracaoMinutos: 30,
+						vagasPorTurno: 10,
+						consultorio: 'Cadeira 02 (Cirurgia & Trauma)',
+						status: 'ATIVA'
+					}
+				);
+			} else {
+				list.push(
+					{
+						id: 'dr-roberto-medeiros',
+						nome: 'Dr. Roberto Medeiros',
+						crm: 'CRM-PE 14920',
+						especialidade: 'Cardiologia',
+						diasSemana: ['TER', 'QUI'],
+						diasSemanaNumeros: [2, 4],
+						diasSemanaFormatado: 'Terças e Quintas',
+						horarioInicio: '08:00',
+						horarioFim: '12:00',
+						duracaoMinutos: 20,
+						vagasPorTurno: 12,
+						consultorio: 'Consultório 01 (Cardiologia)',
+						status: 'ATIVA'
+					},
+					{
+						id: 'dra-juliana-albuquerque',
+						nome: 'Dra. Juliana Albuquerque',
+						crm: 'CRM-PE 18230',
+						especialidade: 'Neurologia',
+						diasSemana: ['SEG', 'QUA'],
+						diasSemanaNumeros: [1, 3],
+						diasSemanaFormatado: 'Segundas e Quartas',
+						horarioInicio: '13:00',
+						horarioFim: '17:00',
+						duracaoMinutos: 20,
+						vagasPorTurno: 12,
+						consultorio: 'Consultório 02 (Neurologia)',
+						status: 'ATIVA'
+					}
+				);
+			}
+		}
+
+		return list;
+	});
+
+	// Auto-seleciona o primeiro especialista se nenhum estiver selecionado
+	$effect(() => {
+		if (listaEspecialistas.length > 0 && !medicoSelecionadoId) {
+			medicoSelecionadoId = listaEspecialistas[0].id;
+		}
+	});
+
+	// Especialista ativo em foco
+	let especialistaAtivo = $derived<EspecialistaAgendaItem | null>(
+		listaEspecialistas.find(e => e.id === medicoSelecionadoId) || (listaEspecialistas[0] ?? null)
+	);
+
+	// Total de atendimentos do especialista selecionado no mês
+	let totalAgendamentosMesEspecialista = $derived.by(() => {
+		if (!especialistaAtivo) return todosEncaminhamentosMes.length;
+		return todosEncaminhamentosMes.filter(e => {
+			const d = e.agendamentoPrevisto?.substring(0, 7);
+			return d === mesCalendario && agendamentoPertenceAoMedico(e, especialistaAtivo!);
+		}).length;
+	});
 
 	async function carregarAgenda() {
 		carregando = true;
@@ -141,13 +299,7 @@
 				api.centroRecepcao.listEscalas({ centro: centroParam }).catch(() => [])
 			]);
 
-			// Carrega escalas oficiais cadastradas no banco
-			const escalasBase = Array.isArray(resEscalas) ? resEscalas : [];
-			medicosEspecialistas = escalasBase.map(e => ({
-				nome: e.medicoNome,
-				especialidade: e.especialidade,
-				registro: e.crm
-			}));
+			escalasCarregadas = Array.isArray(resEscalas) ? resEscalas : [];
 
 			todosEncaminhamentosMes = resTodos.filter(e => {
 				const f = (e.filaDestino as string) || '';
@@ -168,7 +320,7 @@
 			}
 		} catch (e: any) {
 			console.error(e);
-			erro = `Falha ao carregar agenda do dia: ${e?.message || 'Erro no servidor'}`;
+			erro = `Falha ao carregar agenda: ${e?.message || 'Erro no servidor'}`;
 		} finally {
 			carregando = false;
 		}
@@ -182,33 +334,20 @@
 		if (timerMensagem) clearTimeout(timerMensagem);
 	});
 
-	// Filtrar os agendados da data selecionada
+	// Pacientes agendados na data em foco
 	let agendadosDaData = $derived(
 		todosEncaminhamentosMes.filter(e => e.agendamentoPrevisto?.substring(0, 10) === dataAgenda)
 	);
 
-	// Lista de especialidades presentes na data para popular filtro
-	let listaEspecialidades = $derived.by(() => {
-		const sets = new Set(todosEncaminhamentosMes.map(e => e.solicitacao?.especialidadeSolicitada).filter(Boolean));
-		return [...sets].sort();
+	// Pacientes da data filtrados pelo médico em foco
+	let filtradosDoMedico = $derived.by(() => {
+		if (!especialistaAtivo) return agendadosDaData;
+		return agendadosDaData.filter(e => agendamentoPertenceAoMedico(e, especialistaAtivo!));
 	});
 
-	// Extrai horário da consulta formatado HH:MM
-	function extrairHorario(nota: string | undefined): string {
-		if (!nota) return '08:00';
-		const match = nota.match(/(\d{2}:\d{2})/);
-		return match ? match[1] : '08:00';
-	}
-
-	// Filtragem local dos agendados da data
+	// Filtragem com busca textual
 	let filtrados = $derived.by(() => {
-		return agendadosDaData.filter(e => {
-			if (filtroEspecialidade !== 'TODAS' && e.solicitacao.especialidadeSolicitada !== filtroEspecialidade) {
-				return false;
-			}
-			if (filtroPrioridade !== 'TODAS' && e.solicitacao.prioridade !== filtroPrioridade) {
-				return false;
-			}
+		return filtradosDoMedico.filter(e => {
 			if (busca.trim()) {
 				const q = busca.toLowerCase();
 				return (
@@ -240,7 +379,7 @@
 
 	// Resetar página quando filtros mudam
 	$effect(() => {
-		const _ = [filtroEspecialidade, filtroPrioridade, busca, dataAgenda];
+		const _ = [medicoSelecionadoId, busca, dataAgenda];
 		paginaAtual = 1;
 	});
 
@@ -249,8 +388,8 @@
 		encaminhamentoParaRealocar = enc;
 		novaDataRealocacao = enc.agendamentoPrevisto ? enc.agendamentoPrevisto.substring(0, 10) : dataAgenda;
 		novoHorarioRealocacao = extrairHorario(enc.observacoesRegulacao);
-		novoMedicoRealocacao = (enc as any).profissionalAtribuido || (medicosEspecialistas[0]?.nome ?? '');
-		motivoRealocacao = 'Remanejamento de escala médica pelo Gestor do Centro';
+		novoMedicoRealocacao = extrairNomeMedicoAgendamento(enc) || (especialistaAtivo?.nome ?? '');
+		motivoRealocacao = 'Remanejamento de escala do especialista pelo Gestor';
 		erroModalRealocacao = '';
 		modalRealocarAberto = true;
 	}
@@ -270,15 +409,31 @@
 			.map(e => ({
 				data: e.agendamentoPrevisto!.substring(0, 10),
 				hora: extrairHorario(e.observacoesRegulacao),
-				medicoNome: (e as any).profissionalAtribuido
+				medicoNome: extrairNomeMedicoAgendamento(e)
 			}));
+
+		const escalasFormatadas: EscalaProfissionalCentro[] = listaEspecialistas.map(esp => ({
+			medicoId: esp.id,
+			nome: esp.nome,
+			registro: esp.crm,
+			centro: centroAtivoAgenda,
+			especialidade: esp.especialidade,
+			diasSemana: esp.diasSemana,
+			horarioInicio: esp.horarioInicio,
+			horarioFim: esp.horarioFim,
+			duracaoMinutos: esp.duracaoMinutos,
+			vagasPorTurno: esp.vagasPorTurno,
+			consultorio: esp.consultorio,
+			status: esp.status as any
+		}));
 
 		const otimizado = alocarVagaPorProfissionalEEscala({
 			centro: centroAtivoAgenda,
-			medicoNome: novoMedicoRealocacao || (encaminhamentoParaRealocar as any).profissionalAtribuido,
+			medicoNome: novoMedicoRealocacao || extrairNomeMedicoAgendamento(encaminhamentoParaRealocar),
 			especialidade: encaminhamentoParaRealocar.solicitacao.especialidadeSolicitada,
 			prioridade: encaminhamentoParaRealocar.solicitacao.prioridade,
 			agendamentosExistentes: agendadosOcupados,
+			escalasDisponiveis: escalasFormatadas,
 			dataBase: new Date()
 		});
 
@@ -288,7 +443,7 @@
 			if (otimizado.medicoNome) {
 				novoMedicoRealocacao = otimizado.medicoNome;
 			}
-			motivoRealocacao = `[ALOCAÇÃO DETERMINÍSTICA ${otimizado.centro}] ${otimizado.justificativaEscala}`;
+			motivoRealocacao = `[ALOCAÇÃO POR ESCALA ${otimizado.centro}] ${otimizado.justificativaEscala}`;
 		}
 	}
 
@@ -302,7 +457,7 @@
 		realocandoProcessando = true;
 		erroModalRealocacao = '';
 
-		const notaAtualizada = `Médico: ${novoMedicoRealocacao || 'Especialista'} às ${novoHorarioRealocacao} | [REALOCAÇÃO REALIZADA PELO GESTOR] Motivo: ${motivoRealocacao.trim()}`;
+		const notaAtualizada = `Profissional: ${novoMedicoRealocacao || 'Especialista'} às ${novoHorarioRealocacao} | [REALOCAÇÃO DE ESCALA] Motivo: ${motivoRealocacao.trim()}`;
 
 		try {
 			try {
@@ -310,23 +465,21 @@
 					acao: 'REAGENDAR',
 					novaData: novaDataRealocacao,
 					novoHorario: novoHorarioRealocacao,
-					unidadeDestino: 'Centro Municipal de Especialidades',
+					unidadeDestino: nomeOrgao,
 					motivo: notaAtualizada
 				});
 			} catch (errReag) {
-				console.info('[UniSISM] Endpoint desmarcarReagendar em transição — usando fallback remarcar', errReag);
 				await api.centroRecepcao.remarcar(encaminhamentoParaRealocar.id, {
 					novaData: novaDataRealocacao,
 					novoHorario: novoHorarioRealocacao,
-					unidadeDestino: 'Centro Municipal de Especialidades',
+					unidadeDestino: nomeOrgao,
 					motivo: notaAtualizada
 				});
 			}
 
-			// Atualiza localmente
 			encaminhamentoParaRealocar.agendamentoPrevisto = novaDataRealocacao;
 			encaminhamentoParaRealocar.observacoesRegulacao = notaAtualizada;
-			(encaminhamentoParaRealocar as any).profissionalAtribuido = novoMedicoRealocacao;
+			(encaminhamentoParaRealocar as any).profissionalAgendado = novoMedicoRealocacao;
 
 			mensagemSucesso = `✓ ATENDIMENTO REALOCADO COM SUCESSO!\nPaciente: ${encaminhamentoParaRealocar.paciente.nome}\nNova Data: ${formatarData(novaDataRealocacao)} às ${novoHorarioRealocacao}\nProfissional: ${novoMedicoRealocacao || 'Especialista'}`;
 			modalRealocarAberto = false;
@@ -337,7 +490,7 @@
 			await carregarAgenda();
 		} catch (err: any) {
 			console.error(err);
-			erroModalRealocacao = `Falha ao realocar atendimento: ${err?.message || 'Erro do servidor'}`;
+			erroModalRealocacao = `Falha ao realocar: ${err?.message || 'Erro do servidor'}`;
 		} finally {
 			realocandoProcessando = false;
 		}
@@ -403,110 +556,6 @@
 		});
 	}
 
-	// Funções de Cálculo do Calendário Mensal
-	let diasDoMesCalendario = $derived.by(() => {
-		const [anoStr, mesStr] = mesCalendario.split('-');
-		const ano = parseInt(anoStr, 10);
-		const mes = parseInt(mesStr, 10) - 1;
-
-		const primeiroDia = new Date(ano, mes, 1);
-		const ultimoDia = new Date(ano, mes + 1, 0);
-
-		const diasNoMes = ultimoDia.getDate();
-		const diaSemanaInicio = primeiroDia.getDay(); // 0 = Domingo, 1 = Segunda...
-
-		const dias: Array<{
-			numero: number;
-			dataIso: string;
-			mesAtual: boolean;
-			isHoje: boolean;
-			isSelecionado: boolean;
-			totalAgendados: number;
-			urgentes: number;
-			prioritarios: number;
-			eletivos: number;
-			capacidadePercent: number;
-		}> = [];
-
-		// Dias do mês anterior para completar a semana
-		const ultimoDiaMesAnterior = new Date(ano, mes, 0).getDate();
-		for (let i = diaSemanaInicio - 1; i >= 0; i--) {
-			const num = ultimoDiaMesAnterior - i;
-			const mesAnt = mes === 0 ? 12 : mes;
-			const anoAnt = mes === 0 ? ano - 1 : ano;
-			const dataIso = `${anoAnt}-${String(mesAnt).padStart(2, '0')}-${String(num).padStart(2, '0')}`;
-			dias.push({
-				numero: num,
-				dataIso,
-				mesAtual: false,
-				isHoje: false,
-				isSelecionado: dataIso === dataAgenda,
-				totalAgendados: 0,
-				urgentes: 0,
-				prioritarios: 0,
-				eletivos: 0,
-				capacidadePercent: 0
-			});
-		}
-
-		const hojeIso = new Date().toISOString().substring(0, 10);
-
-		// Dias do mês corrente
-		for (let d = 1; d <= diasNoMes; d++) {
-			const dataIso = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-			const agendamentosNesteDia = todosEncaminhamentosMes.filter(e => e.agendamentoPrevisto?.substring(0, 10) === dataIso);
-
-			let urg = 0;
-			let prio = 0;
-			let ele = 0;
-			agendamentosNesteDia.forEach(e => {
-				if (e.solicitacao?.prioridade === 'EMERGENCIA' || e.solicitacao?.prioridade === 'URGENTE') urg++;
-				else if (e.solicitacao?.prioridade === 'PRIORITARIA') prio++;
-				else ele++;
-			});
-
-			const capacidadeTotalEstimada = 20; // Capacidade padrão do turno
-			const percent = Math.min(100, Math.round((agendamentosNesteDia.length / capacidadeTotalEstimada) * 100));
-
-			dias.push({
-				numero: d,
-				dataIso,
-				mesAtual: true,
-				isHoje: dataIso === hojeIso,
-				isSelecionado: dataIso === dataAgenda,
-				totalAgendados: agendamentosNesteDia.length,
-				urgentes: urg,
-				prioritarios: prio,
-				eletivos: ele,
-				capacidadePercent: percent
-			});
-		}
-
-		// Preenche restante da última semana até fechar múltiplo de 7
-		const resto = 7 - (dias.length % 7);
-		if (resto < 7) {
-			for (let p = 1; p <= resto; p++) {
-				const mesProx = mes === 11 ? 1 : mes + 2;
-				const anoProx = mes === 11 ? ano + 1 : ano;
-				const dataIso = `${anoProx}-${String(mesProx).padStart(2, '0')}-${String(p).padStart(2, '0')}`;
-				dias.push({
-					numero: p,
-					dataIso,
-					mesAtual: false,
-					isHoje: false,
-					isSelecionado: dataIso === dataAgenda,
-					totalAgendados: 0,
-					urgentes: 0,
-					prioritarios: 0,
-					eletivos: 0,
-					capacidadePercent: 0
-				});
-			}
-		}
-
-		return dias;
-	});
-
 	function navegarMes(direcao: number) {
 		const [anoStr, mesStr] = mesCalendario.split('-');
 		let ano = parseInt(anoStr, 10);
@@ -532,9 +581,155 @@
 		mesCalendario = dataIso.substring(0, 7);
 	}
 
-	// Mapeamento de Grade Horária para a data atual
+	// CÁLCULO DINÂMICO DO CALENDÁRIO MENSAL BASEADO NO ESPECIALISTA SELECIONADO
+	let diasDoMesCalendario = $derived.by(() => {
+		const [anoStr, mesStr] = mesCalendario.split('-');
+		const ano = parseInt(anoStr, 10);
+		const mes = parseInt(mesStr, 10) - 1;
+
+		const primeiroDia = new Date(ano, mes, 1);
+		const ultimoDia = new Date(ano, mes + 1, 0);
+
+		const diasNoMes = ultimoDia.getDate();
+		const diaSemanaInicio = primeiroDia.getDay(); // 0 = Domingo, 1 = Segunda...
+
+		const esp = especialistaAtivo;
+		const diasSemanaEscala = esp ? esp.diasSemanaNumeros : [1, 2, 3, 4, 5];
+		const vagasTurno = esp ? esp.vagasPorTurno : 12;
+
+		const dias: Array<{
+			numero: number;
+			dataIso: string;
+			mesAtual: boolean;
+			isHoje: boolean;
+			isSelecionado: boolean;
+			temEscalaNoDia: boolean;
+			totalAgendados: number;
+			vagasLivres: number;
+			capacidadePercent: number;
+			urgentes: number;
+			prioritarios: number;
+			eletivos: number;
+			pacientesPreview: Array<{ hora: string; nome: string; prioridade: PrioridadeClinica }>;
+		}> = [];
+
+		const hojeIso = new Date().toISOString().substring(0, 10);
+
+		// Dias do mês anterior para completar o início da semana
+		const ultimoDiaMesAnterior = new Date(ano, mes, 0).getDate();
+		for (let i = diaSemanaInicio - 1; i >= 0; i--) {
+			const num = ultimoDiaMesAnterior - i;
+			const mesAnt = mes === 0 ? 12 : mes;
+			const anoAnt = mes === 0 ? ano - 1 : ano;
+			const dataIso = `${anoAnt}-${String(mesAnt).padStart(2, '0')}-${String(num).padStart(2, '0')}`;
+			dias.push({
+				numero: num,
+				dataIso,
+				mesAtual: false,
+				isHoje: dataIso === hojeIso,
+				isSelecionado: dataIso === dataAgenda,
+				temEscalaNoDia: false,
+				totalAgendados: 0,
+				vagasLivres: 0,
+				capacidadePercent: 0,
+				urgentes: 0,
+				prioritarios: 0,
+				eletivos: 0,
+				pacientesPreview: []
+			});
+		}
+
+		// Dias do mês atual
+		for (let num = 1; num <= diasNoMes; num++) {
+			const dataIso = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(num).padStart(2, '0')}`;
+			const dataObj = new Date(ano, mes, num);
+			const diaSemanaNum = dataObj.getDay();
+			const temEscalaNoDia = diasSemanaEscala.includes(diaSemanaNum);
+
+			// Agendamentos deste médico específico nesta data
+			const agendadosNesteDia = todosEncaminhamentosMes.filter(e => {
+				const naData = e.agendamentoPrevisto?.substring(0, 10) === dataIso;
+				if (!naData) return false;
+				return esp ? agendamentoPertenceAoMedico(e, esp) : true;
+			});
+
+			const totalAgendados = agendadosNesteDia.length;
+			const vagasLivres = temEscalaNoDia ? Math.max(0, vagasTurno - totalAgendados) : 0;
+			const capacidadePercent = temEscalaNoDia && vagasTurno > 0 ? Math.min(100, Math.round((totalAgendados / vagasTurno) * 100)) : 0;
+
+			let urg = 0;
+			let prio = 0;
+			let elet = 0;
+			const preview: Array<{ hora: string; nome: string; prioridade: PrioridadeClinica }> = [];
+
+			for (const a of agendadosNesteDia) {
+				const p = a.solicitacao?.prioridade || 'ELETIVA';
+				if (p === 'EMERGENCIA' || p === 'URGENTE') urg++;
+				else if (p === 'PRIORITARIA') prio++;
+				else elet++;
+
+				if (preview.length < 3) {
+					preview.push({
+						hora: extrairHorario(a.observacoesRegulacao),
+						nome: a.paciente?.nome?.split(' ')[0] || 'Paciente',
+						prioridade: p
+					});
+				}
+			}
+
+			dias.push({
+				numero: num,
+				dataIso,
+				mesAtual: true,
+				isHoje: dataIso === hojeIso,
+				isSelecionado: dataIso === dataAgenda,
+				temEscalaNoDia,
+				totalAgendados,
+				vagasLivres,
+				capacidadePercent,
+				urgentes: urg,
+				prioritarios: prio,
+				eletivos: elet,
+				pacientesPreview: preview
+			});
+		}
+
+		// Completar dias para fechar as semanas do calendário (grade 7xN)
+		const totalRestante = 7 - (dias.length % 7);
+		if (totalRestante < 7) {
+			const proxMes = mes + 2 > 12 ? 1 : mes + 2;
+			const proxAno = mes + 2 > 12 ? ano + 1 : ano;
+			for (let num = 1; num <= totalRestante; num++) {
+				const dataIso = `${proxAno}-${String(proxMes).padStart(2, '0')}-${String(num).padStart(2, '0')}`;
+				dias.push({
+					numero: num,
+					dataIso,
+					mesAtual: false,
+					isHoje: dataIso === hojeIso,
+					isSelecionado: dataIso === dataAgenda,
+					temEscalaNoDia: false,
+					totalAgendados: 0,
+					vagasLivres: 0,
+					capacidadePercent: 0,
+					urgentes: 0,
+					prioritarios: 0,
+					eletivos: 0,
+					pacientesPreview: []
+				});
+			}
+		}
+
+		return dias;
+	});
+
+	// GRADE HORÁRIA DO ESPECIALISTA SELECIONADO NA DATA
 	let gradeHorariosMapeada = $derived.by(() => {
-		return slotsHorarios.map(hora => {
+		const esp = especialistaAtivo;
+		const slots = esp
+			? gerarSlotsTurno(esp.horarioInicio, esp.horarioFim, esp.duracaoMinutos)
+			: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+
+		return slots.map(hora => {
 			const agendadosNesteHorario = ordenados.filter(e => extrairHorario(e.observacoesRegulacao) === hora);
 			return {
 				hora,
@@ -543,10 +738,17 @@
 			};
 		});
 	});
+
+	// Verifica se a data atual é dia de escala do médico
+	let dataAtualEhDiaDeEscala = $derived.by(() => {
+		if (!especialistaAtivo) return true;
+		const d = new Date(dataAgenda + 'T12:00:00');
+		return especialistaAtivo.diasSemanaNumeros.includes(d.getDay());
+	});
 </script>
 
 <svelte:head>
-	<title>ERP Centro - Agenda de Atendimentos & Alocação de Vagas | UniSISM</title>
+	<title>ERP {siglaOrgao} - Calendário por Especialista & Escalas | UniSISM</title>
 </svelte:head>
 
 <div class="flex flex-col gap-4 font-mono text-xs">
@@ -555,7 +757,7 @@
 		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm flex flex-col gap-1 whitespace-pre-wrap">
 			<div class="text-sm font-black flex items-center gap-2">
 				<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono">CONFIRMADO</span>
-				<span>GESTÃO DE VAGAS & AGENDA DO CENTRO</span>
+				<span>GESTÃO DE ESCALAS & AGENDA DO {siglaOrgao}</span>
 			</div>
 			<div class="font-mono text-xs font-normal mt-0.5">{mensagemSucesso}</div>
 		</div>
@@ -568,33 +770,25 @@
 		</div>
 	{/if}
 
-	<!-- Header com Navegação e Alternador de Visões (Design System SUS) -->
+	<!-- Header Principal com Navegação de Visões -->
 	<section class="border border-slate-200 bg-white p-4 flex flex-wrap items-center justify-between gap-4">
 		<div>
 			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-				CENTRO DE ESPECIALIDADES · REGULAÇÃO ASSISTENCIAL
+				{nomeOrgao} · GESTÃO ASSISTENCIAL
 			</div>
 			<div class="text-lg font-bold text-slate-900 font-sans mt-0.5 flex items-center gap-2">
-				<span>Agenda de Consultas e Alocação de Especialidades</span>
+				<span>Calendário de Atendimentos por Especialista</span>
 			</div>
-			<div class="text-xs text-blue-900 font-bold mt-1 flex items-center gap-1.5">
-				<span>📅 Data em Foco: <strong>{formatarData(dataAgenda)}</strong></span>
+			<div class="text-xs text-blue-900 font-bold mt-1 flex items-center gap-1.5 font-sans">
+				<span>📅 Data Selecionada: <strong>{formatarData(dataAgenda)}</strong></span>
 				<span class="text-slate-400">·</span>
-				<span>({ordenados.length} atendimentos programados)</span>
+				<span>({ordenados.length} consultas marcadas para o profissional)</span>
 			</div>
 		</div>
 
 		<!-- Alternador de Modos de Visão -->
 		<div class="flex items-center gap-2">
 			<div class="flex border border-slate-300 bg-slate-100 p-0.5">
-				<button
-					type="button"
-					onclick={() => visaoModo = 'LISTA'}
-					class="px-3 py-1.5 font-bold uppercase text-xs transition-colors flex items-center gap-1.5 {visaoModo === 'LISTA' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:bg-slate-200'}"
-				>
-					<span>📋</span>
-					<span>Lista</span>
-				</button>
 				<button
 					type="button"
 					onclick={() => visaoModo = 'CALENDARIO'}
@@ -611,6 +805,14 @@
 					<span>⏱️</span>
 					<span>Grade de Horários</span>
 				</button>
+				<button
+					type="button"
+					onclick={() => visaoModo = 'LISTA'}
+					class="px-3 py-1.5 font-bold uppercase text-xs transition-colors flex items-center gap-1.5 {visaoModo === 'LISTA' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:bg-slate-200'}"
+				>
+					<span>📋</span>
+					<span>Lista de Pacientes</span>
+				</button>
 			</div>
 
 			<button
@@ -623,48 +825,106 @@
 		</div>
 	</section>
 
-	<!-- Filtros da Agenda -->
-	<section class="border border-slate-200 bg-white p-4 grid grid-cols-1 gap-3 md:grid-cols-4 font-sans text-xs">
-		<div class="flex flex-col gap-1 md:col-span-2">
-			<label for="busca-agenda" class="font-mono text-[10px] font-bold uppercase text-slate-600">Buscar Paciente / CPF / Protocolo</label>
-			<input
-				id="busca-agenda"
-				type="text"
-				bind:value={busca}
-				placeholder="Digite o nome do paciente, CPF ou número do protocolo..."
-				class="border border-slate-300 p-2 font-sans text-xs outline-none focus:border-blue-900"
-			/>
+	<!-- ========================================================================= -->
+	<!-- SELETOR DE ESPECIALISTA / MÉDICO (BARRA DE PROFISSIONAIS EM ESCALA)       -->
+	<!-- ========================================================================= -->
+	<section class="border-2 border-slate-900 bg-white shadow-xs p-4 flex flex-col gap-3">
+		<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+			<div class="flex items-center gap-2">
+				<span class="bg-blue-900 text-white px-2 py-0.5 text-[10px] font-bold uppercase">SELECIONE O PROFISSIONAL</span>
+				<span class="text-xs font-bold text-slate-800 font-sans">Escalas de Atendimento & Calendário Individual</span>
+			</div>
+			<div class="text-[11px] text-slate-500 font-sans">
+				Total de <strong>{listaEspecialistas.length}</strong> especialistas com escala cadastrada no {siglaOrgao}
+			</div>
 		</div>
 
-		<div class="flex flex-col gap-1">
-			<label for="filtro-esp" class="font-mono text-[10px] font-bold uppercase text-slate-600">Especialidade</label>
-			<select id="filtro-esp" bind:value={filtroEspecialidade} class="border border-slate-300 p-2 text-xs bg-white font-bold font-mono">
-				<option value="TODAS">TODAS AS ESPECIALIDADES</option>
-				{#each listaEspecialidades as esp}
-					<option value={esp}>{esp.toUpperCase()}</option>
-				{/each}
-			</select>
-		</div>
+		<!-- Carrossel / Cards de Seleção de Especialistas -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+			{#each listaEspecialistas as esp (esp.id)}
+				<button
+					type="button"
+					onclick={() => medicoSelecionadoId = esp.id}
+					class="text-left p-3 border transition-all flex flex-col justify-between gap-2 {medicoSelecionadoId === esp.id ? 'border-2 border-blue-900 bg-blue-50/70 shadow-xs ring-1 ring-blue-900' : 'border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300'}"
+				>
+					<div class="flex items-start justify-between gap-2">
+						<div class="flex items-center gap-2">
+							<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-xs {medicoSelecionadoId === esp.id ? 'bg-blue-900 text-white' : 'bg-slate-200 text-slate-700'}">
+								{esp.nome.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('')}
+							</div>
+							<div>
+								<div class="font-bold font-sans text-xs text-slate-900 leading-tight">{esp.nome}</div>
+								<div class="text-[10px] text-blue-900 font-bold font-mono">{esp.especialidade}</div>
+							</div>
+						</div>
+						<span class="text-[9px] font-mono px-1.5 py-0.5 border {esp.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'} font-bold">
+							{esp.status}
+						</span>
+					</div>
 
-		<div class="flex flex-col gap-1">
-			<label for="filtro-prio" class="font-mono text-[10px] font-bold uppercase text-slate-600">Prioridade SUS</label>
-			<select id="filtro-prio" bind:value={filtroPrioridade} class="border border-slate-300 p-2 text-xs bg-white font-bold font-mono">
-				<option value="TODAS">TODAS AS PRIORIDADES</option>
-				<option value="EMERGENCIA">🔴 EMERGÊNCIA (Até 24h)</option>
-				<option value="URGENTE">🟠 URGENTE (Até 72h)</option>
-				<option value="PRIORITARIA">🔵 PRIORITÁRIA (Até 7-10d)</option>
-				<option value="ELETIVA">🟢 ELETIVA (Até 30d)</option>
-			</select>
+					<div class="border-t border-slate-200/80 pt-1.5 flex flex-col gap-0.5 text-[10px] text-slate-600 font-sans">
+						<div class="flex items-center justify-between">
+							<span>🗓️ <strong>{esp.diasSemanaFormatado}</strong></span>
+							<span class="font-mono text-slate-500">{esp.crm}</span>
+						</div>
+						<div class="flex items-center justify-between text-slate-500 text-[9px] font-mono">
+							<span>⏰ {esp.horarioInicio} às {esp.horarioFim}</span>
+							<span>{esp.duracaoMinutos}min/vaga ({esp.vagasPorTurno} vagas)</span>
+						</div>
+					</div>
+				</button>
+			{/each}
 		</div>
 	</section>
 
 	<!-- ========================================================================= -->
-	<!-- VISÃO 1: CALENDÁRIO MENSAL INTERATIVO (DESIGN SYSTEM CLÍNICO)             -->
+	<!-- CARD DE INFORMAÇÕES DO ESPECIALISTA SELECIONADO                           -->
+	<!-- ========================================================================= -->
+	{#if especialistaAtivo}
+		<section class="border border-blue-900 bg-blue-950 text-white p-4 shadow-sm">
+			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+				<div class="flex items-center gap-3.5">
+					<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xs bg-white font-bold text-blue-950 text-lg shadow-xs">
+						👨‍⚕️
+					</div>
+					<div>
+						<div class="flex items-center gap-2 flex-wrap">
+							<span class="text-base font-bold font-sans tracking-wide text-white">{especialistaAtivo.nome}</span>
+							<span class="bg-blue-800 text-blue-200 px-2 py-0.5 text-[10px] font-mono font-bold uppercase">{especialistaAtivo.crm}</span>
+							<span class="bg-emerald-700 text-white px-2 py-0.5 text-[10px] font-mono font-bold uppercase">{especialistaAtivo.especialidade}</span>
+						</div>
+						<div class="text-xs text-blue-200 font-sans mt-1 flex items-center gap-2 flex-wrap">
+							<span>🏛️ {especialistaAtivo.consultorio}</span>
+							<span>·</span>
+							<span>🗓️ Dias de Atendimento: <strong>{especialistaAtivo.diasSemanaFormatado}</strong></span>
+							<span>·</span>
+							<span>⏰ Turno: <strong>{especialistaAtivo.horarioInicio} às {especialistaAtivo.horarioFim}</strong> ({especialistaAtivo.duracaoMinutos} min/consulta · {especialistaAtivo.vagasPorTurno} vagas/turno)</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-3 border-t lg:border-t-0 lg:border-l border-blue-800 pt-3 lg:pt-0 lg:pl-4">
+					<div class="flex flex-col text-right">
+						<span class="text-[10px] text-blue-300 uppercase font-mono">Agendamentos no Mês</span>
+						<span class="text-lg font-bold font-mono text-white">{totalAgendamentosMesEspecialista} pacientes</span>
+					</div>
+					<div class="h-8 w-px bg-blue-800"></div>
+					<div class="flex flex-col text-right">
+						<span class="text-[10px] text-blue-300 uppercase font-mono">Atendimentos em {formatarData(dataAgenda)}</span>
+						<span class="text-lg font-bold font-mono text-emerald-400">{ordenados.length} / {especialistaAtivo.vagasPorTurno}</span>
+					</div>
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	<!-- ========================================================================= -->
+	<!-- VISÃO 1: CALENDÁRIO MENSAL INDIVIDUAL DO ESPECIALISTA                     -->
 	<!-- ========================================================================= -->
 	{#if visaoModo === 'CALENDARIO'}
 		<section class="border-2 border-slate-900 bg-white shadow-md">
 			<!-- Header do Calendário Mensal -->
-			<div class="flex items-center justify-between border-b-2 border-slate-900 bg-slate-900 px-6 py-3 text-white">
+			<div class="flex flex-wrap items-center justify-between border-b-2 border-slate-900 bg-slate-900 px-6 py-3 text-white gap-3">
 				<div class="flex items-center gap-3">
 					<button
 						type="button"
@@ -689,10 +949,20 @@
 					</button>
 				</div>
 
-				<div class="flex items-center gap-4 text-xs">
-					<div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-600"></span> Urgência / Emergência</div>
-					<div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span> Prioritária</div>
-					<div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span> Eletiva</div>
+				<!-- Legenda Clara das Cores da Escala -->
+				<div class="flex items-center gap-4 text-xs font-sans">
+					<div class="flex items-center gap-1.5">
+						<span class="h-3 w-3 bg-emerald-100 border border-emerald-500"></span>
+						<span>Dia de Atendimento da Escala</span>
+					</div>
+					<div class="flex items-center gap-1.5">
+						<span class="h-3 w-3 bg-slate-100 border border-slate-300"></span>
+						<span class="text-slate-300">Fora da Escala / Folga</span>
+					</div>
+					<div class="flex items-center gap-1.5">
+						<span class="h-3 w-3 bg-blue-100 border-2 border-blue-900"></span>
+						<span>Data em Foco</span>
+					</div>
 				</div>
 			</div>
 
@@ -707,75 +977,109 @@
 				<div class="py-2.5 text-rose-700">SÁBADO</div>
 			</div>
 
-			<!-- Células do Calendário Mensal -->
+			<!-- Células do Calendário Mensal por Especialista -->
 			<div class="grid grid-cols-7 border-collapse bg-slate-200 gap-px">
 				{#each diasDoMesCalendario as dia (dia.dataIso)}
 					<button
 						type="button"
 						onclick={() => selecionarDiaCalendario(dia.dataIso)}
-						class="min-h-[110px] p-2 text-left transition-all flex flex-col justify-between {dia.isSelecionado ? 'bg-blue-50 ring-2 ring-blue-900 z-10' : dia.mesAtual ? 'bg-white hover:bg-slate-50' : 'bg-slate-100/60 text-slate-400'}"
+						class="min-h-[120px] p-2 text-left transition-all flex flex-col justify-between {dia.isSelecionado ? 'bg-blue-50 ring-2 ring-blue-900 z-10' : dia.temEscalaNoDia ? 'bg-white hover:bg-emerald-50/40' : dia.mesAtual ? 'bg-slate-50/80 text-slate-400 hover:bg-slate-100' : 'bg-slate-100/50 text-slate-300'}"
 					>
-						<div class="flex items-center justify-between">
-							<span class="font-bold text-xs {dia.isHoje ? 'bg-blue-900 text-white px-1.5 py-0.5 rounded-xs' : dia.isSelecionado ? 'text-blue-900 text-sm font-black' : 'text-slate-700'}">
+						<!-- Cabeçalho da Célula (Número do Dia + Badge da Escala) -->
+						<div class="flex items-start justify-between">
+							<span class="font-bold text-xs {dia.isHoje ? 'bg-blue-900 text-white px-1.5 py-0.5 rounded-xs' : dia.isSelecionado ? 'text-blue-900 text-sm font-black' : dia.temEscalaNoDia ? 'text-slate-900 font-black' : 'text-slate-400'}">
 								{dia.numero}
 							</span>
 
-							{#if dia.totalAgendados > 0}
-								<span class="bg-blue-100 text-blue-950 font-bold px-1.5 py-0.5 text-[10px] border border-blue-300">
-									{dia.totalAgendados} agendado{dia.totalAgendados > 1 ? 's' : ''}
+							{#if dia.temEscalaNoDia && dia.mesAtual}
+								<span class="bg-emerald-100 text-emerald-950 font-bold px-1.5 py-0.5 text-[9px] border border-emerald-300 uppercase font-mono">
+									ESCALA ATIVA
+								</span>
+							{:else if dia.totalAgendados > 0 && dia.mesAtual}
+								<span class="bg-amber-100 text-amber-950 font-bold px-1 py-0.5 text-[8px] border border-amber-300 uppercase font-mono">
+									ENCAIXE
 								</span>
 							{/if}
 						</div>
 
-						<!-- Tags de Prioridade e Barra de Ocupação -->
-						{#if dia.totalAgendados > 0}
-							<div class="flex flex-col gap-1 my-1">
-								<div class="flex items-center gap-1 flex-wrap">
-									{#if dia.urgentes > 0}
-										<span class="bg-rose-100 text-rose-900 border border-rose-300 font-bold text-[9px] px-1">
-											🔴 {dia.urgentes} urg
+						<!-- Corpo da Célula com Dados da Escala do Médico -->
+						{#if dia.mesAtual}
+							{#if dia.temEscalaNoDia}
+								<div class="flex flex-col gap-1 my-1 font-sans">
+									<!-- Contador de Vagas e Ocupação do Especialista -->
+									<div class="flex items-center justify-between text-[10px]">
+										<span class="font-bold font-mono text-slate-800">
+											{dia.totalAgendados} / {especialistaAtivo?.vagasPorTurno || 12} agendados
 										</span>
-									{/if}
-									{#if dia.prioritarios > 0}
-										<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[9px] px-1">
-											🔵 {dia.prioritarios} prio
-										</span>
-									{/if}
-									{#if dia.eletivos > 0}
-										<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[9px] px-1">
-											🟢 {dia.eletivos} elet
-										</span>
-									{/if}
-								</div>
+										{#if dia.vagasLivres > 0}
+											<span class="text-emerald-700 font-bold text-[9px] bg-emerald-50 px-1 border border-emerald-200">
+												{dia.vagasLivres} livres
+											</span>
+										{:else}
+											<span class="text-rose-700 font-bold text-[9px] bg-rose-50 px-1 border border-rose-200">
+												LOTADO
+											</span>
+										{/if}
+									</div>
 
-								<!-- Barra de Ocupação da Capacidade -->
-								<div class="w-full bg-slate-200 h-1.5 overflow-hidden mt-1">
-									<div
-										class="h-full {dia.capacidadePercent >= 90 ? 'bg-rose-600' : dia.capacidadePercent >= 60 ? 'bg-amber-500' : 'bg-emerald-600'}"
-										style="width: {dia.capacidadePercent}%"
-									></div>
+									<!-- Barra de Ocupação da Grade do Médico -->
+									<div class="w-full bg-slate-200 h-1.5 overflow-hidden">
+										<div
+											class="h-full {dia.capacidadePercent >= 100 ? 'bg-rose-600' : dia.capacidadePercent >= 70 ? 'bg-amber-500' : 'bg-emerald-600'}"
+											style="width: {dia.capacidadePercent}%"
+										></div>
+									</div>
+
+									<!-- Prévia dos Primeiros Pacientes -->
+									{#if dia.pacientesPreview.length > 0}
+										<div class="flex flex-col gap-0.5 mt-0.5 text-[9px] text-slate-600 font-mono">
+											{#each dia.pacientesPreview as p}
+												<div class="truncate flex items-center gap-1">
+													<span class="text-blue-900 font-bold">{p.hora}</span>
+													<span class="truncate">{p.nome}</span>
+												</div>
+											{/each}
+											{#if dia.totalAgendados > 3}
+												<div class="text-[8px] text-slate-400 italic">
+													+{dia.totalAgendados - 3} paciente(s)...
+												</div>
+											{/if}
+										</div>
+									{/if}
 								</div>
-								<span class="text-[9px] text-slate-500 font-mono text-right">{dia.capacidadePercent}% ocupado</span>
-							</div>
-						{:else if dia.mesAtual}
-							<div class="text-[10px] text-slate-400 italic">Vagas livres</div>
+							{:else}
+								<div class="my-auto text-center py-2">
+									<div class="text-[10px] text-slate-400 font-sans italic">
+										Sem escala
+									</div>
+									{#if dia.totalAgendados > 0}
+										<div class="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1 mt-1">
+											{dia.totalAgendados} paciente(s) marcado(s)
+										</div>
+									{/if}
+								</div>
+							{/if}
 						{/if}
+
+						<div class="text-[9px] text-slate-400 font-mono text-right">
+							{dia.isSelecionado ? '▶ Selecionado' : ''}
+						</div>
 					</button>
 				{/each}
 			</div>
 
-			<div class="border-t border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-700">
-				💡 Clique em qualquer dia para carregar e gerenciar os pacientes programados para aquela data.
+			<div class="border-t border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-700 font-sans">
+				💡 <strong>Dica da Regulação:</strong> O calendário exibe os dias e vagas em conformidade com a escala do especialista <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}). Clique em qualquer dia para ver os horários detalhados.
 			</div>
 		</section>
 	{/if}
 
 	<!-- ========================================================================= -->
-	<!-- VISÃO 2: GRADE HORÁRIA POR SLOTS (07:30 às 17:00)                         -->
+	<!-- VISÃO 2: GRADE HORÁRIA DO ESPECIALISTA SELECIONADO                        -->
 	<!-- ========================================================================= -->
 	{#if visaoModo === 'GRADE'}
 		<section class="border border-slate-200 bg-white">
-			<PanelHeader title={`Grade Horária do Dia · ${formatarData(dataAgenda)}`} index="01">
+			<PanelHeader title={`Grade de Horários · ${especialistaAtivo?.nome} · ${formatarData(dataAgenda)}`} index="01">
 				<div class="flex items-center gap-2">
 					<input
 						type="date"
@@ -784,6 +1088,22 @@
 					/>
 				</div>
 			</PanelHeader>
+
+			<!-- Alerta se o dia selecionado for fora da escala do médico -->
+			{#if !dataAtualEhDiaDeEscala}
+				<div class="border-b border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between font-sans">
+					<div>
+						⚠️ <strong>Atenção:</strong> {formatarData(dataAgenda)} não é um dia habitual da escala de <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}).
+					</div>
+					<button
+						type="button"
+						onclick={() => visaoModo = 'CALENDARIO'}
+						class="border border-amber-700 bg-amber-700 text-white px-2.5 py-1 text-[10px] font-bold uppercase font-mono"
+					>
+						Ver Dias Disponíveis no Calendário
+					</button>
+				</div>
+			{/if}
 
 			<div class="p-4 flex flex-col gap-3">
 				{#each gradeHorariosMapeada as slot (slot.hora)}
@@ -801,18 +1121,18 @@
 											<span class="font-mono text-xs text-slate-500">(CPF: {enc.paciente.cpf})</span>
 											<StatusBadge prioridade={enc.solicitacao.prioridade} />
 										</div>
-										<div class="text-xs text-blue-950 font-bold mt-0.5">
-											{enc.solicitacao.especialidadeSolicitada} · Protocolo: {enc.protocolo}
+										<div class="text-xs text-blue-950 font-bold mt-0.5 font-sans">
+											{enc.solicitacao.especialidadeSolicitada} · Protocolo: {enc.protocolo} · Unidade Origem: {enc.unidadeOrigem || 'UBS'}
 										</div>
-										<div class="text-[11px] text-slate-600">
-											{enc.observacoesRegulacao || 'Consulta programada no Centro'}
+										<div class="text-[11px] text-slate-600 font-sans">
+											{enc.observacoesRegulacao || 'Consulta programada na escala do Centro'}
 										</div>
 									</div>
 								{/each}
 							{:else}
 								<div>
-									<div class="font-bold text-slate-600 text-xs uppercase">Horário Livre / Disponível</div>
-									<div class="text-[11px] text-slate-400">Espaço disponível para encaixe ou realocação de pacientes</div>
+									<div class="font-bold text-emerald-800 text-xs uppercase font-sans">Vaga Disponível na Escala do Especialista</div>
+									<div class="text-[11px] text-slate-500 font-sans">Horário livre ({slot.hora}) para agendamento ou encaixe clínico</div>
 								</div>
 							{/if}
 						</div>
@@ -824,28 +1144,28 @@
 									<button
 										type="button"
 										onclick={() => registrarPresencaRecepcao(enc, 'AGUARDANDO_ATENDIMENTO')}
-										class="border border-emerald-700 bg-emerald-700 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-emerald-800"
+										class="border border-emerald-700 bg-emerald-700 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-emerald-800 font-mono"
 									>
 										✓ Confirmar Chegada
 									</button>
 									<button
 										type="button"
 										onclick={() => abrirRealocacao(enc)}
-										class="border border-purple-900 bg-purple-900 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-purple-950"
+										class="border border-purple-900 bg-purple-900 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-purple-950 font-mono"
 									>
 										🔄 Realocar Vaga
 									</button>
 									<button
 										type="button"
 										onclick={() => abrirComprovante(enc)}
-										class="border border-slate-300 bg-white text-slate-700 px-2.5 py-1 text-xs font-bold uppercase hover:bg-slate-100"
+										class="border border-slate-300 bg-white text-slate-700 px-2.5 py-1 text-xs font-bold uppercase hover:bg-slate-100 font-mono"
 									>
 										🖨️ Comprovante
 									</button>
 								{/each}
 							{:else}
-								<span class="text-emerald-800 font-bold text-xs bg-emerald-100 border border-emerald-300 px-2 py-1">
-									VAGA DISPONÍVEL
+								<span class="text-emerald-800 font-bold text-xs bg-emerald-100 border border-emerald-300 px-2 py-1 font-mono">
+									HORÁRIO LIVRE
 								</span>
 							{/if}
 						</div>
@@ -856,11 +1176,11 @@
 	{/if}
 
 	<!-- ========================================================================= -->
-	<!-- VISÃO 3: TABELA DETALHADA EM LISTA (COMPLETA COM REALOCAÇÃO)              -->
+	<!-- VISÃO 3: TABELA DETALHADA EM LISTA                                        -->
 	<!-- ========================================================================= -->
 	{#if visaoModo === 'LISTA'}
 		<div class="border border-slate-200 bg-white shadow-xs">
-			<PanelHeader title={`Pacientes Agendados para o Dia · ${formatarData(dataAgenda)}`} index="02">
+			<PanelHeader title={`Pacientes Agendados · ${especialistaAtivo?.nome} · ${formatarData(dataAgenda)}`} index="02">
 				<div class="flex items-center gap-2">
 					<input
 						type="date"
@@ -868,15 +1188,27 @@
 						class="border border-slate-300 bg-white px-2 py-0.5 text-xs font-mono font-bold text-slate-900 outline-none"
 					/>
 					<span class="border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-600 uppercase">
-						{ordenados.length} Programados
+						{ordenados.length} Agendados
 					</span>
 				</div>
 			</PanelHeader>
 
+			<!-- Busca de Paciente -->
+			<div class="p-3 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+				<label for="busca-pac" class="font-bold text-slate-700 text-xs font-sans">Buscar:</label>
+				<input
+					id="busca-pac"
+					type="text"
+					bind:value={busca}
+					placeholder="Buscar por nome do paciente, CPF ou número de protocolo..."
+					class="border border-slate-300 bg-white p-1.5 text-xs font-sans w-full max-w-md outline-none focus:border-blue-900"
+				/>
+			</div>
+
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse text-xs">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+						<tr class="border-b border-slate-200 bg-slate-100 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
 							<th class="border-r border-slate-200 px-3 py-2.5">Horário</th>
 							<th class="border-r border-slate-200 px-3 py-2.5">Protocolo</th>
 							<th class="border-r border-slate-200 px-3 py-2.5">Paciente / CPF</th>
@@ -898,7 +1230,7 @@
 						{:else if paginados.length === 0}
 							<tr>
 								<td colspan="7" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
-									Nenhuma consulta agendada para a data selecionada ({formatarData(dataAgenda)}).
+									Nenhum paciente agendado para {especialistaAtivo?.nome} na data selecionada ({formatarData(dataAgenda)}).
 								</td>
 							</tr>
 						{:else}
@@ -936,7 +1268,7 @@
 											type="button"
 											onclick={() => abrirRealocacao(enc)}
 											class="border border-purple-900 bg-purple-900 text-white hover:bg-purple-950 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
-											title="Realocar / Remanejar para outra data ou médico"
+											title="Realocar para outra data ou médico"
 										>
 											🔄 Realocar
 										</button>
@@ -997,13 +1329,13 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL: REALOCAÇÃO E REMANEJAMENTO DE VAGA PELO GESTOR DO CENTRO           -->
+<!-- MODAL: REALOCAÇÃO E REMANEJAMENTO DE VAGA NA ESCALA DO ESPECIALISTA       -->
 <!-- ========================================================================= -->
 {#if modalRealocarAberto && encaminhamentoParaRealocar}
 	<Modal
 		isOpen={modalRealocarAberto}
 		onClose={() => modalRealocarAberto = false}
-		title="REALOCAÇÃO E REMANEJAMENTO DE ATENDIMENTO"
+		title="REALOCAÇÃO E REMANEJAMENTO NA ESCALA DO CENTRO"
 		subtitle={`Protocolo: ${encaminhamentoParaRealocar.protocolo} · Paciente: ${encaminhamentoParaRealocar.paciente.nome}`}
 		maxWidth="lg"
 	>
@@ -1031,27 +1363,27 @@
 			<!-- Botão de Otimização Automática SUS -->
 			<div class="border border-blue-200 bg-blue-50 p-3 flex items-center justify-between gap-3">
 				<div>
-					<div class="font-bold text-blue-900 uppercase text-[11px]">⚡ Alocação Automática por Prioridade SUS</div>
-					<div class="text-[10px] text-blue-700 font-sans">Calcula a data e horário ideal conforme a gravidade clínica do paciente.</div>
+					<div class="font-bold text-blue-900 uppercase text-[11px]">⚡ Alocação Automática na Escala SUS</div>
+					<div class="text-[10px] text-blue-700 font-sans">Busca o próximo dia com vaga na escala do especialista conforme prioridade clínica.</div>
 				</div>
 				<button
 					type="button"
 					onclick={aplicarAlocacaoOtimizadaModal}
 					class="border border-blue-900 bg-blue-900 text-white px-3 py-1.5 font-bold uppercase text-[10px] hover:bg-blue-950 shrink-0"
 				>
-					Calcular Vaga SUS
+					Calcular Vaga na Escala
 				</button>
 			</div>
 
 			<!-- Atalhos Rápidos de Datas -->
 			<div class="flex flex-col gap-1">
-				<span class="font-bold text-slate-600 text-[10px] uppercase">Atalhos de Remanejamento Rápido:</span>
+				<span class="font-bold text-slate-600 text-[10px] uppercase">Atalhos de Remanejamento:</span>
 				<div class="flex flex-wrap gap-1.5">
 					<button type="button" onclick={() => aplicarPresetDataRealocacao(0)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">Hoje (+0d)</button>
 					<button type="button" onclick={() => aplicarPresetDataRealocacao(1)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">Amanhã (+1d)</button>
-					<button type="button" onclick={() => aplicarPresetDataRealocacao(3)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+3 dias (Urgência)</button>
-					<button type="button" onclick={() => aplicarPresetDataRealocacao(7)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+7 dias (Prioritária)</button>
-					<button type="button" onclick={() => aplicarPresetDataRealocacao(15)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+15 dias (Eletiva)</button>
+					<button type="button" onclick={() => aplicarPresetDataRealocacao(3)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+3 dias</button>
+					<button type="button" onclick={() => aplicarPresetDataRealocacao(7)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+7 dias</button>
+					<button type="button" onclick={() => aplicarPresetDataRealocacao(14)} class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold hover:bg-slate-100">+14 dias</button>
 				</div>
 			</div>
 
@@ -1065,7 +1397,7 @@
 				<div class="flex flex-col gap-1">
 					<label for="realoc-hora" class="font-bold text-slate-700 text-[11px]">Novo Horário *</label>
 					<select id="realoc-hora" bind:value={novoHorarioRealocacao} class="border border-slate-300 p-2 text-xs bg-white font-bold font-mono">
-						{#each slotsHorarios as h}
+						{#each ['07:30', '08:00', '08:20', '08:30', '08:40', '09:00', '09:20', '09:30', '09:40', '10:00', '10:20', '10:30', '10:40', '11:00', '11:20', '11:30', '13:30', '14:00', '14:20', '14:30', '14:40', '15:00', '15:20', '15:30', '16:00', '16:30'] as h}
 							<option value={h}>{h}</option>
 						{/each}
 					</select>
@@ -1074,22 +1406,22 @@
 
 			<div class="grid grid-cols-1 gap-3">
 				<div class="flex flex-col gap-1">
-					<label for="realoc-medico" class="font-bold text-slate-700 text-[11px]">Novo Médico Especialista / Escala</label>
+					<label for="realoc-medico" class="font-bold text-slate-700 text-[11px]">Especialista Destino</label>
 					<select id="realoc-medico" bind:value={novoMedicoRealocacao} class="border border-slate-300 p-2 text-xs bg-white font-bold">
-						<option value="">Manter escala do especialista atual</option>
-						{#each medicosEspecialistas as med}
-							<option value={med.nome}>{med.nome} — {med.especialidade} ({med.registro})</option>
+						<option value="">Manter profissional atual ({extrairNomeMedicoAgendamento(encaminhamentoParaRealocar) || 'Especialista'})</option>
+						{#each listaEspecialistas as med}
+							<option value={med.nome}>{med.nome} — {med.especialidade} ({med.crm})</option>
 						{/each}
 					</select>
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label for="realoc-motivo" class="font-bold text-slate-700 text-[11px]">Motivo / Justificativa da Realocação</label>
+					<label for="realoc-motivo" class="font-bold text-slate-700 text-[11px]">Motivo da Realocação</label>
 					<input
 						id="realoc-motivo"
 						type="text"
 						bind:value={motivoRealocacao}
-						placeholder="Ex.: Antecipação a pedido médico, ausência justificada ou remanejamento de cota..."
+						placeholder="Ex.: Remanejamento de escala, antecipação clínica ou solicitação do paciente..."
 						class="border border-slate-300 p-2 text-xs font-sans"
 					/>
 				</div>
@@ -1109,7 +1441,7 @@
 					onclick={executarRealocacao}
 					class="border border-purple-900 bg-purple-900 text-white px-5 py-2 font-bold uppercase hover:bg-purple-950 disabled:opacity-50"
 				>
-					{realocandoProcessando ? 'Realocando...' : '✓ Confirmar Realocação de Vaga'}
+					{realocandoProcessando ? 'Realocando...' : '✓ Confirmar Realocação'}
 				</button>
 			</div>
 		</div>
@@ -1160,12 +1492,16 @@
 					<span class="font-bold text-emerald-800 text-sm">{formatarData(comprovanteSelecionado.agendamentoPrevisto)}</span>
 				</div>
 				<div class="flex justify-between border-b border-slate-200 pb-1">
+					<span class="text-slate-500 uppercase">Especialista:</span>
+					<span class="font-bold text-slate-900">{extrairNomeMedicoAgendamento(comprovanteSelecionado) || especialistaAtivo?.nome || 'Especialista do Centro'}</span>
+				</div>
+				<div class="flex justify-between border-b border-slate-200 pb-1">
 					<span class="text-slate-500 uppercase">Especialidade:</span>
 					<span class="font-bold text-slate-900">{comprovanteSelecionado.solicitacao.especialidadeSolicitada}</span>
 				</div>
 				<div class="flex justify-between border-b border-slate-200 pb-1">
 					<span class="text-slate-500 uppercase">Local:</span>
-					<span class="font-bold text-slate-900">Centro Municipal de Especialidades</span>
+					<span class="font-bold text-slate-900">{nomeOrgao}</span>
 				</div>
 				{#if comprovanteSelecionado.observacoesRegulacao}
 					<div class="pt-1">

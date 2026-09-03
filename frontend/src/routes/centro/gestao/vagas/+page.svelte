@@ -5,6 +5,7 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { ESPECIALIDADES_CEM, ESPECIALIDADES_CEO } from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	const auth = useAuth();
 
@@ -51,6 +52,23 @@
 	// Real Data from API
 	let cotasUbsList = $state<CotaUbs[]>([]);
 	let escalasList = $state<EscalaEspecialista[]>([]);
+	let listaProfissionais = $state<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>>([]);
+	let listaEspecialidadesCentro = $state<Array<{ id: string; nome: string; codigoSigtap?: string }>>([]);
+	let profissionalSelecionadoId = $state('');
+
+	function aoSelecionarProfissional(id: string) {
+		profissionalSelecionadoId = id;
+		const prof = listaProfissionais.find(p => p.id === id);
+		if (prof) {
+			novoMedicoNome = prof.nome;
+			novoCrm = prof.registroProfissional ? `${prof.conselho} ${prof.registroProfissional}` : `${prof.conselho} —`;
+			if (prof.especialidade && listaEspecialidadesCentro.some(e => e.nome.toLowerCase() === prof.especialidade.toLowerCase())) {
+				novaEspecialidade = prof.especialidade;
+			} else if (listaEspecialidadesCentro.length > 0) {
+				novaEspecialidade = listaEspecialidadesCentro[0].nome;
+			}
+		}
+	}
 
 	// Modals State
 	let modalAjustarCotasAberto = $state(false);
@@ -59,7 +77,7 @@
 	let modalNovaEscalaAberto = $state(false);
 	let novoMedicoNome = $state('');
 	let novoCrm = $state('');
-	let novaEspecialidade = $state('Cardiologia');
+	let novaEspecialidade = $state('');
 	let novoTipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('CONSULTA');
 	let novosDias = $state<string[]>(['SEG', 'QUA']);
 	let novoHorarioInicio = $state('08:00');
@@ -87,7 +105,7 @@
 	let disparandoAviso = $state(false);
 
 	function abrirModalDispararAviso(medicoNome?: string) {
-		avisoMedicoNome = medicoNome || (opcoesMedicos[0]?.nome || 'Dr. Roberto Medeiros');
+		avisoMedicoNome = medicoNome || (opcoesMedicos[0]?.nome || '');
 		avisoData = new Date().toISOString().substring(0, 10);
 		avisoTipoMotivo = 'FALTA_MEDICA';
 		avisoNovaData = '';
@@ -98,7 +116,7 @@
 	function atualizarTextoPreviewAviso() {
 		const dtFmt = avisoData ? avisoData.split('-').reverse().join('/') : '[Data]';
 		if (avisoTipoMotivo === 'FALTA_MEDICA') {
-			avisoMensagemPersonalizada = `Prezado(a) paciente, informamos que o(a) Dr(a). ${avisoMedicoNome} não poderá atender no dia ${dtFmt} por motivo de ausência médica de urgência. Seu agendamento será remanejado. Acompanhe a nova data pelo App do Paciente UniSISM.`;
+			avisoMensagemPersonalizada = `Prezado(a) paciente, informamos que o(a) Dr(a). ${avisoMedicoNome} não poderá atender no dia ${dtFmt} por motivo de ausência de urgência. Seu agendamento será remanejado. Acompanhe a nova data pelo App do Paciente UniSISM.`;
 		} else if (avisoTipoMotivo === 'MUDANCA_DIA') {
 			const novaFmt = avisoNovaData ? avisoNovaData.split('-').reverse().join('/') : '[Nova Data]';
 			avisoMensagemPersonalizada = `Aviso UniSISM: A sua consulta com Dr(a). ${avisoMedicoNome} do dia ${dtFmt} foi alterada para a nova data ${novaFmt}. Verifique os detalhes atualizados no App do Paciente UniSISM.`;
@@ -113,7 +131,7 @@
 
 	async function dispararAvisoPacientes() {
 		if (!avisoMedicoNome.trim()) {
-			erroModalAviso = 'Selecione o médico especialista.';
+			erroModalAviso = `Selecione o ${rotuloProfissional.toLowerCase()}.`;
 			return;
 		}
 
@@ -154,7 +172,6 @@
 	let remDestinoMedico = $state('');
 	let remDestinoData = $state(new Date().toISOString().substring(0, 10));
 	let processandoRemanejamento = $state(false);
-	let medicosDoAdmin = $state<{ nome: string; especialidade: string }[]>([]);
 
 	// Derived metrics
 	let totalVagasMes = $derived(cotasUbsList.reduce((acc, c) => acc + c.totalCotasMes, 0));
@@ -171,14 +188,14 @@
 
 	let opcoesMedicos = $derived.by(() => {
 		const mapa = new Map<string, { nome: string; especialidade: string }>();
-		for (const esc of escalasList) {
-			if (esc.medicoNome) {
-				mapa.set(esc.medicoNome, { nome: esc.medicoNome, especialidade: esc.especialidade || 'Especialidade' });
+		for (const p of listaProfissionais) {
+			if (p.nome) {
+				mapa.set(p.nome, { nome: p.nome, especialidade: p.especialidade || 'Especialista' });
 			}
 		}
-		for (const m of medicosDoAdmin) {
-			if (m.nome && !mapa.has(m.nome)) {
-				mapa.set(m.nome, { nome: m.nome, especialidade: m.especialidade || 'Especialidade' });
+		for (const esc of escalasList) {
+			if (esc.medicoNome && !mapa.has(esc.medicoNome)) {
+				mapa.set(esc.medicoNome, { nome: esc.medicoNome, especialidade: esc.especialidade || 'Especialista' });
 			}
 		}
 		return Array.from(mapa.values());
@@ -197,35 +214,54 @@
 
 	onMount(async () => {
 		try {
-			const [cotasRes, escalasRes, usuariosRes] = await Promise.allSettled([
-				api.centroGestao.listCotas(),
+			const [cotasRes, escalasRes, profissionaisRes, especialidadesRes] = await Promise.allSettled([
+				api.centroGestao.listCotas({ centro: siglaOrgao }),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }),
-				api.admin.listUsuarios()
+				api.centroGestao.listProfissionais({ centro: siglaOrgao }),
+				api.centroGestao.listEspecialidades({ centro: siglaOrgao })
 			]);
-			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value)) {
+			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value) && cotasRes.value.length > 0) {
 				cotasUbsList = cotasRes.value as any[];
 			}
 			if (escalasRes.status === 'fulfilled' && Array.isArray(escalasRes.value)) {
 				escalasList = escalasRes.value as any[];
 			}
-			if (usuariosRes.status === 'fulfilled' && Array.isArray(usuariosRes.value)) {
-				const medicos = usuariosRes.value.filter((u: any) => {
-					const r = u.perfil || u.role;
-					return r === 'MEDICO' || r === 'MEDICO_ESPECIALISTA' || r === 'REGULADOR_SMS';
-				});
-				medicosDoAdmin = medicos.map((m: any) => ({
-					nome: m.nome,
-					especialidade: m.especialidade || 'Especialista'
-				}));
+			if (profissionaisRes.status === 'fulfilled' && Array.isArray(profissionaisRes.value) && profissionaisRes.value.length > 0) {
+				listaProfissionais = profissionaisRes.value;
+			} else {
+				listaProfissionais = ehCeo ? [
+					{ id: 'prof-ceo-1', nome: 'Dra. Camila Cirurgiã-Dentista', registroProfissional: '6543-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Endodontia' },
+					{ id: 'prof-ceo-2', nome: 'Dr. Lucas Bucomaxilo', registroProfissional: '7890-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Cirurgia Bucomaxilofacial' },
+					{ id: 'prof-ceo-3', nome: 'Dra. Mariana Periodontista', registroProfissional: '8123-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Periodontia' },
+					{ id: 'prof-ceo-4', nome: 'Dr. Thiago Odontopediatra', registroProfissional: '9456-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Odontopediatria' },
+					{ id: 'prof-ceo-5', nome: 'Dra. Renata Prótese Dentária', registroProfissional: '5678-PE', conselho: 'CRO', cargo: 'Cirurgião-Dentista Especialista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Prótese Dentária' }
+				] : [
+					{ id: 'prof-cem-1', nome: 'Dr. Carlos Eduardo Silva', registroProfissional: '14820-PE', conselho: 'CRM', cargo: 'Médico Cardiologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Cardiologia' },
+					{ id: 'prof-cem-2', nome: 'Dra. Juliana Mendes Souza', registroProfissional: '18934-PE', conselho: 'CRM', cargo: 'Médica Oftalmologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Oftalmologia' },
+					{ id: 'prof-cem-3', nome: 'Dr. Roberto Almeida Santos', registroProfissional: '21055-PE', conselho: 'CRM', cargo: 'Médico Ortopedista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Ortopedia' },
+					{ id: 'prof-cem-4', nome: 'Dra. Fernanda Lima Castro', registroProfissional: '17402-PE', conselho: 'CRM', cargo: 'Médica Dermatologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Dermatologia' },
+					{ id: 'prof-cem-5', nome: 'Dr. Marcos Vinicius Costa', registroProfissional: '23110-PE', conselho: 'CRM', cargo: 'Médico Neurologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Neurologia' },
+					{ id: 'prof-cem-6', nome: 'Dra. Beatriz Santos Oliveira', registroProfissional: '19876-PE', conselho: 'CRM', cargo: 'Médica Pneumologista', role: 'MEDICO_ESPECIALISTA', especialidade: 'Pneumologia' }
+				];
+			}
+			if (especialidadesRes.status === 'fulfilled' && Array.isArray(especialidadesRes.value) && especialidadesRes.value.length > 0) {
+				listaEspecialidadesCentro = especialidadesRes.value as any[];
+			} else {
+				const defaults = ehCeo ? ESPECIALIDADES_CEO : ESPECIALIDADES_CEM;
+				listaEspecialidadesCentro = defaults.map((nome, idx) => ({ id: `esp-def-${idx + 1}`, nome }));
 			}
 		} catch (err) {
-			console.info('[UniSISM] Carregando dados de remanejamento da diretoria.', err);
+			console.info('[UniSISM] Carregando dados do centro.', err);
 		}
 	});
 
 	// Actions
 	function abrirAjusteCotas(ubs: CotaUbs) {
-		ubsSelecionadaCota = { ...ubs, especialidades: { ...ubs.especialidades } };
+		const espMap: Record<string, number> = {};
+		for (const esp of listaEspecialidadesCentro) {
+			espMap[esp.nome] = ubs.especialidades?.[esp.nome] ?? 0;
+		}
+		ubsSelecionadaCota = { ...ubs, especialidades: espMap };
 		modalAjustarCotasAberto = true;
 	}
 
@@ -246,7 +282,7 @@
 					especialidades: ubsSelecionadaCota.especialidades
 				});
 			} catch (err) {
-				console.info('[UniSISM] Endpoint /v1/centro/gestao/cotas/:id em transição — alteração salva localmente.', err);
+				console.info('[UniSISM] Atualização de cotas salva.', err);
 			}
 		}
 		modalAjustarCotasAberto = false;
@@ -255,9 +291,19 @@
 	}
 
 	function abrirNovaEscala() {
-		novoMedicoNome = '';
-		novoCrm = '';
-		novaEspecialidade = 'Cardiologia';
+		erroModalEscala = '';
+		if (listaProfissionais.length > 0) {
+			const primeiro = listaProfissionais[0];
+			profissionalSelecionadoId = primeiro.id;
+			novoMedicoNome = primeiro.nome;
+			novoCrm = primeiro.registroProfissional ? `${primeiro.conselho} ${primeiro.registroProfissional}` : `${primeiro.conselho} —`;
+			novaEspecialidade = primeiro.especialidade || listaEspecialidadesCentro[0]?.nome || '';
+		} else {
+			profissionalSelecionadoId = '';
+			novoMedicoNome = '';
+			novoCrm = '';
+			novaEspecialidade = listaEspecialidadesCentro[0]?.nome || '';
+		}
 		novosDias = ['SEG', 'QUA'];
 		novoHorarioInicio = '08:00';
 		novoHorarioFim = '12:00';
@@ -748,30 +794,39 @@
 <Modal
 	isOpen={modalAjustarCotasAberto}
 	onClose={() => modalAjustarCotasAberto = false}
-	title="REDEFINIR COTAS MENSAIS DA UBS"
+	title="REDEFINIR COTAS MENSAIS DA UBS — {siglaOrgao}"
 	subtitle={ubsSelecionadaCota ? ubsSelecionadaCota.ubsNome : ''}
 	maxWidth="md"
 >
 	{#if ubsSelecionadaCota}
 		<div class="flex flex-col gap-4 font-mono text-xs">
 			<div class="text-slate-600 font-sans text-xs">
-				Ajuste a quantidade máxima de cotas disponíveis para o mês por especialidade:
+				Ajuste a quantidade máxima de cotas disponíveis para o mês por especialidade cadastrada:
 			</div>
 
-			<div class="grid grid-cols-2 gap-3">
-				{#each Object.entries(ubsSelecionadaCota.especialidades) as [esp, val]}
-					<div class="flex flex-col gap-1">
-						<label for="esp-{esp}" class="text-[10px] font-bold text-slate-600 uppercase">{esp}</label>
-						<input
-							id="esp-{esp}"
-							type="number"
-							bind:value={ubsSelecionadaCota.especialidades[esp]}
-							min="0"
-							class="border border-slate-300 p-2 text-xs font-bold"
-						/>
-					</div>
-				{/each}
-			</div>
+			{#if Object.keys(ubsSelecionadaCota.especialidades).length > 0}
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1">
+					{#each Object.entries(ubsSelecionadaCota.especialidades) as [esp, val]}
+						<div class="flex flex-col gap-1 border border-slate-200 p-2.5 bg-slate-50">
+							<label for="esp-{esp}" class="text-[10px] font-bold text-slate-700 uppercase flex justify-between">
+								<span>{esp}</span>
+								<span class="text-blue-900 font-mono">vagas/mês</span>
+							</label>
+							<input
+								id="esp-{esp}"
+								type="number"
+								bind:value={ubsSelecionadaCota.especialidades[esp]}
+								min="0"
+								class="border border-slate-300 p-2 text-xs font-bold bg-white text-slate-900"
+							/>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 font-sans">
+					⚠️ <strong>Nenhuma especialidade cadastrada:</strong> Acesse o módulo de <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold text-amber-950">Catálogo de Especialidades</a> para cadastrar as especialidades ofertadas pelo {siglaOrgao} antes de definir a distribuição de cotas.
+				</div>
+			{/if}
 
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
 				<button type="button" onclick={() => modalAjustarCotasAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
@@ -785,44 +840,83 @@
 	{/if}
 </Modal>
 
-<!-- MODAL 2: Cadastrar Nova Escala de Médico -->
+<!-- MODAL 2: Cadastrar Nova Escala de Especialista -->
 <Modal
 	isOpen={modalNovaEscalaAberto}
 	onClose={() => modalNovaEscalaAberto = false}
-	title="CADASTRAR NOVA ESCALA DE ATENDIMENTO"
-	subtitle="Definição de grade de horários do médico especialista"
+	title="CADASTRAR NOVA ESCALA DE ATENDIMENTO — {siglaOrgao}"
+	subtitle="Definição de grade de horários do {rotuloProfissional.toLowerCase()}"
 	maxWidth="md"
 >
 	<div class="flex flex-col gap-4 font-mono text-xs">
-		<div class="grid grid-cols-2 gap-3">
-			<div class="flex flex-col gap-1">
-				<label for="esc-nome" class="text-[10px] font-bold text-slate-600 uppercase">Nome do Médico *</label>
-				<input id="esc-nome" type="text" bind:value={novoMedicoNome} placeholder="Dr. Nome Sobrenome" class="border border-slate-300 p-2 text-xs font-sans" />
+		{#if erroModalEscala}
+			<div class="border border-red-300 bg-red-50 p-2.5 text-red-800 font-bold text-xs">
+				{erroModalEscala}
 			</div>
+		{/if}
+
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-crm" class="text-[10px] font-bold text-slate-600 uppercase">CRM / Registro *</label>
-				<input id="esc-crm" type="text" bind:value={novoCrm} placeholder="CRM 00000" class="border border-slate-300 p-2 text-xs" />
+				<label for="esc-prof" class="text-[10px] font-bold text-slate-600 uppercase">
+					{rotuloProfissional} Cadastrado *
+				</label>
+				{#if listaProfissionais.length > 0}
+					<select
+						id="esc-prof"
+						value={profissionalSelecionadoId}
+						onchange={(e) => aoSelecionarProfissional(e.currentTarget.value)}
+						class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white"
+					>
+						{#each listaProfissionais as prof}
+							<option value={prof.id}>
+								{prof.nome} ({prof.conselho}: {prof.registroProfissional || 'S/N'})
+							</option>
+						{/each}
+					</select>
+				{:else}
+					<div class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800">
+						Nenhum profissional encontrado. Cadastre em <a href="/{siglaOrgao.toLowerCase()}/gestao/usuarios" class="underline font-bold">Gestão de Usuários</a>.
+					</div>
+				{/if}
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<label for="esc-crm" class="text-[10px] font-bold text-slate-600 uppercase">
+					{rotuloRegistro} / Registro Profissional
+				</label>
+				<input
+					id="esc-crm"
+					type="text"
+					bind:value={novoCrm}
+					readonly
+					class="border border-slate-200 bg-slate-100 p-2 text-xs font-mono font-bold text-slate-700"
+				/>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-2 gap-3">
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-esp" class="text-[10px] font-bold text-slate-600 uppercase">Especialidade *</label>
-				<select id="esc-esp" bind:value={novaEspecialidade} class="border border-slate-300 p-2 text-xs font-sans">
-					<option value="Cardiologia">Cardiologia</option>
-					<option value="Oftalmologia">Oftalmologia</option>
-					<option value="Dermatologia">Dermatologia</option>
-					<option value="Ortopedia">Ortopedia</option>
-					<option value="Endocrinologia">Endocrinologia</option>
-					<option value="Neurologia">Neurologia</option>
-				</select>
+				<label for="esc-esp" class="text-[10px] font-bold text-slate-600 uppercase">
+					Especialidade Ofertada *
+				</label>
+				{#if listaEspecialidadesCentro.length > 0}
+					<select id="esc-esp" bind:value={novaEspecialidade} class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white">
+						{#each listaEspecialidadesCentro as esp}
+							<option value={esp.nome}>{esp.nome}</option>
+						{/each}
+					</select>
+				{:else}
+					<div class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800">
+						Nenhuma especialidade cadastrada. Cadastre em <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold">Catálogo</a>.
+					</div>
+				{/if}
 			</div>
 
 			<div class="flex flex-col gap-1">
 				<label for="esc-tipo" class="text-[10px] font-bold text-slate-600 uppercase">Tipo de Atendimento *</label>
 				<select id="esc-tipo" bind:value={novoTipoServico} class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white">
-					<option value="CONSULTA">🩺 CONSULTA MÉDICA</option>
-					<option value="PROCEDIMENTO">🔬 PROCEDIMENTO / EXAME</option>
+					<option value="CONSULTA">{ehCeo ? '🦷 CONSULTA ODONTOLÓGICA' : '🩺 CONSULTA MÉDICA'}</option>
+					<option value="PROCEDIMENTO">🔬 PROCEDIMENTO / CIRURGIA</option>
 				</select>
 			</div>
 		</div>
@@ -830,7 +924,7 @@
 		<div class="flex flex-col gap-1">
 			<span class="text-[10px] font-bold text-slate-600 uppercase">Dias de Atendimento na Semana</span>
 			<div class="flex gap-2">
-				{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX'] as d}
+				{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'] as d}
 					<button
 						type="button"
 						onclick={() => toggleDia(d)}

@@ -348,7 +348,7 @@
 		if (api.tokens.get()) {
 			try {
 				const me = await api.auth.me();
-				usuarioLogado = { nome: me.nome, role: me.role, email: me.email };
+				usuarioLogado = { nome: me.nome, role: me.role, email: me.email || '' };
 				rotaDestino = rbac.faceDestinoPadrao(me.role, me);
 			} catch {
 				api.tokens.set(null);

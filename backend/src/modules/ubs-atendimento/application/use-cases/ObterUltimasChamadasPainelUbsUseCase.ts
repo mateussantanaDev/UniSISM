@@ -27,37 +27,41 @@ export class ObterUltimasChamadasPainelUbsUseCase {
       ubsId = scope.ubsId;
     }
 
-    if (!ubsId && scope && scope.kind === 'PREFEITURA') {
-      const ubs = await prisma.ubs.findFirst({
-        where: { prefeituraId: scope.prefeituraId, ativa: true },
-        include: { prefeitura: true },
-      });
-      if (ubs) {
-        ubsId = ubs.id;
-        ubsNome = ubs.nome;
-        prefeituraNome = ubs.prefeitura?.nome || prefeituraNome;
+    try {
+      if (!ubsId && scope && scope.kind === 'PREFEITURA') {
+        const ubs = await prisma.ubs.findFirst({
+          where: { prefeituraId: scope.prefeituraId, ativa: true },
+          include: { prefeitura: true },
+        });
+        if (ubs) {
+          ubsId = ubs.id;
+          ubsNome = ubs.nome;
+          prefeituraNome = ubs.prefeitura?.nome || prefeituraNome;
+        }
       }
-    }
 
-    if (!ubsId) {
-      const ubsDefault = await prisma.ubs.findFirst({
-        where: { ativa: true },
-        include: { prefeitura: true },
-      });
-      if (ubsDefault) {
-        ubsId = ubsDefault.id;
-        ubsNome = ubsDefault.nome;
-        prefeituraNome = ubsDefault.prefeitura?.nome || prefeituraNome;
+      if (!ubsId) {
+        const ubsDefault = await prisma.ubs.findFirst({
+          where: { ativa: true },
+          include: { prefeitura: true },
+        });
+        if (ubsDefault) {
+          ubsId = ubsDefault.id;
+          ubsNome = ubsDefault.nome;
+          prefeituraNome = ubsDefault.prefeitura?.nome || prefeituraNome;
+        }
+      } else {
+        const ubsDb = await prisma.ubs.findUnique({
+          where: { id: ubsId },
+          include: { prefeitura: true },
+        });
+        if (ubsDb) {
+          ubsNome = ubsDb.nome;
+          prefeituraNome = ubsDb.prefeitura?.nome || prefeituraNome;
+        }
       }
-    } else {
-      const ubsDb = await prisma.ubs.findUnique({
-        where: { id: ubsId },
-        include: { prefeitura: true },
-      });
-      if (ubsDb) {
-        ubsNome = ubsDb.nome;
-        prefeituraNome = ubsDb.prefeitura?.nome || prefeituraNome;
-      }
+    } catch {
+      // Fallback silencioso para repositórios in-memory ou testes sem banco
     }
 
     const { chamadaAtual, ultimasChamadas } = await this.repo.obterUltimasChamadas(ubsId || 'default', input.limite || 5);

@@ -70,19 +70,18 @@
 
 	async function cadastrarEspecialidade() {
 		if (!formNome.trim() || !formCodigo.trim()) {
-			erroModal = 'Preencha o nome e o código SIGTAP.';
+			erroModal = 'Preencha o nome e o código SIGTAP / SIA-SUS.';
 			return;
 		}
 		erroModal = '';
 
-		const nova: EspecialidadeSigtap = {
-			id: 'esp-' + Date.now(),
+		const nova = {
 			nome: formNome.trim(),
 			codigoSigtap: formCodigo.trim(),
-			tempoPadraoMinutos: formTempo,
-			valorTabelaBrl: formValor,
+			tempoPadraoMinutos: Number(formTempo) || 20,
+			valorTabelaBrl: Number(formValor) || 0,
 			documentosObrigatorios: formDocs.split(',').map(s => s.trim()).filter(Boolean),
-			preparoRequerido: formPreparo,
+			preparoRequerido: formPreparo.trim() || undefined,
 			ativa: true,
 			tipoServico: formTipoServico
 		};
@@ -90,12 +89,30 @@
 		try {
 			await api.centroGestao.criarEspecialidade(nova as any);
 		} catch (e) {
-			console.info('[UniSISM] Criar especialidade executado em modo local.', e);
+			console.info('[UniSISM] Erro ao cadastrar especialidade via API.', e);
 		}
 
-		listaEspecialidades.push(nova);
+		await carregarEspecialidades();
 		modalNovaAberto = false;
-		mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} ${nova.nome} (SIGTAP ${nova.codigoSigtap}) cadastrado no catálogo!`;
+		formNome = '';
+		formCodigo = '';
+		formDocs = '';
+		formPreparo = '';
+		mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" cadastrado com sucesso no catálogo do ${siglaOrgao}!`;
+		setTimeout(() => mensagemSucesso = '', 4000);
+	}
+
+	async function excluirEspecialidade(id: string, nome: string) {
+		if (!confirm(`Deseja realmente desativar/remover "${nome}" do catálogo do ${siglaOrgao}?`)) {
+			return;
+		}
+		try {
+			await api.centroGestao.excluirEspecialidade(id);
+			mensagemSucesso = `✓ Especialidade "${nome}" removida do catálogo.`;
+		} catch (e) {
+			console.info('[UniSISM] Erro ao excluir especialidade via API.', e);
+		}
+		await carregarEspecialidades();
 		setTimeout(() => mensagemSucesso = '', 4000);
 	}
 </script>
@@ -176,6 +193,7 @@
 						<th class="p-3">Valor Repasse SIA-SUS</th>
 						<th class="p-3">Documentos & Exames Obrigatórios (UBS)</th>
 						<th class="p-3">Status</th>
+						<th class="p-3 text-right">Ações</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-200 text-xs font-mono">
@@ -207,7 +225,7 @@
 											📄 {doc}
 										</div>
 									{/each}
-									<div class="text-[10px] text-slate-500 italic mt-0.5">Preparo: {esp.preparoRequerido}</div>
+									<div class="text-[10px] text-slate-500 italic mt-0.5">Preparo: {esp.preparoRequerido || 'Nenhum'}</div>
 								</div>
 							</td>
 							<td class="p-3">
@@ -215,10 +233,19 @@
 									HABILITADA
 								</span>
 							</td>
+							<td class="p-3 text-right">
+								<button
+									type="button"
+									onclick={() => excluirEspecialidade(esp.id, esp.nome)}
+									class="border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 px-2.5 py-1 text-[10px] font-bold uppercase transition-colors"
+								>
+									Remover
+								</button>
+							</td>
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="7" class="p-6 text-center text-slate-500 font-sans">
+							<td colspan="8" class="p-6 text-center text-slate-500 font-sans">
 								Nenhum serviço cadastrado nesta categoria.
 							</td>
 						</tr>

@@ -145,6 +145,7 @@ export interface MeResponse {
   nome: string;
   matricula: string;
   iniciais: string;
+  email?: string | null;
   role: Role;
   unidade: string | null;
   unidadeId?: string | null;
@@ -340,6 +341,9 @@ export interface Encaminhamento {
   atendenteResponsavel: string;
   observacoesRegulacao?: string;
   agendamentoPrevisto?: string | null;
+  profissionalAgendado?: string | null;
+  localAgendamento?: string | null;
+  statusAtendimentoCentro?: StatusAtendimentoCentro | null;
   respostaSUS?: RespostaSUS | null;
   filaDestino?: FilaDestino | null;
   criadoEm: string;
