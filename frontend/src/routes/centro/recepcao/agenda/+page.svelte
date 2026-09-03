@@ -7,6 +7,23 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import {
+		IconCalendar,
+		IconClock,
+		IconList,
+		IconUser,
+		IconBuildingHospital,
+		IconPrinter,
+		IconAlertTriangle,
+		IconInfoCircle,
+		IconCheck,
+		IconChevronLeft,
+		IconChevronRight,
+		IconSearch,
+		IconRefresh,
+		IconBolt,
+		IconX
+	} from '@tabler/icons-svelte';
+	import {
 		alocarVagaPorProfissionalEEscala,
 		gerarSlotsTurno,
 		type TipoCentro,
@@ -34,13 +51,14 @@
 	let encaminhamentos = $state<Encaminhamento[]>([]);
 	let todosEncaminhamentosMes = $state<Encaminhamento[]>([]);
 	let escalasCarregadas = $state<EscalaMedicoCentro[]>([]);
+	let profissionaisDoCentro = $state<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; especialidade: string }>>([]);
 	let carregando = $state(true);
 	let erro = $state('');
 	let mensagemSucesso = $state('');
 	let timerMensagem: any = null;
 
 	// Centro Ativo determinado pelo órgão / rota (CEM vs CEO)
-	let centroAtivoAgenda = $derived<TipoCentro>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	let centroAtivoAgenda: TipoCentro = $derived(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivoAgenda === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
@@ -137,8 +155,8 @@
 		return false;
 	}
 
-	// Lista Consolidada de Especialistas com suas Escalas
-	let listaEspecialistas = $derived.by<EspecialistaAgendaItem[]>(() => {
+	// Lista Consolidada de Especialistas com suas Escalas (100% Real - Zero Fallback Mock)
+	let listaEspecialistas: EspecialistaAgendaItem[] = $derived.by(() => {
 		const list: EspecialistaAgendaItem[] = [];
 		const nomesAdicionados = new Set<string>();
 
@@ -163,13 +181,35 @@
 					horarioFim: esc.horarioFim || '12:00',
 					duracaoMinutos: esc.duracaoMinutos || (ehCeo ? 30 : 20),
 					vagasPorTurno: esc.vagasPorTurno || 12,
-					consultorio: (esc as any).consultorio || (ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório Médico 0${list.length + 1}`),
+					consultorio: (esc as any).consultorio || (ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório 0${list.length + 1}`),
 					status: esc.status || 'ATIVA'
 				});
 			}
 		}
 
-		// 2. Médicos identificados a partir dos agendamentos existentes (se não estiverem nas escalas)
+		// 2. Profissionais cadastrados a partir da API de profissionais (se houver)
+		for (const prof of profissionaisDoCentro) {
+			if (prof.nome && !nomesAdicionados.has(prof.nome.toLowerCase())) {
+				nomesAdicionados.add(prof.nome.toLowerCase());
+				list.push({
+					id: prof.id,
+					nome: prof.nome,
+					crm: prof.registroProfissional ? `${prof.conselho} ${prof.registroProfissional}` : `${prof.conselho} Ativo`,
+					especialidade: prof.especialidade || (ehCeo ? 'Odontologia' : 'Especialidade'),
+					diasSemana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
+					diasSemanaNumeros: [1, 2, 3, 4, 5],
+					diasSemanaFormatado: 'Segunda a Sexta-feira',
+					horarioInicio: '08:00',
+					horarioFim: '12:00',
+					duracaoMinutos: ehCeo ? 30 : 20,
+					vagasPorTurno: 12,
+					consultorio: ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório 0${list.length + 1}`,
+					status: 'ATIVA'
+				});
+			}
+		}
+
+		// 3. Médicos identificados a partir dos agendamentos existentes no mês
 		for (const enc of todosEncaminhamentosMes) {
 			const nome = extrairNomeMedicoAgendamento(enc);
 			if (nome && !nomesAdicionados.has(nome.toLowerCase())) {
@@ -187,80 +227,9 @@
 					horarioFim: '12:00',
 					duracaoMinutos: ehCeo ? 30 : 20,
 					vagasPorTurno: 12,
-					consultorio: ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório Médico 0${list.length + 1}`,
+					consultorio: ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório 0${list.length + 1}`,
 					status: 'ATIVA'
 				});
-			}
-		}
-
-		// 3. Fallback inteligente se a base estiver vazia
-		if (list.length === 0) {
-			if (ehCeo) {
-				list.push(
-					{
-						id: 'dra-mariana-vasconcelos',
-						nome: 'Dra. Mariana Vasconcelos',
-						crm: 'CRO-PE 8940',
-						especialidade: 'Endodontia',
-						diasSemana: ['SEG', 'QUA'],
-						diasSemanaNumeros: [1, 3],
-						diasSemanaFormatado: 'Segundas e Quartas',
-						horarioInicio: '08:00',
-						horarioFim: '12:00',
-						duracaoMinutos: 40,
-						vagasPorTurno: 8,
-						consultorio: 'Cadeira 01 (Endodontia Especializada)',
-						status: 'ATIVA'
-					},
-					{
-						id: 'dr-andre-santos',
-						nome: 'Dr. André Santos',
-						crm: 'CRO-PE 9120',
-						especialidade: 'Cirurgia Bucomaxilofacial',
-						diasSemana: ['TER', 'QUI'],
-						diasSemanaNumeros: [2, 4],
-						diasSemanaFormatado: 'Terças e Quintas',
-						horarioInicio: '08:00',
-						horarioFim: '12:00',
-						duracaoMinutos: 30,
-						vagasPorTurno: 10,
-						consultorio: 'Cadeira 02 (Cirurgia & Trauma)',
-						status: 'ATIVA'
-					}
-				);
-			} else {
-				list.push(
-					{
-						id: 'dr-roberto-medeiros',
-						nome: 'Dr. Roberto Medeiros',
-						crm: 'CRM-PE 14920',
-						especialidade: 'Cardiologia',
-						diasSemana: ['TER', 'QUI'],
-						diasSemanaNumeros: [2, 4],
-						diasSemanaFormatado: 'Terças e Quintas',
-						horarioInicio: '08:00',
-						horarioFim: '12:00',
-						duracaoMinutos: 20,
-						vagasPorTurno: 12,
-						consultorio: 'Consultório 01 (Cardiologia)',
-						status: 'ATIVA'
-					},
-					{
-						id: 'dra-juliana-albuquerque',
-						nome: 'Dra. Juliana Albuquerque',
-						crm: 'CRM-PE 18230',
-						especialidade: 'Neurologia',
-						diasSemana: ['SEG', 'QUA'],
-						diasSemanaNumeros: [1, 3],
-						diasSemanaFormatado: 'Segundas e Quartas',
-						horarioInicio: '13:00',
-						horarioFim: '17:00',
-						duracaoMinutos: 20,
-						vagasPorTurno: 12,
-						consultorio: 'Consultório 02 (Neurologia)',
-						status: 'ATIVA'
-					}
-				);
 			}
 		}
 
@@ -275,7 +244,7 @@
 	});
 
 	// Especialista ativo em foco
-	let especialistaAtivo = $derived<EspecialistaAgendaItem | null>(
+	let especialistaAtivo: EspecialistaAgendaItem | null = $derived(
 		listaEspecialistas.find(e => e.id === medicoSelecionadoId) || (listaEspecialistas[0] ?? null)
 	);
 
@@ -293,13 +262,15 @@
 		erro = '';
 		try {
 			const centroParam = ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES';
-			const [resCentro, resTodos, resEscalas] = await Promise.all([
+			const [resCentro, resTodos, resEscalas, resProfissionais] = await Promise.all([
 				api.centroRecepcao.listAgendaDia({ data: dataAgenda, centro: centroParam }).catch(() => null),
 				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
-				api.centroRecepcao.listEscalas({ centro: centroParam }).catch(() => [])
+				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
+				api.centroGestao.listProfissionais({ centro: siglaOrgao }).catch(() => [])
 			]);
 
 			escalasCarregadas = Array.isArray(resEscalas) ? resEscalas : [];
+			profissionaisDoCentro = Array.isArray(resProfissionais) ? resProfissionais : [];
 
 			todosEncaminhamentosMes = resTodos.filter(e => {
 				const f = (e.filaDestino as string) || '';
@@ -765,8 +736,9 @@
 
 	<!-- Banner Erro Global -->
 	{#if erro}
-		<div class="border border-rose-600 bg-rose-50 p-3 font-semibold text-rose-900">
-			⚠ {erro}
+		<div class="border border-rose-600 bg-rose-50 p-3 font-semibold text-rose-900 flex items-center gap-2">
+			<IconAlertTriangle size={16} class="text-rose-700 shrink-0" />
+			<span>{erro}</span>
 		</div>
 	{/if}
 
@@ -777,10 +749,11 @@
 				{nomeOrgao} · GESTÃO ASSISTENCIAL
 			</div>
 			<div class="text-lg font-bold text-slate-900 font-sans mt-0.5 flex items-center gap-2">
-				<span>Calendário de Atendimentos por Especialista</span>
+				<span>Agenda Assistencial & Atendimentos</span>
 			</div>
 			<div class="text-xs text-blue-900 font-bold mt-1 flex items-center gap-1.5 font-sans">
-				<span>📅 Data Selecionada: <strong>{formatarData(dataAgenda)}</strong></span>
+				<IconCalendar size={14} />
+				<span>Data Selecionada: <strong>{formatarData(dataAgenda)}</strong></span>
 				<span class="text-slate-400">·</span>
 				<span>({ordenados.length} consultas marcadas para o profissional)</span>
 			</div>
@@ -794,7 +767,7 @@
 					onclick={() => visaoModo = 'CALENDARIO'}
 					class="px-3 py-1.5 font-bold uppercase text-xs transition-colors flex items-center gap-1.5 {visaoModo === 'CALENDARIO' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:bg-slate-200'}"
 				>
-					<span>📅</span>
+					<IconCalendar size={14} />
 					<span>Calendário Mensal</span>
 				</button>
 				<button
@@ -802,7 +775,7 @@
 					onclick={() => visaoModo = 'GRADE'}
 					class="px-3 py-1.5 font-bold uppercase text-xs transition-colors flex items-center gap-1.5 {visaoModo === 'GRADE' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:bg-slate-200'}"
 				>
-					<span>⏱️</span>
+					<IconClock size={14} />
 					<span>Grade de Horários</span>
 				</button>
 				<button
@@ -810,7 +783,7 @@
 					onclick={() => visaoModo = 'LISTA'}
 					class="px-3 py-1.5 font-bold uppercase text-xs transition-colors flex items-center gap-1.5 {visaoModo === 'LISTA' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:bg-slate-200'}"
 				>
-					<span>📋</span>
+					<IconList size={14} />
 					<span>Lista de Pacientes</span>
 				</button>
 			</div>
@@ -826,54 +799,61 @@
 	</section>
 
 	<!-- ========================================================================= -->
-	<!-- SELETOR DE ESPECIALISTA / MÉDICO (BARRA DE PROFISSIONAIS EM ESCALA)       -->
+	<!-- SELETOR DE ESPECIALISTA / MÉDICO (DROPDOWN DINÂMICO DA BASE)              -->
 	<!-- ========================================================================= -->
-	<section class="border-2 border-slate-900 bg-white shadow-xs p-4 flex flex-col gap-3">
-		<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
-			<div class="flex items-center gap-2">
-				<span class="bg-blue-900 text-white px-2 py-0.5 text-[10px] font-bold uppercase">SELECIONE O PROFISSIONAL</span>
-				<span class="text-xs font-bold text-slate-800 font-sans">Escalas de Atendimento & Calendário Individual</span>
+	<section class="border-2 border-slate-900 bg-white p-4 shadow-xs flex flex-col gap-3">
+		<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+			<div class="flex flex-col gap-1.5 w-full lg:max-w-md">
+				<label for="select-prof" class="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1.5">
+					<IconUser size={14} class="text-blue-900" />
+					<span>Selecionar {rotuloProfissional}</span>
+				</label>
+				{#if listaEspecialistas.length > 0}
+					<select
+						id="select-prof"
+						bind:value={medicoSelecionadoId}
+						class="border-2 border-slate-900 bg-white p-2.5 text-xs font-sans font-bold text-slate-900 shadow-xs focus:ring-2 focus:ring-blue-900 focus:outline-none"
+					>
+						{#each listaEspecialistas as esp}
+							<option value={esp.id}>
+								{esp.nome} — {esp.especialidade} ({esp.crm})
+							</option>
+						{/each}
+					</select>
+				{:else}
+					<div class="border border-dashed border-amber-400 bg-amber-50 p-2.5 text-xs text-amber-900 font-sans">
+						Nenhum especialista cadastrado para este centro. <a href="/{siglaOrgao.toLowerCase()}/gestao/vagas" class="underline font-bold">Cadastre uma Escala</a>.
+					</div>
+				{/if}
 			</div>
-			<div class="text-[11px] text-slate-500 font-sans">
-				Total de <strong>{listaEspecialistas.length}</strong> especialistas com escala cadastrada no {siglaOrgao}
-			</div>
-		</div>
 
-		<!-- Carrossel / Cards de Seleção de Especialistas -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
-			{#each listaEspecialistas as esp (esp.id)}
-				<button
-					type="button"
-					onclick={() => medicoSelecionadoId = esp.id}
-					class="text-left p-3 border transition-all flex flex-col justify-between gap-2 {medicoSelecionadoId === esp.id ? 'border-2 border-blue-900 bg-blue-50/70 shadow-xs ring-1 ring-blue-900' : 'border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300'}"
-				>
-					<div class="flex items-start justify-between gap-2">
-						<div class="flex items-center gap-2">
-							<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-xs {medicoSelecionadoId === esp.id ? 'bg-blue-900 text-white' : 'bg-slate-200 text-slate-700'}">
-								{esp.nome.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('')}
-							</div>
-							<div>
-								<div class="font-bold font-sans text-xs text-slate-900 leading-tight">{esp.nome}</div>
-								<div class="text-[10px] text-blue-900 font-bold font-mono">{esp.especialidade}</div>
-							</div>
-						</div>
-						<span class="text-[9px] font-mono px-1.5 py-0.5 border {esp.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'} font-bold">
-							{esp.status}
+			{#if especialistaAtivo}
+				<div class="flex flex-wrap items-center gap-4 bg-slate-50 border border-slate-300 p-3 text-xs font-sans">
+					<div class="flex flex-col">
+						<span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+							<IconBuildingHospital size={12} class="text-blue-900" />
+							<span>{rotuloEspaco}</span>
 						</span>
+						<span class="font-bold text-slate-900">{especialistaAtivo.consultorio}</span>
 					</div>
-
-					<div class="border-t border-slate-200/80 pt-1.5 flex flex-col gap-0.5 text-[10px] text-slate-600 font-sans">
-						<div class="flex items-center justify-between">
-							<span>🗓️ <strong>{esp.diasSemanaFormatado}</strong></span>
-							<span class="font-mono text-slate-500">{esp.crm}</span>
-						</div>
-						<div class="flex items-center justify-between text-slate-500 text-[9px] font-mono">
-							<span>⏰ {esp.horarioInicio} às {esp.horarioFim}</span>
-							<span>{esp.duracaoMinutos}min/vaga ({esp.vagasPorTurno} vagas)</span>
-						</div>
+					<div class="h-6 w-px bg-slate-300 hidden sm:block"></div>
+					<div class="flex flex-col">
+						<span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+							<IconCalendar size={12} class="text-blue-900" />
+							<span>Dias de Escala</span>
+						</span>
+						<span class="font-bold text-blue-900">{especialistaAtivo.diasSemanaFormatado}</span>
 					</div>
-				</button>
-			{/each}
+					<div class="h-6 w-px bg-slate-300 hidden sm:block"></div>
+					<div class="flex flex-col">
+						<span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+							<IconClock size={12} class="text-blue-900" />
+							<span>Horário & Vagas</span>
+						</span>
+						<span class="font-mono text-slate-700 font-bold">{especialistaAtivo.horarioInicio} às {especialistaAtivo.horarioFim} ({especialistaAtivo.vagasPorTurno} vagas/turno)</span>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</section>
 
@@ -884,8 +864,8 @@
 		<section class="border border-blue-900 bg-blue-950 text-white p-4 shadow-sm">
 			<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 				<div class="flex items-center gap-3.5">
-					<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xs bg-white font-bold text-blue-950 text-lg shadow-xs">
-						👨‍⚕️
+					<div class="flex h-11 w-11 shrink-0 items-center justify-center bg-white text-blue-950 font-bold shadow-xs">
+						<IconUser size={24} />
 					</div>
 					<div>
 						<div class="flex items-center gap-2 flex-wrap">
@@ -894,11 +874,11 @@
 							<span class="bg-emerald-700 text-white px-2 py-0.5 text-[10px] font-mono font-bold uppercase">{especialistaAtivo.especialidade}</span>
 						</div>
 						<div class="text-xs text-blue-200 font-sans mt-1 flex items-center gap-2 flex-wrap">
-							<span>🏛️ {especialistaAtivo.consultorio}</span>
+							<span>{especialistaAtivo.consultorio}</span>
 							<span>·</span>
-							<span>🗓️ Dias de Atendimento: <strong>{especialistaAtivo.diasSemanaFormatado}</strong></span>
+							<span>Dias de Atendimento: <strong>{especialistaAtivo.diasSemanaFormatado}</strong></span>
 							<span>·</span>
-							<span>⏰ Turno: <strong>{especialistaAtivo.horarioInicio} às {especialistaAtivo.horarioFim}</strong> ({especialistaAtivo.duracaoMinutos} min/consulta · {especialistaAtivo.vagasPorTurno} vagas/turno)</span>
+							<span>Turno: <strong>{especialistaAtivo.horarioInicio} às {especialistaAtivo.horarioFim}</strong> ({especialistaAtivo.duracaoMinutos} min/consulta · {especialistaAtivo.vagasPorTurno} vagas/turno)</span>
 						</div>
 					</div>
 				</div>
@@ -1068,8 +1048,9 @@
 				{/each}
 			</div>
 
-			<div class="border-t border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-700 font-sans">
-				💡 <strong>Dica da Regulação:</strong> O calendário exibe os dias e vagas em conformidade com a escala do especialista <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}). Clique em qualquer dia para ver os horários detalhados.
+			<div class="border-t border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-700 font-sans flex items-center justify-center gap-1.5">
+				<IconInfoCircle size={14} class="text-blue-900 shrink-0" />
+				<span><strong>Dica da Regulação:</strong> O calendário exibe os dias e vagas em conformidade com a escala do especialista <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}). Clique em qualquer dia para ver os horários detalhados.</span>
 			</div>
 		</section>
 	{/if}
@@ -1092,8 +1073,9 @@
 			<!-- Alerta se o dia selecionado for fora da escala do médico -->
 			{#if !dataAtualEhDiaDeEscala}
 				<div class="border-b border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between font-sans">
-					<div>
-						⚠️ <strong>Atenção:</strong> {formatarData(dataAgenda)} não é um dia habitual da escala de <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}).
+					<div class="flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-amber-800 shrink-0" />
+						<span><strong>Atenção:</strong> {formatarData(dataAgenda)} não é um dia habitual da escala de <strong>{especialistaAtivo?.nome}</strong> ({especialistaAtivo?.diasSemanaFormatado}).</span>
 					</div>
 					<button
 						type="button"
@@ -1144,23 +1126,26 @@
 									<button
 										type="button"
 										onclick={() => registrarPresencaRecepcao(enc, 'AGUARDANDO_ATENDIMENTO')}
-										class="border border-emerald-700 bg-emerald-700 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-emerald-800 font-mono"
+										class="border border-emerald-700 bg-emerald-700 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-emerald-800 font-mono flex items-center gap-1"
 									>
-										✓ Confirmar Chegada
+										<IconCheck size={12} />
+										<span>Chegada</span>
 									</button>
 									<button
 										type="button"
 										onclick={() => abrirRealocacao(enc)}
-										class="border border-purple-900 bg-purple-900 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-purple-950 font-mono"
+										class="border border-purple-900 bg-purple-900 text-white px-2.5 py-1 text-xs font-bold uppercase hover:bg-purple-950 font-mono flex items-center gap-1"
 									>
-										🔄 Realocar Vaga
+										<IconRefresh size={12} />
+										<span>Realocar</span>
 									</button>
 									<button
 										type="button"
 										onclick={() => abrirComprovante(enc)}
-										class="border border-slate-300 bg-white text-slate-700 px-2.5 py-1 text-xs font-bold uppercase hover:bg-slate-100 font-mono"
+										class="border border-slate-300 bg-white text-slate-700 px-2.5 py-1 text-xs font-bold uppercase hover:bg-slate-100 font-mono flex items-center gap-1"
 									>
-										🖨️ Comprovante
+										<IconPrinter size={12} />
+										<span>Comprovante</span>
 									</button>
 								{/each}
 							{:else}
@@ -1259,33 +1244,37 @@
 										<button
 											type="button"
 											onclick={() => registrarPresencaRecepcao(enc, 'AGUARDANDO_ATENDIMENTO')}
-											class="border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
+											class="border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider flex items-center gap-1"
 											title="Confirmar chegada do paciente"
 										>
-											✓ Chegada
+											<IconCheck size={11} />
+											<span>Chegada</span>
 										</button>
 										<button
 											type="button"
 											onclick={() => abrirRealocacao(enc)}
-											class="border border-purple-900 bg-purple-900 text-white hover:bg-purple-950 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
+											class="border border-purple-900 bg-purple-900 text-white hover:bg-purple-950 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider flex items-center gap-1"
 											title="Realocar para outra data ou médico"
 										>
-											🔄 Realocar
+											<IconRefresh size={11} />
+											<span>Realocar</span>
 										</button>
 										<button
 											type="button"
 											onclick={() => abrirComprovante(enc)}
-											class="border border-slate-300 bg-white hover:bg-slate-50 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider text-blue-900"
+											class="border border-slate-300 bg-white hover:bg-slate-50 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider text-blue-900 flex items-center gap-1"
 										>
-											🖨️ Comprovante
+											<IconPrinter size={11} />
+											<span>Comprovante</span>
 										</button>
 										<button
 											type="button"
 											disabled={processandoDesmarcar}
 											onclick={() => desmarcarConsulta(enc)}
-											class="border border-red-700 bg-white text-red-700 hover:bg-red-50 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider disabled:opacity-50"
+											class="border border-red-700 bg-white text-red-700 hover:bg-red-50 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider disabled:opacity-50 flex items-center gap-1"
 										>
-											Cancelar
+											<IconX size={11} />
+											<span>Cancelar</span>
 										</button>
 									</td>
 								</tr>
@@ -1341,8 +1330,9 @@
 	>
 		<div class="flex flex-col gap-4 font-mono text-xs">
 			{#if erroModalRealocacao}
-				<div class="border border-rose-300 bg-rose-50 p-2.5 text-rose-900 font-bold">
-					⚠ {erroModalRealocacao}
+				<div class="border border-rose-300 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
+					<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+					<span>{erroModalRealocacao}</span>
 				</div>
 			{/if}
 
@@ -1360,10 +1350,13 @@
 				</div>
 			</div>
 
-			<!-- Botão de Otimização Automática SUS -->
+			<!-- Botão de Otimização Automática -->
 			<div class="border border-blue-200 bg-blue-50 p-3 flex items-center justify-between gap-3">
 				<div>
-					<div class="font-bold text-blue-900 uppercase text-[11px]">⚡ Alocação Automática na Escala SUS</div>
+					<div class="font-bold text-blue-900 uppercase text-[11px] flex items-center gap-1">
+						<IconBolt size={14} class="text-blue-900" />
+						<span>Alocação Automática na Escala</span>
+					</div>
 					<div class="text-[10px] text-blue-700 font-sans">Busca o próximo dia com vaga na escala do especialista conforme prioridade clínica.</div>
 				</div>
 				<button
@@ -1439,9 +1432,10 @@
 					type="button"
 					disabled={realocandoProcessando}
 					onclick={executarRealocacao}
-					class="border border-purple-900 bg-purple-900 text-white px-5 py-2 font-bold uppercase hover:bg-purple-950 disabled:opacity-50"
+					class="border border-purple-900 bg-purple-900 text-white px-5 py-2 font-bold uppercase hover:bg-purple-950 disabled:opacity-50 flex items-center gap-1.5"
 				>
-					{realocandoProcessando ? 'Realocando...' : '✓ Confirmar Realocação'}
+					<IconCheck size={14} />
+					<span>{realocandoProcessando ? 'Realocando...' : 'Confirmar Realocação'}</span>
 				</button>
 			</div>
 		</div>
@@ -1526,7 +1520,8 @@
 					onclick={acionarImpressao}
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-mono text-xs font-bold text-white uppercase hover:bg-blue-950 flex items-center gap-1.5"
 				>
-					🖨️ Imprimir Comprovante
+					<IconPrinter size={14} />
+					<span>Imprimir Comprovante</span>
 				</button>
 			</div>
 		</div>

@@ -9,7 +9,15 @@
 		PRIORIDADE_LABEL,
 		TIPO_ATENDIMENTO_LABEL
 	} from '$lib/api/types';
-	import { onMount } from 'svelte';
+	import {
+		IconAlertTriangle,
+		IconCheck,
+		IconDeviceTv,
+		IconVolume,
+		IconPlayerPlay,
+		IconNotes,
+		IconFileText
+	} from '@tabler/icons-svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
@@ -179,14 +187,16 @@
 
 <div class="flex flex-col gap-5 font-mono">
 	{#if erro}
-		<div class="border border-red-700 bg-red-50 p-3 text-xs font-bold text-red-900">
-			⚠ {erro}
+		<div class="border border-red-700 bg-red-50 p-3 text-xs font-bold text-red-900 flex items-center gap-2">
+			<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+			<span>{erro}</span>
 		</div>
 	{/if}
 
 	{#if sucesso}
-		<div class="border border-emerald-700 bg-emerald-50 p-3 text-xs font-bold text-emerald-900">
-			✓ {sucesso}
+		<div class="border border-emerald-700 bg-emerald-50 p-3 text-xs font-bold text-emerald-900 flex items-center gap-2">
+			<IconCheck size={14} class="text-emerald-700 shrink-0" />
+			<span>{sucesso}</span>
 		</div>
 	{/if}
 
@@ -222,9 +232,10 @@
 			<a
 				href="/ubs/recepcao/painel"
 				target="_blank"
-				class="border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white uppercase hover:bg-white/20 transition"
+				class="border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white uppercase hover:bg-white/20 transition flex items-center gap-1"
 			>
-				📺 Painel TV
+				<IconDeviceTv size={14} />
+				<span>Painel TV</span>
 			</a>
 		</div>
 	</div>
@@ -273,16 +284,18 @@
 						<button
 							type="button"
 							onclick={() => chamarPaciente(pacienteChamadoAtual!)}
-							class="border border-blue-900 bg-white px-3 py-2 text-xs font-bold text-blue-900 uppercase hover:bg-blue-100"
+							class="border border-blue-900 bg-white px-3 py-2 text-xs font-bold text-blue-900 uppercase hover:bg-blue-100 flex items-center gap-1"
 						>
-							📢 Re-chamar TV
+							<IconVolume size={14} />
+							<span>Re-chamar TV</span>
 						</button>
 						<button
 							type="button"
 							onclick={() => iniciarConsulta(pacienteChamadoAtual!)}
-							class="border border-emerald-700 bg-emerald-700 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800"
+							class="border border-emerald-700 bg-emerald-700 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800 flex items-center gap-1"
 						>
-							▶ Iniciar Consulta / PEC
+							<IconPlayerPlay size={14} />
+							<span>Iniciar Consulta</span>
 						</button>
 					{:else}
 						<button
@@ -291,9 +304,10 @@
 								pacienteAtendimentoAtual = pacienteChamadoAtual;
 								modalSoapAberto = true;
 							}}
-							class="border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800"
+							class="border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800 flex items-center gap-1"
 						>
-							📋 Continuar Registro SOAP
+							<IconNotes size={14} />
+							<span>Continuar Registro SOAP</span>
 						</button>
 					{/if}
 
@@ -456,9 +470,10 @@
 											<button
 												type="button"
 												onclick={() => chamarPaciente(item)}
-												class="border border-blue-900 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 hover:bg-blue-900 hover:text-white transition"
+												class="border border-blue-900 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 hover:bg-blue-900 hover:text-white transition flex items-center gap-1"
 											>
-												📢 Chamar TV
+												<IconVolume size={12} />
+												<span>Chamar TV</span>
 											</button>
 										{/if}
 
@@ -466,9 +481,10 @@
 											<button
 												type="button"
 												onclick={() => iniciarConsulta(item)}
-												class="border border-emerald-700 bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-emerald-800 transition"
+												class="border border-emerald-700 bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-emerald-800 transition flex items-center gap-1"
 											>
-												▶ Atender
+												<IconPlayerPlay size={12} />
+												<span>Atender</span>
 											</button>
 										{/if}
 
@@ -479,19 +495,21 @@
 													pacienteAtendimentoAtual = item;
 													modalSoapAberto = true;
 												}}
-												class="border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-blue-800 transition"
+												class="border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-blue-800 transition flex items-center gap-1"
 											>
-												📋 SOAP
+												<IconNotes size={12} />
+												<span>SOAP</span>
 											</button>
 										{/if}
 
 										<a
 											href="/ubs/pacientes/{item.pacienteId}"
 											target="_blank"
-											title="Abrir Prontuário PEC Completo do Cidadão"
-											class="border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100"
+											title="Abrir Prontuário Clínico Completo"
+											class="border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1"
 										>
-											📂 PEC
+											<IconFileText size={12} />
+											<span>Prontuário</span>
 										</a>
 									</div>
 								</td>

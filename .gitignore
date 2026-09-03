@@ -72,3 +72,4 @@ backend/data/
 **/.playwright-mcp/
 UNISISM-motorista/.claude/
 
+.vercel

@@ -70,7 +70,7 @@ export class AgendamentoBalcaoRecepcaoUseCase {
 
     // Detect if CEO or CEM based on specialty or routing
     const espLow = input.solicitacao.especialidadeSolicitada.toLowerCase();
-    const ehCeo = espLow.includes('odonto') || espLow.includes('bucal') || espLow.includes('canal') || espLow.includes('periodontia') || espLow.includes('estomatologia');
+    const ehCeo = espLow.includes('odonto') || espLow.includes('bucal') || espLow.includes('canal') || espLow.includes('periodontia') || espLow.includes('estomatologia') || espLow.includes('bucomaxilo') || espLow.includes('endodontia') || espLow.includes('prótese') || espLow.includes('protese') || /\bpne\b/i.test(espLow);
     const centroTipo = ehCeo ? 'CEO' : 'CEM';
 
     // Optimize scheduling date and slot using real database scales

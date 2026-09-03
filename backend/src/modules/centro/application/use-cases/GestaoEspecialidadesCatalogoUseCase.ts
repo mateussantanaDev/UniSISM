@@ -60,7 +60,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
 
     return dtoArray.filter((e) => {
       const esp = e.nome.toLowerCase();
-      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => o === 'pne' ? /\bpne\b/i.test(esp) : esp.includes(o));
       return ehCeo ? eOdonto : !eOdonto;
     });
   }

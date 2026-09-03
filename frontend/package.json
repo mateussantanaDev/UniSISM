@@ -46,6 +46,7 @@
 		"vitest-browser-svelte": "^2.1.0"
 	},
 	"dependencies": {
+		"@tabler/icons-svelte": "^3.46.0",
 		"html2pdf.js": "^0.14.0"
 	}
 }

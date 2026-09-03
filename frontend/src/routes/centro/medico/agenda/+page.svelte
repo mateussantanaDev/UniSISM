@@ -23,6 +23,20 @@
 	import ModalReferenciaIntermunicipal from '$lib/presentation/components/centro/ModalReferenciaIntermunicipal.svelte';
 	import ModalNovoEncaminhamentoRegulacao from '$lib/presentation/components/centro/ModalNovoEncaminhamentoRegulacao.svelte';
 	import ModalAgendarRetornoManual from '$lib/presentation/components/centro/ModalAgendarRetornoManual.svelte';
+	import {
+		IconCalendar,
+		IconClock,
+		IconUser,
+		IconStethoscope,
+		IconFlask,
+		IconFileText,
+		IconAlertTriangle,
+		IconInfoCircle,
+		IconCheck,
+		IconPlayerPlay,
+		IconNotes,
+		IconPlus
+	} from '@tabler/icons-svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	const auth = useAuth();
@@ -238,7 +252,7 @@
 			}
 
 			// Adiciona à conduta da consulta ativa
-			soapConduta += `\n\n📅 RETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${dados.horaRetorno} com Dr(a). ${dados.medicoRetornoNome || medicoLogado}. Obs: ${dados.obsRetorno}`;
+			soapConduta += `\n\nRETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${dados.horaRetorno} com Dr(a). ${dados.medicoRetornoNome || medicoLogado}. Obs: ${dados.obsRetorno}`;
 			
 			modalRetornoAberto = false;
 			mensagemSucesso = `✓ RETORNO DO PACIENTE AGENDADO COM SUCESSO!\nPaciente: ${consultaAtiva.paciente.nome}\nData Escolhida: ${dtFmt} às ${dados.horaRetorno}\nMédico: ${dados.medicoRetornoNome || medicoLogado}`;
@@ -901,8 +915,9 @@
 
 	<!-- Banner de Erro Global -->
 	{#if erroGlobal}
-		<div class="border border-amber-600 bg-amber-50 p-3 font-semibold text-amber-900">
-			⚠ {erroGlobal}
+		<div class="border border-amber-600 bg-amber-50 p-3 font-semibold text-amber-900 flex items-center gap-2">
+			<IconAlertTriangle size={16} class="text-amber-800 shrink-0" />
+			<span>{erroGlobal}</span>
 		</div>
 	{/if}
 
@@ -981,14 +996,14 @@
 		</div>
 	</section>
 
-	<!-- 2. AMBIENTE DE CONSULTA ATIVA (SOAP + PEC + Encaminhamento Intermunicipal) -->
+	<!-- 2. AMBIENTE DE CONSULTA ATIVA (SOAP + Dossie + Encaminhamento Intermunicipal) -->
 	{#if consultaAtiva}
 		<section class="border-2 border-blue-900 bg-white shadow-md">
 			<!-- Header do Atendimento com Cronômetro -->
 			<div class="flex flex-wrap items-center justify-between border-b-2 border-blue-900 bg-blue-900 px-6 py-3 text-white">
 				<div class="flex items-center gap-3">
 					<span class="flex h-7 w-7 items-center justify-center bg-white font-mono text-xs font-bold text-blue-900">
-						🩺
+						<IconStethoscope size={16} />
 					</span>
 					<div>
 						<div class="text-[10px] font-mono tracking-widest text-blue-200 uppercase">
@@ -1010,9 +1025,10 @@
 					<button
 						type="button"
 						onclick={() => abrirDossie(consultaAtiva!)}
-						class="border border-white/40 bg-white/10 hover:bg-white/20 px-3 py-1 font-bold text-xs uppercase tracking-wider text-white"
+						class="border border-white/40 bg-white/10 hover:bg-white/20 px-3 py-1 font-bold text-xs uppercase tracking-wider text-white flex items-center gap-1.5"
 					>
-						📋 Abrir Prontuário Completo (PEC)
+						<IconFileText size={14} />
+						<span>Prontuário Clínico</span>
 					</button>
 
 					<button
@@ -1189,15 +1205,19 @@
 						</div>
 					</div>
 
-					<!-- 🔬 PROCEDIMENTOS REALIZADOS NO ATENDIMENTO (1 ou mais) -->
+					<!-- PROCEDIMENTOS REALIZADOS NO ATENDIMENTO (1 ou mais) -->
 					<div class="flex flex-col gap-2 border border-purple-300 bg-purple-50/40 p-3">
 						<div class="font-mono text-[10px] font-bold tracking-widest text-purple-900 uppercase flex items-center justify-between">
-							<span>🔬 PROCEDIMENTOS REALIZADOS NESTE ATENDIMENTO ({procedimentosRealizados.length})</span>
+							<span class="flex items-center gap-1.5">
+								<IconFlask size={14} class="text-purple-900" />
+								<span>PROCEDIMENTOS REALIZADOS NESTE ATENDIMENTO ({procedimentosRealizados.length})</span>
+							</span>
 							<span class="text-[9px] text-purple-800 font-normal">Tabela SIGTAP / Faturamento SIA-SUS</span>
 						</div>
 
-						<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950 font-sans">
-							<strong>💡 Não precisa enviar o paciente de volta ao balcão!</strong> Se durante a consulta foi necessário realizar algum exame ou procedimento (*ex: ECG, Biópsia, Curativo, Infiltração, Lavagem*), basta adicionar abaixo para compor o faturamento e histórico do paciente.
+						<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950 font-sans flex items-start gap-1.5">
+							<IconInfoCircle size={14} class="text-purple-900 shrink-0 mt-0.5" />
+							<span><strong>Não precisa enviar o paciente de volta ao balcão!</strong> Se durante a consulta foi necessário realizar algum exame ou procedimento (*ex: ECG, Biópsia, Curativo, Infiltração, Lavagem*), basta adicionar abaixo para compor o faturamento e histórico do paciente.</span>
 						</div>
 
 						<!-- Lista de Procedimentos Já Adicionados -->
@@ -1325,7 +1345,7 @@
 
 					{#if erroSoapForm}
 						<div class="border-2 border-red-700 bg-red-50 p-3 font-mono text-xs font-bold text-red-900 flex items-center gap-2">
-							<span>⚠</span>
+							<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
 							<span>{erroSoapForm}</span>
 						</div>
 					{/if}
@@ -1335,24 +1355,26 @@
 			<!-- Rodapé de Ações de Conclusão -->
 			<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
 				<div class="font-mono text-xs text-slate-600">
-					* Ao concluir, o registro será gravado permanentemente no Prontuário do Paciente (PEC).
+					* Ao concluir, o registro será gravado permanentemente no Prontuário do Paciente.
 				</div>
 
 				<div class="flex items-center gap-3">
 					<button
 						type="button"
 						onclick={abrirModalRetorno}
-						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider"
+						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
 					>
-						📅 Agendar Retorno / Volta (Data Manual)
+						<IconCalendar size={14} />
+						<span>Agendar Retorno / Volta</span>
 					</button>
 
 					<button
 						type="button"
 						onclick={abrirFormNovoEncaminhamento}
-						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider"
+						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
 					>
-						➕ Encaminhar Regulação / SMS
+						<IconPlus size={14} />
+						<span>Encaminhar Regulação / SMS</span>
 					</button>
 
 					<button
@@ -1369,7 +1391,7 @@
 						disabled={salvandoAtendimento}
 						class="border border-emerald-800 bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider disabled:opacity-50"
 					>
-						{salvandoAtendimento ? 'Gravando PEC...' : '✓ CONCLUIR ATENDIMENTO'}
+						{salvandoAtendimento ? 'Gravando no Prontuário...' : '✓ CONCLUIR ATENDIMENTO'}
 					</button>
 				</div>
 			</div>
@@ -1382,111 +1404,100 @@
 			<button
 				type="button"
 				onclick={carregarAgendaDoDia}
-				disabled={carregando}
-				class="border border-slate-300 bg-white px-3 py-1 font-bold text-slate-700 uppercase hover:border-blue-900 disabled:opacity-50"
+				class="border border-slate-300 bg-white hover:bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 uppercase"
 			>
-				{carregando ? 'Carregando...' : 'Atualizar Agenda'}
+				Atualizar
 			</button>
 		</PanelHeader>
 
-		<div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-12 font-sans">
-			<!-- Campo de Busca -->
-			<div class="md:col-span-6 flex flex-col gap-1">
-				<label for="busca-med" class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Buscar na Agenda
-				</label>
+		<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 p-3">
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="button"
+					onclick={() => filtroStatus = 'TODOS'}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'TODOS' ? 'border border-blue-900 bg-blue-900 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Todos ({totalAgendados})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroStatus = 'AGUARDANDO'}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'AGUARDANDO' ? 'border border-amber-700 bg-amber-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Aguardando ({totalAguardando})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroStatus = 'EM_ATENDIMENTO'}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'EM_ATENDIMENTO' ? 'border border-blue-900 bg-blue-900 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Em Atendimento ({totalEmAtendimento})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroStatus = 'CONCLUIDO'}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'CONCLUIDO' ? 'border border-emerald-700 bg-emerald-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Concluídos ({totalConcluidos})
+				</button>
+				<button
+					type="button"
+					onclick={() => filtroStatus = 'FALTOU'}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'FALTOU' ? 'border border-red-700 bg-red-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Faltas ({totalFaltas})
+				</button>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<label for="busca-paciente" class="text-xs font-bold text-slate-700">Buscar:</label>
 				<input
-					id="busca-med"
+					id="busca-paciente"
 					type="text"
 					bind:value={busca}
-					placeholder="Nome do paciente, CPF, Protocolo ou CID..."
-					class="w-full border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-900"
+					placeholder="Nome ou CPF do paciente..."
+					class="border border-slate-300 bg-white p-1 text-xs font-sans w-56 outline-none focus:border-blue-900"
 				/>
 			</div>
-
-			<!-- Filtro por Status -->
-			<div class="md:col-span-6 flex flex-col gap-1">
-				<label for="filtro-status" class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Status do Atendimento
-				</label>
-				<select
-					id="filtro-status"
-					bind:value={filtroStatus}
-					class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono outline-none focus:border-blue-900"
-				>
-					<option value="TODOS">TODOS OS STATUS</option>
-					<option value="AGUARDANDO">AGUARDANDO ATENDIMENTO</option>
-					<option value="EM_ATENDIMENTO">EM ATENDIMENTO (EM ANDAMENTO)</option>
-					<option value="CONCLUIDO">CONCLUÍDO (ATENDIDO)</option>
-					<option value="FALTOU">FALTOU / ABSENTEÍSMO</option>
-				</select>
-			</div>
 		</div>
-	</div>
 
-	<!-- 4. Tabela/Lista Cronológica de Pacientes Agendados para o Dia -->
-	<div class="border border-slate-200 bg-white">
-		<PanelHeader title="Lista Cronológica de Atendimentos" index="02">
-			<span class="border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-mono text-slate-700 uppercase">
-				{consultasFiltradas.length} Pacientes
-			</span>
-		</PanelHeader>
-
+		<!-- Tabela de Pacientes Agendados -->
 		<div class="overflow-x-auto">
 			<table class="w-full border-collapse text-xs">
 				<thead>
-					<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
-						<th class="border-r border-slate-200 px-3 py-2">Horário</th>
-						<th class="border-r border-slate-200 px-3 py-2">Status</th>
-						<th class="border-r border-slate-200 px-3 py-2">Paciente / Identificação</th>
-						<th class="border-r border-slate-200 px-3 py-2">Especialidade / CID-10</th>
-						<th class="border-r border-slate-200 px-3 py-2">Prioridade</th>
-						<th class="border-r border-slate-200 px-3 py-2">Origem / UBS</th>
-						<th class="px-3 py-2 text-center">Ações Clínicas</th>
+					<tr class="border-b border-slate-200 bg-slate-100 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+						<th class="border-r border-slate-200 px-3 py-2.5">Horário / Status</th>
+						<th class="border-r border-slate-200 px-3 py-2.5">Paciente</th>
+						<th class="border-r border-slate-200 px-3 py-2.5">Especialidade / Procedimento</th>
+						<th class="border-r border-slate-200 px-3 py-2.5">Prioridade</th>
+						<th class="border-r border-slate-200 px-3 py-2.5">Origem / Protocolo</th>
+						<th class="px-3 py-2.5 text-center">Ações Clínicas</th>
 					</tr>
 				</thead>
 				<tbody class="font-mono">
 					{#if carregando}
 						{#each Array(5) as _, i (i)}
 							<tr class="border-b border-slate-100">
-								<td colspan="7" class="px-3 py-4">
-									<div class="h-4 w-full animate-pulse bg-slate-100"></div>
+								<td colspan="6" class="px-3 py-3.5">
+									<div class="h-3.5 w-full animate-pulse bg-slate-100"></div>
 								</td>
 							</tr>
 						{/each}
-					{:else if consultasFiltradas.length === 0}
+					{:else if filtrados.length === 0}
 						<tr>
-							<td colspan="7" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
-								Nenhum paciente encontrado para os filtros selecionados.
+							<td colspan="6" class="px-3 py-10 text-center font-sans text-sm text-slate-500">
+								Nenhum paciente encontrado para a data e filtros selecionados.
 							</td>
 						</tr>
 					{:else}
-						{#each consultasFiltradas as c (c.id)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors {c.status === 'EM_ATENDIMENTO' ? 'bg-blue-50/50' : ''}">
-								<!-- Horário -->
-								<td class="border-r border-slate-100 px-3 py-2.5 font-bold text-blue-900 text-sm">
-									{c.horario}
-								</td>
-
-								<!-- Status -->
+						{#each filtrados as c (c.id)}
+							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+								<!-- Horário e Status -->
 								<td class="border-r border-slate-100 px-3 py-2.5">
-									{#if c.status === 'AGUARDANDO'}
-										<span class="border border-amber-600 bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
-											AGUARDANDO
-										</span>
-									{:else if c.status === 'EM_ATENDIMENTO'}
-										<span class="border border-blue-700 bg-blue-100 text-blue-900 px-2 py-0.5 text-[10px] font-bold animate-pulse">
-											EM ATENDIMENTO
-										</span>
-									{:else if c.status === 'CONCLUIDO'}
-										<span class="border border-emerald-700 bg-emerald-100 text-emerald-900 px-2 py-0.5 text-[10px] font-bold">
-											✓ CONCLUÍDO
-										</span>
-									{:else}
-										<span class="border border-red-700 bg-red-100 text-red-900 px-2 py-0.5 text-[10px] font-bold">
-											FALTOU
-										</span>
-									{/if}
+									<div class="font-bold text-slate-900 text-sm">{c.horario}</div>
+									<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase mt-0.5 {c.status === 'EM_ATENDIMENTO' ? 'bg-blue-100 text-blue-900 border border-blue-300' : c.status === 'AGUARDANDO' ? 'bg-amber-100 text-amber-900 border border-amber-300' : c.status === 'CONCLUIDO' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-red-100 text-red-900 border border-red-300'}">
+										{c.status.replace('_', ' ')}
+									</span>
 								</td>
 
 								<!-- Paciente -->
@@ -1501,12 +1512,14 @@
 								<td class="border-r border-slate-100 px-3 py-2.5 font-sans">
 									<div class="flex items-center gap-1.5 mb-0.5">
 										{#if c.solicitacao.tipoServico === 'PROCEDIMENTO' || c.solicitacao.procedimentoSolicitado}
-											<span class="bg-purple-100 text-purple-900 border border-purple-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase">
-												🔬 PROCEDIMENTO
+											<span class="bg-purple-100 text-purple-900 border border-purple-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase flex items-center gap-1">
+												<IconFlask size={11} />
+												<span>PROCEDIMENTO</span>
 											</span>
 										{:else}
-											<span class="bg-blue-100 text-blue-900 border border-blue-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase">
-												🩺 CONSULTA
+											<span class="bg-blue-100 text-blue-900 border border-blue-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase flex items-center gap-1">
+												<IconStethoscope size={11} />
+												<span>CONSULTA</span>
 											</span>
 										{/if}
 										<span class="font-semibold text-slate-900">{c.solicitacao.especialidadeSolicitada}</span>
@@ -1552,7 +1565,7 @@
 											class="border border-blue-900 bg-white text-blue-900 hover:bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase"
 											title="Ver Prontuário Eletrônico do Paciente"
 										>
-											Dossiê PEC
+											Dossiê Clínico
 										</button>
 
 										<!-- Fluxo de Atendimento -->
@@ -1560,9 +1573,10 @@
 											<button
 												type="button"
 												onclick={() => iniciarAtendimento(c)}
-												class="border border-emerald-800 bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
+												class="border border-emerald-800 bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
 											>
-												🩺 Iniciar
+												<IconPlayerPlay size={11} />
+												<span>Iniciar</span>
 											</button>
 											<button
 												type="button"
@@ -1575,9 +1589,10 @@
 											<button
 												type="button"
 												onclick={() => { consultaAtiva = c; }}
-												class="border border-blue-900 bg-blue-900 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
+												class="border border-blue-900 bg-blue-900 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
 											>
-												✍️ Atender
+												<IconNotes size={11} />
+												<span>Atender</span>
 											</button>
 										{:else if c.status === 'CONCLUIDO'}
 											<span class="text-[10px] font-bold text-emerald-700">Atendido</span>
