@@ -1693,9 +1693,44 @@ export class CentroGestaoApi {
     return this.api.get<CotaUbsCentro[]>('/centro/gestao/cotas', query as Record<string, unknown> | undefined);
   }
 
-  /** Listar profissionais médicos/dentistas do centro (GET /v1/centro/gestao/profissionais). */
-  listProfissionais(query?: { centro?: string }): Promise<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>> {
-    return this.api.get('/centro/gestao/profissionais', query as Record<string, unknown> | undefined);
+  /** Listar profissionais médicos/dentistas do centro (GET /v1/centro/gestao/profissionais com fallback para /admin/usuarios). */
+  async listProfissionais(query?: { centro?: string }): Promise<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>> {
+    try {
+      const res = await this.api.get<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>>('/centro/gestao/profissionais', query as Record<string, unknown> | undefined);
+      if (Array.isArray(res) && res.length > 0) return res;
+    } catch {
+      // Endpoint dedicado ainda não ativo na VPS, fallback para /admin/usuarios
+    }
+
+    try {
+      const users = await this.api.get<any[]>('/admin/usuarios');
+      if (Array.isArray(users)) {
+        const ehCeo = query?.centro?.toUpperCase() === 'CEO' || query?.centro?.toUpperCase() === 'CENTRO_ODONTOLOGICO';
+        return users
+          .filter((u) => {
+            if (!u.ativo) return false;
+            const r = (u.role || '').toUpperCase();
+            if (ehCeo) {
+              return r === 'CIRURGIAO_DENTISTA' || r === 'DENTISTA' || r === 'MEDICO_ESPECIALISTA' || r === 'MEDICO' || r === 'DESENVOLVEDOR' || r === 'ADMIN';
+            } else {
+              return r === 'MEDICO' || r === 'MEDICO_ESPECIALISTA' || r === 'DESENVOLVEDOR' || r === 'ADMIN';
+            }
+          })
+          .map((u) => ({
+            id: u.id,
+            nome: u.nome,
+            registroProfissional: u.cro || u.crm || u.matricula || 'Ativo',
+            conselho: ehCeo ? (u.cro ? 'CRO' : 'CRO/Matrícula') : (u.crm ? 'CRM' : 'CRM/Matrícula'),
+            cargo: u.role === 'DESENVOLVEDOR' ? (ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista') : (u.role || (ehCeo ? 'Cirurgião-Dentista' : 'Médico')),
+            role: u.role || 'MEDICO',
+            especialidade: u.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
+          }));
+      }
+    } catch (err) {
+      console.error('Falha ao listar usuários para profissionais:', err);
+    }
+
+    return [];
   }
 
   /** Atualizar matriz de cotas de uma UBS (PUT /v1/centro/gestao/cotas/:ubsId). */
