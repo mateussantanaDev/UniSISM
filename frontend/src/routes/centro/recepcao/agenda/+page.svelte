@@ -155,61 +155,29 @@
 		return false;
 	}
 
-	// Lista Consolidada de Especialistas com suas Escalas (100% Real - Usuários do Centro)
+	// Lista Consolidada de Especialistas com suas Escalas (100% Real - Cadastradas no Banco)
 	let listaEspecialistas: EspecialistaAgendaItem[] = $derived.by(() => {
 		const list: EspecialistaAgendaItem[] = [];
 		const nomesAdicionados = new Set<string>();
 
-		// 1. Profissionais reais da base de usuários do Centro
-		for (const prof of profissionaisDoCentro) {
-			if (prof.nome && !nomesAdicionados.has(prof.nome.toLowerCase())) {
-				nomesAdicionados.add(prof.nome.toLowerCase());
-				
-				// Busca se o profissional já tem uma escala cadastrada
-				const esc = escalasCarregadas.find(e => 
-					(e.medicoId && e.medicoId === prof.id) ||
-					(e.medicoNome && e.medicoNome.toLowerCase() === prof.nome.toLowerCase())
-				);
-
-				const dias = esc && Array.isArray(esc.diasSemana) && esc.diasSemana.length > 0
-					? esc.diasSemana
-					: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
-				const diasNums = Array.from(new Set(
-					dias.map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
-				));
-
-				list.push({
-					id: prof.id,
-					nome: prof.nome,
-					crm: prof.registroProfissional ? `${prof.conselho} ${prof.registroProfissional}` : (ehCeo ? 'CRO Ativo' : 'CRM Ativo'),
-					especialidade: (esc?.especialidade) || prof.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
-					diasSemana: dias,
-					diasSemanaNumeros: diasNums,
-					diasSemanaFormatado: formatarDiasSemana(dias),
-					horarioInicio: esc?.horarioInicio || '08:00',
-					horarioFim: esc?.horarioFim || '12:00',
-					duracaoMinutos: esc?.duracaoMinutos || (ehCeo ? 30 : 20),
-					vagasPorTurno: esc?.vagasPorTurno || 12,
-					consultorio: (esc as any)?.consultorio || (ehCeo ? `Cadeira Odontológica 0${list.length + 1}` : `Consultório 0${list.length + 1}`),
-					status: esc?.status || 'ATIVA'
-				});
-			}
-		}
-
-		// 2. Escalas Oficiais cadastradas no Banco de Dados que não estavam na lista de usuários
+		// A agenda só lista quem POSSUI ESCALA CADASTRADA pelo gestor no Centro
 		for (const esc of escalasCarregadas) {
 			const nome = esc.medicoNome;
 			if (nome && !nomesAdicionados.has(nome.toLowerCase())) {
 				nomesAdicionados.add(nome.toLowerCase());
-				const dias = Array.isArray(esc.diasSemana) ? esc.diasSemana : ['SEG', 'QUA'];
+				const prof = profissionaisDoCentro.find(p => 
+					(esc.medicoId && p.id === esc.medicoId) ||
+					(p.nome && p.nome.toLowerCase() === nome.toLowerCase())
+				);
+				const dias = Array.isArray(esc.diasSemana) && esc.diasSemana.length > 0 ? esc.diasSemana : ['SEG', 'QUA'];
 				const diasNums = Array.from(new Set(
 					dias.map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
 				));
 				list.push({
-					id: esc.id || esc.medicoId || nome.toLowerCase().replace(/\s+/g, '-'),
+					id: esc.id || esc.medicoId || prof?.id || nome.toLowerCase().replace(/\s+/g, '-'),
 					nome,
-					crm: esc.crm || (ehCeo ? 'CRO Ativo' : 'CRM Ativo'),
-					especialidade: esc.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
+					crm: esc.crm || (prof?.registroProfissional ? `${prof.conselho} ${prof.registroProfissional}` : (ehCeo ? 'CRO Ativo' : 'CRM Ativo')),
+					especialidade: esc.especialidade || prof?.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
 					diasSemana: dias,
 					diasSemanaNumeros: diasNums,
 					diasSemanaFormatado: formatarDiasSemana(dias),

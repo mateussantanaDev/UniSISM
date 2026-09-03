@@ -1710,19 +1710,45 @@ export class CentroGestaoApi {
           .filter((u) => {
             if (!u.ativo) return false;
             const r = (u.role || '').toUpperCase();
+            const cCargo = ((u.cargo || '') + ' ' + (u.funcao || '') + ' ' + (u.tipoUnidade || '')).toUpperCase();
+
+            // Desenvolvedores, Administradores, Gestores, Recepcionistas e Motoristas NUNCA são médicos/dentistas
+            if (
+              r === 'DESENVOLVEDOR' ||
+              r === 'ADMIN' ||
+              r === 'GESTOR' ||
+              r === 'RECEPCIONISTA' ||
+              r === 'MOTORISTA' ||
+              r === 'COORDENADOR'
+            ) {
+              return false;
+            }
+
             if (ehCeo) {
-              return r === 'CIRURGIAO_DENTISTA' || r === 'DENTISTA' || r === 'MEDICO_ESPECIALISTA' || r === 'MEDICO' || r === 'DESENVOLVEDOR' || r === 'ADMIN';
+              return (
+                r === 'CIRURGIAO_DENTISTA' ||
+                r === 'DENTISTA' ||
+                cCargo.includes('DENTISTA') ||
+                cCargo.includes('ODONTO') ||
+                cCargo.includes('CRO')
+              );
             } else {
-              return r === 'MEDICO' || r === 'MEDICO_ESPECIALISTA' || r === 'DESENVOLVEDOR' || r === 'ADMIN';
+              return (
+                r === 'MEDICO' ||
+                r === 'MEDICO_ESPECIALISTA' ||
+                cCargo.includes('MEDICO') ||
+                cCargo.includes('MÉDICO') ||
+                cCargo.includes('CRM')
+              );
             }
           })
           .map((u) => ({
             id: u.id,
             nome: u.nome,
-            registroProfissional: u.cro || u.crm || u.matricula || 'Ativo',
-            conselho: ehCeo ? (u.cro ? 'CRO' : 'CRO/Matrícula') : (u.crm ? 'CRM' : 'CRM/Matrícula'),
-            cargo: u.role === 'DESENVOLVEDOR' ? (ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista') : (u.role || (ehCeo ? 'Cirurgião-Dentista' : 'Médico')),
-            role: u.role || 'MEDICO',
+            registroProfissional: u.cro || u.crm || u.matricula || '',
+            conselho: ehCeo ? 'CRO' : 'CRM',
+            cargo: u.cargo || (ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista'),
+            role: u.role || (ehCeo ? 'CIRURGIAO_DENTISTA' : 'MEDICO_ESPECIALISTA'),
             especialidade: u.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
           }));
       }
