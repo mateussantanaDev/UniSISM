@@ -287,7 +287,7 @@
 			id: 'teste-' + Date.now(),
 			pacienteNome: ehCeo ? 'MARIA SILVA SANTOS (TESTE DE ÁUDIO)' : 'JOÃO CARLOS PEREIRA (TESTE DE ÁUDIO)',
 			consultorio: ehCeo ? 'CADEIRA ODONTOLÓGICA 01 — SETOR B' : 'CONSULTÓRIO 03 — ALA A',
-			medicoNome: ehCeo ? 'Dra. Camila Ribeiro (Endodontia)' : 'Dr. Roberto Medeiros (Cardiologia)',
+			medicoNome: ehCeo ? 'Cirurgião-Dentista Plantonista' : 'Médico Especialista Plantonista',
 			especialidade: ehCeo ? 'Tratamento Endodôntico' : 'Cardiologia Clínica',
 			horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
 			tipo: 'CONSULTA',
