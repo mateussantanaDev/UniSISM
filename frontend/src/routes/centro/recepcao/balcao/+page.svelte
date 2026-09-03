@@ -11,7 +11,8 @@
 		EscalaMedicoCentro,
 		CalcularSlotCentroResponse,
 		DiaDisponibilidadeSlot,
-		SlotHorarioItem
+		SlotHorarioItem,
+		EspecialidadeSigtapCentro
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
@@ -30,8 +31,6 @@
 		IconFlask
 	} from '@tabler/icons-svelte';
 	import {
-		ESPECIALIDADES_CEM,
-		ESPECIALIDADES_CEO,
 		type TipoCentro,
 		type AgendamentoOcupado
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
@@ -83,6 +82,10 @@
 	let escalasDoBanco = $state<EscalaMedicoCentro[]>([]);
 	let carregandoEscalas = $state(true);
 
+	// Catálogo Oficial de Serviços e Procedimentos SIGTAP habilitados no Centro
+	let catalogoServicos = $state<EspecialidadeSigtapCentro[]>([]);
+	let carregandoCatalogo = $state(true);
+
 	// Estado da Alocação e Grade de Disponibilidade calculada no Backend
 	let alocacaoOtimizadaBalcao = $state<CalcularSlotCentroResponse['alocacao'] | null>(null);
 	let gradeDisponibilidade = $state<DiaDisponibilidadeSlot[]>([]);
@@ -100,37 +103,35 @@
 	let calculandoSlotBackend = $state(false);
 	let mensagemSlotBackend = $state('');
 
-	const procedimentosCem = [
-		'02.11.02.003-6 - Eletrocardiograma (ECG)',
-		'02.05.02.009-7 - Ecocardiograma Transtorácico',
-		'04.04.01.001-2 - Biópsia de Pele e Subcutâneo',
-		'03.01.01.004-0 - Lavagem Otológica',
-		'04.08.01.004-7 - Infiltração Articular',
-		'02.11.05.008-3 - Holter 24 Horas',
-		'04.01.01.002-3 - Curativo Especial',
-		'02.06.01.007-9 - Endoscopia Digestiva Alta'
-	];
-
-	const procedimentosCeo = [
-		'03.07.02.006-1 - Tratamento Endodôntico Dente Permanente',
-		'03.07.01.004-0 - Raspagem e Alisamento Periodontal',
-		'04.14.01.014-9 - Exodontia de Dente Incluso / Semi-incluso',
-		'03.07.03.003-2 - Condicionamento Odontopediátrico',
-		'03.07.04.004-6 - Atendimento Odontológico a Pacientes Especiais',
-		'07.01.07.012-9 - Moldagem e Instalação de Prótese Dentária',
-		'02.01.01.042-8 - Biópsia de Glândula Salivar / Lesão Bucal'
-	];
-
-	// Especialidades obtidas a partir das escalas cadastradas no banco, com fallback para o catálogo oficial
+	// Especialidades obtidas 100% dos Serviços Habilitados no Centro e Escalas do Banco
 	let especialidadesCadastradas = $derived.by(() => {
-		const espBanco = Array.from(new Set(escalasDoBanco.map(e => e.especialidade))).filter(Boolean);
-		if (espBanco.length > 0) return espBanco;
-		return ehCeo ? [...ESPECIALIDADES_CEO] : [...ESPECIALIDADES_CEM];
+		const sets = new Set<string>();
+		// 1. Serviços / Consultas cadastrados no catálogo oficial do Centro
+		for (const s of catalogoServicos) {
+			if (s.ativa !== false && s.tipoServico !== 'PROCEDIMENTO' && s.nome) {
+				sets.add(s.nome.trim());
+			}
+		}
+		// 2. Especialidades dos profissionais com escala cadastrada no Centro
+		for (const e of escalasDoBanco) {
+			if (e.especialidade) {
+				sets.add(e.especialidade.trim());
+			}
+		}
+		return Array.from(sets).sort();
 	});
 
-	let procedimentosCadastrados = $derived(
-		ehCeo ? procedimentosCeo : procedimentosCem
-	);
+	// Procedimentos SIGTAP obtidos 100% do catálogo oficial cadastrado no Centro
+	let procedimentosCadastrados = $derived.by(() => {
+		const procs: string[] = [];
+		for (const s of catalogoServicos) {
+			if (s.ativa !== false && (s.tipoServico === 'PROCEDIMENTO' || s.codigoSigtap)) {
+				const label = s.codigoSigtap ? `${s.codigoSigtap} - ${s.nome}` : s.nome;
+				if (!procs.includes(label)) procs.push(label);
+			}
+		}
+		return procs.sort();
+	});
 
 	// Especialistas cadastrados na escala do banco
 	let medicosEspecialistas = $derived(
@@ -356,12 +357,18 @@
 	onMount(async () => {
 		try {
 			carregandoEscalas = true;
-			const escalas = await api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []);
+			carregandoCatalogo = true;
+			const [escalas, servicos] = await Promise.all([
+				api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []),
+				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => [])
+			]);
 			escalasDoBanco = Array.isArray(escalas) ? escalas : [];
+			catalogoServicos = Array.isArray(servicos) ? servicos : [];
 		} catch (err) {
-			console.info('[UniSISM] Falha ao carregar escalas do backend.', err);
+			console.info('[UniSISM] Falha ao carregar dados do balcão.', err);
 		} finally {
 			carregandoEscalas = false;
+			carregandoCatalogo = false;
 		}
 	});
 
@@ -845,10 +852,14 @@
 							onchange={handleEspecialidadeChange}
 							class="w-full border border-slate-300 bg-white px-2.5 py-2 outline-none focus:border-blue-900 font-sans text-xs"
 						>
-							<option value="">Selecione uma especialidade...</option>
-							{#each especialidadesCadastradas as esp}
-								<option value={esp}>{esp.toUpperCase()}</option>
-							{/each}
+							{#if especialidadesCadastradas.length === 0}
+								<option value="">Nenhum serviço/especialidade cadastrado no catálogo do {siglaOrgao}</option>
+							{:else}
+								<option value="">Selecione uma especialidade habilitada...</option>
+								{#each especialidadesCadastradas as esp}
+									<option value={esp}>{esp.toUpperCase()}</option>
+								{/each}
+							{/if}
 						</select>
 					</div>
 
@@ -863,10 +874,14 @@
 								bind:value={procedimentoSolicitado}
 								class="w-full border border-purple-300 bg-purple-50/50 px-2.5 py-2 outline-none focus:border-purple-900 font-mono text-xs text-purple-950 font-bold"
 							>
-								<option value="">Selecione o procedimento da tabela SIGTAP...</option>
-								{#each procedimentosCadastrados as proc}
-									<option value={proc}>{proc}</option>
-								{/each}
+								{#if procedimentosCadastrados.length === 0}
+									<option value="">Nenhum procedimento SIGTAP cadastrado no catálogo do {siglaOrgao}</option>
+								{:else}
+									<option value="">Selecione o procedimento da tabela SIGTAP...</option>
+									{#each procedimentosCadastrados as proc}
+										<option value={proc}>{proc}</option>
+									{/each}
+								{/if}
 							</select>
 						</div>
 					{/if}
