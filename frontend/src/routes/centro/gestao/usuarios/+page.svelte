@@ -2,7 +2,13 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
-	import type { UsuarioListado, Role, Escopo } from '$lib/api/types';
+	import type {
+		UsuarioListado,
+		Role,
+		EscalaMedicoCentro,
+		EspecialidadeSigtapCentro,
+		SalaConsultorioCentro
+	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
 		IconAlertTriangle,
@@ -11,7 +17,15 @@
 		IconEdit,
 		IconUserPlus,
 		IconShield,
-		IconRefresh
+		IconRefresh,
+		IconStethoscope,
+		IconDental,
+		IconCalendar,
+		IconClock,
+		IconPlus,
+		IconTrash,
+		IconX,
+		IconBuildingHospital
 	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
@@ -21,6 +35,15 @@
 	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
+	const DIAS_SEMANA = [
+		{ sigla: 'SEG', label: 'Segunda-feira' },
+		{ sigla: 'TER', label: 'Terça-feira' },
+		{ sigla: 'QUA', label: 'Quarta-feira' },
+		{ sigla: 'QUI', label: 'Quinta-feira' },
+		{ sigla: 'SEX', label: 'Sexta-feira' },
+		{ sigla: 'SAB', label: 'Sábado' }
+	];
+
 	// State
 	let carregando = $state(true);
 	let salvando = $state(false);
@@ -28,6 +51,10 @@
 	let mensagemSucesso = $state('');
 
 	let listaUsuarios = $state<UsuarioListado[]>([]);
+	let listaEscalas = $state<EscalaMedicoCentro[]>([]);
+	let especialidadesCatalogo = $state<EspecialidadeSigtapCentro[]>([]);
+	let salasDisponiveis = $state<SalaConsultorioCentro[]>([]);
+
 	let busca = $state('');
 	let filtroPerfil = $state<string>('TODOS');
 	let filtroStatus = $state<'TODOS' | 'ATIVO' | 'INATIVO'>('TODOS');
@@ -36,7 +63,10 @@
 	let modalNovoAberto = $state(false);
 	let modalEditarAberto = $state(false);
 	let modalResetSenhaAberto = $state(false);
+	let modalAtribuicoesAberto = $state(false);
+
 	let usuarioEdicao = $state<UsuarioListado | null>(null);
+	let usuarioAtribuicao = $state<UsuarioListado | null>(null);
 
 	// Form State - Novo / Editar Usuario
 	let formNome = $state('');
@@ -54,7 +84,19 @@
 	let usuarioLogado = $state<any>(null);
 	let isSuperUser = $derived(usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR');
 
-	async function carregarUsuarios() {
+	// Form State - Atribuição de Serviço & Atendimento ao Médico
+	let atriEspecialidadeId = $state('');
+	let atriEspecialidadeNome = $state('');
+	let atriTipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('CONSULTA');
+	let atriDias = $state<string[]>(['SEG', 'QUA']);
+	let atriHorarioInicio = $state('08:00');
+	let atriHorarioFim = $state('12:00');
+	let atriDuracaoMinutos = $state(20);
+	let atriVagasPorTurno = $state(12);
+	let erroModalAtribuicao = $state('');
+	let salvandoAtribuicao = $state(false);
+
+	async function carregarDados() {
 		carregando = true;
 		erro = '';
 		try {
@@ -69,18 +111,41 @@
 			const superUser = usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR';
 			const query = !superUser && usuarioLogado?.unidadeVinculadaId ? { ubsId: usuarioLogado.unidadeVinculadaId } : undefined;
 
-			const res = await api.admin.listUsuarios(query);
-			listaUsuarios = res || [];
+			const [resUsers, resEscalas, resEsp, resSalas] = await Promise.all([
+				api.admin.listUsuarios(query).catch(e => {
+					console.error('Erro ao listar usuários:', e);
+					return [] as UsuarioListado[];
+				}),
+				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(e => {
+					console.error('Erro ao listar escalas:', e);
+					return [] as EscalaMedicoCentro[];
+				}),
+				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(e => {
+					console.error('Erro ao listar especialidades:', e);
+					return [] as EspecialidadeSigtapCentro[];
+				}),
+				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(e => {
+					console.error('Erro ao listar salas:', e);
+					return [] as SalaConsultorioCentro[];
+				})
+			]);
+
+			listaUsuarios = resUsers || [];
+			listaEscalas = resEscalas || [];
+			especialidadesCatalogo = resEsp || [];
+			salasDisponiveis = resSalas || [];
 		} catch (e: any) {
 			console.error(e);
-			erro = `Falha ao carregar usuários do servidor: ${e?.message || 'Erro de conexão'}`;
+			erro = `Falha ao carregar dados do servidor: ${e?.message || 'Erro de conexão'}`;
 		} finally {
 			carregando = false;
 		}
 	}
 
+	const carregarUsuarios = carregarDados;
+
 	onMount(() => {
-		carregarUsuarios();
+		carregarDados();
 	});
 
 	let usuariosFiltrados = $derived.by(() => {
@@ -243,6 +308,136 @@
 		};
 		return map[role] || role;
 	}
+
+	function isProfissional(u: UsuarioListado): boolean {
+		const role = ((u as any).perfil || u.role || '').toUpperCase();
+		const nome = (u.nome || '').toLowerCase();
+		return (
+			role.includes('MEDICO') ||
+			role.includes('DENTISTA') ||
+			role.includes('ESPECIALISTA') ||
+			nome.startsWith('dr.') ||
+			nome.startsWith('dra.')
+		);
+	}
+
+	function getEscalasDoUsuario(u: UsuarioListado): EscalaMedicoCentro[] {
+		return listaEscalas.filter(escala => {
+			if (escala.medicoId && escala.medicoId === u.id) return true;
+			if (escala.medicoNome && escala.medicoNome.toLowerCase() === u.nome.toLowerCase()) return true;
+			if (u.matricula && escala.crm && escala.crm.toLowerCase().includes(u.matricula.toLowerCase())) return true;
+			return false;
+		});
+	}
+
+	let escalasDoUsuarioAtual = $derived.by(() => {
+		if (!usuarioAtribuicao) return [];
+		return getEscalasDoUsuario(usuarioAtribuicao);
+	});
+
+	function abrirAtribuicoes(u: UsuarioListado) {
+		usuarioAtribuicao = u;
+		erroModalAtribuicao = '';
+		salvandoAtribuicao = false;
+		if (especialidadesCatalogo.length > 0) {
+			const primeira = especialidadesCatalogo[0];
+			atriEspecialidadeId = primeira.id;
+			atriEspecialidadeNome = primeira.nome;
+			atriTipoServico = primeira.tipoServico || 'CONSULTA';
+			atriDuracaoMinutos = primeira.tempoPadraoMinutos || 20;
+		} else {
+			atriEspecialidadeId = '';
+			atriEspecialidadeNome = '';
+			atriTipoServico = 'CONSULTA';
+			atriDuracaoMinutos = 20;
+		}
+		atriDias = ['SEG', 'QUA'];
+		atriHorarioInicio = '08:00';
+		atriHorarioFim = '12:00';
+		atriVagasPorTurno = 12;
+		modalAtribuicoesAberto = true;
+	}
+
+	function aoSelecionarEspecialidade(idOuNome: string) {
+		const esp = especialidadesCatalogo.find(e => e.id === idOuNome || e.nome === idOuNome);
+		if (esp) {
+			atriEspecialidadeId = esp.id;
+			atriEspecialidadeNome = esp.nome;
+			atriTipoServico = esp.tipoServico || 'CONSULTA';
+			atriDuracaoMinutos = esp.tempoPadraoMinutos || 20;
+		} else {
+			atriEspecialidadeNome = idOuNome;
+		}
+	}
+
+	function toggleAtriDia(sigla: string) {
+		if (atriDias.includes(sigla)) {
+			if (atriDias.length > 1) {
+				atriDias = atriDias.filter(d => d !== sigla);
+			}
+		} else {
+			atriDias = [...atriDias, sigla];
+		}
+	}
+
+	async function salvarAtribuicao() {
+		if (!usuarioAtribuicao) return;
+		if (!atriEspecialidadeNome.trim()) {
+			erroModalAtribuicao = 'Selecione a especialidade / serviço a ser atribuído.';
+			return;
+		}
+		if (atriDias.length === 0) {
+			erroModalAtribuicao = 'Selecione pelo menos um dia da semana para o atendimento.';
+			return;
+		}
+
+		erroModalAtribuicao = '';
+		salvandoAtribuicao = true;
+		try {
+			const regProf = usuarioAtribuicao.matricula || (ehCeo ? 'CRO-PE' : 'CRM-PE');
+			await api.centroGestao.criarEscala({
+				medicoId: usuarioAtribuicao.id,
+				medicoNome: usuarioAtribuicao.nome,
+				crm: regProf,
+				especialidade: atriEspecialidadeNome.trim(),
+				tipoServico: atriTipoServico,
+				procedimentoId: atriEspecialidadeId || undefined,
+				diasSemana: atriDias,
+				horarioInicio: atriHorarioInicio,
+				horarioFim: atriHorarioFim,
+				duracaoMinutos: Number(atriDuracaoMinutos) || 20,
+				vagasPorTurno: Number(atriVagasPorTurno) || 12,
+				status: 'ATIVA',
+				ativo: true
+			});
+
+			listaEscalas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
+			mensagemSucesso = `✓ Atendimento "${atriEspecialidadeNome}" atribuído com sucesso a ${usuarioAtribuicao.nome}!`;
+			setTimeout(() => (mensagemSucesso = ''), 5000);
+		} catch (e: any) {
+			console.error(e);
+			erroModalAtribuicao = `Falha ao atribuir serviço: ${e?.message || 'Erro do servidor'}`;
+		} finally {
+			salvandoAtribuicao = false;
+		}
+	}
+
+	async function removerAtribuicao(escala: EscalaMedicoCentro) {
+		if (!escala.id) return;
+		if (!confirm(`Deseja realmente remover a atribuição de "${escala.especialidade}" do profissional ${escala.medicoNome}?`)) {
+			return;
+		}
+
+		try {
+			await api.centroGestao.excluirEscala(escala.id);
+			listaEscalas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
+			mensagemSucesso = `✓ Atribuição de "${escala.especialidade}" removida com sucesso!`;
+			setTimeout(() => (mensagemSucesso = ''), 4000);
+		} catch (e: any) {
+			console.error(e);
+			erroModalAtribuicao = `Falha ao remover atribuição: ${e?.message || 'Erro do servidor'}`;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -341,6 +536,7 @@
 						<tr class="border-b border-slate-200 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
 							<th class="p-3">Nome / Profissional</th>
 							<th class="p-3">Perfil & Função</th>
+							<th class="p-3">Serviços & Atendimentos Atribuídos</th>
 							<th class="p-3">CPF / Matrícula</th>
 							<th class="p-3">E-mail de Contato</th>
 							<th class="p-3">Status</th>
@@ -350,7 +546,7 @@
 					<tbody class="divide-y divide-slate-200 text-xs font-mono">
 						{#if usuariosFiltrados.length === 0}
 							<tr>
-								<td colspan="6" class="p-8 text-center text-slate-500">
+								<td colspan="7" class="p-8 text-center text-slate-500">
 									Nenhum usuário cadastrado encontrado no servidor com os filtros selecionados.
 								</td>
 							</tr>
@@ -373,6 +569,34 @@
 											{formatarRoleLabel((u as any).perfil || u.role)}
 										</span>
 									</td>
+									<td class="p-3 text-slate-800">
+										{#if isProfissional(u)}
+											{@const escalasProf = getEscalasDoUsuario(u)}
+											{#if escalasProf.length > 0}
+												<div class="flex flex-col gap-1 max-w-[280px]">
+													<div class="flex items-center gap-1">
+														<span class="bg-indigo-900 text-white px-1.5 py-0.2 text-[9px] font-bold">
+															{escalasProf.length} SERVIÇO(S) ATRIBUÍDO(S)
+														</span>
+													</div>
+													<div class="flex flex-wrap gap-1">
+														{#each escalasProf as esc}
+															<span class="bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0.5 text-[9px] font-semibold" title="{esc.especialidade} ({esc.diasSemana?.join(', ')})">
+																<strong class="text-blue-900">{esc.especialidade}</strong>
+																<span class="text-slate-500 font-mono">({esc.diasSemana?.join(', ') || 'Sem dias'})</span>
+															</span>
+														{/each}
+													</div>
+												</div>
+											{:else}
+												<span class="bg-amber-50 border border-amber-300 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+													Nenhum serviço atribuído
+												</span>
+											{/if}
+										{:else}
+											<span class="text-slate-400 text-[11px]">—</span>
+										{/if}
+									</td>
 									<td class="p-3 text-slate-700">
 										<div>{u.cpf || 'Não informado'}</div>
 										{#if u.matricula}
@@ -389,6 +613,20 @@
 									</td>
 									<td class="p-3 text-right">
 										<div class="flex items-center justify-end gap-1.5">
+											{#if isProfissional(u)}
+												<button
+													onclick={() => abrirAtribuicoes(u)}
+													class="border border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 px-2 py-1 text-[10px] font-bold flex items-center gap-1 shrink-0"
+													title="Atribuir Atendimentos, Especialidades e Dias da Agenda"
+												>
+													{#if ehCeo}
+														<IconDental size={12} class="text-indigo-700" />
+													{:else}
+														<IconStethoscope size={12} class="text-indigo-700" />
+													{/if}
+													<span>Atribuições</span>
+												</button>
+											{/if}
 											<button
 												onclick={() => abrirEditar(u)}
 												class="border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[10px] font-bold flex items-center gap-1"
@@ -403,7 +641,7 @@
 												title="Resetar Senha"
 											>
 												<IconKey size={12} />
-												<span>Reset Senha</span>
+												<span>Reset</span>
 											</button>
 											<button
 												onclick={() => toggleStatusUsuario(u)}
@@ -619,6 +857,263 @@
 					class="border border-amber-900 bg-amber-900 px-5 py-2 font-bold text-white uppercase hover:bg-amber-950 disabled:opacity-50"
 				>
 					{salvando ? 'Enviando...' : 'Confirmar Reset'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal 4: Atribuições Clínicas, Serviços Especializados & Agenda de Atendimento -->
+{#if modalAtribuicoesAberto && usuarioAtribuicao}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs overflow-y-auto">
+		<div class="w-full max-w-3xl border-2 border-slate-900 bg-white shadow-[10px_10px_0_rgba(15,23,42,0.15)] my-8">
+			<!-- Header Modal -->
+			<div class="flex items-center justify-between border-b border-slate-200 bg-indigo-950 px-5 py-3.5 text-white">
+				<div class="flex items-center gap-2.5">
+					<div class="flex h-7 w-7 items-center justify-center bg-indigo-800 text-white">
+						{#if ehCeo}
+							<IconDental size={16} />
+						{:else}
+							<IconStethoscope size={16} />
+						{/if}
+					</div>
+					<div>
+						<div class="font-bold uppercase tracking-wider text-xs">
+							Atribuições de Atendimento & Agenda Clínica
+						</div>
+						<div class="text-[10px] text-indigo-300">
+							Profissional: <span class="text-white font-bold">{usuarioAtribuicao.nome}</span> · {rotuloRegistro}: {usuarioAtribuicao.matricula || 'Não informado'}
+						</div>
+					</div>
+				</div>
+				<button onclick={() => (modalAtribuicoesAberto = false)} class="text-indigo-300 hover:text-white font-bold text-base">
+					✕
+				</button>
+			</div>
+
+			<div class="p-5 flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
+				{#if erroModalAtribuicao}
+					<div class="border border-rose-300 bg-rose-50 p-3 text-rose-900 font-bold flex items-center gap-2">
+						<IconAlertTriangle size={16} class="text-rose-700 shrink-0" />
+						<span>{erroModalAtribuicao}</span>
+					</div>
+				{/if}
+
+				<!-- Identificação do Profissional -->
+				<div class="border border-slate-200 bg-slate-50 p-3.5 flex flex-wrap items-center justify-between gap-3">
+					<div class="flex items-center gap-3">
+						<div class="flex h-10 w-10 items-center justify-center bg-indigo-900 text-white font-bold text-sm">
+							{usuarioAtribuicao.nome.substring(0, 2).toUpperCase()}
+						</div>
+						<div>
+							<div class="text-sm font-bold text-slate-900">{usuarioAtribuicao.nome}</div>
+							<div class="text-[11px] text-slate-600">
+								CPF: <strong>{usuarioAtribuicao.cpf || '—'}</strong> · Função: <strong class="text-indigo-900">{formatarRoleLabel((usuarioAtribuicao as any).perfil || usuarioAtribuicao.role)}</strong>
+							</div>
+						</div>
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="bg-indigo-100 text-indigo-900 border border-indigo-300 px-2 py-0.5 text-[10px] font-bold">
+							{siglaOrgao} — {nomeOrgao}
+						</span>
+					</div>
+				</div>
+
+				<!-- Seção 1: Atendimentos e Serviços Atualmente Atribuídos -->
+				<div class="flex flex-col gap-2">
+					<div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+						<div class="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+							<IconCalendar size={14} class="text-indigo-800" />
+							<span>Serviços & Atendimentos Atribuídos ({escalasDoUsuarioAtual.length})</span>
+						</div>
+						<span class="text-[10px] text-slate-500">Escalas ativas na regulação e balcão</span>
+					</div>
+
+					{#if escalasDoUsuarioAtual.length === 0}
+						<div class="border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 flex flex-col items-center gap-2">
+							<IconAlertTriangle size={20} class="text-amber-600" />
+							<div class="font-bold text-slate-700">Nenhum atendimento atribuído a este profissional ainda.</div>
+							<div class="text-[11px] max-w-md">
+								Utilize o formulário abaixo para vincular as especialidades/serviços que ele realiza e definir os dias e horários em que atenderá.
+							</div>
+						</div>
+					{:else}
+						<div class="grid grid-cols-1 gap-2.5">
+							{#each escalasDoUsuarioAtual as esc (esc.id || esc.especialidade)}
+								<div class="border border-slate-200 bg-white p-3 hover:border-indigo-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+									<div class="flex flex-col gap-1">
+										<div class="flex items-center gap-2">
+											<span class="bg-blue-900 text-white text-[9px] font-bold px-1.5 py-0.5 uppercase">
+												{esc.tipoServico || 'CONSULTA'}
+											</span>
+											<span class="text-xs font-bold text-slate-900">{esc.especialidade}</span>
+											<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-bold px-1.5 py-0.2">
+												{esc.status || 'ATIVA'}
+											</span>
+										</div>
+										<div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
+											<div class="flex items-center gap-1">
+												<IconCalendar size={12} class="text-slate-500" />
+												<span class="font-bold text-slate-700">Dias:</span>
+												<div class="flex gap-1">
+													{#each (esc.diasSemana || []) as dia}
+														<span class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-1 py-0.2 text-[9px] font-bold">
+															{dia}
+														</span>
+													{/each}
+												</div>
+											</div>
+											<div class="flex items-center gap-1">
+												<IconClock size={12} class="text-slate-500" />
+												<span>{esc.horarioInicio || '08:00'} às {esc.horarioFim || '12:00'}</span>
+											</div>
+											<div class="text-slate-500">
+												{esc.duracaoMinutos || 20} min/vaga · <strong>{esc.vagasPorTurno || 12} vagas/turno</strong>
+											</div>
+										</div>
+									</div>
+
+									<button
+										type="button"
+										onclick={() => removerAtribuicao(esc)}
+										class="border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 self-start sm:self-center shrink-0"
+										title="Desvincular e remover atendimento"
+									>
+										<IconTrash size={12} />
+										<span>Desvincular</span>
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Seção 2: Formulário de Atribuição de Novo Serviço/Atendimento -->
+				<div class="border-t-2 border-slate-200 pt-4 flex flex-col gap-3">
+					<div class="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+						<IconPlus size={14} class="text-indigo-800" />
+						<span>+ Atribuir Novo Serviço / Atendimento ao Profissional</span>
+					</div>
+
+					<div class="border border-indigo-200 bg-indigo-50/40 p-4 flex flex-col gap-3.5">
+						<!-- Seleção de Especialidade/Serviço do Catálogo -->
+						<div class="flex flex-col gap-1">
+							<label for="atri-esp" class="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+								<span>Serviço Especializado / Especialidade Habilitada *</span>
+								<a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="text-indigo-700 hover:underline text-[10px] font-normal">
+									Ver catálogo oficial de serviços ›
+								</a>
+							</label>
+
+							{#if especialidadesCatalogo.length === 0}
+								<div class="border border-amber-300 bg-amber-50 p-2.5 text-amber-900 text-[11px] flex items-center justify-between">
+									<span>Nenhum serviço ou especialidade cadastrada no catálogo do {siglaOrgao}.</span>
+									<a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="bg-amber-800 text-white px-2 py-1 text-[10px] font-bold uppercase">
+										Cadastrar Serviços
+									</a>
+								</div>
+							{:else}
+								<select
+									id="atri-esp"
+									bind:value={atriEspecialidadeId}
+									onchange={(e) => aoSelecionarEspecialidade((e.target as HTMLSelectElement).value)}
+									class="border border-slate-300 bg-white p-2 text-xs font-bold"
+								>
+									{#each especialidadesCatalogo as esp}
+										<option value={esp.id}>
+											{esp.nome} — SIGTAP: {esp.codigoSigtap || 'SIA'} ({esp.tipoServico || 'CONSULTA'})
+										</option>
+									{/each}
+								</select>
+							{/if}
+						</div>
+
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+							<!-- Tipo de Atendimento -->
+							<div class="flex flex-col gap-1">
+								<label for="atri-tipo" class="font-bold text-slate-700 text-[11px]">Tipo de Atendimento *</label>
+								<select id="atri-tipo" bind:value={atriTipoServico} class="border border-slate-300 bg-white p-2 text-xs font-bold">
+									<option value="CONSULTA">Consulta Clínica Especializada</option>
+									<option value="PROCEDIMENTO">Procedimento / Exame Especializado</option>
+								</select>
+							</div>
+
+							<!-- Vagas por Turno -->
+							<div class="flex flex-col gap-1">
+								<label for="atri-vagas" class="font-bold text-slate-700 text-[11px]">Capacidade / Vagas por Turno *</label>
+								<input id="atri-vagas" type="number" min="1" max="100" bind:value={atriVagasPorTurno} class="border border-slate-300 bg-white p-2 text-xs" />
+							</div>
+						</div>
+
+						<!-- Dias da Semana de Atendimento -->
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-slate-700 text-[11px]">Dias de Atendimento na Semana *</span>
+							<div class="flex flex-wrap gap-1.5">
+								{#each DIAS_SEMANA as d}
+									{@const selecionado = atriDias.includes(d.sigla)}
+									<button
+										type="button"
+										onclick={() => toggleAtriDia(d.sigla)}
+										class="px-3 py-1.5 text-xs font-bold border transition-colors flex items-center gap-1.5 {selecionado ? 'bg-indigo-900 border-indigo-900 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}"
+									>
+										<span>{d.sigla}</span>
+										<span class="text-[10px] font-normal opacity-80">({d.label.split('-')[0]})</span>
+										{#if selecionado}
+											<IconCheck size={12} class="text-emerald-300" />
+										{/if}
+									</button>
+								{/each}
+							</div>
+							<div class="text-[10px] text-slate-500">
+								Selecione os dias em que o profissional executará este atendimento.
+							</div>
+						</div>
+
+						<!-- Horários e Duração -->
+						<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+							<div class="flex flex-col gap-1">
+								<label for="atri-hi" class="font-bold text-slate-700 text-[11px]">Horário Início</label>
+								<input id="atri-hi" type="time" bind:value={atriHorarioInicio} class="border border-slate-300 bg-white p-2 text-xs" />
+							</div>
+							<div class="flex flex-col gap-1">
+								<label for="atri-hf" class="font-bold text-slate-700 text-[11px]">Horário Fim</label>
+								<input id="atri-hf" type="time" bind:value={atriHorarioFim} class="border border-slate-300 bg-white p-2 text-xs" />
+							</div>
+							<div class="flex flex-col gap-1">
+								<label for="atri-dur" class="font-bold text-slate-700 text-[11px]">Duração Slot (min)</label>
+								<input id="atri-dur" type="number" min="5" max="180" step="5" bind:value={atriDuracaoMinutos} class="border border-slate-300 bg-white p-2 text-xs" />
+							</div>
+						</div>
+
+						<div class="flex items-center justify-end mt-1">
+							<button
+								type="button"
+								onclick={salvarAtribuicao}
+								disabled={salvandoAtribuicao || especialidadesCatalogo.length === 0}
+								class="border border-indigo-900 bg-indigo-900 text-white px-5 py-2 font-bold text-xs uppercase hover:bg-indigo-950 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+							>
+								{#if salvandoAtribuicao}
+									<span>Salvando Atribuição...</span>
+								{:else}
+									<IconPlus size={14} />
+									<span>Salvar Atribuição & Escala</span>
+								{/if}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Rodapé do Modal -->
+			<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+				<div class="text-[11px] text-slate-600">
+					As atribuições ficam disponíveis de imediato no <strong>Agendamento de Balcão</strong> e na <strong>Regulação</strong>.
+				</div>
+				<button
+					onclick={() => (modalAtribuicoesAberto = false)}
+					class="border border-slate-300 bg-white hover:bg-slate-100 px-4 py-2 font-bold text-xs uppercase"
+				>
+					Concluir / Fechar
 				</button>
 			</div>
 		</div>
