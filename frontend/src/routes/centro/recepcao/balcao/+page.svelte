@@ -133,49 +133,146 @@
 		return procs.sort();
 	});
 
-	// Especialistas cadastrados na escala do banco
-	let medicosEspecialistas = $derived(
-		escalasDoBanco.map(e => ({
-			id: e.id,
-			medicoId: e.medicoId,
-			nome: e.medicoNome,
-			especialidade: e.especialidade,
-			registro: e.crm,
-			diasSemana: e.diasSemana,
-			horarioInicio: e.horarioInicio,
-			horarioFim: e.horarioFim,
-			duracaoMinutos: e.duracaoMinutos,
-			tipoServico: e.tipoServico
-		}))
-	);
+	interface MedicoEspecialistaItem {
+		id?: string;
+		medicoId?: string;
+		nome: string;
+		registro: string;
+		especialidade: string;
+		especialidades: string[];
+		diasSemana?: string[];
+		horarioInicio?: string;
+		horarioFim?: string;
+		duracaoMinutos?: number;
+		tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+	}
+
+	function normalizarTexto(txt?: string): string {
+		if (!txt) return '';
+		return txt
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[^a-z0-9]/g, ' ')
+			.trim();
+	}
+
+	function especialidadeMatch(esp1?: string, esp2?: string): boolean {
+		if (!esp1 || !esp2) return false;
+		const n1 = normalizarTexto(esp1);
+		const n2 = normalizarTexto(esp2);
+		if (n1 === n2) return true;
+		if (n1.includes(n2) || n2.includes(n1)) return true;
+		const p1 = n1.split(' ').filter(x => x.length >= 4);
+		const p2 = n2.split(' ').filter(x => x.length >= 4);
+		for (const a of p1) {
+			for (const b of p2) {
+				if (a === b || (a.length >= 5 && b.startsWith(a)) || (b.length >= 5 && a.startsWith(b))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	// Especialistas consolidados a partir das escalas cadastradas no banco
+	let medicosEspecialistas = $derived.by<MedicoEspecialistaItem[]>(() => {
+		const mapa = new Map<string, MedicoEspecialistaItem>();
+
+		for (const e of escalasDoBanco) {
+			const chave = (e.medicoNome || '').toLowerCase().trim();
+			if (!chave) continue;
+
+			const esp = (e.especialidade || '').trim();
+			const dias = Array.isArray(e.diasSemana) ? e.diasSemana : [];
+
+			if (!mapa.has(chave)) {
+				mapa.set(chave, {
+					id: e.id,
+					medicoId: e.medicoId,
+					nome: e.medicoNome.trim(),
+					registro: e.crm || '',
+					especialidade: esp,
+					especialidades: esp ? [esp] : [],
+					diasSemana: [...dias],
+					horarioInicio: e.horarioInicio || '08:00',
+					horarioFim: e.horarioFim || '12:00',
+					duracaoMinutos: e.duracaoMinutos || 20,
+					tipoServico: e.tipoServico
+				});
+			} else {
+				const existente = mapa.get(chave)!;
+				if (esp && !existente.especialidades.some(x => especialidadeMatch(x, esp))) {
+					existente.especialidades.push(esp);
+				}
+				for (const d of dias) {
+					if (!existente.diasSemana?.includes(d)) {
+						existente.diasSemana = [...(existente.diasSemana || []), d];
+					}
+				}
+				if (!existente.registro && e.crm) existente.registro = e.crm;
+				if (!existente.medicoId && e.medicoId) existente.medicoId = e.medicoId;
+			}
+		}
+
+		return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+	});
 
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
-	let medicoSelecionado = $state<{ id?: string; medicoId?: string; nome: string; especialidade: string; registro: string; diasSemana?: string[]; horarioInicio?: string; horarioFim?: string } | null>(null);
+	let medicoSelecionado = $state<MedicoEspecialistaItem | null>(null);
 
-	// Filtra especialistas pela especialidade selecionada (se houver) e texto de busca
-	let medicosFiltrados = $derived(
-		medicosEspecialistas.filter(m => {
-			const bateEspecialidade = !especialidade || m.especialidade.toLowerCase() === especialidade.toLowerCase();
-			const bateTexto = !buscaMedico || m.nome.toLowerCase().includes(buscaMedico.toLowerCase()) || m.especialidade.toLowerCase().includes(buscaMedico.toLowerCase());
-			return bateEspecialidade && bateTexto;
-		})
-	);
+	// Filtra especialistas rigorosamente pela especialidade selecionada (se houver) e texto de busca
+	let medicosFiltrados = $derived.by<MedicoEspecialistaItem[]>(() => {
+		let lista = medicosEspecialistas;
+		if (especialidade) {
+			lista = lista.filter(m => {
+				return m.especialidades.some(esp => especialidadeMatch(esp, especialidade));
+			});
+		}
+		if (buscaMedico.trim()) {
+			const b = normalizarTexto(buscaMedico);
+			lista = lista.filter(m => {
+				const nomeNorm = normalizarTexto(m.nome);
+				const regNorm = normalizarTexto(m.registro);
+				const espNorm = m.especialidades.map(normalizarTexto).join(' ');
+				return nomeNorm.includes(b) || regNorm.includes(b) || espNorm.includes(b);
+			});
+		}
+		return lista;
+	});
 
-	// Limpa seleção do médico quando muda a especialidade para uma incompatível
+	// Ao alterar a especialidade solicitada: refiltra os médicos e limpa/auto-seleciona conforme os médicos habilitados
 	function handleEspecialidadeChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
 		especialidade = target.value;
-		if (medicoSelecionado && medicoSelecionado.especialidade.toLowerCase() !== especialidade.toLowerCase()) {
-			medicoSelecionado = null;
-			buscaMedico = '';
+
+		if (medicoSelecionado) {
+			const atendeNovaEspecialidade = medicoSelecionado.especialidades?.some(esp => especialidadeMatch(esp, especialidade));
+			if (!atendeNovaEspecialidade) {
+				medicoSelecionado = null;
+				buscaMedico = '';
+			}
+		}
+
+		// Se houver apenas 1 médico especialista cadastrado para essa especialidade, auto-seleciona para agilizar
+		if (especialidade) {
+			const habilitados = medicosEspecialistas.filter(m => m.especialidades.some(esp => especialidadeMatch(esp, especialidade)));
+			if (habilitados.length === 1 && (!medicoSelecionado || medicoSelecionado.nome !== habilitados[0].nome)) {
+				selecionarMedico(habilitados[0]);
+			}
 		}
 	}
 
-	function selecionarMedico(med: { id?: string; medicoId?: string; nome: string; especialidade: string; registro: string; diasSemana?: string[]; horarioInicio?: string; horarioFim?: string }) {
-		medicoSelecionado = med;
+	function selecionarMedico(med: MedicoEspecialistaItem) {
+		medicoSelecionado = {
+			...med,
+			especialidade: especialidade || med.especialidade || med.especialidades[0] || ''
+		};
 		buscaMedico = med.nome;
-		especialidade = med.especialidade;
+		if (!especialidade) {
+			especialidade = med.especialidade || med.especialidades[0] || '';
+		}
 		dropdownAberto = false;
 	}
 
@@ -358,11 +455,50 @@
 		try {
 			carregandoEscalas = true;
 			carregandoCatalogo = true;
-			const [escalas, servicos] = await Promise.all([
+			const [escalasRecepcao, escalasGestao, servicos, salas] = await Promise.all([
 				api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []),
-				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => [])
+				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
+				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => []),
+				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(() => [])
 			]);
-			escalasDoBanco = Array.isArray(escalas) ? escalas : [];
+
+			const mapaEscalas = new Map<string, EscalaMedicoCentro>();
+			for (const esc of [...(Array.isArray(escalasRecepcao) ? escalasRecepcao : []), ...(Array.isArray(escalasGestao) ? escalasGestao : [])]) {
+				const chave = `${esc.medicoNome}_${esc.especialidade}`.toLowerCase();
+				if (!mapaEscalas.has(chave)) {
+					mapaEscalas.set(chave, esc);
+				}
+			}
+
+			// Adiciona também profissionais alocados em salas físicas da Etapa 1
+			if (Array.isArray(salas)) {
+				for (const s of salas) {
+					if (Array.isArray(s.profissionaisAlocados)) {
+						for (const p of s.profissionaisAlocados) {
+							if (p.medicoNome && p.especialidade) {
+								const chave = `${p.medicoNome}_${p.especialidade}`.toLowerCase();
+								if (!mapaEscalas.has(chave)) {
+									mapaEscalas.set(chave, {
+										medicoId: p.medicoId,
+										medicoNome: p.medicoNome,
+										crm: p.medicoRegistro || (ehCeo ? 'CRO-PE' : 'CRM-PE'),
+										especialidade: p.especialidade,
+										diasSemana: Array.isArray(p.diasSemana) ? p.diasSemana : ['SEG', 'QUA'],
+										horarioInicio: p.horario?.split(' ')[0] || '08:00',
+										horarioFim: p.horario?.split(' ')[2] || '12:00',
+										duracaoMinutos: 20,
+										vagasPorTurno: 12,
+										status: 'ATIVA',
+										ativo: true
+									});
+								}
+							}
+						}
+					}
+				}
+			}
+
+			escalasDoBanco = Array.from(mapaEscalas.values());
 			catalogoServicos = Array.isArray(servicos) ? servicos : [];
 		} catch (err) {
 			console.info('[UniSISM] Falha ao carregar dados do balcão.', err);
@@ -896,6 +1032,19 @@
 								</button>
 							{/if}
 						</label>
+
+						<!-- Indicador de Filtro Ativo por Especialidade -->
+						{#if especialidade}
+							<div class="bg-blue-50 border border-blue-200 text-blue-950 px-2.5 py-1 text-[10px] font-mono flex items-center justify-between">
+								<span class="flex items-center gap-1.5">
+									<span class="bg-blue-900 text-white px-1.5 py-0.2 text-[8px] font-bold">FILTRO ATIVO</span>
+									<span>Apenas especialistas habilitados para: <strong>{especialidade.toUpperCase()}</strong></span>
+								</span>
+								<span class="font-bold text-blue-900">
+									{medicosFiltrados.length} médico(s)
+								</span>
+							</div>
+						{/if}
 						
 						<button
 							id="medico-search-btn"
@@ -905,24 +1054,26 @@
 						>
 							<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
 								{#if medicoSelecionado}
-									{medicoSelecionado.nome} — {medicoSelecionado.especialidade} ({medicoSelecionado.registro})
-								{:else if medicosEspecialistas.length === 0}
-									Nenhum profissional cadastrado na escala deste Centro
+									{medicoSelecionado.nome} — {especialidade || medicoSelecionado.especialidade} ({medicoSelecionado.registro})
+								{:else if !especialidade}
+									Selecione a especialidade solicitada acima para filtrar os médicos...
+								{:else if medicosFiltrados.length === 0}
+									Nenhum médico com atendimento cadastrado para {especialidade} no {siglaOrgao}
 								{:else}
-									Selecione o profissional da escala...
+									Selecione o médico especialista ({medicosFiltrados.length} disponível(is) para {especialidade})...
 								{/if}
 							</span>
 							<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>
 						</button>
 
 						{#if dropdownAberto}
-							<div class="absolute z-20 left-0 right-0 top-full mt-1 border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)] max-h-52 overflow-y-auto">
+							<div class="absolute z-20 left-0 right-0 top-full mt-1 border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)] max-h-56 overflow-y-auto">
 								<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0 flex items-center gap-1.5">
 									<IconSearch size={14} class="text-slate-400 shrink-0" />
 									<input
 										type="text"
 										bind:value={buscaMedico}
-										placeholder="Filtrar profissional por nome ou especialidade..."
+										placeholder={especialidade ? `Filtrar médico que faz ${especialidade}...` : 'Filtrar por nome ou registro...'}
 										class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs"
 										onclick={(e) => e.stopPropagation()}
 									/>
@@ -932,22 +1083,48 @@
 										<button
 											type="button"
 											onclick={() => selecionarMedico(med)}
-											class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-blue-900 border-b border-slate-100 last:border-b-0 text-xs font-mono flex justify-between items-center"
+											class="w-full text-left px-3 py-2.5 hover:bg-blue-50 hover:text-blue-900 border-b border-slate-100 last:border-b-0 text-xs font-mono flex justify-between items-center gap-2"
 										>
-											<div class="flex flex-col">
-												<span class="font-bold text-slate-900">{med.nome}</span>
-												<span class="text-[10px] text-slate-500">{med.registro} · {med.diasSemana?.join(', ')} ({med.horarioInicio} - {med.horarioFim})</span>
+											<div class="flex flex-col gap-0.5">
+												<span class="font-bold text-slate-900 flex items-center gap-1.5">
+													<span>{med.nome}</span>
+													<span class="text-[10px] text-slate-500 font-normal">({med.registro})</span>
+												</span>
+												<div class="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
+													<span>Atende:</span>
+													{#each (med.diasSemana || []) as dia}
+														<span class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-1 py-0.2 text-[9px] font-bold">
+															{dia}
+														</span>
+													{/each}
+													<span class="text-slate-400">({med.horarioInicio} - {med.horarioFim})</span>
+												</div>
 											</div>
-											<span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 uppercase font-semibold border border-slate-200">
-												{med.especialidade}
-											</span>
+											<div class="flex flex-col items-end gap-1 shrink-0">
+												{#each med.especialidades as espItem}
+													<span class="text-[9px] px-1.5 py-0.5 uppercase font-semibold border {especialidadeMatch(espItem, especialidade) ? 'bg-blue-900 text-white border-blue-900 font-bold' : 'bg-slate-100 text-slate-700 border-slate-200'}">
+														{espItem}
+													</span>
+												{/each}
+											</div>
 										</button>
 									{:else}
-										<div class="px-3 py-3 text-center text-slate-500 text-xs font-sans">
-											{#if medicosEspecialistas.length === 0}
-												Nenhum profissional com escala cadastrada no banco de dados. Cadastre na Matriz de Vagas & Escalas.
+										<div class="p-4 text-center text-slate-500 text-xs font-sans flex flex-col gap-2">
+											{#if especialidade}
+												<div class="text-amber-800 font-bold">
+													Nenhum médico com atendimento cadastrado para "{especialidade}".
+												</div>
+												<div class="text-[11px] text-slate-600">
+													Cadastre o profissional e atribua esta especialidade na tela de Gestão de Usuários ou Matriz de Vagas.
+												</div>
+												<a
+													href="/{siglaOrgao.toLowerCase()}/gestao/usuarios"
+													class="bg-blue-900 text-white px-3 py-1 font-mono text-[10px] font-bold uppercase self-center hover:bg-blue-950"
+												>
+													Atribuir Médico no {siglaOrgao} →
+												</a>
 											{:else}
-												Nenhum profissional encontrado para os filtros informados.
+												<div>Selecione a especialidade solicitada acima para listar os médicos especialistas.</div>
 											{/if}
 										</div>
 									{/each}
