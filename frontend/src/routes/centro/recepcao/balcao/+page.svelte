@@ -58,9 +58,21 @@
 	let pacienteNasc = $state('');
 	let pacienteSexo = $state<Sexo>('M');
 	let pacienteTel = $state('');
-	let pacienteEnd = $state('');
 	let pacienteNomeMae = $state('');
 	let pacienteRacaCor = $state<RacaCor | ''>('');
+
+	// Endereço Residencial Desmembrado (Etapa 5)
+	let pacienteCep = $state('');
+	let pacienteRua = $state('');
+	let pacienteNumero = $state('');
+	let semNumero = $state(false);
+	let pacienteBairro = $state('');
+	let pacienteComplemento = $state('');
+	let pacienteMunicipio = $state('Águas Belas');
+	let pacienteUf = $state('PE');
+	let buscandoCep = $state(false);
+	let erroCep = $state('');
+
 	let pacienteUbsId = $state('');
 	let pacienteUbsNome = $state('');
 	let buscaUbs = $state('');
@@ -508,6 +520,56 @@
 		return `${nums.slice(0, 3)}.${nums.slice(3, 6)}.${nums.slice(6, 9)}-${nums.slice(9)}`;
 	}
 
+	function formatarCep(val: string) {
+		const nums = val.replace(/\D/g, '').slice(0, 8);
+		if (nums.length <= 5) return nums;
+		return `${nums.slice(0, 5)}-${nums.slice(5)}`;
+	}
+
+	async function buscarCep() {
+		const cepLimpo = pacienteCep.replace(/\D/g, '');
+		if (cepLimpo.length !== 8) return;
+		buscandoCep = true;
+		erroCep = '';
+		try {
+			const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+			if (res.ok) {
+				const data = await res.json();
+				if (!data.erro) {
+					if (data.logradouro) pacienteRua = data.logradouro;
+					if (data.bairro) pacienteBairro = data.bairro;
+					if (data.localidade) pacienteMunicipio = data.localidade;
+					if (data.uf) pacienteUf = data.uf;
+				} else {
+					erroCep = 'CEP não localizado na base nacional';
+				}
+			}
+		} catch (err) {
+			console.info('[UniSISM] Consulta ViaCEP offline:', err);
+		} finally {
+			buscandoCep = false;
+		}
+	}
+
+	function handleCepInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		pacienteCep = formatarCep(target.value);
+		erroCep = '';
+		const sanitizado = pacienteCep.replace(/\D/g, '');
+		if (sanitizado.length === 8) {
+			buscarCep();
+		}
+	}
+
+	function toggleSemNumero() {
+		semNumero = !semNumero;
+		if (semNumero) {
+			pacienteNumero = 'S/N';
+		} else if (pacienteNumero === 'S/N') {
+			pacienteNumero = '';
+		}
+	}
+
 	function handleCpfInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		const sanitizado = target.value.replace(/\D/g, '');
@@ -522,6 +584,15 @@
 			pacienteUbsId = '';
 			pacienteUbsNome = '';
 			buscaUbs = '';
+			pacienteRua = '';
+			pacienteNumero = '';
+			semNumero = false;
+			pacienteBairro = '';
+			pacienteComplemento = '';
+			pacienteCep = '';
+			pacienteMunicipio = 'Águas Belas';
+			pacienteUf = 'PE';
+			erroCep = '';
 			ultimoCpfPesquisado = '';
 			erroBusca = '';
 		}
@@ -545,9 +616,43 @@
 				pacienteNasc = res.paciente.dataNascimento || '';
 				pacienteSexo = (res.paciente.sexo as Sexo) || 'M';
 				pacienteTel = res.paciente.telefone || '';
-				pacienteEnd = res.paciente.endereco || '';
 				pacienteNomeMae = res.paciente.nomeMae || '';
 				pacienteRacaCor = (res.paciente.racaCor as RacaCor) || '';
+
+				// Endereço Desmembrado
+				pacienteBairro = res.paciente.bairro || '';
+				pacienteMunicipio = res.paciente.municipio || 'Águas Belas';
+				pacienteUf = res.paciente.uf || 'PE';
+				pacienteCep = res.paciente.cep ? formatarCep(res.paciente.cep) : '';
+
+				if (res.paciente.endereco) {
+					const rawEnd = res.paciente.endereco;
+					const partes = rawEnd.split(',');
+					if (partes.length >= 2) {
+						pacienteRua = partes[0].trim();
+						const resto = partes.slice(1).join(',').trim();
+						const restoPartes = resto.split('-');
+						const numPart = restoPartes[0]?.trim() || '';
+						if (numPart.toLowerCase() === 's/n' || numPart.toLowerCase() === 'sn' || numPart.toLowerCase() === 'sem número') {
+							semNumero = true;
+							pacienteNumero = 'S/N';
+						} else {
+							semNumero = false;
+							pacienteNumero = numPart;
+						}
+						pacienteComplemento = restoPartes.slice(1).join('-').trim();
+					} else {
+						pacienteRua = rawEnd;
+						pacienteNumero = '';
+						pacienteComplemento = '';
+						semNumero = false;
+					}
+				} else {
+					pacienteRua = '';
+					pacienteNumero = '';
+					pacienteComplemento = '';
+					semNumero = false;
+				}
 
 				pacienteUbsId = res.paciente.ubsId || '';
 				const ubsNomeRetornada = (res.paciente as any).ubsNome || (res.paciente as any).ubs?.nome;
@@ -570,6 +675,15 @@
 				pacienteUbsId = '';
 				pacienteUbsNome = '';
 				buscaUbs = '';
+				pacienteRua = '';
+				pacienteNumero = '';
+				semNumero = false;
+				pacienteBairro = '';
+				pacienteComplemento = '';
+				pacienteCep = '';
+				pacienteMunicipio = 'Águas Belas';
+				pacienteUf = 'PE';
+				erroCep = '';
 				erroBusca = 'CPF não localizado. Preencha os campos abaixo para cadastrar e agendar o paciente.';
 			}
 		} catch (e) {
@@ -712,6 +826,13 @@
 
 		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarRetroativo ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
 
+		const numFinal = semNumero || !pacienteNumero.trim() ? 'S/N' : pacienteNumero.trim();
+		const endCompleto = [
+			pacienteRua.trim(),
+			numFinal,
+			pacienteComplemento.trim()
+		].filter(Boolean).join(', ');
+
 		try {
 			// 1. Prepara dados do Paciente
 			const pacientePayload: Paciente = {
@@ -721,7 +842,11 @@
 				dataNascimento: pacienteNasc,
 				sexo: pacienteSexo,
 				telefone: pacienteTel.trim(),
-				endereco: pacienteEnd.trim(),
+				endereco: endCompleto || pacienteRua.trim() || 'Águas Belas',
+				bairro: pacienteBairro.trim() || undefined,
+				municipio: pacienteMunicipio.trim() || 'Águas Belas',
+				uf: pacienteUf.trim().toUpperCase() || 'PE',
+				cep: pacienteCep.trim() ? pacienteCep.replace(/\D/g, '') : undefined,
 				nomeMae: pacienteNomeMae.trim() || undefined,
 				racaCor: (pacienteRacaCor as RacaCor) || undefined,
 				ubsId: pacienteUbsId || undefined
@@ -736,7 +861,11 @@
 						sexo: pacientePayload.sexo,
 						racaCor: pacientePayload.racaCor,
 						telefone: pacientePayload.telefone,
-						endereco: pacientePayload.endereco
+						endereco: pacientePayload.endereco,
+						bairro: pacientePayload.bairro,
+						municipio: pacientePayload.municipio,
+						uf: pacientePayload.uf,
+						cep: pacientePayload.cep
 					});
 				} catch (errUpd) {
 					console.info('[UniSISM] Atualização direta de paciente executada localmente.', errUpd);
@@ -818,7 +947,15 @@
 			pacienteSus = '';
 			pacienteNasc = '';
 			pacienteTel = '';
-			pacienteEnd = '';
+			pacienteRua = '';
+			pacienteNumero = '';
+			semNumero = false;
+			pacienteBairro = '';
+			pacienteComplemento = '';
+			pacienteCep = '';
+			pacienteMunicipio = 'Águas Belas';
+			pacienteUf = 'PE';
+			erroCep = '';
 			pacienteNomeMae = '';
 			pacienteRacaCor = '';
 			pacienteUbsId = '';
@@ -1058,18 +1195,112 @@
 					/>
 				</div>
 
-				<!-- Endereço -->
-				<div class="flex flex-col gap-1">
-					<label for="pac-end" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
-						Endereço Residencial
-					</label>
-					<input
-						id="pac-end"
-						type="text"
-						bind:value={pacienteEnd}
-						placeholder="Rua, Número, Bairro, Cidade"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-sans text-xs"
-					/>
+				<!-- Endereço Residencial Desmembrado (Etapa 5) -->
+				<div class="border-t border-slate-200 pt-2.5 flex flex-col gap-2">
+					<div class="flex items-center justify-between">
+						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center gap-1">
+							<IconMapPin size={12} class="text-blue-900" />
+							<span>Endereço Residencial do Paciente</span>
+						</span>
+						<span class="text-[9px] font-mono text-slate-400">Águas Belas / PE</span>
+					</div>
+
+					<!-- Linha 1: CEP e Bairro -->
+					<div class="grid grid-cols-12 gap-2">
+						<!-- CEP -->
+						<div class="col-span-5 flex flex-col gap-1">
+							<label for="pac-cep" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase flex items-center justify-between">
+								<span>CEP</span>
+								{#if buscandoCep}
+									<span class="text-blue-900 text-[8px] font-bold animate-pulse">[BUSCANDO...]</span>
+								{/if}
+							</label>
+							<div class="relative">
+								<input
+									id="pac-cep"
+									type="text"
+									bind:value={pacienteCep}
+									oninput={handleCepInput}
+									placeholder="55340-000"
+									maxlength="9"
+									class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 font-mono text-xs"
+								/>
+							</div>
+							{#if erroCep}
+								<span class="text-[9px] text-amber-700 font-mono">{erroCep}</span>
+							{/if}
+						</div>
+
+						<!-- Bairro -->
+						<div class="col-span-7 flex flex-col gap-1">
+							<label for="pac-bairro" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+								Bairro / Localidade <span class="text-red-700">*</span>
+							</label>
+							<input
+								id="pac-bairro"
+								type="text"
+								bind:value={pacienteBairro}
+								placeholder="Ex: Centro, Garcia, Fulni-ô..."
+								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs font-medium"
+							/>
+						</div>
+					</div>
+
+					<!-- Linha 2: Rua / Logradouro e Número -->
+					<div class="grid grid-cols-12 gap-2">
+						<!-- Rua / Logradouro -->
+						<div class="col-span-8 flex flex-col gap-1">
+							<label for="pac-rua" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+								Logradouro / Rua / Sítio <span class="text-red-700">*</span>
+							</label>
+							<input
+								id="pac-rua"
+								type="text"
+								bind:value={pacienteRua}
+								placeholder="Ex: Rua São Sebastião, Travessa, Sítio..."
+								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs font-medium"
+							/>
+						</div>
+
+						<!-- Número -->
+						<div class="col-span-4 flex flex-col gap-1">
+							<div class="flex items-center justify-between">
+								<label for="pac-num" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+									Número
+								</label>
+								<button
+									type="button"
+									onclick={toggleSemNumero}
+									class="text-[9px] font-mono font-bold uppercase transition-colors {semNumero ? 'text-blue-900 font-black underline' : 'text-slate-400 hover:text-slate-700'}"
+									title="Marcar como sem número predial"
+								>
+									[{semNumero ? '✓ S/N' : 'S/N'}]
+								</button>
+							</div>
+							<input
+								id="pac-num"
+								type="text"
+								bind:value={pacienteNumero}
+								disabled={semNumero}
+								placeholder="Ex: 120"
+								class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 font-mono text-xs disabled:bg-slate-100 disabled:text-slate-500"
+							/>
+						</div>
+					</div>
+
+					<!-- Linha 3: Complemento -->
+					<div class="flex flex-col gap-1">
+						<label for="pac-comp" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+							Complemento / Ponto de Referência
+						</label>
+						<input
+							id="pac-comp"
+							type="text"
+							bind:value={pacienteComplemento}
+							placeholder="Ex: Casa B, Apto 101, Próximo à Escola (opcional)"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs"
+						/>
+					</div>
 				</div>
 
 				<!-- Unidade Básica de Saúde (UBS de Origem do Paciente) -->

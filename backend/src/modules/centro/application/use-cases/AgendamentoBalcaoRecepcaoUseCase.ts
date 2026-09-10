@@ -16,6 +16,12 @@ export interface AgendamentoBalcaoInput {
     sexo: 'M' | 'F' | 'OUTRO';
     telefone: string;
     endereco: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+    nomeMae?: string;
+    racaCor?: string;
   };
   solicitacao: {
     medicoSolicitante: string;
@@ -123,14 +129,33 @@ export class AgendamentoBalcaoRecepcaoUseCase {
             sexo: input.paciente.sexo as Sexo,
             telefone: input.paciente.telefone,
             endereco: input.paciente.endereco,
+            bairro: input.paciente.bairro || null,
+            municipio: input.paciente.municipio || 'Águas Belas',
+            uf: input.paciente.uf || 'PE',
+            cep: input.paciente.cep || null,
+            nomeMae: input.paciente.nomeMae || null,
+            racaCor: (input.paciente.racaCor as any) || undefined,
             ubsId: targetUbsId,
           },
         });
-      } else if (input.ubsId && dbPaciente.ubsId !== input.ubsId) {
-        dbPaciente = await tx.paciente.update({
-          where: { id: dbPaciente.id },
-          data: { ubsId: input.ubsId },
-        });
+      } else {
+        const updateData: any = {};
+        if (input.ubsId && dbPaciente.ubsId !== input.ubsId) updateData.ubsId = input.ubsId;
+        if (input.paciente.endereco && input.paciente.endereco !== dbPaciente.endereco) updateData.endereco = input.paciente.endereco;
+        if (input.paciente.bairro && input.paciente.bairro !== dbPaciente.bairro) updateData.bairro = input.paciente.bairro;
+        if (input.paciente.municipio && input.paciente.municipio !== dbPaciente.municipio) updateData.municipio = input.paciente.municipio;
+        if (input.paciente.uf && input.paciente.uf !== dbPaciente.uf) updateData.uf = input.paciente.uf;
+        if (input.paciente.cep && input.paciente.cep !== dbPaciente.cep) updateData.cep = input.paciente.cep;
+        if (input.paciente.nomeMae && input.paciente.nomeMae !== dbPaciente.nomeMae) updateData.nomeMae = input.paciente.nomeMae;
+        if (input.paciente.racaCor && input.paciente.racaCor !== dbPaciente.racaCor) updateData.racaCor = input.paciente.racaCor;
+        if (input.paciente.telefone && input.paciente.telefone !== dbPaciente.telefone) updateData.telefone = input.paciente.telefone;
+
+        if (Object.keys(updateData).length > 0) {
+          dbPaciente = await tx.paciente.update({
+            where: { id: dbPaciente.id },
+            data: updateData,
+          });
+        }
       }
 
       // 2. Generate Protocol
