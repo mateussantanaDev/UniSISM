@@ -63,6 +63,7 @@ export interface PacienteCadastroParcial {
   cep: string | null;
   grupoSanguineo: string;
   ubsId: string;
+  ubsNome?: string | null;
 }
 
 export interface BuscarPacientePorCpfResult {
@@ -86,7 +87,7 @@ export class BuscarPacientePorCpfUseCase {
 
     const p = await prisma.paciente.findUnique({
       where: { cpf: cpfDigits },
-      include: { ubs: { select: { prefeituraId: true } } },
+      include: { ubs: { select: { prefeituraId: true, id: true, nome: true } } },
     });
 
     // Não existe ou soft-deleted → pré-preencher nada
@@ -137,6 +138,7 @@ export class BuscarPacientePorCpfUseCase {
       cep: p.cep,
       grupoSanguineo: p.grupoSanguineo,
       ubsId: p.ubsId,
+      ubsNome: p.ubs?.nome,
     };
 
     const camposFaltantes = calcularCamposFaltantes(paciente);

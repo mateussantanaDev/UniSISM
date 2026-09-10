@@ -286,6 +286,8 @@ export interface Paciente {
   municipio?: string;
   uf?: string;
   cep?: string;
+  ubsId?: string;
+  ubsNome?: string;
 }
 
 export interface SolicitacaoMedica {
@@ -643,6 +645,7 @@ export interface PacienteCadastroParcial {
   cep: string | null;
   grupoSanguineo: string;
   ubsId: string;
+  ubsNome?: string | null;
 }
 
 /**
@@ -756,6 +759,7 @@ export interface Ubs {
   municipio: string;
   uf: string;
   endereco?: string | null;
+  bairro?: string | null;
   cnes?: string | null;
   ativa: boolean;
   prefeituraId: string;
@@ -770,6 +774,7 @@ export interface CriarUbsRequest {
   uf: string;
   prefeituraId: string;
   endereco?: string;
+  bairro?: string;
   cnes?: string;
 }
 
@@ -1370,6 +1375,7 @@ export interface AgendarBalcaoCentroRequest {
   horaAgendamento?: string;
   consultorio?: string;
   status?: string;
+  ubsId?: string;
 }
 
 export interface AgendamentoBalcaoRetroativoRequest {

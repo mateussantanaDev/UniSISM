@@ -253,6 +253,7 @@ export class CentroRecepcaoController {
     const cpfParam = paramString(req, 'cpf').replace(/\D/g, '');
     const paciente = await prisma.paciente.findUnique({
       where: { cpf: cpfParam },
+      include: { ubs: true },
     });
 
     if (!paciente) {
@@ -265,11 +266,19 @@ export class CentroRecepcaoController {
       paciente: {
         id: paciente.id,
         nome: paciente.nome,
+        nomeMae: paciente.nomeMae,
         cartaoSus: paciente.cartaoSus,
         dataNascimento: paciente.dataNascimento.toISOString().substring(0, 10),
         sexo: paciente.sexo,
         telefone: paciente.telefone,
         endereco: paciente.endereco,
+        bairro: paciente.bairro,
+        municipio: paciente.municipio,
+        uf: paciente.uf,
+        cep: paciente.cep,
+        racaCor: paciente.racaCor,
+        ubsId: paciente.ubsId,
+        ubsNome: paciente.ubs?.nome,
       },
     });
   };

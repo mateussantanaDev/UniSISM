@@ -126,6 +126,11 @@ export class AgendamentoBalcaoRecepcaoUseCase {
             ubsId: targetUbsId,
           },
         });
+      } else if (input.ubsId && dbPaciente.ubsId !== input.ubsId) {
+        dbPaciente = await tx.paciente.update({
+          where: { id: dbPaciente.id },
+          data: { ubsId: input.ubsId },
+        });
       }
 
       // 2. Generate Protocol

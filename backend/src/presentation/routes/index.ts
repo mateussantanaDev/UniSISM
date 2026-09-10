@@ -202,11 +202,18 @@ export function buildRoutes(deps: Deps): Router {
     deps.admin.getPrefeituras,
   );
 
-  // UBS: DESENVOLVEDOR (qualquer prefeitura) ou ADMIN (própria prefeitura)
+  // UBS: DESENVOLVEDOR, ADMIN, COORDENADOR_UBS, REGULADOR_SMS, ATENDENTE_CENTRO
   router.post(
     '/admin/ubs',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole(
+      'DESENVOLVEDOR',
+      'ADMIN',
+      'COORDENADOR_UBS',
+      'REGULADOR_SMS',
+      'ATENDENTE_CENTRO',
+      'ATENDENTE_UBS',
+    ),
     deps.admin.postUbs,
   );
   router.get(
@@ -220,6 +227,10 @@ export function buildRoutes(deps: Deps): Router {
       'GESTOR_TFD',
       'ATENDENTE_TFD',
       'REGULADOR_TFD',
+      'ATENDENTE_CENTRO',
+      'ATENDENTE_UBS',
+      'MEDICO',
+      'MEDICO_ESPECIALISTA',
     ),
     deps.admin.getUbs,
   );

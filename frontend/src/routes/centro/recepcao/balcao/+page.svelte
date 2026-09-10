@@ -12,7 +12,10 @@
 		CalcularSlotCentroResponse,
 		DiaDisponibilidadeSlot,
 		SlotHorarioItem,
-		EspecialidadeSigtapCentro
+		EspecialidadeSigtapCentro,
+		Ubs,
+		Prefeitura,
+		CriarUbsRequest
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
@@ -23,6 +26,10 @@
 		IconClock,
 		IconUser,
 		IconBuildingHospital,
+		IconBuildingCommunity,
+		IconMapPin,
+		IconPlus,
+		IconX,
 		IconBolt,
 		IconRefresh,
 		IconPrinter,
@@ -54,6 +61,24 @@
 	let pacienteEnd = $state('');
 	let pacienteNomeMae = $state('');
 	let pacienteRacaCor = $state<RacaCor | ''>('');
+	let pacienteUbsId = $state('');
+	let pacienteUbsNome = $state('');
+	let buscaUbs = $state('');
+	let dropdownUbsAberto = $state(false);
+	let listaUbs = $state<Ubs[]>([]);
+	let carregandoUbs = $state(true);
+
+	// Modal de Confirmação para Cadastro de Nova UBS on-the-fly
+	let modalNovaUbsAberto = $state(false);
+	let formNovaUbsNome = $state('');
+	let formNovaUbsMunicipio = $state('Águas Belas');
+	let formNovaUbsUf = $state('PE');
+	let formNovaUbsCnes = $state('');
+	let formNovaUbsBairro = $state('');
+	let formNovaUbsEndereco = $state('');
+	let salvandoNovaUbs = $state(false);
+	let erroModalUbs = $state('');
+	let prefeiturasDisponiveis = $state<Prefeitura[]>([]);
 
 	const racaOpcoes: { v: RacaCor; l: string }[] = [
 		{ v: 'BRANCA', l: 'Branca' },
@@ -281,6 +306,88 @@
 		buscaMedico = '';
 	}
 
+	// Filtragem reativa das UBSs cadastradas da rede municipal
+	let ubsFiltradas = $derived.by(() => {
+		const q = normalizarTexto(buscaUbs);
+		if (!q) return listaUbs;
+		return listaUbs.filter(u => 
+			normalizarTexto(u.nome).includes(q) || 
+			normalizarTexto(u.cnes || '').includes(q) || 
+			normalizarTexto(u.bairro || '').includes(q)
+		);
+	});
+
+	let buscaUbsExisteExata = $derived.by(() => {
+		const q = normalizarTexto(buscaUbs);
+		if (!q) return false;
+		return listaUbs.some(u => normalizarTexto(u.nome) === q);
+	});
+
+	function selecionarUbs(u: Ubs) {
+		pacienteUbsId = u.id;
+		pacienteUbsNome = u.nome;
+		buscaUbs = u.nome;
+		dropdownUbsAberto = false;
+	}
+
+	function limparUbs() {
+		pacienteUbsId = '';
+		pacienteUbsNome = '';
+		buscaUbs = '';
+	}
+
+	function abrirModalNovaUbs(sugestaoNome?: string) {
+		formNovaUbsNome = (sugestaoNome || buscaUbs || '').trim();
+		formNovaUbsMunicipio = 'Águas Belas';
+		formNovaUbsUf = 'PE';
+		formNovaUbsCnes = '';
+		formNovaUbsBairro = '';
+		formNovaUbsEndereco = '';
+		erroModalUbs = '';
+		dropdownUbsAberto = false;
+		modalNovaUbsAberto = true;
+	}
+
+	async function salvarNovaUbs() {
+		if (!formNovaUbsNome.trim()) {
+			erroModalUbs = 'Informe o nome da nova Unidade Básica de Saúde.';
+			return;
+		}
+
+		salvandoNovaUbs = true;
+		erroModalUbs = '';
+		try {
+			let prefId = prefeiturasDisponiveis[0]?.id;
+			if (!prefId) {
+				const prefs = await api.admin.listPrefeituras().catch(() => []);
+				prefeiturasDisponiveis = prefs;
+				prefId = prefs[0]?.id;
+			}
+
+			const payload: CriarUbsRequest = {
+				nome: formNovaUbsNome.trim(),
+				municipio: formNovaUbsMunicipio.trim() || 'Águas Belas',
+				uf: formNovaUbsUf.trim().toUpperCase() || 'PE',
+				prefeituraId: prefId || 'prefeitura-aguas-belas',
+				cnes: formNovaUbsCnes.trim() || undefined,
+				bairro: formNovaUbsBairro.trim() || undefined,
+				endereco: formNovaUbsEndereco.trim() || undefined
+			};
+
+			const novaUbs = await api.admin.createUbs(payload);
+			listaUbs = [...listaUbs, novaUbs];
+			selecionarUbs(novaUbs);
+			modalNovaUbsAberto = false;
+			sucessoAgendamento = `✓ Nova UBS "${novaUbs.nome}" cadastrada com sucesso em Águas Belas e vinculada ao paciente!`;
+			setTimeout(() => (sucessoAgendamento = ''), 6000);
+		} catch (err: any) {
+			console.error('Erro ao cadastrar UBS on-the-fly:', err);
+			erroModalUbs = err?.message || 'Falha ao cadastrar a nova UBS. Verifique se o nome ou CNES já existem no município.';
+		} finally {
+			salvandoNovaUbs = false;
+		}
+	}
+
 	// Alocação Automática e Busca da Grade de Disponibilidade da Escala via Backend
 	async function calcularSlotBackend() {
 		if (!especialidade && !medicoSelecionado) {
@@ -412,6 +519,9 @@
 		} else if (sanitizado.length < 11) {
 			pacienteExiste = false;
 			pacienteId = null;
+			pacienteUbsId = '';
+			pacienteUbsNome = '';
+			buscaUbs = '';
 			ultimoCpfPesquisado = '';
 			erroBusca = '';
 		}
@@ -438,9 +548,28 @@
 				pacienteEnd = res.paciente.endereco || '';
 				pacienteNomeMae = res.paciente.nomeMae || '';
 				pacienteRacaCor = (res.paciente.racaCor as RacaCor) || '';
+
+				pacienteUbsId = res.paciente.ubsId || '';
+				const ubsNomeRetornada = (res.paciente as any).ubsNome || (res.paciente as any).ubs?.nome;
+				if (ubsNomeRetornada) {
+					pacienteUbsNome = ubsNomeRetornada;
+					buscaUbs = ubsNomeRetornada;
+				} else if (pacienteUbsId) {
+					const ubsObj = listaUbs.find(u => u.id === pacienteUbsId);
+					if (ubsObj) {
+						pacienteUbsNome = ubsObj.nome;
+						buscaUbs = ubsObj.nome;
+					}
+				} else {
+					pacienteUbsNome = '';
+					buscaUbs = '';
+				}
 			} else {
 				pacienteExiste = false;
 				pacienteId = null;
+				pacienteUbsId = '';
+				pacienteUbsNome = '';
+				buscaUbs = '';
 				erroBusca = 'CPF não localizado. Preencha os campos abaixo para cadastrar e agendar o paciente.';
 			}
 		} catch (e) {
@@ -455,12 +584,19 @@
 		try {
 			carregandoEscalas = true;
 			carregandoCatalogo = true;
-			const [escalasRecepcao, escalasGestao, servicos, salas] = await Promise.all([
+			carregandoUbs = true;
+			const [escalasRecepcao, escalasGestao, servicos, salas, ubsList, prefeiturasList] = await Promise.all([
 				api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
 				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => []),
-				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(() => [])
+				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(() => []),
+				api.admin.listUbs().catch(() => []),
+				api.admin.listPrefeituras().catch(() => [])
 			]);
+
+			listaUbs = Array.isArray(ubsList) ? ubsList : [];
+			prefeiturasDisponiveis = Array.isArray(prefeiturasList) ? prefeiturasList : [];
+			carregandoUbs = false;
 
 			const mapaEscalas = new Map<string, EscalaMedicoCentro>();
 			for (const esc of [...(Array.isArray(escalasRecepcao) ? escalasRecepcao : []), ...(Array.isArray(escalasGestao) ? escalasGestao : [])]) {
@@ -587,7 +723,8 @@
 				telefone: pacienteTel.trim(),
 				endereco: pacienteEnd.trim(),
 				nomeMae: pacienteNomeMae.trim() || undefined,
-				racaCor: (pacienteRacaCor as RacaCor) || undefined
+				racaCor: (pacienteRacaCor as RacaCor) || undefined,
+				ubsId: pacienteUbsId || undefined
 			};
 
 			if (pacienteExiste && pacienteId) {
@@ -647,6 +784,7 @@
 						dataAgendada: dataCalculada,
 						horaAgendada: horaCalculada,
 						consultorio: consultorioCalculado,
+						ubsId: pacienteUbsId || undefined,
 						status: habilitarRetroativo ? statusRetroativo : undefined
 					});
 
@@ -683,6 +821,9 @@
 			pacienteEnd = '';
 			pacienteNomeMae = '';
 			pacienteRacaCor = '';
+			pacienteUbsId = '';
+			pacienteUbsNome = '';
+			buscaUbs = '';
 			pacienteId = null;
 			pacienteExiste = false;
 			ultimoCpfPesquisado = '';
@@ -929,6 +1070,143 @@
 						placeholder="Rua, Número, Bairro, Cidade"
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-sans text-xs"
 					/>
+				</div>
+
+				<!-- Unidade Básica de Saúde (UBS de Origem do Paciente) -->
+				<div class="flex flex-col gap-1 relative">
+					<div class="flex items-center justify-between">
+						<label for="pac-ubs" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase flex items-center gap-1">
+							<IconBuildingCommunity size={12} class="text-blue-900" />
+							<span>UBS de Origem do Paciente</span>
+							<span class="text-red-700">*</span>
+						</label>
+						<button
+							type="button"
+							onclick={() => abrirModalNovaUbs()}
+							class="text-[10px] font-mono font-bold text-blue-900 hover:text-blue-950 underline flex items-center gap-0.5"
+							title="Cadastrar nova UBS de Águas Belas que ainda não conste na lista"
+						>
+							<IconPlus size={11} />
+							<span>NOVA UBS</span>
+						</button>
+					</div>
+
+					<div class="relative">
+						<input
+							id="pac-ubs"
+							type="text"
+							bind:value={buscaUbs}
+							onfocus={() => dropdownUbsAberto = true}
+							oninput={() => dropdownUbsAberto = true}
+							placeholder="Buscar ou selecionar UBS de Águas Belas..."
+							class="w-full border border-slate-300 bg-white pl-2.5 pr-8 py-1.5 outline-none focus:border-blue-900 font-sans text-xs"
+						/>
+						{#if buscaUbs}
+							<button
+								type="button"
+								onclick={limparUbs}
+								class="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+								title="Limpar seleção de UBS"
+							>
+								<IconX size={13} />
+							</button>
+						{/if}
+					</div>
+
+					{#if pacienteUbsId}
+						<div class="flex items-center justify-between bg-blue-50 border border-blue-200 px-2.5 py-1 text-[11px] text-blue-900 font-medium">
+							<span class="truncate flex items-center gap-1">
+								<span class="font-mono text-[9px] uppercase font-bold text-blue-800">[UBS VINCULADA]:</span>
+								<strong>{pacienteUbsNome || buscaUbs}</strong>
+							</span>
+							<button
+								type="button"
+								onclick={limparUbs}
+								class="text-blue-700 hover:text-red-700 ml-2 text-[10px] font-mono font-bold uppercase"
+							>
+								[Alterar]
+							</button>
+						</div>
+					{/if}
+
+					<!-- Dropdown de Sugestões de UBS -->
+					{#if dropdownUbsAberto}
+						<div 
+							class="absolute top-full left-0 right-0 z-30 bg-white border-2 border-blue-900 shadow-xl max-h-60 overflow-y-auto mt-1"
+						>
+							<div class="bg-slate-100 px-2 py-1 border-b border-slate-200 text-[10px] font-mono text-slate-600 flex justify-between items-center">
+								<span>REDE DE ATENÇÃO BÁSICA (ÁGUAS BELAS - PE)</span>
+								<button 
+									type="button" 
+									onclick={() => dropdownUbsAberto = false}
+									class="text-slate-500 hover:text-slate-800 font-bold"
+								>
+									✕
+								</button>
+							</div>
+
+							{#if carregandoUbs}
+								<div class="p-3 text-center text-xs font-mono text-slate-500">
+									Carregando Unidades Básicas de Saúde...
+								</div>
+							{:else if ubsFiltradas.length > 0}
+								{#each ubsFiltradas as u (u.id)}
+									<button
+										type="button"
+										onclick={() => selecionarUbs(u)}
+										class="w-full text-left px-3 py-2 border-b border-slate-100 hover:bg-blue-50 flex flex-col gap-0.5 transition-colors group"
+									>
+										<div class="flex items-center justify-between">
+											<span class="font-bold text-slate-900 text-xs group-hover:text-blue-900">
+												{u.nome}
+											</span>
+											{#if u.cnes}
+												<span class="font-mono text-[10px] text-slate-500 bg-slate-100 px-1 py-0.5 border border-slate-200">
+													CNES: {u.cnes}
+												</span>
+											{/if}
+										</div>
+										<div class="text-[11px] text-slate-500 flex items-center gap-2">
+											{#if u.bairro}
+												<span class="flex items-center gap-0.5">
+													<IconMapPin size={10} class="text-slate-400" />
+													{u.bairro}
+												</span>
+											{/if}
+											<span>{u.municipio} - {u.uf}</span>
+										</div>
+									</button>
+								{/each}
+							{:else}
+								<div class="p-3 text-center text-xs text-slate-600">
+									Nenhuma UBS cadastrada encontrada para "<strong>{buscaUbs}</strong>".
+								</div>
+							{/if}
+
+							<!-- Opção de Cadastrar Nova UBS on-the-fly -->
+							<button
+								type="button"
+								onclick={() => abrirModalNovaUbs(buscaUbs)}
+								class="w-full text-left p-2.5 bg-blue-50 hover:bg-blue-100 border-t-2 border-blue-900 text-blue-950 font-bold flex items-center gap-2 text-xs transition-colors"
+							>
+								<div class="bg-blue-900 text-white p-1">
+									<IconPlus size={14} />
+								</div>
+								<div class="flex flex-col">
+									<span class="uppercase tracking-wider text-[11px] text-blue-900">Cadastrar Nova UBS em Águas Belas</span>
+									{#if buscaUbs && !buscaUbsExisteExata}
+										<span class="text-[10px] font-normal text-slate-600">
+											Cadastrar "<strong>{buscaUbs}</strong>" no catálogo municipal
+										</span>
+									{:else}
+										<span class="text-[10px] font-normal text-slate-600">
+											Unidade ainda não cadastrada no sistema
+										</span>
+									{/if}
+								</div>
+							</button>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -1412,6 +1690,158 @@
 		</div>
 	</div>
 </div>
+
+<!-- Modal de Confirmação para Cadastro de Nova UBS On-the-Fly -->
+{#if modalNovaUbsAberto}
+	<div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+		<div class="bg-white border-2 border-blue-900 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+			<!-- Header do Modal -->
+			<div class="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<IconBuildingCommunity size={18} class="text-blue-200" />
+					<h3 class="font-mono text-xs font-bold uppercase tracking-wider">
+						Nova Unidade Básica de Saúde (UBS)
+					</h3>
+				</div>
+				<button
+					type="button"
+					onclick={() => (modalNovaUbsAberto = false)}
+					class="text-white hover:text-red-300 font-bold p-1"
+					title="Fechar"
+				>
+					<IconX size={18} />
+				</button>
+			</div>
+
+			<!-- Corpo do Modal -->
+			<div class="p-5 flex flex-col gap-3 font-sans text-xs">
+				<div class="border-l-4 border-blue-900 bg-blue-50 p-3 text-slate-700 text-[11px]">
+					<p class="font-bold text-blue-950 mb-1">Confirmação de Cadastro Municipal:</p>
+					<p>
+						Esta UBS será cadastrada permanentemente na rede municipal de <strong>Águas Belas / PE</strong> e automaticamente vinculada como a unidade de referência deste paciente.
+					</p>
+				</div>
+
+				{#if erroModalUbs}
+					<div class="border border-red-700 bg-red-50 p-2 text-red-800 font-mono text-[11px] font-bold">
+						{erroModalUbs}
+					</div>
+				{/if}
+
+				<!-- Nome da UBS -->
+				<div class="flex flex-col gap-1">
+					<label for="modal-ubs-nome" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						Nome Oficial da Unidade Básica <span class="text-red-700">*</span>
+					</label>
+					<input
+						id="modal-ubs-nome"
+						type="text"
+						bind:value={formNovaUbsNome}
+						placeholder="Ex: UBS DR. JOSÉ CARDOSO ou UBS SÍTIO CURRAL NOVO"
+						class="w-full border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-900 text-xs font-semibold"
+					/>
+				</div>
+
+				<!-- Município e UF -->
+				<div class="grid grid-cols-3 gap-2">
+					<div class="col-span-2 flex flex-col gap-1">
+						<label for="modal-ubs-mun" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+							Município
+						</label>
+						<input
+							id="modal-ubs-mun"
+							type="text"
+							bind:value={formNovaUbsMunicipio}
+							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 outline-none text-xs font-bold text-slate-800"
+							readonly
+						/>
+					</div>
+					<div class="flex flex-col gap-1">
+						<label for="modal-ubs-uf" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+							UF
+						</label>
+						<input
+							id="modal-ubs-uf"
+							type="text"
+							bind:value={formNovaUbsUf}
+							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 outline-none text-xs font-bold text-slate-800"
+							readonly
+						/>
+					</div>
+				</div>
+
+				<!-- CNES e Bairro -->
+				<div class="grid grid-cols-2 gap-2">
+					<div class="flex flex-col gap-1">
+						<label for="modal-ubs-cnes" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+							Código CNES (Opcional)
+						</label>
+						<input
+							id="modal-ubs-cnes"
+							type="text"
+							bind:value={formNovaUbsCnes}
+							placeholder="Ex: 2345678"
+							maxlength="7"
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 font-mono text-xs"
+						/>
+					</div>
+					<div class="flex flex-col gap-1">
+						<label for="modal-ubs-bairro" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+							Bairro / Comunidade
+						</label>
+						<input
+							id="modal-ubs-bairro"
+							type="text"
+							bind:value={formNovaUbsBairro}
+							placeholder="Ex: Comunidade Garcia, Centro..."
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 text-xs"
+						/>
+					</div>
+				</div>
+
+				<!-- Endereço / Localidade -->
+				<div class="flex flex-col gap-1">
+					<label for="modal-ubs-end" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						Endereço / Referência
+					</label>
+					<input
+						id="modal-ubs-end"
+						type="text"
+						bind:value={formNovaUbsEndereco}
+						placeholder="Ex: Rua Projetada, s/n, Povoado..."
+						class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 text-xs"
+					/>
+				</div>
+			</div>
+
+			<!-- Rodapé do Modal -->
+			<div class="bg-slate-100 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+				<button
+					type="button"
+					onclick={() => (modalNovaUbsAberto = false)}
+					disabled={salvandoNovaUbs}
+					class="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold uppercase text-xs transition-colors"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					onclick={salvarNovaUbs}
+					disabled={salvandoNovaUbs || !formNovaUbsNome.trim()}
+					class="px-5 py-2 border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase text-xs transition-colors disabled:opacity-50 flex items-center gap-1.5"
+				>
+					{#if salvandoNovaUbs}
+						<IconRefresh size={14} class="animate-spin" />
+						<span>CADASTRANDO...</span>
+					{:else}
+						<IconPlus size={14} />
+						<span>CONFIRMAR E VINCULAR UBS</span>
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	select, input, textarea, button {
