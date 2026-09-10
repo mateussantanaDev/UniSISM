@@ -1666,6 +1666,15 @@ export interface ListAuditoriaCentroResponse {
   logs: LogAuditoriaCentroItem[];
 }
 
+export interface AlocacaoProfissionalSala {
+  medicoId?: string;
+  medicoNome: string;
+  medicoRegistro?: string; // CRM ou CRO
+  especialidade?: string;
+  diasSemana: string[]; // ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+  horario?: string; // ex: '08:00 às 12:00'
+}
+
 export interface SalaConsultorioCentro {
   id: string;
   codigo: string;
@@ -1677,6 +1686,7 @@ export interface SalaConsultorioCentro {
   equipamentos: string[];
   ala: string;
   observacoes?: string;
+  profissionaisAlocados?: AlocacaoProfissionalSala[];
 }
 
 export interface EspecialidadeSigtapCentro {

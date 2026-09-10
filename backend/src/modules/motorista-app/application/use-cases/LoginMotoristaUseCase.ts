@@ -44,8 +44,16 @@ export class LoginMotoristaUseCase {
 
   async exec(matricula: string, senha: string, req: Request): Promise<LoginMotoristaOutput> {
     const matriculaNorm = matricula.trim().toUpperCase();
-    const atendente = await prisma.atendente.findUnique({
-      where: { matricula: matriculaNorm },
+    const cleanCpf = matricula.replace(/\D/g, '');
+    const isCpf = cleanCpf.length === 11;
+
+    const atendente = await prisma.atendente.findFirst({
+      where: {
+        OR: [
+          { matricula: matriculaNorm },
+          ...(isCpf ? [{ cpf: cleanCpf }] : []),
+        ],
+      },
       include: {
         motoristaTfd: { select: { id: true, status: true, primeiroLogin: true } },
       },
@@ -56,7 +64,7 @@ export class LoginMotoristaUseCase {
       || !atendente.motoristaTfd
       || !atendente.prefeituraId
     ) {
-      throw Unauthorized('MATRICULA_OU_SENHA_INVALIDA', 'Matrícula ou senha inválidos');
+      throw Unauthorized('MATRICULA_OU_SENHA_INVALIDA', 'Matrícula, CPF ou senha inválidos');
     }
 
     // Bcrypt nunca casa com '!provisorio!' → motorista pré-backfill recebe

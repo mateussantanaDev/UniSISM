@@ -1819,6 +1819,11 @@ export class CentroGestaoApi {
     return this.api.put<SalaConsultorioCentro>(`/centro/gestao/salas/${encodeURIComponent(id)}`, req);
   }
 
+  /** Excluir consultório / sala (DELETE /v1/centro/gestao/salas/:id). */
+  deletarSala(id: string): Promise<void> {
+    return this.api.delete<void>(`/centro/gestao/salas/${encodeURIComponent(id)}`);
+  }
+
   /** Listar catálogo de especialidades e procedimento SIGTAP (GET /v1/centro/gestao/especialidades). */
   listEspecialidades(query?: { centro?: string }): Promise<EspecialidadeSigtapCentro[]> {
     return this.api.get<EspecialidadeSigtapCentro[]>('/centro/gestao/especialidades', query as Record<string, unknown> | undefined);
