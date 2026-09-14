@@ -82,11 +82,13 @@
 	let formEspecialidade = $state('Cardiologia');
 	let formRegistroProfissional = $state('');
 	let formSenha = $state('Mudar@123');
+	let formPrefeituraId = $state<string>('');
 
 	// Reset Senha Form State
 	let formNovaSenha = $state('');
 	let usuarioLogado = $state<any>(null);
 	let isSuperUser = $derived(usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR');
+	let isDev = $derived(usuarioLogado?.role === 'DESENVOLVEDOR');
 
 	// Form State - Atribuição de Serviço & Atendimento ao Médico
 	let atriEspecialidadeId = $state('');
@@ -204,12 +206,17 @@
 		formEspecialidade = ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada';
 		formRegistroProfissional = '';
 		formSenha = 'Mudar@123';
+		formPrefeituraId = prefeituraConectada?.id || (prefeiturasDisponiveis[0]?.id ?? '');
 		modalNovoAberto = true;
 	}
 
 	async function salvarNovoUsuario() {
 		if (!formNome.trim() || !formCpf.trim() || !formEmail.trim()) {
 			erroModalUsuario = 'Preencha os campos obrigatórios (Nome, CPF e E-mail).';
+			return;
+		}
+		if (isDev && !formPrefeituraId && prefeiturasDisponiveis.length > 0) {
+			erroModalUsuario = 'Selecione a Prefeitura vinculada ao usuário.';
 			return;
 		}
 
@@ -223,7 +230,7 @@
 				matricula: formMatricula.trim() || undefined,
 				role: formPerfil as Role,
 				tipoUnidade: siglaOrgao,
-				prefeituraId: prefeituraConectada?.id || usuarioLogado?.prefeituraId || undefined,
+				prefeituraId: formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraId || undefined,
 				senha: formSenha.trim()
 			});
 
@@ -248,11 +255,17 @@
 		formMatricula = u.matricula || '';
 		formPerfil = ((u as any).perfil || u.role) as Role;
 		formTipoUnidade = (u.tipoUnidade || siglaOrgao) as any;
+		formPrefeituraId = u.prefeitura?.id || (u as any).prefeituraId || u.ubs?.prefeitura?.id || prefeituraConectada?.id || '';
 		modalEditarAberto = true;
 	}
 
 	async function salvarEdicaoUsuario() {
 		if (!usuarioEdicao) return;
+		if (isDev && !formPrefeituraId && prefeiturasDisponiveis.length > 0) {
+			erroModalUsuario = 'Selecione a Prefeitura vinculada ao usuário.';
+			return;
+		}
+
 		erroModalUsuario = '';
 		salvando = true;
 		try {
@@ -261,7 +274,7 @@
 				email: formEmail.trim(),
 				role: formPerfil as Role,
 				tipoUnidade: usuarioEdicao.tipoUnidade || siglaOrgao,
-				prefeituraId: prefeituraConectada?.id || (usuarioEdicao as any).prefeituraId || undefined
+				prefeituraId: formPrefeituraId || prefeituraConectada?.id || (usuarioEdicao as any).prefeituraId || undefined
 			});
 
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;
@@ -700,8 +713,40 @@
 					</div>
 				{/if}
 
-				<!-- Card Prefeitura Conectada -->
-				{#if prefeituraConectada}
+				<!-- Prefeitura Vinculada: Dropdown manual quando Desenvolvedor, Card informativo para os demais -->
+				{#if isDev}
+					<div class="border-2 border-indigo-600 bg-indigo-50/70 p-3 flex flex-col gap-2">
+						<div class="flex items-center justify-between">
+							<div class="flex items-center gap-2">
+								<div class="bg-indigo-700 text-white p-1 flex items-center justify-center">
+									<IconBuildingCommunity size={16} />
+								</div>
+								<label for="usr-pref" class="text-[11px] font-bold uppercase text-indigo-950 tracking-wider">
+									Prefeitura / Município Vinculado *
+								</label>
+							</div>
+							<span class="bg-indigo-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
+								Modo Desenvolvedor
+							</span>
+						</div>
+
+						<select
+							id="usr-pref"
+							bind:value={formPrefeituraId}
+							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+						>
+							<option value="">-- Selecione a Prefeitura --</option>
+							{#each prefeiturasDisponiveis as pref}
+								<option value={pref.id}>
+									{pref.nome} {pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''} {pref.ativa ? '• ATIVA' : ''}
+								</option>
+							{/each}
+						</select>
+						<span class="text-[10px] text-indigo-900 font-semibold">
+							Como Desenvolvedor, você pode selecionar manualmente qual prefeitura receberá o cadastro deste usuário.
+						</span>
+					</div>
+				{:else if prefeituraConectada}
 					<div class="border-2 border-emerald-600 bg-emerald-50/80 p-3 flex items-center justify-between">
 						<div class="flex items-center gap-2.5">
 							<div class="bg-emerald-700 text-white p-1.5 flex items-center justify-center">
@@ -811,8 +856,40 @@
 					</div>
 				{/if}
 
-				<!-- Card Prefeitura Conectada -->
-				{#if prefeituraConectada}
+				<!-- Prefeitura Vinculada: Dropdown manual quando Desenvolvedor, Card informativo para os demais -->
+				{#if isDev}
+					<div class="border-2 border-indigo-600 bg-indigo-50/70 p-3 flex flex-col gap-2">
+						<div class="flex items-center justify-between">
+							<div class="flex items-center gap-2">
+								<div class="bg-indigo-700 text-white p-1 flex items-center justify-center">
+									<IconBuildingCommunity size={16} />
+								</div>
+								<label for="ed-pref" class="text-[11px] font-bold uppercase text-indigo-950 tracking-wider">
+									Prefeitura / Município Vinculado *
+								</label>
+							</div>
+							<span class="bg-indigo-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
+								Modo Desenvolvedor
+							</span>
+						</div>
+
+						<select
+							id="ed-pref"
+							bind:value={formPrefeituraId}
+							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+						>
+							<option value="">-- Selecione a Prefeitura --</option>
+							{#each prefeiturasDisponiveis as pref}
+								<option value={pref.id}>
+									{pref.nome} {pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''} {pref.ativa ? '• ATIVA' : ''}
+								</option>
+							{/each}
+						</select>
+						<span class="text-[10px] text-indigo-900 font-semibold">
+							Como Desenvolvedor, você pode alterar manualmente o município de lotação deste usuário.
+						</span>
+					</div>
+				{:else if prefeituraConectada}
 					<div class="border border-emerald-300 bg-emerald-50 p-2.5 flex items-center justify-between">
 						<div class="flex items-center gap-2">
 							<IconBuildingCommunity size={16} class="text-emerald-800 shrink-0" />
