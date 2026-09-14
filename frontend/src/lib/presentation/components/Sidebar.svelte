@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
 
 	interface NavItem {
 		label: string;
@@ -138,7 +139,7 @@
 			</div>
 			<div class="flex items-center gap-1.5 text-[11px] text-emerald-700">
 				<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
-				<span class="font-semibold">{auth.me?.role ?? 'OPERACIONAL'}</span>
+				<span class="font-semibold truncate" title={formatarCargoPerfil(auth.me)}>{formatarCargoPerfil(auth.me)}</span>
 			</div>
 		</div>
 		<svg

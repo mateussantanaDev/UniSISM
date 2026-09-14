@@ -240,18 +240,19 @@ export const rbac = {
 
 		const tipoUnidade = me?.tipoUnidade?.toUpperCase();
 		const nomeUnidade = me?.unidade?.toUpperCase() || '';
-		const ehCeo = tipoUnidade === 'CEO' || nomeUnidade.includes('CEO') || nomeUnidade.includes('ODONTOL');
-		const ehCem = tipoUnidade === 'CEM' || (nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO'));
+		const cargo = me?.cargo?.toUpperCase() || '';
+		const ehCeo = tipoUnidade === 'CEO' || nomeUnidade.includes('CEO') || nomeUnidade.includes('ODONTOL') || cargo.includes('CEO') || cargo.includes('DENTIST');
+		const ehCem = tipoUnidade === 'CEM' || (nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO')) || cargo.includes('CEM');
 
 		if (ehCeo) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
-			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO') return '/ceo/recepcao/fila';
+			if (role === 'ATENDENTE_CENTRO') return '/ceo/recepcao/fila';
 			return '/ceo/gestao/dashboard';
 		}
 
 		if (ehCem) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/cem/medico/agenda';
-			if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
+			if (role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
 			return '/cem/gestao/dashboard';
 		}
 

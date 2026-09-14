@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -128,8 +129,8 @@
 				<div class="truncate font-sans text-xs font-bold text-slate-900">
 					{auth.me?.nome ?? 'Profissional CEO'}
 				</div>
-				<div class="font-mono text-[10px] text-blue-900 font-bold">
-					{auth.me?.role ?? 'DESENVOLVEDOR'}
+				<div class="font-mono text-[10px] text-blue-900 font-bold truncate" title={formatarCargoPerfil(auth.me)}>
+					{formatarCargoPerfil(auth.me)}
 				</div>
 			</div>
 			<button

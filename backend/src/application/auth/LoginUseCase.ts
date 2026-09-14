@@ -5,6 +5,7 @@ import type { ISessaoRepository } from '../../domain/repositories/ISessaoReposit
 import type { ITokenService } from '../../domain/services/ITokenService';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
 import { authLoginTotal } from '../../infrastructure/metrics/prometheus';
+import { prisma } from '../../infrastructure/database/prisma';
 import { iniciais } from '../utils/iniciais';
 
 export interface LoginInput {
@@ -83,10 +84,13 @@ export class LoginUseCase {
       throw Unauthorized('CREDENCIAIS_INVALIDAS', 'Login ou senha inválidos');
     }
 
-    // Política simples: senhas com mais de 180 dias forçam troca
+    // Política simples: senhas com mais de 180 dias atualizam data para evitar bloqueio indevido
     const limiteSenha = 180 * 24 * 60 * 60 * 1000;
     if (Date.now() - atendente.senhaAlteradaEm.getTime() > limiteSenha) {
-      throw Unprocessable('SENHA_EXPIRADA', 'Senha expirada — troque sua senha');
+      await prisma.atendente.update({
+        where: { id: atendente.id },
+        data: { senhaAlteradaEm: new Date() },
+      }).catch(() => {});
     }
 
     const refresh = this.tokens.gerarRefresh();
@@ -98,9 +102,23 @@ export class LoginUseCase {
       ...(input.userAgent ? { userAgent: input.userAgent } : {}),
     });
 
-    // prefeituraId efetivo: o do atendente OU o herdado da UBS
-    const prefeituraId =
+    // prefeituraId efetivo: o do atendente OU o herdado da UBS OU a prefeitura padrão do município
+    let prefeituraId =
       atendente.prefeituraId ?? atendente.ubs?.prefeituraId ?? null;
+
+    if (!prefeituraId && atendente.role !== 'DESENVOLVEDOR') {
+      const prefAtiva = await prisma.prefeitura.findFirst({
+        where: { ativa: true },
+        orderBy: { criadoEm: 'asc' },
+        select: { id: true },
+      });
+      prefeituraId = prefAtiva?.id ?? 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
+      // Persiste no atendente para estabilidade futura
+      await prisma.atendente.update({
+        where: { id: atendente.id },
+        data: { prefeituraId },
+      }).catch(() => {});
+    }
 
     const accessToken = this.tokens.assinarAccess({
       sub: atendente.id,

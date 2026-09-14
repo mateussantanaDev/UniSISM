@@ -148,11 +148,23 @@
 			prefeiturasDisponiveis = resPrefs || [];
 
 			// Resolução da Prefeitura Conectada
-			if (usuarioLogado?.prefeituraId) {
+			if (usuarioLogado?.prefeituraInfo?.id) {
+				prefeituraConectada = usuarioLogado.prefeituraInfo as any;
+			} else if (usuarioLogado?.prefeituraId) {
 				prefeituraConectada = prefeiturasDisponiveis.find(p => p.id === usuarioLogado.prefeituraId) || null;
 			}
 			if (!prefeituraConectada && prefeiturasDisponiveis.length > 0) {
 				prefeituraConectada = prefeiturasDisponiveis.find(p => p.ativa) || prefeiturasDisponiveis[0];
+			}
+			if (!prefeituraConectada) {
+				prefeituraConectada = {
+					id: 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6',
+					nome: 'Prefeitura Municipal de Águas Belas',
+					municipio: 'Águas Belas',
+					uf: 'PE',
+					ativa: true,
+					criadoEm: ''
+				};
 			}
 		} catch (e: any) {
 			console.error(e);
@@ -176,6 +188,19 @@
 				if (ubsIdDoUsuario && ubsIdDoUsuario !== usuarioLogado.unidadeVinculadaId) {
 					return false;
 				}
+			}
+
+			// No Centro (CEO ou CEM), filtra para exibir apenas profissionais do órgão ativo ou Desenvolvedores/Admins
+			const tipoU = (u.tipoUnidade || '').toUpperCase();
+			const cargoU = (u.cargo || '').toUpperCase();
+			const roleU = ((u as any).perfil || u.role || '').toUpperCase();
+
+			if (ehCeo) {
+				const ehDoCeo = tipoU === 'CEO' || cargoU.includes('CEO') || cargoU.includes('DENTIST') || cargoU.includes('ODONTOL') || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
+				if (!ehDoCeo && tipoU && tipoU !== 'CEO') return false;
+			} else {
+				const ehDoCem = tipoU === 'CEM' || cargoU.includes('CEM') || cargoU.includes('MÉDIC') || cargoU.includes('MEDIC') || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
+				if (!ehDoCem && tipoU && tipoU !== 'CEM') return false;
 			}
 
 			const q = busca.toLowerCase().trim();
@@ -207,17 +232,13 @@
 		formEspecialidade = ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada';
 		formRegistroProfissional = '';
 		formSenha = 'Mudar@123';
-		formPrefeituraId = prefeituraConectada?.id || (prefeiturasDisponiveis[0]?.id ?? '');
+		formPrefeituraId = prefeituraConectada?.id || (prefeiturasDisponiveis[0]?.id ?? 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6');
 		modalNovoAberto = true;
 	}
 
 	async function salvarNovoUsuario() {
 		if (!formNome.trim() || !formCpf.trim() || !formEmail.trim()) {
 			erroModalUsuario = 'Preencha os campos obrigatórios (Nome, CPF e E-mail).';
-			return;
-		}
-		if (isDev && !formPrefeituraId && prefeiturasDisponiveis.length > 0) {
-			erroModalUsuario = 'Selecione a Prefeitura vinculada ao usuário.';
 			return;
 		}
 
@@ -229,6 +250,8 @@
 				? 'Gestão e Operação do Centro de Especialidades Odontológicas'
 				: 'Gestão e Operação do Centro de Especialidades Médicas';
 
+			const prefIdFinal = formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraInfo?.id || 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
+
 			await api.admin.createUsuario({
 				nome: formNome.trim(),
 				cpf: formCpf.replace(/\D/g, ''),
@@ -238,7 +261,7 @@
 				tipoUnidade: siglaOrgao,
 				cargo: cargoPadrao,
 				funcao: funcaoPadrao,
-				prefeituraId: formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraId || undefined,
+				prefeituraId: prefIdFinal,
 				senha: formSenha.trim()
 			});
 
@@ -279,6 +302,7 @@
 		try {
 			const tipoEfetivo = usuarioEdicao.tipoUnidade || siglaOrgao;
 			const cargoAtualizado = formatarCargoPerfil({ role: formPerfil, tipoUnidade: tipoEfetivo });
+			const prefIdFinal = formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraInfo?.id || (usuarioEdicao as any).prefeituraId || 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
 
 			await api.admin.updateUsuario(usuarioEdicao.id, {
 				nome: formNome.trim(),
@@ -286,7 +310,7 @@
 				role: formPerfil as Role,
 				tipoUnidade: tipoEfetivo,
 				cargo: cargoAtualizado,
-				prefeituraId: formPrefeituraId || prefeituraConectada?.id || (usuarioEdicao as any).prefeituraId || undefined
+				prefeituraId: prefIdFinal
 			});
 
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;

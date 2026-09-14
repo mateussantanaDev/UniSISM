@@ -198,7 +198,7 @@ export function buildRoutes(deps: Deps): Router {
   router.get(
     '/admin/prefeituras',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS', 'COORDENADOR_UBS'),
     deps.admin.getPrefeituras,
   );
 
@@ -253,41 +253,41 @@ export function buildRoutes(deps: Deps): Router {
     deps.admin.postIntegracao,
   );
 
-  // usuários: DESENVOLVEDOR (qualquer) ou ADMIN (própria prefeitura)
+  // usuários: DESENVOLVEDOR, ADMIN, COORDENADOR_UBS e REGULADOR_SMS (escopo respeitado no usecase)
   router.post(
     '/admin/usuarios',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.postUsuario,
   );
   router.get(
     '/admin/usuarios',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.getUsuarios,
   );
   router.patch(
     '/admin/usuarios/:id',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.patchUsuario,
   );
   router.delete(
     '/admin/usuarios/:id',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.deleteUsuario,
   );
   router.post(
     '/admin/usuarios/:id/ativo',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.postAtivarUsuario,
   );
   router.post(
     '/admin/usuarios/:id/reset-senha',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN'),
+    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
     deps.admin.postResetSenhaUsuario,
   );
 

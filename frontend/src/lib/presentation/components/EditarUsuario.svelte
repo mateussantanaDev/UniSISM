@@ -35,10 +35,7 @@
 	let erro = $state('');
 
 	function aoMudarTipoOuRole() {
-		// Se o cargo atual for vazio ou o genérico antigo, recalcula automaticamente
-		if (!cargo.trim() || cargo.toUpperCase().includes('ATENDENTE DE REGULAÇÃO')) {
-			cargo = formatarCargoPerfil({ role, tipoUnidade });
-		}
+		cargo = formatarCargoPerfil({ role, tipoUnidade });
 	}
 
 	function diff(): AtualizarUsuarioRequest {

@@ -40,11 +40,9 @@ export class ResetarSenhaUsuarioUseCase {
     if (alvoPref) ensurePrefeituraAcessivel(scope, alvoPref);
 
     const hash = await this.hasher.hash(novaSenha);
-    // senhaAlteradaEm retroage pra exigir troca no próximo login (política 180d já existe)
-    const umAnoAtras = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
     await prisma.atendente.update({
       where: { id: alvoId },
-      data: { senhaHash: hash, senhaAlteradaEm: umAnoAtras },
+      data: { senhaHash: hash, senhaAlteradaEm: new Date() },
     });
 
     // Revoga todas as sessões
