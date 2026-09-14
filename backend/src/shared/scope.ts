@@ -40,6 +40,9 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'COORDENADOR_UBS':
     case 'ATENDENTE_UBS':
       if (!ctx.ubsId) {
+        if (ctx.prefeituraId) {
+          return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
+        }
         throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');
       }
       return ctx.prefeituraId

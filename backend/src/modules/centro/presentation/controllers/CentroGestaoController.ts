@@ -21,14 +21,19 @@ const putCotaSchema = z.object({
 });
 
 const postEscalaSchema = z.object({
+  medicoId: z.string().optional(),
   medicoNome: z.string().min(2),
   crm: z.string().min(2),
   especialidade: z.string().min(2),
+  tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
+  procedimentoId: z.string().optional(),
   diasSemana: z.array(z.string()).min(1),
   horarioInicio: z.string().regex(/^\d{2}:\d{2}$/),
   horarioFim: z.string().regex(/^\d{2}:\d{2}$/),
   duracaoMinutos: z.number().int().default(20),
   vagasPorTurno: z.number().int().default(12),
+  status: z.enum(['ATIVA', 'FERIAS', 'LICENCA', 'BLOQUEADA']).optional(),
+  prefeituraId: z.string().optional(),
 });
 
 const putEscalaSchema = postEscalaSchema.partial();
@@ -52,6 +57,8 @@ const postEspecialidadeSchema = z.object({
   documentosObrigatorios: z.array(z.string()).default([]),
   preparoRequerido: z.string().optional(),
   ativa: z.boolean().default(true),
+  tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
+  prefeituraId: z.string().optional(),
 });
 
 const putEspecialidadeSchema = postEspecialidadeSchema.partial();
@@ -100,14 +107,28 @@ export class CentroGestaoController {
     const where: any = {
       ativo: true,
       deletadoEm: null,
-      role: {
-        in: [RoleAtendente.MEDICO, RoleAtendente.MEDICO_ESPECIALISTA, RoleAtendente.REGULADOR_SMS],
-      },
+      AND: [
+        {
+          OR: [
+            { role: { in: [RoleAtendente.MEDICO, RoleAtendente.MEDICO_ESPECIALISTA, RoleAtendente.REGULADOR_SMS] } },
+            { cargo: { contains: 'Médic', mode: 'insensitive' } },
+            { cargo: { contains: 'Dentist', mode: 'insensitive' } },
+            { tipoUnidade: { in: ['CEO', 'CEM'] } },
+          ],
+        },
+        ...(scope.kind === 'PREFEITURA' || (scope.kind === 'UBS' && scope.prefeituraId)
+          ? [
+              {
+                OR: [
+                  { prefeituraId: scope.prefeituraId },
+                  { ubs: { prefeituraId: scope.prefeituraId } },
+                  { prefeituraId: null },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
-
-    if (scope.kind === 'PREFEITURA') {
-      where.prefeituraId = scope.prefeituraId;
-    }
 
     const usuarios = await prisma.atendente.findMany({
       where,
@@ -125,8 +146,10 @@ export class CentroGestaoController {
 
     const lista = usuarios
       .filter((u) => {
+        const r = u.role as string;
+        if (r === 'MOTORISTA_TFD' || r === 'DESENVOLVEDOR') return false;
         if (!centroNorm) return true;
-        const cCargo = (u.cargo + ' ' + u.funcao + ' ' + (u.tipoUnidade || '')).toLowerCase();
+        const cCargo = ((u.cargo || '') + ' ' + (u.funcao || '') + ' ' + (u.tipoUnidade || '')).toLowerCase();
         const eOdonto = cCargo.includes('dentista') || cCargo.includes('odonto') || cCargo.includes('ceo') || cCargo.includes('cro');
         return ehCeo ? eOdonto : !eOdonto;
       })
@@ -137,7 +160,7 @@ export class CentroGestaoController {
         conselho: ehCeo ? 'CRO' : 'CRM',
         cargo: u.cargo,
         role: u.role,
-        especialidade: u.cargo.replace(/^(MÉDICO|CIRURGIÃO-DENTISTA|DENTISTA)\s*(ESPECIALISTA\s*(EM\s*)?)?/i, '').trim() || (ehCeo ? 'Clínica Odontológica' : 'Clínica Geral'),
+        especialidade: (u.cargo || '').replace(/^(MÉDICO|CIRURGIÃO-DENTISTA|DENTISTA)\s*(ESPECIALISTA\s*(EM\s*)?)?/i, '').trim() || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
       }));
 
     res.json(lista);

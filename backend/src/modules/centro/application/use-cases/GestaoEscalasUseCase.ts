@@ -21,26 +21,47 @@ export interface EscalaEspecialistaDTO {
 
 const ESPECIALIDADES_ODONTO = [
   'endodontia',
+  'endo',
   'periodontia',
+  'perio',
   'cirurgia bucomaxilofacial',
+  'bucomaxilofacial',
   'bucomaxilo',
   'odontopediatria',
-  'pacientes com necessidades especiais (pne)',
+  'pacientes com necessidades especiais',
   'pne',
   'prótese dentária',
   'protese dentaria',
+  'prótese',
+  'protese',
   'estomatologia',
-  'ortodontia preventiva',
+  'ortodontia',
   'odontologia',
   'saúde bucal',
   'saude bucal',
+  'dentística',
+  'dentistica',
+  'cirurgia oral',
+  'implante',
+  'implantodontia',
+  'radiologia odontológica',
+  'traumatologia bucomaxilofacial',
+  'ceo'
 ];
 
 export class GestaoEscalasUseCase {
   async listarEscalas(scope: AccessScope, centro?: string): Promise<EscalaEspecialistaDTO[]> {
     const where: any = { ativo: true };
     if (scope.kind === 'PREFEITURA') {
-      where.prefeituraId = scope.prefeituraId;
+      where.OR = [
+        { prefeituraId: scope.prefeituraId },
+        { prefeituraId: null }
+      ];
+    } else if (scope.kind === 'UBS' && scope.prefeituraId) {
+      where.OR = [
+        { prefeituraId: scope.prefeituraId },
+        { prefeituraId: null }
+      ];
     }
 
     const escalas = await prisma.escalaEspecialista.findMany({
@@ -77,8 +98,16 @@ export class GestaoEscalasUseCase {
     });
   }
 
-  async criarEscala(data: EscalaEspecialistaDTO, scope: AccessScope, atendenteId: string): Promise<EscalaEspecialistaDTO> {
-    const prefeituraId = scope.kind === 'PREFEITURA' ? scope.prefeituraId : undefined;
+  async criarEscala(data: EscalaEspecialistaDTO & { prefeituraId?: string }, scope: AccessScope, atendenteId: string): Promise<EscalaEspecialistaDTO> {
+    let prefeituraId = data.prefeituraId;
+    if (!prefeituraId) {
+      if (scope.kind === 'PREFEITURA') prefeituraId = scope.prefeituraId;
+      else if (scope.kind === 'UBS') prefeituraId = scope.prefeituraId;
+    }
+    if (!prefeituraId) {
+      const pref = await prisma.prefeitura.findFirst({ where: { ativa: true } });
+      if (pref) prefeituraId = pref.id;
+    }
 
     const res = await prisma.escalaEspecialista.create({
       data: {

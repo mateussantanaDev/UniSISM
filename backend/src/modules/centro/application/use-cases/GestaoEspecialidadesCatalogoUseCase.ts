@@ -15,26 +15,47 @@ export interface EspecialidadeCatalogoDTO {
 
 const ESPECIALIDADES_ODONTO = [
   'endodontia',
+  'endo',
   'periodontia',
+  'perio',
   'cirurgia bucomaxilofacial',
+  'bucomaxilofacial',
   'bucomaxilo',
   'odontopediatria',
-  'pacientes com necessidades especiais (pne)',
+  'pacientes com necessidades especiais',
   'pne',
   'prótese dentária',
   'protese dentaria',
+  'prótese',
+  'protese',
   'estomatologia',
-  'ortodontia preventiva',
+  'ortodontia',
   'odontologia',
   'saúde bucal',
   'saude bucal',
+  'dentística',
+  'dentistica',
+  'cirurgia oral',
+  'implante',
+  'implantodontia',
+  'radiologia odontológica',
+  'traumatologia bucomaxilofacial',
+  'ceo'
 ];
 
 export class GestaoEspecialidadesCatalogoUseCase {
   async listarEspecialidades(scope: AccessScope, centro?: string): Promise<EspecialidadeCatalogoDTO[]> {
     const where: any = { ativa: true };
     if (scope.kind === 'PREFEITURA') {
-      where.prefeituraId = scope.prefeituraId;
+      where.OR = [
+        { prefeituraId: scope.prefeituraId },
+        { prefeituraId: null }
+      ];
+    } else if (scope.kind === 'UBS' && scope.prefeituraId) {
+      where.OR = [
+        { prefeituraId: scope.prefeituraId },
+        { prefeituraId: null }
+      ];
     }
 
     const lista = await prisma.especialidadeCatalogo.findMany({
@@ -65,8 +86,16 @@ export class GestaoEspecialidadesCatalogoUseCase {
     });
   }
 
-  async criarEspecialidade(data: EspecialidadeCatalogoDTO, scope: AccessScope, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {
-    const prefeituraId = scope.kind === 'PREFEITURA' ? scope.prefeituraId : undefined;
+  async criarEspecialidade(data: EspecialidadeCatalogoDTO & { prefeituraId?: string }, scope: AccessScope, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {
+    let prefeituraId = data.prefeituraId;
+    if (!prefeituraId) {
+      if (scope.kind === 'PREFEITURA') prefeituraId = scope.prefeituraId;
+      else if (scope.kind === 'UBS') prefeituraId = scope.prefeituraId;
+    }
+    if (!prefeituraId) {
+      const pref = await prisma.prefeitura.findFirst({ where: { ativa: true } });
+      if (pref) prefeituraId = pref.id;
+    }
 
     const res = await prisma.especialidadeCatalogo.create({
       data: {

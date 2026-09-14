@@ -47,7 +47,9 @@ export class GestaoSalasUseCase {
       prisma.escalaEspecialista.findMany({
         where: {
           ativo: true,
-          ...(scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}),
+          ...((scope.kind === 'PREFEITURA' || scope.kind === 'UBS') && scope.prefeituraId
+            ? { OR: [{ prefeituraId: scope.prefeituraId }, { prefeituraId: null }] }
+            : {}),
         },
       }),
     ]);

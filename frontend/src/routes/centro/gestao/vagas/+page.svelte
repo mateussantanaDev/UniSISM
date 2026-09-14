@@ -141,6 +141,7 @@
 	let erroModalAviso = $state('');
 	let erroModalEscala = $state('');
 	let erroModalRemanejamento = $state('');
+	let salvandoEscala = $state(false);
 
 	async function dispararAvisoPacientes() {
 		if (!avisoMedicoNome.trim()) {
@@ -339,10 +340,13 @@
 		};
 
 		try {
-			await api.centroGestao.criarEscala({
+			salvandoEscala = true;
+			const escalaCriada = await api.centroGestao.criarEscala({
+				medicoId: profissionalSelecionadoId || undefined,
 				medicoNome: nova.medicoNome,
 				crm: nova.crm,
 				especialidade: nova.especialidade,
+				tipoServico: novoTipoServico,
 				diasSemana: nova.diasSemana,
 				horarioInicio: nova.horarioInicio,
 				horarioFim: nova.horarioFim,
@@ -350,14 +354,23 @@
 				vagasPorTurno: nova.vagasPorTurno,
 				status: nova.status
 			});
-		} catch (err) {
-			console.info('[UniSISM] Endpoint /v1/centro/gestao/escalas em transição — salvando na grade local.', err);
-		}
 
-		escalasList.push(nova);
-		modalNovaEscalaAberto = false;
-		mensagemSucesso = `✓ Nova escala para ${nova.medicoNome} criada na grade horária!`;
-		setTimeout(() => mensagemSucesso = '', 4000);
+			const atualizadas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
+			if (Array.isArray(atualizadas) && atualizadas.length > 0) {
+				escalasList = atualizadas;
+			} else if (escalaCriada) {
+				escalasList = [...escalasList.filter(e => e.id !== escalaCriada.id), escalaCriada];
+			}
+
+			modalNovaEscalaAberto = false;
+			mensagemSucesso = `✓ Nova escala para ${nova.medicoNome} cadastrada e salva com sucesso no servidor!`;
+			setTimeout(() => mensagemSucesso = '', 4000);
+		} catch (err: any) {
+			console.error(err);
+			erroModalEscala = `Falha ao salvar escala no servidor: ${err?.message || 'Erro do servidor'}`;
+		} finally {
+			salvandoEscala = false;
+		}
 	}
 
 	function toggleDia(dia: string) {
@@ -974,8 +987,8 @@
 			<button type="button" onclick={() => modalNovaEscalaAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
 				Cancelar
 			</button>
-			<button type="button" onclick={salvarNovaEscala} class="border border-blue-900 bg-blue-900 text-white px-5 py-2 font-bold text-xs uppercase">
-				Salvar Escala
+			<button type="button" onclick={salvarNovaEscala} disabled={salvandoEscala} class="border border-blue-900 bg-blue-900 text-white px-5 py-2 font-bold text-xs uppercase hover:bg-blue-950 disabled:opacity-50">
+				{salvandoEscala ? 'Salvando...' : 'Salvar Escala'}
 			</button>
 		</div>
 	</div>

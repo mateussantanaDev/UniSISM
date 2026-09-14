@@ -97,18 +97,18 @@
 
 		try {
 			await api.centroGestao.criarEspecialidade(nova as any);
-		} catch (e) {
-			console.info('[UniSISM] Erro ao cadastrar especialidade via API.', e);
+			await carregarEspecialidades();
+			modalNovaAberto = false;
+			formNome = '';
+			formCodigo = '';
+			formDocs = '';
+			formPreparo = '';
+			mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" cadastrado com sucesso no catálogo do ${siglaOrgao}!`;
+			setTimeout(() => mensagemSucesso = '', 4000);
+		} catch (e: any) {
+			console.error(e);
+			erroModal = `Falha ao cadastrar especialidade: ${e?.message || 'Erro do servidor'}`;
 		}
-
-		await carregarEspecialidades();
-		modalNovaAberto = false;
-		formNome = '';
-		formCodigo = '';
-		formDocs = '';
-		formPreparo = '';
-		mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" cadastrado com sucesso no catálogo do ${siglaOrgao}!`;
-		setTimeout(() => mensagemSucesso = '', 4000);
 	}
 
 	async function excluirEspecialidade(id: string, nome: string) {
@@ -118,11 +118,12 @@
 		try {
 			await api.centroGestao.excluirEspecialidade(id);
 			mensagemSucesso = `✓ Especialidade "${nome}" removida do catálogo.`;
-		} catch (e) {
-			console.info('[UniSISM] Erro ao excluir especialidade via API.', e);
+			await carregarEspecialidades();
+			setTimeout(() => mensagemSucesso = '', 4000);
+		} catch (e: any) {
+			console.error(e);
+			erro = `Falha ao remover especialidade: ${e?.message || 'Erro do servidor'}`;
 		}
-		await carregarEspecialidades();
-		setTimeout(() => mensagemSucesso = '', 4000);
 	}
 </script>
 

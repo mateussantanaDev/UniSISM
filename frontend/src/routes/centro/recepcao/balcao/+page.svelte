@@ -259,13 +259,16 @@
 	let dropdownAberto = $state(false);
 	let medicoSelecionado = $state<MedicoEspecialistaItem | null>(null);
 
-	// Filtra especialistas rigorosamente pela especialidade selecionada (se houver) e texto de busca
+	// Filtra especialistas pela especialidade selecionada (se houver) e texto de busca
 	let medicosFiltrados = $derived.by<MedicoEspecialistaItem[]>(() => {
 		let lista = medicosEspecialistas;
 		if (especialidade) {
-			lista = lista.filter(m => {
+			const comEspecialidade = lista.filter(m => {
 				return m.especialidades.some(esp => especialidadeMatch(esp, especialidade));
 			});
+			if (comEspecialidade.length > 0) {
+				lista = comEspecialidade;
+			}
 		}
 		if (buscaMedico.trim()) {
 			const b = normalizarTexto(buscaMedico);
@@ -699,13 +702,14 @@
 			carregandoEscalas = true;
 			carregandoCatalogo = true;
 			carregandoUbs = true;
-			const [escalasRecepcao, escalasGestao, servicos, salas, ubsList, prefeiturasList] = await Promise.all([
+			const [escalasRecepcao, escalasGestao, servicos, salas, ubsList, prefeiturasList, profissionaisList] = await Promise.all([
 				api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
 				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => []),
 				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(() => []),
 				api.admin.listUbs().catch(() => []),
-				api.admin.listPrefeituras().catch(() => [])
+				api.admin.listPrefeituras().catch(() => []),
+				api.centroGestao.listProfissionais({ centro: siglaOrgao }).catch(() => [])
 			]);
 
 			listaUbs = Array.isArray(ubsList) ? ubsList : [];
@@ -743,6 +747,31 @@
 									});
 								}
 							}
+						}
+					}
+				}
+			}
+
+			// Adiciona também profissionais cadastrados na equipe do Centro (Gestão de Usuários)
+			if (Array.isArray(profissionaisList)) {
+				for (const p of profissionaisList) {
+					if (p.nome) {
+						const esp = p.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada');
+						const chave = `${p.nome}_${esp}`.toLowerCase();
+						if (!mapaEscalas.has(chave)) {
+							mapaEscalas.set(chave, {
+								medicoId: p.id,
+								medicoNome: p.nome,
+								crm: p.registroProfissional ? `${p.conselho} ${p.registroProfissional}` : (ehCeo ? 'CRO' : 'CRM'),
+								especialidade: esp,
+								diasSemana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
+								horarioInicio: '08:00',
+								horarioFim: '17:00',
+								duracaoMinutos: 20,
+								vagasPorTurno: 16,
+								status: 'ATIVA',
+								ativo: true
+							});
 						}
 					}
 				}
@@ -1564,12 +1593,12 @@
 							<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
 								{#if medicoSelecionado}
 									{medicoSelecionado.nome} — {especialidade || medicoSelecionado.especialidade} ({medicoSelecionado.registro})
-								{:else if !especialidade}
-									Selecione a especialidade solicitada acima para filtrar os médicos...
 								{:else if medicosFiltrados.length === 0}
-									Nenhum médico com atendimento cadastrado para {especialidade} no {siglaOrgao}
+									Nenhum {rotuloProfissional.toLowerCase()} cadastrado para {especialidade || 'o centro'} no {siglaOrgao}
+								{:else if especialidade}
+									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is) para {especialidade})...
 								{:else}
-									Selecione o médico especialista ({medicosFiltrados.length} disponível(is) para {especialidade})...
+									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is))...
 								{/if}
 							</span>
 							<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>

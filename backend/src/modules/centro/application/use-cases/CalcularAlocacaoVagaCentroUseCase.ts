@@ -125,7 +125,7 @@ export class CalcularAlocacaoVagaCentroUseCase {
 
     // 1. Filtra escalas ativas do banco de dados
     const whereEscala: any = { ativo: true, status: 'ATIVA' };
-    if (scope.kind === 'PREFEITURA' && scope.prefeituraId) {
+    if ((scope.kind === 'PREFEITURA' || scope.kind === 'UBS') && scope.prefeituraId) {
       whereEscala.OR = [
         { prefeituraId: scope.prefeituraId },
         { prefeituraId: null },
@@ -134,19 +134,32 @@ export class CalcularAlocacaoVagaCentroUseCase {
 
     const ESPECIALIDADES_ODONTO = [
       'endodontia',
+      'endo',
       'periodontia',
+      'perio',
       'cirurgia bucomaxilofacial',
+      'bucomaxilofacial',
       'bucomaxilo',
       'odontopediatria',
-      'pacientes com necessidades especiais (pne)',
+      'pacientes com necessidades especiais',
       'pne',
       'prótese dentária',
       'protese dentaria',
+      'prótese',
+      'protese',
       'estomatologia',
-      'ortodontia preventiva',
+      'ortodontia',
       'odontologia',
       'saúde bucal',
       'saude bucal',
+      'dentística',
+      'dentistica',
+      'cirurgia oral',
+      'implante',
+      'implantodontia',
+      'radiologia odontológica',
+      'traumatologia bucomaxilofacial',
+      'ceo',
     ];
 
     const todasEscalas = await prisma.escalaEspecialista.findMany({
@@ -156,7 +169,7 @@ export class CalcularAlocacaoVagaCentroUseCase {
 
     const escalasDb = todasEscalas.filter((e) => {
       const esp = e.especialidade.toLowerCase();
-      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
+      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => o === 'pne' ? /\bpne\b/i.test(esp) : esp.includes(o));
       return ehCeo ? eOdonto : !eOdonto;
     });
 
@@ -170,23 +183,23 @@ export class CalcularAlocacaoVagaCentroUseCase {
     // 2. Localiza a escala correspondente
     let escalaSelecionada = escalasDb.find((e) => {
       if (input.medicoId && e.medicoId === input.medicoId) return true;
-      if (input.medicoNome && e.medicoNome.toLowerCase() === input.medicoNome.toLowerCase()) return true;
+      if (input.medicoNome) {
+        const m1 = e.medicoNome.toLowerCase();
+        const m2 = input.medicoNome.toLowerCase();
+        if (m1 === m2 || m1.includes(m2) || m2.includes(m1)) return true;
+      }
       return false;
     });
 
     if (!escalaSelecionada && input.especialidade) {
-      escalaSelecionada = escalasDb.find(
-        (e) => e.especialidade.toLowerCase() === input.especialidade!.toLowerCase(),
-      );
+      const espInput = input.especialidade.toLowerCase();
+      escalaSelecionada = escalasDb.find((e) => {
+        const eEsp = e.especialidade.toLowerCase();
+        return eEsp === espInput || eEsp.includes(espInput) || espInput.includes(eEsp);
+      });
     }
 
     if (!escalaSelecionada) {
-      if (input.medicoNome || input.especialidade) {
-        return {
-          sucesso: false,
-          mensagem: `Nenhuma escala ativa encontrada no banco de dados para ${input.medicoNome ? `o profissional "${input.medicoNome}"` : `a especialidade "${input.especialidade}"`}.`,
-        };
-      }
       escalaSelecionada = escalasDb[0];
     }
 
