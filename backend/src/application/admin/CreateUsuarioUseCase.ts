@@ -59,6 +59,33 @@ export class CreateUsuarioUseCase {
     let prefeituraId: string | null = null;
     const requestedUbsId = input.ubsId || (input.tipoUnidade === 'UBS' ? input.unidadeId ?? undefined : undefined);
 
+    // Resolução inteligente da prefeitura conectada/efetiva
+    let effectivePrefId = input.prefeituraId || (criadorScope.kind === 'PREFEITURA' ? criadorScope.prefeituraId : null);
+    if (!effectivePrefId && criadorScope.kind === 'UBS' && criadorScope.prefeituraId) {
+      effectivePrefId = criadorScope.prefeituraId;
+    }
+    if (!effectivePrefId && criadorId) {
+      const criadorAtendente = await prisma.atendente.findUnique({
+        where: { id: criadorId },
+        select: { prefeituraId: true, ubs: { select: { prefeituraId: true } } },
+      });
+      if (criadorAtendente?.prefeituraId) {
+        effectivePrefId = criadorAtendente.prefeituraId;
+      } else if (criadorAtendente?.ubs?.prefeituraId) {
+        effectivePrefId = criadorAtendente.ubs.prefeituraId;
+      }
+    }
+    if (!effectivePrefId) {
+      // Fallback: seleciona a prefeitura ativa padrão do município conectado (ex: Águas Belas)
+      const prefAtiva = await prisma.prefeitura.findFirst({
+        where: { ativa: true },
+        orderBy: { criadoEm: 'asc' },
+      });
+      if (prefAtiva) {
+        effectivePrefId = prefAtiva.id;
+      }
+    }
+
     switch (input.role) {
       case 'DESENVOLVEDOR':
         ubsId = null;
@@ -72,7 +99,6 @@ export class CreateUsuarioUseCase {
       case 'MEDICO':
       case 'MEDICO_ESPECIALISTA':
       case 'ATENDENTE_CENTRO': {
-        const effectivePrefId = input.prefeituraId || (criadorScope.kind === 'PREFEITURA' ? criadorScope.prefeituraId : null);
         if (!effectivePrefId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
@@ -84,6 +110,20 @@ export class CreateUsuarioUseCase {
       }
       case 'ATENDENTE_UBS':
       case 'COORDENADOR_UBS': {
+        const ehCentro = input.tipoUnidade === 'CEM' || input.tipoUnidade === 'CEO';
+        if (ehCentro && !requestedUbsId) {
+          // Coordenador/Diretor de Centro de Especialidades é vinculado à prefeitura
+          if (!effectivePrefId) {
+            throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
+          }
+          const pref = await prisma.prefeitura.findUnique({ where: { id: effectivePrefId } });
+          if (!pref) throw NotFound('PREFEITURA_NAO_ENCONTRADA', 'Prefeitura não encontrada');
+          ensurePrefeituraAcessivel(criadorScope, pref.id);
+          ubsId = null;
+          prefeituraId = pref.id;
+          break;
+        }
+
         if (!requestedUbsId) {
           throw Unprocessable('UBS_OBRIGATORIA', 'ubsId ou unidadeId é obrigatório para esse role');
         }

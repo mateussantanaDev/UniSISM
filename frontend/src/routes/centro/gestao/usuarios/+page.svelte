@@ -7,7 +7,8 @@
 		Role,
 		EscalaMedicoCentro,
 		EspecialidadeSigtapCentro,
-		SalaConsultorioCentro
+		SalaConsultorioCentro,
+		Prefeitura
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import {
@@ -25,7 +26,8 @@
 		IconPlus,
 		IconTrash,
 		IconX,
-		IconBuildingHospital
+		IconBuildingHospital,
+		IconBuildingCommunity
 	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
@@ -54,6 +56,8 @@
 	let listaEscalas = $state<EscalaMedicoCentro[]>([]);
 	let especialidadesCatalogo = $state<EspecialidadeSigtapCentro[]>([]);
 	let salasDisponiveis = $state<SalaConsultorioCentro[]>([]);
+	let prefeiturasDisponiveis = $state<Prefeitura[]>([]);
+	let prefeituraConectada = $state<Prefeitura | null>(null);
 
 	let busca = $state('');
 	let filtroPerfil = $state<string>('TODOS');
@@ -111,7 +115,7 @@
 			const superUser = usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR';
 			const query = !superUser && usuarioLogado?.unidadeVinculadaId ? { ubsId: usuarioLogado.unidadeVinculadaId } : undefined;
 
-			const [resUsers, resEscalas, resEsp, resSalas] = await Promise.all([
+			const [resUsers, resEscalas, resEsp, resSalas, resPrefs] = await Promise.all([
 				api.admin.listUsuarios(query).catch(e => {
 					console.error('Erro ao listar usuários:', e);
 					return [] as UsuarioListado[];
@@ -127,6 +131,10 @@
 				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(e => {
 					console.error('Erro ao listar salas:', e);
 					return [] as SalaConsultorioCentro[];
+				}),
+				api.admin.listPrefeituras().catch(e => {
+					console.error('Erro ao listar prefeituras:', e);
+					return [] as Prefeitura[];
 				})
 			]);
 
@@ -134,6 +142,15 @@
 			listaEscalas = resEscalas || [];
 			especialidadesCatalogo = resEsp || [];
 			salasDisponiveis = resSalas || [];
+			prefeiturasDisponiveis = resPrefs || [];
+
+			// Resolução da Prefeitura Conectada
+			if (usuarioLogado?.prefeituraId) {
+				prefeituraConectada = prefeiturasDisponiveis.find(p => p.id === usuarioLogado.prefeituraId) || null;
+			}
+			if (!prefeituraConectada && prefeiturasDisponiveis.length > 0) {
+				prefeituraConectada = prefeiturasDisponiveis.find(p => p.ativa) || prefeiturasDisponiveis[0];
+			}
 		} catch (e: any) {
 			console.error(e);
 			erro = `Falha ao carregar dados do servidor: ${e?.message || 'Erro de conexão'}`;
@@ -206,6 +223,7 @@
 				matricula: formMatricula.trim() || undefined,
 				role: formPerfil as Role,
 				tipoUnidade: siglaOrgao,
+				prefeituraId: prefeituraConectada?.id || usuarioLogado?.prefeituraId || undefined,
 				senha: formSenha.trim()
 			});
 
@@ -242,7 +260,8 @@
 				nome: formNome.trim(),
 				email: formEmail.trim(),
 				role: formPerfil as Role,
-				tipoUnidade: usuarioEdicao.tipoUnidade || siglaOrgao
+				tipoUnidade: usuarioEdicao.tipoUnidade || siglaOrgao,
+				prefeituraId: prefeituraConectada?.id || (usuarioEdicao as any).prefeituraId || undefined
 			});
 
 			mensagemSucesso = `✓ Cadastro do usuário ${formNome} atualizado com sucesso!`;
@@ -299,11 +318,13 @@
 
 	function formatarRoleLabel(role: string): string {
 		const map: Record<string, string> = {
-			MEDICO: 'Médico Especialista',
-			REGULADOR_SMS: 'Regulador SMS / Recepção',
-			ATENDENTE_UBS: 'Atendente Recepção',
-			COORDENADOR_UBS: 'Coordenador / Diretoria',
-			ADMIN: 'Administrador Geral',
+			MEDICO: ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista',
+			MEDICO_ESPECIALISTA: ehCeo ? 'Cirurgião-Dentista Plantonista' : 'Médico Plantonista',
+			ATENDENTE_CENTRO: `Atendente Recepção ${siglaOrgao}`,
+			ATENDENTE_UBS: `Atendente Recepção ${siglaOrgao}`,
+			REGULADOR_SMS: `Regulador ${siglaOrgao}`,
+			COORDENADOR_UBS: `Coordenação / Supervisão ${siglaOrgao}`,
+			ADMIN: `Gestor Geral / Diretor ${siglaOrgao}`,
 			DESENVOLVEDOR: 'Desenvolvedor / TI'
 		};
 		return map[role] || role;
@@ -501,11 +522,12 @@
 			/>
 			<select bind:value={filtroPerfil} class="border border-slate-300 bg-white p-2 text-xs">
 				<option value="TODOS">Todos os Perfis</option>
-				<option value="MEDICO">Médicos Especialistas</option>
+				<option value="MEDICO">{ehCeo ? 'Cirurgiões-Dentistas' : 'Médicos Especialistas'}</option>
+				<option value="MEDICO_ESPECIALISTA">{ehCeo ? 'Dentistas Plantonistas' : 'Médicos Plantonistas'}</option>
+				<option value="ATENDENTE_CENTRO">Atendentes / Recepção</option>
 				<option value="REGULADOR_SMS">Reguladores / Recepção</option>
-				<option value="ATENDENTE_UBS">Atendentes de Balcão</option>
-				<option value="COORDENADOR_UBS">Diretoria / Coordenação</option>
-				<option value="ADMIN">Administradores</option>
+				<option value="COORDENADOR_UBS">Coordenação / Supervisão</option>
+				<option value="ADMIN">Gestor Geral / Diretor</option>
 			</select>
 			<select bind:value={filtroStatus} class="border border-slate-300 bg-white p-2 text-xs">
 				<option value="TODOS">Todos os Status</option>
@@ -666,7 +688,7 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
 		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">+ Cadastrar Novo Profissional / Usuário</div>
+				<div class="font-bold uppercase tracking-wider text-xs">+ Cadastrar Novo Gestor / Profissional / Usuário</div>
 				<button onclick={() => modalNovoAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
 			</div>
 
@@ -677,6 +699,25 @@
 						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
+
+				<!-- Card Prefeitura Conectada -->
+				{#if prefeituraConectada}
+					<div class="border-2 border-emerald-600 bg-emerald-50/80 p-3 flex items-center justify-between">
+						<div class="flex items-center gap-2.5">
+							<div class="bg-emerald-700 text-white p-1.5 flex items-center justify-center">
+								<IconBuildingCommunity size={18} />
+							</div>
+							<div>
+								<span class="text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Prefeitura Conectada ao Sistema</span>
+								<div class="text-xs font-bold text-emerald-950">{prefeituraConectada.nome}</div>
+							</div>
+						</div>
+						<span class="border border-emerald-700 bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">
+							{prefeituraConectada.cnpj ? `CNPJ: ${prefeituraConectada.cnpj}` : 'Município Ativo'}
+						</span>
+					</div>
+				{/if}
+
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 					<div class="flex flex-col gap-1">
 						<label for="usr-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo *</label>
@@ -703,18 +744,18 @@
 					<div class="flex flex-col gap-1">
 						<label for="usr-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso *</label>
 						<select id="usr-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
+							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
+							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
 							{#if ehCeo}
 								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
 								<option value="REGULADOR_SMS">Regulador do CEO</option>
-								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEO</option>
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
 								<option value="REGULADOR_SMS">Regulador do CEM</option>
-								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEM</option>
 							{/if}
 						</select>
 					</div>
@@ -733,7 +774,7 @@
 
 				<div class="bg-blue-50 border border-blue-300 p-3 text-[11px] text-blue-950 font-semibold flex items-center gap-2">
 					<IconShield size={16} class="text-blue-900 shrink-0" />
-					<span>O profissional será alocado automaticamente ao <strong>{nomeOrgao} ({siglaOrgao})</strong> com credenciais de acesso restritas a esta unidade.</span>
+					<span>O usuário será vinculado à <strong>{prefeituraConectada?.nome || 'Prefeitura Conectada'}</strong> com credenciais de acesso ao <strong>{nomeOrgao} ({siglaOrgao})</strong>.</span>
 				</div>
 			</div>
 
@@ -746,7 +787,7 @@
 					disabled={salvando}
 					class="border border-blue-900 bg-blue-900 px-5 py-2 font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
-					{salvando ? 'Cadastrando...' : 'Cadastrar Profissional'}
+					{salvando ? 'Cadastrando...' : 'Cadastrar Usuário'}
 				</button>
 			</div>
 		</div>
@@ -769,6 +810,23 @@
 						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
+
+				<!-- Card Prefeitura Conectada -->
+				{#if prefeituraConectada}
+					<div class="border border-emerald-300 bg-emerald-50 p-2.5 flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<IconBuildingCommunity size={16} class="text-emerald-800 shrink-0" />
+							<div>
+								<span class="text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Prefeitura Conectada</span>
+								<div class="text-xs font-bold text-emerald-950">{prefeituraConectada.nome}</div>
+							</div>
+						</div>
+						<span class="border border-emerald-600 bg-emerald-100 text-emerald-900 text-[9px] font-bold px-2 py-0.5 uppercase">
+							{prefeituraConectada.cnpj ? `CNPJ: ${prefeituraConectada.cnpj}` : 'Ativa'}
+						</span>
+					</div>
+				{/if}
+
 				<div class="flex flex-col gap-1">
 					<label for="ed-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo</label>
 					<input id="ed-nome" type="text" bind:value={formNome} class="border border-slate-300 p-2 text-xs" />
@@ -781,18 +839,18 @@
 					<div class="flex flex-col gap-1">
 						<label for="ed-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso</label>
 						<select id="ed-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
+							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
+							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
 							{#if ehCeo}
 								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
 								<option value="REGULADOR_SMS">Regulador do CEO</option>
-								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEO</option>
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
 								<option value="REGULADOR_SMS">Regulador do CEM</option>
-								<option value="COORDENADOR_UBS">Diretoria / Coordenação CEM</option>
 							{/if}
 						</select>
 					</div>
