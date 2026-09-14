@@ -75,8 +75,8 @@
 				email: r.email ?? usuario.email,
 				matricula: r.matricula ?? usuario.matricula,
 				role: r.role ?? usuario.role,
-				cargo: r.cargo ?? cargo,
-				funcao: r.funcao ?? funcao,
+				cargo: (r as any).cargo ?? cargo,
+				funcao: (r as any).funcao ?? funcao,
 				tipoUnidade: (r as any).tipoUnidade ?? tipoUnidade as any
 			};
 			onSaved(atualizado);

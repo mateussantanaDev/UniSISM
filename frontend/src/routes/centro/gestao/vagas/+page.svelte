@@ -357,9 +357,9 @@
 
 			const atualizadas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
 			if (Array.isArray(atualizadas) && atualizadas.length > 0) {
-				escalasList = atualizadas;
+				escalasList = atualizadas as any;
 			} else if (escalaCriada) {
-				escalasList = [...escalasList.filter(e => e.id !== escalaCriada.id), escalaCriada];
+				escalasList = [...escalasList.filter(e => e.id !== (escalaCriada as any).id), escalaCriada as any];
 			}
 
 			modalNovaEscalaAberto = false;

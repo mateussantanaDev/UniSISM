@@ -3,6 +3,8 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
+import { filterEspecialidadesByCentro } from '../../shared/centroClassifier';
+
 export interface CotaUbsDTO {
   ubsId: string;
   ubsNome: string;
@@ -12,23 +14,6 @@ export interface CotaUbsDTO {
   status: 'NORMAL' | 'CRITICO' | 'ESGOTADO';
   especialidades: Record<string, number>;
 }
-
-const ESPECIALIDADES_ODONTO = [
-  'endodontia',
-  'periodontia',
-  'cirurgia bucomaxilofacial',
-  'bucomaxilo',
-  'odontopediatria',
-  'pacientes com necessidades especiais (pne)',
-  'pne',
-  'prótese dentária',
-  'protese dentaria',
-  'estomatologia',
-  'ortodontia preventiva',
-  'odontologia',
-  'saúde bucal',
-  'saude bucal',
-];
 
 export class GestaoCotasUseCase {
   async listarCotas(scope: AccessScope, centro?: string): Promise<CotaUbsDTO[]> {
@@ -54,21 +39,11 @@ export class GestaoCotasUseCase {
     }
     const espList = await prisma.especialidadeCatalogo.findMany({
       where: whereEsp,
-      select: { nome: true },
+      select: { nome: true, documentosObrigatorios: true },
       orderBy: { nome: 'asc' },
     });
 
-    const centroNorm = centro ? centro.toUpperCase() : undefined;
-    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
-
-    const especialidadesCentro = espList
-      .map((e) => e.nome)
-      .filter((nome) => {
-        if (!centroNorm) return true;
-        const espLower = nome.toLowerCase();
-        const eOdonto = ESPECIALIDADES_ODONTO.some((o) => espLower.includes(o));
-        return ehCeo ? eOdonto : !eOdonto;
-      });
+    const especialidadesCentro = filterEspecialidadesByCentro(espList, centro).map((e) => e.nome);
 
     const ubsIds = ubsList.map((u) => u.id);
     const now = new Date();

@@ -2,6 +2,8 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
+import { filterEspecialidadesByCentro } from '../../shared/centroClassifier';
+
 export interface EscalaEspecialistaDTO {
   id?: string;
   medicoId?: string;
@@ -18,36 +20,6 @@ export interface EscalaEspecialistaDTO {
   status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA';
   ativo?: boolean;
 }
-
-const ESPECIALIDADES_ODONTO = [
-  'endodontia',
-  'endo',
-  'periodontia',
-  'perio',
-  'cirurgia bucomaxilofacial',
-  'bucomaxilofacial',
-  'bucomaxilo',
-  'odontopediatria',
-  'pacientes com necessidades especiais',
-  'pne',
-  'prótese dentária',
-  'protese dentaria',
-  'prótese',
-  'protese',
-  'estomatologia',
-  'ortodontia',
-  'odontologia',
-  'saúde bucal',
-  'saude bucal',
-  'dentística',
-  'dentistica',
-  'cirurgia oral',
-  'implante',
-  'implantodontia',
-  'radiologia odontológica',
-  'traumatologia bucomaxilofacial',
-  'ceo'
-];
 
 export class GestaoEscalasUseCase {
   async listarEscalas(scope: AccessScope, centro?: string): Promise<EscalaEspecialistaDTO[]> {
@@ -86,16 +58,7 @@ export class GestaoEscalasUseCase {
       ativo: e.ativo,
     }));
 
-    if (!centro) return dtoArray;
-
-    const centroNorm = centro.toUpperCase();
-    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
-
-    return dtoArray.filter((e) => {
-      const esp = e.especialidade.toLowerCase();
-      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => o === 'pne' ? /\bpne\b/i.test(esp) : esp.includes(o));
-      return ehCeo ? eOdonto : !eOdonto;
-    });
+    return filterEspecialidadesByCentro(dtoArray, centro);
   }
 
   async criarEscala(data: EscalaEspecialistaDTO & { prefeituraId?: string }, scope: AccessScope, atendenteId: string): Promise<EscalaEspecialistaDTO> {

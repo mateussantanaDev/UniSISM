@@ -1707,6 +1707,7 @@ export interface EspecialidadeSigtapCentro {
   preparoRequerido: string;
   ativa: boolean;
   tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  centro?: string;
 }
 
 export interface ProcedimentoRealizadoItem {

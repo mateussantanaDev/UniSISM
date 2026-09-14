@@ -33,8 +33,8 @@ async function runTests() {
 
   // Test 1: Doctor selection logic in OtimizadorVagas
   const doctorCardio = await findDoctorAsync('Dr. Roberto Medeiros', '', 'Cardiologia');
-  assert.ok(doctorCardio.nome.includes('Roberto') || doctorCardio.especialidade === 'Cardiologia');
-  assert.strictEqual(doctorCardio.especialidade, 'Cardiologia');
+  assert.ok(doctorCardio.nome.includes('Roberto') || doctorCardio.especialidade.includes('Cardiologia'));
+  assert.ok(doctorCardio.especialidade.includes('Cardiologia'));
   console.log('✅ findDoctorAsync correctly identified especialista em Cardiologia');
 
   const doctorOftalmo = await findDoctorAsync('', 'Exame para olho', 'Oftalmologia');

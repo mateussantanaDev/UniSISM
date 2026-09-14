@@ -1,5 +1,6 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../../shared/scope';
+import { filterEspecialidadesByCentro } from '../../shared/centroClassifier';
 
 export interface CalcularAlocacaoVagaInput {
   centro?: 'CEM' | 'CEO' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
@@ -132,46 +133,12 @@ export class CalcularAlocacaoVagaCentroUseCase {
       ];
     }
 
-    const ESPECIALIDADES_ODONTO = [
-      'endodontia',
-      'endo',
-      'periodontia',
-      'perio',
-      'cirurgia bucomaxilofacial',
-      'bucomaxilofacial',
-      'bucomaxilo',
-      'odontopediatria',
-      'pacientes com necessidades especiais',
-      'pne',
-      'prótese dentária',
-      'protese dentaria',
-      'prótese',
-      'protese',
-      'estomatologia',
-      'ortodontia',
-      'odontologia',
-      'saúde bucal',
-      'saude bucal',
-      'dentística',
-      'dentistica',
-      'cirurgia oral',
-      'implante',
-      'implantodontia',
-      'radiologia odontológica',
-      'traumatologia bucomaxilofacial',
-      'ceo',
-    ];
-
     const todasEscalas = await prisma.escalaEspecialista.findMany({
       where: whereEscala,
       orderBy: { medicoNome: 'asc' },
     });
 
-    const escalasDb = todasEscalas.filter((e) => {
-      const esp = e.especialidade.toLowerCase();
-      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => o === 'pne' ? /\bpne\b/i.test(esp) : esp.includes(o));
-      return ehCeo ? eOdonto : !eOdonto;
-    });
+    const escalasDb = filterEspecialidadesByCentro(todasEscalas, ehCeo ? 'CEO' : 'CEM');
 
     if (!escalasDb || escalasDb.length === 0) {
       return {

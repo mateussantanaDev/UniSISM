@@ -2,6 +2,8 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 
+import { filterEspecialidadesByCentro, isEspecialidadeOdonto } from '../../shared/centroClassifier';
+
 export interface EspecialidadeCatalogoDTO {
   id?: string;
   nome: string;
@@ -12,36 +14,6 @@ export interface EspecialidadeCatalogoDTO {
   preparoRequerido?: string | null;
   ativa?: boolean;
 }
-
-const ESPECIALIDADES_ODONTO = [
-  'endodontia',
-  'endo',
-  'periodontia',
-  'perio',
-  'cirurgia bucomaxilofacial',
-  'bucomaxilofacial',
-  'bucomaxilo',
-  'odontopediatria',
-  'pacientes com necessidades especiais',
-  'pne',
-  'prótese dentária',
-  'protese dentaria',
-  'prótese',
-  'protese',
-  'estomatologia',
-  'ortodontia',
-  'odontologia',
-  'saúde bucal',
-  'saude bucal',
-  'dentística',
-  'dentistica',
-  'cirurgia oral',
-  'implante',
-  'implantodontia',
-  'radiologia odontológica',
-  'traumatologia bucomaxilofacial',
-  'ceo'
-];
 
 export class GestaoEspecialidadesCatalogoUseCase {
   async listarEspecialidades(scope: AccessScope, centro?: string): Promise<EspecialidadeCatalogoDTO[]> {
@@ -74,19 +46,14 @@ export class GestaoEspecialidadesCatalogoUseCase {
       ativa: e.ativa,
     }));
 
-    if (!centro) return dtoArray;
-
-    const centroNorm = centro.toUpperCase();
-    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
-
-    return dtoArray.filter((e) => {
-      const esp = e.nome.toLowerCase();
-      const eOdonto = ESPECIALIDADES_ODONTO.some((o) => o === 'pne' ? /\bpne\b/i.test(esp) : esp.includes(o));
-      return ehCeo ? eOdonto : !eOdonto;
-    });
+    return filterEspecialidadesByCentro(dtoArray, centro);
   }
 
-  async criarEspecialidade(data: EspecialidadeCatalogoDTO & { prefeituraId?: string }, scope: AccessScope, atendenteId: string): Promise<EspecialidadeCatalogoDTO> {
+  async criarEspecialidade(
+    data: EspecialidadeCatalogoDTO & { prefeituraId?: string; centro?: string },
+    scope: AccessScope,
+    atendenteId: string,
+  ): Promise<EspecialidadeCatalogoDTO> {
     let prefeituraId = data.prefeituraId;
     if (!prefeituraId) {
       if (scope.kind === 'PREFEITURA') prefeituraId = scope.prefeituraId;
@@ -97,13 +64,26 @@ export class GestaoEspecialidadesCatalogoUseCase {
       if (pref) prefeituraId = pref.id;
     }
 
+    const docs = [...(data.documentosObrigatorios || [])];
+    const centroTag = data.centro
+      ? data.centro.toUpperCase() === 'CEO' || data.centro.toUpperCase() === 'CENTRO_ODONTOLOGICO'
+        ? 'CENTRO:CEO'
+        : 'CENTRO:CEM'
+      : isEspecialidadeOdonto({ nome: data.nome, documentosObrigatorios: docs })
+        ? 'CENTRO:CEO'
+        : 'CENTRO:CEM';
+
+    if (!docs.includes(centroTag)) {
+      docs.push(centroTag);
+    }
+
     const res = await prisma.especialidadeCatalogo.create({
       data: {
         nome: data.nome,
         codigoSigtap: data.codigoSigtap || null,
         tempoPadraoMinutos: data.tempoPadraoMinutos || 20,
         valorTabelaBrl: data.valorTabelaBrl || 0,
-        documentosObrigatorios: data.documentosObrigatorios || [],
+        documentosObrigatorios: docs,
         preparoRequerido: data.preparoRequerido || null,
         ativa: data.ativa !== undefined ? data.ativa : true,
         prefeituraId,

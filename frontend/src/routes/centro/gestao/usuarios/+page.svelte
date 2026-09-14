@@ -163,7 +163,8 @@
 					municipio: 'Águas Belas',
 					uf: 'PE',
 					ativa: true,
-					criadoEm: ''
+					criadoEm: '',
+					atualizadoEm: ''
 				};
 			}
 		} catch (e: any) {

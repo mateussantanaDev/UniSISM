@@ -92,7 +92,8 @@
 			documentosObrigatorios: formDocs.split(',').map(s => s.trim()).filter(Boolean),
 			preparoRequerido: formPreparo.trim() || undefined,
 			ativa: true,
-			tipoServico: formTipoServico
+			tipoServico: formTipoServico,
+			centro: siglaOrgao
 		};
 
 		try {
@@ -236,7 +237,7 @@
 							<td class="p-3 text-emerald-800 font-bold">R$ {esp.valorTabelaBrl.toFixed(2)}</td>
 							<td class="p-3 text-slate-700">
 								<div class="flex flex-col gap-1">
-									{#each esp.documentosObrigatorios as doc}
+									{#each (esp.documentosObrigatorios || []).filter(d => !d.startsWith('CENTRO:')) as doc}
 										<div class="text-[10px] bg-amber-50 border border-amber-200 text-amber-900 p-1 font-sans flex items-center gap-1">
 											<IconFileText size={11} class="shrink-0" />
 											<span>{doc}</span>

@@ -58,6 +58,7 @@ const postEspecialidadeSchema = z.object({
   preparoRequerido: z.string().optional(),
   ativa: z.boolean().default(true),
   tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
+  centro: z.string().optional(),
   prefeituraId: z.string().optional(),
 });
 
@@ -256,9 +257,10 @@ export class CentroGestaoController {
   postEspecialidade = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const body = postEspecialidadeSchema.parse(req.body);
+    const centro = (body.centro || req.query.centro) as string | undefined;
     const atendenteId = req.auth!.sub;
 
-    const result = await this.especialidadesUC.criarEspecialidade(body, scope, atendenteId);
+    const result = await this.especialidadesUC.criarEspecialidade({ ...body, centro }, scope, atendenteId);
     res.status(201).json(result);
   };
 

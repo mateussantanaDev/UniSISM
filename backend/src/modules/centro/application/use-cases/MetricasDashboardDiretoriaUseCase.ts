@@ -1,6 +1,7 @@
 import { StatusEncaminhamento, StatusAtendimentoCentro, CanalRoteamento } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import type { AccessScope } from '../../../../shared/scope';
+import { filterEspecialidadesByCentro } from '../../shared/centroClassifier';
 
 export interface DashboardDiretoriaDTO {
   hoje: {
@@ -21,23 +22,6 @@ export interface DashboardDiretoriaDTO {
   distribuicaoPorUbs: Record<string, number>;
   totalEscalasAtivas: number;
 }
-
-const ESPECIALIDADES_ODONTO = [
-  'endodontia',
-  'periodontia',
-  'cirurgia bucomaxilofacial',
-  'bucomaxilo',
-  'odontopediatria',
-  'pacientes com necessidades especiais (pne)',
-  'pne',
-  'prótese dentária',
-  'protese dentaria',
-  'estomatologia',
-  'ortodontia preventiva',
-  'odontologia',
-  'saúde bucal',
-  'saude bucal',
-];
 
 export class MetricasDashboardDiretoriaUseCase {
   async exec(scope: AccessScope, centro?: string): Promise<DashboardDiretoriaDTO> {
@@ -127,13 +111,7 @@ export class MetricasDashboardDiretoriaUseCase {
       }),
     ]);
 
-    const totalEscalasAtivas = centro
-      ? escalas.filter((e) => {
-          const esp = e.especialidade.toLowerCase();
-          const eOdonto = ESPECIALIDADES_ODONTO.some((o) => esp.includes(o));
-          return ehCeo ? eOdonto : !eOdonto;
-        }).length
-      : escalas.length;
+    const totalEscalasAtivas = filterEspecialidadesByCentro(escalas, centro).length;
 
     // Calculate Today metrics
     let aguardando = 0;

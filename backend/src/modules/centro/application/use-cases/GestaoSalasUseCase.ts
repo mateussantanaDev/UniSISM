@@ -2,6 +2,7 @@ import { StatusSalaConsultorio } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
+import { isEspecialidadeOdonto } from '../../shared/centroClassifier';
 
 export interface SalaConsultorioDTO {
   id?: string;
@@ -14,23 +15,6 @@ export interface SalaConsultorioDTO {
   equipamentos: string[];
   ala?: string | null;
 }
-
-const ESPECIALIDADES_ODONTO = [
-  'endodontia',
-  'periodontia',
-  'cirurgia bucomaxilofacial',
-  'bucomaxilo',
-  'odontopediatria',
-  'pacientes com necessidades especiais (pne)',
-  'pne',
-  'prótese dentária',
-  'protese dentaria',
-  'estomatologia',
-  'ortodontia preventiva',
-  'odontologia',
-  'saúde bucal',
-  'saude bucal',
-];
 
 export class GestaoSalasUseCase {
   async listarSalas(scope: AccessScope, centro?: string): Promise<SalaConsultorioDTO[]> {
@@ -84,11 +68,10 @@ export class GestaoSalasUseCase {
       const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
 
       salasDTO = salasDTO.filter((s) => {
-        const esp = s.especialidadePrincipal.toLowerCase();
         const cod = s.codigo.toLowerCase();
         const nom = s.nome.toLowerCase();
         const eOdonto =
-          ESPECIALIDADES_ODONTO.some((o) => esp.includes(o)) ||
+          isEspecialidadeOdonto(s.especialidadePrincipal) ||
           cod.startsWith('cad') ||
           nom.includes('cadeira') ||
           nom.includes('odonto');
