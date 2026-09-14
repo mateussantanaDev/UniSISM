@@ -7,6 +7,7 @@
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -35,7 +36,9 @@
 				(u) =>
 					u.nome.toLowerCase().includes(q) ||
 					u.matricula.toLowerCase().includes(q) ||
-					u.email.toLowerCase().includes(q)
+					u.email.toLowerCase().includes(q) ||
+					(u.cargo && u.cargo.toLowerCase().includes(q)) ||
+					(u.tipoUnidade && u.tipoUnidade.toLowerCase().includes(q))
 			);
 		}
 		return base;
@@ -43,9 +46,7 @@
 
 	let ativos = $derived(lista.filter((u) => u.ativo).length);
 	let reguladores = $derived(lista.filter((u) => u.role === 'REGULADOR_SMS').length);
-	let atendentes = $derived(
-		lista.filter((u) => u.role === 'ATENDENTE_UBS' || u.role === 'COORDENADOR_UBS').length
-	);
+	let coordenadores = $derived(lista.filter((u) => u.role === 'COORDENADOR_UBS' || u.role === 'ADMIN').length);
 
 	function formatarData(iso: string): string {
 		return new Date(iso).toLocaleDateString('pt-BR');
@@ -68,16 +69,16 @@
 
 	const roles: Array<'TODOS' | Role> = [
 		'TODOS',
-		'ATENDENTE_UBS',
 		'COORDENADOR_UBS',
+		'ADMIN',
+		'ATENDENTE_UBS',
+		'ATENDENTE_CENTRO',
 		'REGULADOR_SMS',
 		'MEDICO',
 		'MEDICO_ESPECIALISTA',
-		'ATENDENTE_CENTRO',
 		'GESTOR_TFD',
 		'REGULADOR_TFD',
 		'ATENDENTE_TFD',
-		'ADMIN',
 		'DESENVOLVEDOR'
 	];
 </script>
@@ -94,9 +95,10 @@
 			accent="default"
 		/>
 		<MetricCard
-			label="Atendentes UBS"
-			value={carregando ? '—' : atendentes}
-			sublabel="Operação de ingestão"
+			label="Gestão & Coordenação"
+			value={carregando ? '—' : coordenadores}
+			sublabel="Diretoria, Centros e UBS"
+			accent="default"
 		/>
 	</section>
 
@@ -140,7 +142,7 @@
 					class="border border-slate-300 bg-white px-2 py-1 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase outline-none focus:border-blue-900"
 				>
 					{#each roles as r (r)}
-						<option value={r}>{r === 'TODOS' ? 'TODAS ROLES' : r}</option>
+						<option value={r}>{r === 'TODOS' ? 'TODOS OS PERFIS' : formatarCargoPerfil({ role: r })}</option>
 					{/each}
 				</select>
 
@@ -168,8 +170,8 @@
 						<th class="border-r border-slate-200 px-3 py-2">Nome</th>
 						<th class="border-r border-slate-200 px-3 py-2">Matrícula</th>
 						<th class="border-r border-slate-200 px-3 py-2">Email</th>
-						<th class="border-r border-slate-200 px-3 py-2">Role</th>
-						<th class="border-r border-slate-200 px-3 py-2">Vínculo</th>
+						<th class="border-r border-slate-200 px-3 py-2">Cargo / Perfil</th>
+						<th class="border-r border-slate-200 px-3 py-2">Vínculo & Lotação</th>
 						<th class="border-r border-slate-200 px-3 py-2">Criado</th>
 						<th class="border-r border-slate-200 px-3 py-2">Status</th>
 						<th class="px-3 py-2">Ação</th>
@@ -204,15 +206,20 @@
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2">
 									<span
-										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-widest uppercase {roleTone[
+										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {roleTone[
 											u.role
-										]}"
+										] || 'border-slate-300 bg-slate-100 text-slate-800'}"
 									>
-										{u.role}
+										{formatarCargoPerfil(u)}
 									</span>
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
-									{u.ubs?.nome ?? u.prefeitura?.nome ?? 'Global'}
+									<div class="flex flex-col">
+										<span class="font-bold text-slate-900 text-xs">{formatarVinculoUsuario(u)}</span>
+										{#if u.tipoUnidade}
+											<span class="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Unidade: {u.tipoUnidade}</span>
+										{/if}
+									</div>
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-600">
 									{formatarData(u.criadoEm)}

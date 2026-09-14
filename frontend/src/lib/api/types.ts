@@ -806,6 +806,8 @@ export interface UsuarioListado {
   criadoEm: string;
   tipoUnidade?: 'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD' | null;
   unidadeId?: string | null;
+  cargo?: string | null;
+  funcao?: string | null;
   ubs: { id: string; nome: string; prefeitura: { id: string; nome: string } } | null;
   prefeitura: { id: string; nome: string } | null;
 }

@@ -11,6 +11,7 @@
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
+	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -205,7 +206,7 @@
 					</div>
 					<div class="text-sm font-bold text-slate-900">{usuario.nome}</div>
 					<div class="font-mono text-[11px] text-slate-600">
-						{usuario.matricula} · {usuario.role}
+						{usuario.matricula} · <strong class="text-blue-950 font-bold">{formatarCargoPerfil(usuario)}</strong>
 					</div>
 				</div>
 			</div>
@@ -265,7 +266,23 @@
 				<PanelHeader title="Perfil & Vínculo" index="02" />
 				<dl class="divide-y divide-slate-100 font-mono text-[11px]">
 					<div class="flex items-center justify-between px-4 py-2.5">
-						<dt class="tracking-widest text-slate-500 uppercase">Role</dt>
+						<dt class="tracking-widest text-slate-500 uppercase">Cargo / Perfil</dt>
+						<dd>
+							<span
+								class="border border-blue-900 bg-blue-50 text-blue-950 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+							>
+								{formatarCargoPerfil(usuario)}
+							</span>
+						</dd>
+					</div>
+					<div class="flex items-center justify-between px-4 py-2.5">
+						<dt class="tracking-widest text-slate-500 uppercase">Unidade / Face</dt>
+						<dd class="truncate pl-2 text-slate-900 font-bold">
+							{usuario.tipoUnidade ? `${usuario.tipoUnidade} — ${formatarVinculoUsuario(usuario)}` : formatarVinculoUsuario(usuario)}
+						</dd>
+					</div>
+					<div class="flex items-center justify-between px-4 py-2.5">
+						<dt class="tracking-widest text-slate-500 uppercase">Role Sistema</dt>
 						<dd>
 							<span
 								class="border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase"
@@ -275,19 +292,21 @@
 						</dd>
 					</div>
 					<div class="flex items-center justify-between px-4 py-2.5">
-						<dt class="tracking-widest text-slate-500 uppercase">Prefeitura</dt>
+						<dt class="tracking-widest text-slate-500 uppercase">Município</dt>
 						<dd class="truncate pl-2 text-slate-900">
 							{usuario.prefeitura?.nome ??
 								usuario.ubs?.prefeitura?.nome ??
 								'Global'}
 						</dd>
 					</div>
-					<div class="flex items-center justify-between px-4 py-2.5">
-						<dt class="tracking-widest text-slate-500 uppercase">UBS</dt>
-						<dd class="truncate pl-2 text-slate-900">
-							{usuario.ubs?.nome ?? '—'}
-						</dd>
-					</div>
+					{#if usuario.ubs}
+						<div class="flex items-center justify-between px-4 py-2.5">
+							<dt class="tracking-widest text-slate-500 uppercase">UBS Vinculada</dt>
+							<dd class="truncate pl-2 text-slate-900">
+								{usuario.ubs.nome}
+							</dd>
+						</div>
+					{/if}
 					<div class="flex items-center justify-between px-4 py-2.5">
 						<dt class="tracking-widest text-slate-500 uppercase">Status</dt>
 						<dd>

@@ -189,6 +189,57 @@ export class CreateUsuarioUseCase {
 
     const senhaHash = await this.hasher.hash(input.senha);
 
+    const cargoPadrao = (() => {
+      if (input.cargo?.trim() && !input.cargo.toUpperCase().includes('ATENDENTE DE REGULAÇÃO')) {
+        return input.cargo.trim();
+      }
+      const tipo = tipoUnidade?.toUpperCase();
+      const r = String(input.role);
+      if (tipo === 'CEO') {
+        if (r === 'COORDENADOR_UBS') return 'Coordenador(a) do CEO';
+        if (r === 'ADMIN') return 'Diretor(a) / Gestor Geral do CEO';
+        if (r === 'MEDICO') return 'Cirurgião-Dentista Especialista';
+        if (r === 'MEDICO_ESPECIALISTA') return 'Cirurgião-Dentista Plantonista';
+        if (r === 'ATENDENTE_CENTRO' || r === 'ATENDENTE_UBS') return 'Atendente de Recepção CEO';
+        if (r === 'REGULADOR_SMS') return 'Regulador(a) do CEO';
+      }
+      if (tipo === 'CEM') {
+        if (r === 'COORDENADOR_UBS') return 'Coordenador(a) do CEM';
+        if (r === 'ADMIN') return 'Diretor(a) / Gestor Geral do CEM';
+        if (r === 'MEDICO') return 'Médico(a) Especialista';
+        if (r === 'MEDICO_ESPECIALISTA') return 'Médico(a) Plantonista';
+        if (r === 'ATENDENTE_CENTRO' || r === 'ATENDENTE_UBS') return 'Atendente de Recepção CEM';
+        if (r === 'REGULADOR_SMS') return 'Regulador(a) do CEM';
+      }
+      if (tipo === 'TFD') {
+        if (r === 'GESTOR_TFD') return 'Gestor(a) do TFD';
+        if (r === 'REGULADOR_TFD') return 'Regulador(a) do TFD';
+        if (r === 'ATENDENTE_TFD') return 'Atendente do TFD';
+        if (r === 'MOTORISTA_TFD') return 'Motorista TFD';
+      }
+      if (r === 'COORDENADOR_UBS') return 'Coordenador(a) de UBS';
+      if (r === 'ATENDENTE_UBS') return 'Atendente de UBS';
+      if (r === 'ATENDENTE_CENTRO') return 'Atendente do Centro de Especialidades';
+      if (r === 'MEDICO') return 'Médico(a) Clínico';
+      if (r === 'MEDICO_ESPECIALISTA') return 'Médico(a) Especialista';
+      if (r === 'REGULADOR_SMS') return 'Regulador(a) SMS';
+      if (r === 'ADMIN') return 'Administrador(a) Geral';
+      if (r === 'DESENVOLVEDOR') return 'Desenvolvedor(a) de Sistemas';
+      return input.cargo?.trim() || 'Profissional da Saúde';
+    })();
+
+    const funcaoPadrao = (() => {
+      if (input.funcao?.trim() && !input.funcao.toUpperCase().includes('OPERADOR DO CANAL')) {
+        return input.funcao.trim();
+      }
+      const tipo = tipoUnidade?.toUpperCase();
+      if (tipo === 'CEO') return 'Gestão e Operação do Centro de Especialidades Odontológicas';
+      if (tipo === 'CEM') return 'Gestão e Operação do Centro de Especialidades Médicas';
+      if (tipo === 'TFD') return 'Gestão e Operação do Tratamento Fora do Domicílio';
+      if (tipo === 'SMS') return 'Regulação e Gestão da Secretaria de Saúde';
+      return input.funcao?.trim() || 'Atendimento e Operação da Rede de Saúde';
+    })();
+
     const criado = await prisma.atendente.create({
       data: {
         nome: input.nome,
@@ -196,8 +247,8 @@ export class CreateUsuarioUseCase {
         matricula,
         cpf: input.cpf,
         telefone: input.telefone ?? null,
-        cargo: input.cargo ?? 'ATENDENTE DE REGULAÇÃO',
-        funcao: input.funcao ?? 'Operador do canal de ingestão de encaminhamentos',
+        cargo: cargoPadrao,
+        funcao: funcaoPadrao,
         role: input.role,
         tipoUnidade,
         unidadeId,
@@ -230,6 +281,8 @@ export class CreateUsuarioUseCase {
       matricula: criado.matricula,
       email: criado.email,
       role: criado.role,
+      cargo: criado.cargo,
+      funcao: criado.funcao,
       tipoUnidade: criado.tipoUnidade,
       unidadeId: criado.unidadeId ?? criado.ubsId ?? null,
       ubs: criado.ubs ? { id: criado.ubs.id, nome: criado.ubs.nome } : null,

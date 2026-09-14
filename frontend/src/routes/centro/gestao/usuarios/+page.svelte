@@ -11,6 +11,7 @@
 		Prefeitura
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
+	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
 	import {
 		IconAlertTriangle,
 		IconCheck,
@@ -223,6 +224,11 @@
 		erroModalUsuario = '';
 		salvando = true;
 		try {
+			const cargoPadrao = formatarCargoPerfil({ role: formPerfil, tipoUnidade: siglaOrgao });
+			const funcaoPadrao = ehCeo
+				? 'Gestão e Operação do Centro de Especialidades Odontológicas'
+				: 'Gestão e Operação do Centro de Especialidades Médicas';
+
 			await api.admin.createUsuario({
 				nome: formNome.trim(),
 				cpf: formCpf.replace(/\D/g, ''),
@@ -230,6 +236,8 @@
 				matricula: formMatricula.trim() || undefined,
 				role: formPerfil as Role,
 				tipoUnidade: siglaOrgao,
+				cargo: cargoPadrao,
+				funcao: funcaoPadrao,
 				prefeituraId: formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraId || undefined,
 				senha: formSenha.trim()
 			});
@@ -269,11 +277,15 @@
 		erroModalUsuario = '';
 		salvando = true;
 		try {
+			const tipoEfetivo = usuarioEdicao.tipoUnidade || siglaOrgao;
+			const cargoAtualizado = formatarCargoPerfil({ role: formPerfil, tipoUnidade: tipoEfetivo });
+
 			await api.admin.updateUsuario(usuarioEdicao.id, {
 				nome: formNome.trim(),
 				email: formEmail.trim(),
 				role: formPerfil as Role,
-				tipoUnidade: usuarioEdicao.tipoUnidade || siglaOrgao,
+				tipoUnidade: tipoEfetivo,
+				cargo: cargoAtualizado,
 				prefeituraId: formPrefeituraId || prefeituraConectada?.id || (usuarioEdicao as any).prefeituraId || undefined
 			});
 
@@ -329,18 +341,11 @@
 		}
 	}
 
-	function formatarRoleLabel(role: string): string {
-		const map: Record<string, string> = {
-			MEDICO: ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista',
-			MEDICO_ESPECIALISTA: ehCeo ? 'Cirurgião-Dentista Plantonista' : 'Médico Plantonista',
-			ATENDENTE_CENTRO: `Atendente Recepção ${siglaOrgao}`,
-			ATENDENTE_UBS: `Atendente Recepção ${siglaOrgao}`,
-			REGULADOR_SMS: `Regulador ${siglaOrgao}`,
-			COORDENADOR_UBS: `Coordenação / Supervisão ${siglaOrgao}`,
-			ADMIN: `Gestor Geral / Diretor ${siglaOrgao}`,
-			DESENVOLVEDOR: 'Desenvolvedor / TI'
-		};
-		return map[role] || role;
+	function formatarRoleLabel(roleOuUsuario: any): string {
+		if (typeof roleOuUsuario === 'object' && roleOuUsuario !== null) {
+			return formatarCargoPerfil(roleOuUsuario);
+		}
+		return formatarCargoPerfil({ role: roleOuUsuario, tipoUnidade: siglaOrgao });
 	}
 
 	function isProfissional(u: UsuarioListado): boolean {
@@ -601,7 +606,7 @@
 									</td>
 									<td class="p-3 font-semibold text-blue-900">
 										<span class="bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] text-blue-900 font-bold uppercase">
-											{formatarRoleLabel((u as any).perfil || u.role)}
+											{formatarCargoPerfil(u)}
 										</span>
 									</td>
 									<td class="p-3 text-slate-800">
@@ -1043,7 +1048,7 @@
 						<div>
 							<div class="text-sm font-bold text-slate-900">{usuarioAtribuicao.nome}</div>
 							<div class="text-[11px] text-slate-600">
-								CPF: <strong>{usuarioAtribuicao.cpf || '—'}</strong> · Função: <strong class="text-indigo-900">{formatarRoleLabel((usuarioAtribuicao as any).perfil || usuarioAtribuicao.role)}</strong>
+								CPF: <strong>{usuarioAtribuicao.cpf || '—'}</strong> · Função: <strong class="text-indigo-900">{formatarCargoPerfil(usuarioAtribuicao)}</strong>
 							</div>
 						</div>
 					</div>

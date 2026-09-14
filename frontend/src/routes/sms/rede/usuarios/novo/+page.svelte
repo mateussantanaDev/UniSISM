@@ -7,6 +7,7 @@
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -47,16 +48,16 @@
 	/** Roles que o usuário atual pode criar (DEV pode tudo, ADMIN não pode criar DEV). */
 	let rolesPermitidas = $derived.by<Role[]>(() => {
 		const todas: Role[] = [
-			'ATENDENTE_UBS',
 			'COORDENADOR_UBS',
+			'ADMIN',
+			'ATENDENTE_UBS',
+			'ATENDENTE_CENTRO',
 			'REGULADOR_SMS',
 			'MEDICO',
 			'MEDICO_ESPECIALISTA',
-			'ATENDENTE_CENTRO',
 			'GESTOR_TFD',
 			'REGULADOR_TFD',
 			'ATENDENTE_TFD',
-			'ADMIN',
 			'DESENVOLVEDOR'
 		];
 		if (auth.me?.role === 'DESENVOLVEDOR') return todas;
@@ -72,9 +73,12 @@
 			role === 'ATENDENTE_TFD' ||
 			role === 'MEDICO' ||
 			role === 'MEDICO_ESPECIALISTA' ||
-			role === 'ATENDENTE_CENTRO'
+			role === 'ATENDENTE_CENTRO' ||
+			(role === 'COORDENADOR_UBS' && (tipoUnidade === 'CEO' || tipoUnidade === 'CEM'))
 	);
-	let exigeUbs = $derived(role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS');
+	let exigeUbs = $derived(
+		(role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') && tipoUnidade === 'UBS'
+	);
 
 	let ubsDaPrefeitura = $derived(
 		prefeituraId ? ubsList.filter((u) => u.prefeituraId === prefeituraId) : ubsList
@@ -238,15 +242,18 @@
 						for="role"
 						class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
 					>
-						Role
+						Perfil de Acesso
 					</label>
 					<select
 						id="role"
 						bind:value={role}
+						onchange={() => {
+							if (!cargo.trim()) cargo = formatarCargoPerfil({ role, tipoUnidade });
+						}}
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 					>
 						{#each rolesPermitidas as r (r)}
-							<option value={r}>{r}</option>
+							<option value={r}>{formatarCargoPerfil({ role: r, tipoUnidade })} ({r})</option>
 						{/each}
 					</select>
 				</div>
@@ -261,6 +268,9 @@
 					<select
 						id="tipoUnidade"
 						bind:value={tipoUnidade}
+						onchange={() => {
+							if (!cargo.trim()) cargo = formatarCargoPerfil({ role, tipoUnidade });
+						}}
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 					>
 						<option value="CEO">CEO · Centro Odontológico</option>

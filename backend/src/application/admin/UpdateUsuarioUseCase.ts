@@ -66,13 +66,35 @@ export class UpdateUsuarioUseCase {
     if (input.nome !== undefined) data['nome'] = input.nome;
     if (input.email !== undefined) data['email'] = input.email.toLowerCase();
     if (input.telefone !== undefined) data['telefone'] = input.telefone || null;
-    if (input.cargo !== undefined) data['cargo'] = input.cargo;
-    if (input.funcao !== undefined) data['funcao'] = input.funcao;
     if (input.role !== undefined) data['role'] = input.role;
     if (input.tipoUnidade !== undefined) data['tipoUnidade'] = input.tipoUnidade;
     if (input.unidadeId !== undefined) data['unidadeId'] = input.unidadeId;
     if (input.ubsId !== undefined) data['ubsId'] = input.ubsId;
     if (input.prefeituraId !== undefined) data['prefeituraId'] = input.prefeituraId;
+
+    if (input.cargo !== undefined) {
+      data['cargo'] = input.cargo;
+    } else if (input.role !== undefined || input.tipoUnidade !== undefined) {
+      const tipo = (input.tipoUnidade ?? alvo.tipoUnidade)?.toUpperCase();
+      const role = input.role ?? alvo.role;
+      if (tipo === 'CEO') {
+        if (role === 'COORDENADOR_UBS') data['cargo'] = 'Coordenador(a) do CEO';
+        else if (role === 'ADMIN') data['cargo'] = 'Diretor(a) / Gestor Geral do CEO';
+        else if (role === 'MEDICO') data['cargo'] = 'Cirurgião-Dentista Especialista';
+        else if (role === 'MEDICO_ESPECIALISTA') data['cargo'] = 'Cirurgião-Dentista Plantonista';
+        else if (role === 'ATENDENTE_CENTRO' || role === 'ATENDENTE_UBS') data['cargo'] = 'Atendente de Recepção CEO';
+      } else if (tipo === 'CEM') {
+        if (role === 'COORDENADOR_UBS') data['cargo'] = 'Coordenador(a) do CEM';
+        else if (role === 'ADMIN') data['cargo'] = 'Diretor(a) / Gestor Geral do CEM';
+        else if (role === 'MEDICO') data['cargo'] = 'Médico(a) Especialista';
+        else if (role === 'MEDICO_ESPECIALISTA') data['cargo'] = 'Médico(a) Plantonista';
+        else if (role === 'ATENDENTE_CENTRO' || role === 'ATENDENTE_UBS') data['cargo'] = 'Atendente de Recepção CEM';
+      }
+    }
+
+    if (input.funcao !== undefined) {
+      data['funcao'] = input.funcao;
+    }
 
     const atualizado = await prisma.atendente.update({
       where: { id: alvoId },
@@ -94,6 +116,8 @@ export class UpdateUsuarioUseCase {
       matricula: atualizado.matricula,
       email: atualizado.email,
       role: atualizado.role,
+      cargo: atualizado.cargo,
+      funcao: atualizado.funcao,
       tipoUnidade: atualizado.tipoUnidade,
       unidadeId: atualizado.unidadeId ?? atualizado.ubsId ?? null,
       ativo: atualizado.ativo,
