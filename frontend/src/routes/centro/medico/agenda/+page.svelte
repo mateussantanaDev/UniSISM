@@ -38,6 +38,7 @@
 		IconPlus
 	} from '@tabler/icons-svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
+	import { pertenceAoOrgaoCentro } from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	const auth = useAuth();
 
@@ -505,15 +506,7 @@
 
 			// Consulta via API de encaminhamentos aprovados
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
-			const filtradosCentro = res.filter(e => {
-				const f = (e.filaDestino as string) || '';
-				const c = (e as any).canalRoteamento || '';
-				if (ehCeo) {
-					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
-				} else {
-					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
-				}
-			});
+			const filtradosCentro = res.filter(e => pertenceAoOrgaoCentro(e, centroAtivo));
 			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda);
 
 			consultas = agendados.map((enc, idx) => {

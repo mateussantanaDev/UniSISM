@@ -3,6 +3,7 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
+import { isEspecialidadeOdonto } from '../../shared/centroClassifier';
 
 export interface ListarFilaCentroInput {
   centro?: 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
@@ -16,7 +17,7 @@ export interface ListarFilaCentroInput {
 export class ListarFilaEsperaCentroRecepcaoUseCase {
   async exec(input: ListarFilaCentroInput, scope: AccessScope): Promise<Encaminhamento[]> {
     const centroTarget = input.centro ?? 'CENTRO_ESPECIALIDADES';
-    const isOdonto = centroTarget === 'CENTRO_ODONTOLOGICO';
+    const isOdonto = centroTarget === 'CENTRO_ODONTOLOGICO' || (centroTarget as string) === 'CEO';
 
     const conditions: Prisma.EncaminhamentoWhereInput[] = [];
 
@@ -26,6 +27,8 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
           { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
           { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
           { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+          { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } },
+          { crm: { contains: 'CRO', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } },
@@ -33,21 +36,36 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
           { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } },
           { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Siso', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Exodont', mode: 'insensitive' } },
+          { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } },
         ],
       });
     } else {
       conditions.push({
-        OR: [
-          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
+        AND: [
           {
-            AND: [
-              { canalRoteamento: null, destinoRegulacao: null },
-              { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
-              { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
-              { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+            OR: [
+              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+              { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
+              { AND: [{ canalRoteamento: null }, { destinoRegulacao: null }] },
             ],
           },
+          { canalRoteamento: { not: CanalRoteamento.CENTRO_ODONTOLOGICO } },
+          { destinoRegulacao: { not: DestinoRegulacao.CENTRO_ODONTOLOGICO } },
+          { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Periodont', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Siso', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Exodont', mode: 'insensitive' } } },
+          { NOT: { especialidadeSolicitada: { contains: 'Dent', mode: 'insensitive' } } },
+          { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+          { NOT: { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } } },
+          { NOT: { crm: { contains: 'CRO', mode: 'insensitive' } } },
         ],
       });
     }
@@ -114,6 +132,19 @@ export class ListarFilaEsperaCentroRecepcaoUseCase {
       ],
     });
 
-    return rows.map(rowParaEncaminhamento);
+    const items = rows.map(rowParaEncaminhamento);
+    return items.filter((e) => {
+      const eOdonto = isEspecialidadeOdonto({
+        especialidade: e.solicitacao?.especialidadeSolicitada,
+        crm: e.solicitacao?.crm,
+        medicoNome: e.solicitacao?.medicoSolicitante,
+        profissionalAgendado: e.profissionalAgendado ?? undefined,
+        localAgendamento: e.localAgendamento ?? undefined,
+        canalRoteamento: (e as any).canalRoteamento,
+        destinoRegulacao: (e as any).destinoRegulacao,
+        filaDestino: (e as any).filaDestino,
+      });
+      return isOdonto ? eOdonto : !eOdonto;
+    });
   }
 }

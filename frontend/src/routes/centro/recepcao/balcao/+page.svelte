@@ -39,11 +39,23 @@
 	} from '@tabler/icons-svelte';
 	import {
 		type TipoCentro,
-		type AgendamentoOcupado
+		type AgendamentoOcupado,
+		isEspecialidadeOdonto,
+		pertenceAoOrgaoCentro
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
 
-	// Centro Selecionado determinado 100% pelo órgão / rota (CEM vs CEO)
-	let centroSelecionado: TipoCentro = $derived(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
+	// Centro Selecionado determinado pelo órgão / rota ou detecção de especialidade/profissional
+	let centroManual = $state<TipoCentro | null>(null);
+	let centroSelecionado: TipoCentro = $derived.by(() => {
+		if (page.url.pathname.includes('/ceo')) return 'CEO';
+		if (page.url.pathname.includes('/cem')) return 'CEM';
+		if (centroManual) return centroManual;
+		if (especialidade && isEspecialidadeOdonto(especialidade)) return 'CEO';
+		if (medicoSelecionado && isEspecialidadeOdonto({ especialidade: medicoSelecionado.especialidade, crm: medicoSelecionado.registro, nome: medicoSelecionado.nome })) {
+			return 'CEO';
+		}
+		return 'CEM';
+	});
 	let ehCeo = $derived(centroSelecionado === 'CEO');
 	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
 	let siglaOrgao = $derived<'CEM' | 'CEO'>(ehCeo ? 'CEO' : 'CEM');
@@ -139,6 +151,7 @@
 
 	let calculandoSlotBackend = $state(false);
 	let mensagemSlotBackend = $state('');
+	let confirmarPresencaImediata = $state(false);
 
 	// Especialidades obtidas 100% dos Serviços Habilitados no Centro e Escalas do Banco
 	let especialidadesCadastradas = $derived.by(() => {
@@ -943,7 +956,10 @@
 						horaAgendada: horaCalculada,
 						consultorio: consultorioCalculado,
 						ubsId: pacienteUbsId || undefined,
-						status: habilitarRetroativo ? statusRetroativo : undefined
+						status: habilitarRetroativo ? statusRetroativo : undefined,
+						centro: siglaOrgao,
+						confirmarPresenca: confirmarPresencaImediata,
+						statusAtendimento: confirmarPresencaImediata ? 'AGUARDANDO_ATENDIMENTO' : undefined
 					});
 
 					if (resBalcao && resBalcao.encaminhamento) {
@@ -968,7 +984,10 @@
 				});
 			}
 
-			sucessoAgendamento = `Protocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nEspecialidade: ${especialidade.toUpperCase()}\nData Agendada: ${dataCalculada} às ${horaCalculada}\nLocal: ${consultorioCalculado || nomeOrgao}`;
+			const statusPresencaTexto = confirmarPresencaImediata
+				? '\nStatus: PRESENÇA CONFIRMADA (Encaminhado para a Sala de Espera / Fila de Chamada)'
+				: '';
+			sucessoAgendamento = `Protocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nEspecialidade: ${especialidade.toUpperCase()}\nData Agendada: ${dataCalculada} às ${horaCalculada}\nLocal: ${consultorioCalculado || nomeOrgao}${statusPresencaTexto}`;
 
 			// Limpa formulário
 			pacienteCpf = '';
@@ -996,6 +1015,14 @@
 			procedimentoSolicitado = '';
 			recomendacoes = '';
 			habilitarRetroativo = false;
+			confirmarPresencaImediata = false;
+			slotEscolhido = null;
+			alocacaoOtimizadaBalcao = null;
+
+			// Atualiza grade de slots no servidor para marcar o horário recém-agendado como ocupado
+			if (especialidade) {
+				await calcularSlotBackend();
+			}
 
 			// Rola suavemente para o topo
 			window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1036,6 +1063,24 @@
 		</div>
 
 		<div class="flex items-center gap-2">
+			{#if !page.url.pathname.includes('/ceo') && !page.url.pathname.includes('/cem')}
+				<div class="inline-flex border border-slate-300 bg-slate-100 p-0.5">
+					<button
+						type="button"
+						onclick={() => (centroManual = 'CEM')}
+						class="px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors {!ehCeo ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
+					>
+						🏥 CEM (Médicas)
+					</button>
+					<button
+						type="button"
+						onclick={() => (centroManual = 'CEO')}
+						class="px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors {ehCeo ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
+					>
+						🦷 CEO (Odonto)
+					</button>
+				</div>
+			{/if}
 			<a
 				href="/{centroSelecionado.toLowerCase()}/recepcao/agenda"
 				class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-semibold px-3 py-1.5 uppercase transition-colors"
@@ -1076,13 +1121,29 @@
 
 	<!-- Alerta de Sucesso -->
 	{#if sucessoAgendamento}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 text-emerald-900 font-bold flex flex-col gap-1.5 items-start whitespace-pre-wrap shadow-xs">
+		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 text-emerald-900 font-bold flex flex-col gap-2 items-start whitespace-pre-wrap shadow-xs">
 			<div class="flex items-center gap-2 text-sm uppercase tracking-wide text-emerald-800">
-				<span>✓</span>
+				<IconCheck size={18} class="text-emerald-700" />
 				<span>AGENDAMENTO CONCLUÍDO COM SUCESSO</span>
 			</div>
-			<div class="font-mono text-xs font-normal bg-white/80 p-3 border border-emerald-300 w-full">
+			<div class="font-mono text-xs font-normal bg-white/90 p-3 border border-emerald-300 w-full">
 				{sucessoAgendamento}
+			</div>
+			<div class="flex flex-wrap gap-2 pt-1">
+				<a
+					href="/{centroSelecionado.toLowerCase()}/recepcao/agenda"
+					class="bg-emerald-800 hover:bg-emerald-900 text-white font-mono text-[11px] font-bold px-3 py-1.5 uppercase transition-colors inline-flex items-center gap-1"
+				>
+					<IconCalendar size={14} />
+					<span>Ver na Agenda / Calendário ({siglaOrgao})</span>
+				</a>
+				<a
+					href="/{centroSelecionado.toLowerCase()}/recepcao/fila"
+					class="border border-emerald-700 bg-white hover:bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-3 py-1.5 uppercase transition-colors inline-flex items-center gap-1"
+				>
+					<IconUser size={14} />
+					<span>Ver na Fila de Pacientes ({siglaOrgao})</span>
+				</a>
 			</div>
 		</div>
 	{/if}
@@ -1924,6 +1985,25 @@
 							placeholder="Instruções de preparo, exames a trazer ou recomendações da recepção (opcional)..."
 							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none resize-none focus:border-blue-900 font-sans text-xs"
 						></textarea>
+					</div>
+
+					<!-- Confirmação Imediata de Presença (Paciente no Balcão) -->
+					<div class="border border-emerald-300 bg-emerald-50/70 p-3 flex items-start gap-3 transition-colors">
+						<input
+							type="checkbox"
+							id="chk-presenca"
+							bind:checked={confirmarPresencaImediata}
+							class="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-800 focus:ring-emerald-700 cursor-pointer"
+						/>
+						<label for="chk-presenca" class="cursor-pointer select-none">
+							<div class="font-mono text-xs font-bold text-emerald-950 uppercase tracking-tight flex items-center gap-1.5">
+								<span class="inline-block w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+								Confirmar presença imediata (Paciente já está na recepção / sala de espera)
+							</div>
+							<p class="font-sans text-[11px] text-emerald-800 leading-snug mt-0.5">
+								Ao marcar esta opção, o paciente será encaminhado com status <strong>AGUARDANDO ATENDIMENTO</strong> para a fila da recepção e lista de chamada do especialista / Painel TV.
+							</p>
+						</label>
 					</div>
 				</div>
 			</div>

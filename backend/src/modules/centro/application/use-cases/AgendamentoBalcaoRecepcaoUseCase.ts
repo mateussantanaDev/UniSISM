@@ -6,6 +6,7 @@ import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento'
 import type { AccessScope } from '../../../../shared/scope';
 import { BadRequest, NotFound } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
+import { isEspecialidadeOdonto } from '../../shared/centroClassifier';
 
 export interface AgendamentoBalcaoInput {
   paciente: {
@@ -39,6 +40,9 @@ export interface AgendamentoBalcaoInput {
   horaAgendada?: string; // HH:MM
   consultorio?: string;
   ubsId?: string;
+  centro?: 'CEM' | 'CEO' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | string;
+  confirmarPresenca?: boolean;
+  statusAtendimento?: string;
   atendente: {
     id: string;
     nome: string;
@@ -74,9 +78,18 @@ export class AgendamentoBalcaoRecepcaoUseCase {
       ? new Date(input.solicitacao.dataSolicitacao)
       : now;
 
-    // Detect if CEO or CEM based on specialty or routing
-    const espLow = input.solicitacao.especialidadeSolicitada.toLowerCase();
-    const ehCeo = espLow.includes('odonto') || espLow.includes('bucal') || espLow.includes('canal') || espLow.includes('periodontia') || espLow.includes('estomatologia') || espLow.includes('bucomaxilo') || espLow.includes('endodontia') || espLow.includes('prótese') || espLow.includes('protese') || /\bpne\b/i.test(espLow);
+    // Detect if CEO or CEM based on explicit centro or semantic classification
+    const odontoDetectado = isEspecialidadeOdonto({
+      nome: input.solicitacao.especialidadeSolicitada,
+      especialidade: input.solicitacao.especialidadeSolicitada,
+      crm: input.solicitacao.crm,
+      medicoNome: input.medicoDesejado,
+      localAgendamento: input.consultorio,
+    });
+    const centroExplicitamenteCeo = input.centro
+      ? input.centro.toUpperCase() === 'CEO' || input.centro.toUpperCase() === 'CENTRO_ODONTOLOGICO'
+      : false;
+    const ehCeo = centroExplicitamenteCeo || odontoDetectado;
     const centroTipo = ehCeo ? 'CEO' : 'CEM';
 
     // Optimize scheduling date and slot using real database scales
@@ -93,9 +106,11 @@ export class AgendamentoBalcaoRecepcaoUseCase {
     let agendamentoPrevisto: Date;
     let profissionalAgendado = input.medicoDesejado || input.solicitacao.medicoSolicitante || 'Especialista da Escala';
     let localAg = ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades (CEM)';
+    let horaFinalFormatada = '08:00';
 
     if (input.dataAgendada && input.horaAgendada) {
-      agendamentoPrevisto = new Date(`${input.dataAgendada}T${input.horaAgendada}:00`);
+      horaFinalFormatada = input.horaAgendada.trim();
+      agendamentoPrevisto = new Date(`${input.dataAgendada}T${horaFinalFormatada}:00`);
       if (input.consultorio) localAg = input.consultorio;
       else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
         localAg = resultadoAlocacao.alocacao.consultorio;
@@ -105,6 +120,7 @@ export class AgendamentoBalcaoRecepcaoUseCase {
       }
     } else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
       const aloc = resultadoAlocacao.alocacao;
+      horaFinalFormatada = aloc.hora;
       agendamentoPrevisto = new Date(`${aloc.data}T${aloc.hora}:00`);
       profissionalAgendado = aloc.medicoNome;
       localAg = aloc.consultorio;
@@ -197,38 +213,58 @@ export class AgendamentoBalcaoRecepcaoUseCase {
           agendamentoPrevisto,
           profissionalAgendado,
           localAgendamento: localAg,
-          observacoesRegulacao: input.nota || `Agendamento direto efetuado no balcão do ${centroTipo}.`,
-          statusAtendimentoCentro: 'AGENDADO',
+          observacoesRegulacao: input.nota
+            ? `${input.nota} (Horário: às ${horaFinalFormatada})`
+            : `Agendamento direto efetuado no balcão do ${centroTipo} às ${horaFinalFormatada}.`,
+          statusAtendimentoCentro: (input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO')
+            ? 'AGUARDANDO_ATENDIMENTO'
+            : (input.statusAtendimento as any) || 'AGENDADO',
+          presencaRegistradaEm: (input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO')
+            ? now
+            : null,
         },
       });
 
+      const timelineEvents: any[] = [
+        {
+          encaminhamentoId: encRow.id,
+          tipo: TipoEventoTimeline.CRIADO,
+          titulo: 'Encaminhamento Criado no Balcão',
+          descricao: `Registrado diretamente no balcão do Centro de Especialidades para ${input.solicitacao.especialidadeSolicitada}.`,
+          autor: input.atendente.nome,
+          autorPapel: 'Recepção · Centro de Especialidades',
+        },
+        {
+          encaminhamentoId: encRow.id,
+          tipo: TipoEventoTimeline.APROVADO,
+          titulo: 'Aprovado para Centro de Especialidades',
+          descricao: 'Aprovação direta realizada pelo atendente de recepção.',
+          autor: input.atendente.nome,
+          autorPapel: 'Recepção · Centro de Especialidades',
+        },
+        {
+          encaminhamentoId: encRow.id,
+          tipo: TipoEventoTimeline.AGENDADO,
+          titulo: 'Vaga Alocada na Escala',
+          descricao: `Consulta agendada para ${agendamentoPrevisto.toISOString().substring(0, 10)} às ${agendamentoPrevisto.toISOString().substring(11, 16)}. Profissional: ${profissionalAgendado}.`,
+          autor: input.atendente.nome,
+          autorPapel: 'Recepção · Centro de Especialidades',
+        },
+      ];
+
+      if (input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO') {
+        timelineEvents.push({
+          encaminhamentoId: encRow.id,
+          tipo: TipoEventoTimeline.OBSERVACAO,
+          titulo: 'Presença Confirmada no Balcão',
+          descricao: `Presença confirmada no ato do agendamento presencial. Paciente aguardando chamada para ${localAg}.`,
+          autor: input.atendente.nome,
+          autorPapel: 'Recepção · Centro de Especialidades',
+        });
+      }
+
       await tx.eventoTimeline.createMany({
-        data: [
-          {
-            encaminhamentoId: encRow.id,
-            tipo: TipoEventoTimeline.CRIADO,
-            titulo: 'Encaminhamento Criado no Balcão',
-            descricao: `Registrado diretamente no balcão do Centro de Especialidades para ${input.solicitacao.especialidadeSolicitada}.`,
-            autor: input.atendente.nome,
-            autorPapel: 'Recepção · Centro de Especialidades',
-          },
-          {
-            encaminhamentoId: encRow.id,
-            tipo: TipoEventoTimeline.APROVADO,
-            titulo: 'Aprovado para Centro de Especialidades',
-            descricao: 'Aprovação direta realizada pelo atendente de recepção.',
-            autor: input.atendente.nome,
-            autorPapel: 'Recepção · Centro de Especialidades',
-          },
-          {
-            encaminhamentoId: encRow.id,
-            tipo: TipoEventoTimeline.AGENDADO,
-            titulo: 'Vaga Alocada na Escala',
-            descricao: `Consulta agendada para ${agendamentoPrevisto.toISOString().substring(0, 10)} às ${agendamentoPrevisto.toISOString().substring(11, 16)}. Profissional: ${profissionalAgendado}.`,
-            autor: input.atendente.nome,
-            autorPapel: 'Recepção · Centro de Especialidades',
-          },
-        ],
+        data: timelineEvents,
       });
 
       await tx.auditoriaLog.create({

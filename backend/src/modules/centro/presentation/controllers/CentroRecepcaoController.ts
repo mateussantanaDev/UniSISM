@@ -74,6 +74,9 @@ const balcaoSchema = z.object({
   horaAgendada: z.string().optional(),
   consultorio: z.string().optional(),
   ubsId: z.string().optional(),
+  centro: z.string().optional(),
+  confirmarPresenca: z.boolean().optional(),
+  statusAtendimento: z.string().optional(),
 });
 
 const desmarcarReagendarSchema = z.object({
@@ -298,6 +301,9 @@ export class CentroRecepcaoController {
 
     const result = await this.balcaoUC.exec(
       {
+        centro: body.centro || (req.query.centro as string | undefined),
+        confirmarPresenca: body.confirmarPresenca,
+        statusAtendimento: body.statusAtendimento,
         paciente: body.paciente,
         solicitacao: body.solicitacao,
         nota: body.nota,

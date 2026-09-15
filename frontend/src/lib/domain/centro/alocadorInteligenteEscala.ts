@@ -257,3 +257,60 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		justificativaEscala: `${justificativaTexto} Profissional: ${escala.nome} (${escala.registro}), escala em ${escala.diasSemana.join(', ')} das ${escala.horarioInicio} às ${escala.horarioFim}. Vaga alocada no ${consultorioFinal}.`
 	};
 }
+
+export const TERMOS_ODONTO: readonly string[] = [
+	'endodontia', 'endo', 'periodontia', 'perio', 'cirurgia bucomaxilofacial',
+	'bucomaxilofacial', 'bucomaxilo', 'odontopediatria', 'pacientes com necessidades especiais',
+	'pne', 'prótese dentária', 'protese dentaria', 'prótese', 'protese', 'estomatologia',
+	'ortodontia', 'odontologia', 'saúde bucal', 'saude bucal', 'dentística', 'dentistica',
+	'cirurgia oral', 'implante', 'implantodontia', 'radiologia odontológica',
+	'traumatologia bucomaxilofacial', 'ceo', 'exodontia', 'siso', 'dente', 'dentári',
+	'dentari', 'dentist', 'restauração', 'restauracao', 'obturação', 'obturacao', 'canal',
+	'raspagem', 'profilaxia', 'tartarectomia', 'tártaro', 'tartaro', 'flúor', 'fluor',
+	'selante', 'frenectomia', 'frenotomia', 'gengivoplastia', 'gengivectomia', 'cárie',
+	'carie', 'pulpotomia', 'pulpectomia', 'coroa', 'apicectomia', 'enxerto', 'clareamento',
+	'bucal', 'boca', 'alveoloplastia', 'alveolo', 'amálgama', 'amalgama', 'resina', 'faceta',
+	'odont', 'cisto', 'periapi', 'periodo', 'buco', 'maxil'
+];
+
+export function isEspecialidadeOdonto(item: any): boolean {
+	if (!item) return false;
+	if (typeof item === 'string') {
+		const str = item.toLowerCase().trim();
+		if (/\bcro\b/i.test(str) || str.startsWith('cro')) return true;
+		if (/\bcrm\b/i.test(str) || str.startsWith('crm')) return false;
+		if (str.includes('cadeira') || str.includes('ceo')) return true;
+		return TERMOS_ODONTO.some(t => t === 'pne' ? /\bpne\b/i.test(str) : str.includes(t));
+	}
+
+	// 1. Rota/Canal explícitos
+	const canal = (item.canalRoteamento || item.destinoRegulacao || item.filaDestino || '').toUpperCase();
+	if (canal === 'CEO' || canal === 'CENTRO_ODONTOLOGICO') return true;
+
+	// 2. Registro no Conselho Profissional (CRO vs CRM)
+	const registro = (item.registro || item.crm || item.solicitacao?.crm || '').toUpperCase();
+	if (registro.includes('CRO')) return true;
+
+	// 3. Local físico
+	const local = (item.localAgendamento || item.consultorio || '').toUpperCase();
+	if (local.includes('CADEIRA') || local.includes('CEO') || local.includes('ODONTO')) return true;
+
+	// 4. Semântica por Especialidade / Nome
+	const texto = [
+		item.especialidade || '',
+		item.nome || '',
+		item.medicoNome || '',
+		item.profissionalAgendado || '',
+		item.solicitacao?.especialidadeSolicitada || '',
+		item.solicitacao?.medicoSolicitante || ''
+	].join(' ').toLowerCase().trim();
+
+	if (/\bcro\b/i.test(texto)) return true;
+
+	return TERMOS_ODONTO.some(t => t === 'pne' ? /\bpne\b/i.test(texto) : texto.includes(t));
+}
+
+export function pertenceAoOrgaoCentro(item: any, centro: TipoCentro): boolean {
+	const eOdonto = isEspecialidadeOdonto(item);
+	return centro === 'CEO' ? eOdonto : !eOdonto;
+}

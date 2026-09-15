@@ -1378,6 +1378,9 @@ export interface AgendarBalcaoCentroRequest {
   consultorio?: string;
   status?: string;
   ubsId?: string;
+  centro?: string;
+  confirmarPresenca?: boolean;
+  statusAtendimento?: string;
 }
 
 export interface AgendamentoBalcaoRetroativoRequest {

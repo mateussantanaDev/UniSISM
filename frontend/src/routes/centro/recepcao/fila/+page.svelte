@@ -18,6 +18,8 @@
 	} from '@tabler/icons-svelte';
 	import {
 		alocarVagaPorProfissionalEEscala,
+		pertenceAoOrgaoCentro,
+		isEspecialidadeOdonto,
 		ESCALAS_PADRAO_CEM,
 		ESCALAS_PADRAO_CEO,
 		type TipoCentro,
@@ -79,8 +81,7 @@
 			const [resCentro, resTodos, resEscalas] = await Promise.all([
 				api.centroRecepcao.listFilaEspera({
 					centro: centroParam,
-					status: 'APROVADO',
-					agendado: false
+					status: 'APROVADO'
 				}).catch(() => null),
 				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
 				api.centroRecepcao.listEscalas({ centro: centroParam }).catch(() => [])
@@ -94,20 +95,11 @@
 				registro: e.crm
 			}));
 
-			if (resCentro && Array.isArray(resCentro.encaminhamentos)) {
-				encaminhamentos = resCentro.encaminhamentos as any[];
-			} else {
-				// Fallback filtrando estritamente a fila do respectivo órgão
-				encaminhamentos = resTodos.filter(e => {
-					const f = (e.filaDestino as string) || '';
-					const c = (e as any).canalRoteamento || '';
-					if (ehCeo) {
-						return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
-					} else {
-						return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
-					}
-				});
-			}
+			const baseEncaminhamentos = (resCentro && Array.isArray(resCentro.encaminhamentos) && resCentro.encaminhamentos.length > 0)
+				? (resCentro.encaminhamentos as any[])
+				: resTodos;
+
+			encaminhamentos = (baseEncaminhamentos as any[]).filter(e => pertenceAoOrgaoCentro(e, siglaOrgao as TipoCentro));
 		} catch (e: any) {
 			console.error(e);
 			erro = `Falha ao carregar fila da regulação: ${e?.message || 'Erro no servidor'}`;

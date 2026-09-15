@@ -43,6 +43,9 @@ export class GestaoCotasUseCase {
       orderBy: { nome: 'asc' },
     });
 
+    const centroNorm = centro ? centro.toUpperCase() : undefined;
+    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
+
     const especialidadesCentro = filterEspecialidadesByCentro(espList, centro).map((e) => e.nome);
 
     const ubsIds = ubsList.map((u) => u.id);
@@ -63,10 +66,18 @@ export class GestaoCotasUseCase {
       where: {
         ubsId: { in: ubsIds },
         status: StatusEncaminhamento.APROVADO,
-        OR: [
-          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
-        ],
+        OR: ehCeo
+          ? [
+              { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+              { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
+              { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+              { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } },
+              { especialidadeSolicitada: { in: especialidadesCentro } },
+            ]
+          : [
+              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
+              { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
+            ],
         AND: [
           {
             OR: [
@@ -170,6 +181,10 @@ export class GestaoCotasUseCase {
         OR: [
           { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
           { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
+          { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
+          { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
+          { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+          { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } },
         ],
         AND: [
           {

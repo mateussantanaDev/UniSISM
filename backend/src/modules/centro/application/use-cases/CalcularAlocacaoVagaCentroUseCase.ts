@@ -197,44 +197,65 @@ export class CalcularAlocacaoVagaCentroUseCase {
     }
 
     // 4. Busca agendamentos existentes no banco para detectar slots ocupados
+    const condicoesProfissional: any[] = [
+      { profissionalAgendado: { contains: escalaSelecionada.medicoNome, mode: 'insensitive' } },
+      { especialidadeSolicitada: { contains: escalaSelecionada.especialidade, mode: 'insensitive' } },
+    ];
+    const primeiroNome = escalaSelecionada.medicoNome.split(' ')[0];
+    if (primeiroNome && primeiroNome.length > 2) {
+      condicoesProfissional.push({ profissionalAgendado: { contains: primeiroNome, mode: 'insensitive' } });
+    }
+    if (escalaSelecionada.crm) {
+      condicoesProfissional.push({ crm: { contains: escalaSelecionada.crm, mode: 'insensitive' } });
+      condicoesProfissional.push({ profissionalAgendado: { contains: escalaSelecionada.crm, mode: 'insensitive' } });
+    }
+
     const agendamentosDb = await prisma.encaminhamento.findMany({
       where: {
         status: 'APROVADO',
         agendamentoPrevisto: { not: null },
         statusAtendimentoCentro: { notIn: ['FALTOU'] },
-        ...(ehCeo
-          ? {
-              OR: [
-                { canalRoteamento: 'CENTRO_ODONTOLOGICO' as any },
-                { destinoRegulacao: 'CENTRO_ODONTOLOGICO' as any },
-                { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
-              ],
-            }
-          : {
-              OR: [
-                { canalRoteamento: 'CENTRO_ESPECIALIDADES' as any },
-                { destinoRegulacao: 'CENTRO_ESPECIALIDADES' as any },
-              ],
-            }),
-        AND: [
-          {
-            OR: [
-              { profissionalAgendado: escalaSelecionada.medicoNome },
-              { especialidadeSolicitada: escalaSelecionada.especialidade },
-            ],
-          },
-        ],
+        OR: condicoesProfissional,
       },
-      select: { agendamentoPrevisto: true },
+      select: { agendamentoPrevisto: true, observacoesRegulacao: true, profissionalAgendado: true },
     });
 
     const slotsOcupados = new Set<string>();
     for (const ag of agendamentosDb) {
       if (ag.agendamentoPrevisto) {
-        const iso = ag.agendamentoPrevisto.toISOString();
-        const dt = iso.substring(0, 10);
-        const hr = iso.substring(11, 16);
-        slotsOcupados.add(`${dt}_${hr}`);
+        const d = ag.agendamentoPrevisto;
+        const iso = d.toISOString();
+        const dtUtc = iso.substring(0, 10);
+        const hrUtc = iso.substring(11, 16);
+        slotsOcupados.add(`${dtUtc}_${hrUtc}`);
+
+        try {
+          const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          const parts = formatter.formatToParts(d);
+          const y = parts.find((p) => p.type === 'year')?.value;
+          const m = parts.find((p) => p.type === 'month')?.value;
+          const dia = parts.find((p) => p.type === 'day')?.value;
+          const h = parts.find((p) => p.type === 'hour')?.value;
+          const min = parts.find((p) => p.type === 'minute')?.value;
+          if (y && m && dia && h && min) {
+            slotsOcupados.add(`${y}-${m}-${dia}_${h}:${min}`);
+          }
+        } catch {}
+
+        if (ag.observacoesRegulacao) {
+          const match = ag.observacoesRegulacao.match(/(\d{2}:\d{2})/);
+          if (match) {
+            slotsOcupados.add(`${dtUtc}_${match[1]}`);
+          }
+        }
       }
     }
 

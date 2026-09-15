@@ -26,6 +26,7 @@
 	import {
 		alocarVagaPorProfissionalEEscala,
 		gerarSlotsTurno,
+		pertenceAoOrgaoCentro,
 		type TipoCentro,
 		type AgendamentoOcupado,
 		type EscalaProfissionalCentro
@@ -124,10 +125,33 @@
 		return formatados.join(', ') + 's';
 	}
 
-	// Extrai horário da consulta formatado HH:MM
-	function extrairHorario(nota: string | undefined): string {
-		if (!nota) return '08:00';
-		const match = nota.match(/(\d{2}:\d{2})/);
+	// Extrai horário da consulta formatado HH:MM a partir do encaminhamento, agendamentoPrevisto ou nota
+	function extrairHorario(encOuNota: any): string {
+		if (!encOuNota) return '08:00';
+		if (typeof encOuNota === 'object') {
+			const enc = encOuNota;
+			// 1. Extrai de agendamentoPrevisto se presente (formato ISO "YYYY-MM-DDTHH:mm:ss")
+			if (enc.agendamentoPrevisto) {
+				const matchIso = enc.agendamentoPrevisto.match(/T(\d{2}:\d{2})/);
+				if (matchIso) return matchIso[1];
+				try {
+					const d = new Date(enc.agendamentoPrevisto);
+					const h = String(d.getHours()).padStart(2, '0');
+					const m = String(d.getMinutes()).padStart(2, '0');
+					if (h !== '00' || m !== '00') return `${h}:${m}`;
+				} catch {}
+			}
+			// 2. Extrai de observacoesRegulacao
+			if (enc.observacoesRegulacao) {
+				const match = enc.observacoesRegulacao.match(/(\d{2}:\d{2})/);
+				if (match) return match[1];
+			}
+			return '08:00';
+		}
+		const str = String(encOuNota);
+		const matchIso = str.match(/T(\d{2}:\d{2})/);
+		if (matchIso) return matchIso[1];
+		const match = str.match(/(\d{2}:\d{2})/);
 		return match ? match[1] : '08:00';
 	}
 
@@ -146,11 +170,23 @@
 	function agendamentoPertenceAoMedico(enc: Encaminhamento, esp: EspecialistaAgendaItem): boolean {
 		const medicoEnc = extrairNomeMedicoAgendamento(enc).toLowerCase();
 		if (medicoEnc) {
-			return medicoEnc.includes(esp.nome.toLowerCase()) || esp.nome.toLowerCase().includes(medicoEnc);
+			if (medicoEnc.includes(esp.nome.toLowerCase()) || esp.nome.toLowerCase().includes(medicoEnc)) {
+				return true;
+			}
+			// Se tiver CRM/CRO no texto ou no especialista
+			if (esp.crm && enc.solicitacao?.crm && esp.crm.replace(/\D/g, '') === enc.solicitacao.crm.replace(/\D/g, '')) {
+				return true;
+			}
+			const espPrimeiroNome = esp.nome.split(' ')[0].toLowerCase();
+			if (espPrimeiroNome.length > 2 && medicoEnc.includes(espPrimeiroNome)) {
+				return true;
+			}
 		}
 		// Fallback por especialidade se nenhum médico estiver explicitamente citado
 		if (enc.solicitacao?.especialidadeSolicitada) {
-			return enc.solicitacao.especialidadeSolicitada.toLowerCase() === esp.especialidade.toLowerCase();
+			const espEnc = enc.solicitacao.especialidadeSolicitada.toLowerCase();
+			const espMed = esp.especialidade.toLowerCase();
+			return espEnc.includes(espMed) || espMed.includes(espEnc);
 		}
 		return false;
 	}
@@ -230,18 +266,10 @@
 			escalasCarregadas = Array.isArray(resEscalas) ? resEscalas : [];
 			profissionaisDoCentro = Array.isArray(resProfissionais) ? resProfissionais : [];
 
-			todosEncaminhamentosMes = resTodos.filter(e => {
-				const f = (e.filaDestino as string) || '';
-				const c = (e as any).canalRoteamento || '';
-				if (ehCeo) {
-					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
-				} else {
-					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
-				}
-			});
+			todosEncaminhamentosMes = resTodos.filter(e => pertenceAoOrgaoCentro(e, siglaOrgao as TipoCentro));
 
 			if (resCentro && Array.isArray(resCentro.agendamentos)) {
-				encaminhamentos = resCentro.agendamentos as any[];
+				encaminhamentos = (resCentro.agendamentos as any[]).filter(e => pertenceAoOrgaoCentro(e, siglaOrgao as TipoCentro));
 			} else {
 				encaminhamentos = todosEncaminhamentosMes.filter(
 					e => e.agendamentoPrevisto?.substring(0, 10) === dataAgenda
@@ -294,8 +322,8 @@
 	let ordenados = $derived.by(() => {
 		let res = [...filtrados];
 		res.sort((a, b) => {
-			const horaA = extrairHorario(a.observacoesRegulacao);
-			const horaB = extrairHorario(b.observacoesRegulacao);
+			const horaA = extrairHorario(a);
+			const horaB = extrairHorario(b);
 			return horaA.localeCompare(horaB);
 		});
 		return res;
@@ -316,7 +344,7 @@
 	function abrirRealocacao(enc: Encaminhamento) {
 		encaminhamentoParaRealocar = enc;
 		novaDataRealocacao = enc.agendamentoPrevisto ? enc.agendamentoPrevisto.substring(0, 10) : dataAgenda;
-		novoHorarioRealocacao = extrairHorario(enc.observacoesRegulacao);
+		novoHorarioRealocacao = extrairHorario(enc);
 		novoMedicoRealocacao = extrairNomeMedicoAgendamento(enc) || (especialistaAtivo?.nome ?? '');
 		motivoRealocacao = 'Remanejamento de escala do especialista pelo Gestor';
 		erroModalRealocacao = '';
@@ -337,7 +365,7 @@
 			.filter(e => e.agendamentoPrevisto && e.id !== encaminhamentoParaRealocar!.id)
 			.map(e => ({
 				data: e.agendamentoPrevisto!.substring(0, 10),
-				hora: extrairHorario(e.observacoesRegulacao),
+				hora: extrairHorario(e),
 				medicoNome: extrairNomeMedicoAgendamento(e)
 			}));
 
@@ -599,7 +627,7 @@
 
 				if (preview.length < 3) {
 					preview.push({
-						hora: extrairHorario(a.observacoesRegulacao),
+						hora: extrairHorario(a),
 						nome: a.paciente?.nome?.split(' ')[0] || 'Paciente',
 						prioridade: p
 					});
@@ -659,7 +687,7 @@
 			: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
 
 		return slots.map(hora => {
-			const agendadosNesteHorario = ordenados.filter(e => extrairHorario(e.observacoesRegulacao) === hora);
+			const agendadosNesteHorario = ordenados.filter(e => extrairHorario(e) === hora);
 			return {
 				hora,
 				agendados: agendadosNesteHorario,
@@ -1180,7 +1208,7 @@
 							{#each paginados as enc (enc.id)}
 								<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 									<td class="border-r border-slate-100 px-3 py-2.5 font-bold text-blue-900 text-sm">
-										{extrairHorario(enc.observacoesRegulacao)}
+										{extrairHorario(enc)}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2.5 text-slate-600">
 										{enc.protocolo}
@@ -1304,7 +1332,7 @@
 					CPF: {encaminhamentoParaRealocar.paciente.cpf} · Especialidade: <strong>{encaminhamentoParaRealocar.solicitacao.especialidadeSolicitada}</strong>
 				</div>
 				<div class="text-[11px] text-purple-800 mt-1 border-t border-purple-200 pt-1">
-					Data Atual Agendada: <strong>{formatarData(encaminhamentoParaRealocar.agendamentoPrevisto)}</strong> às <strong>{extrairHorario(encaminhamentoParaRealocar.observacoesRegulacao)}</strong>
+					Data Atual Agendada: <strong>{formatarData(encaminhamentoParaRealocar.agendamentoPrevisto)}</strong> às <strong>{extrairHorario(encaminhamentoParaRealocar)}</strong>
 				</div>
 			</div>
 
