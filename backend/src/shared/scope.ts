@@ -37,6 +37,7 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'MEDICO':
     case 'MEDICO_ESPECIALISTA':
     case 'ATENDENTE_CENTRO':
+    case 'ENFERMEIRO':
       return { kind: 'PREFEITURA', prefeituraId: fallbackPrefId };
     case 'COORDENADOR_UBS':
     case 'ATENDENTE_UBS':

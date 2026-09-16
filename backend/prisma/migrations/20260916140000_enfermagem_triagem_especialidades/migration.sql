@@ -1,0 +1,19 @@
+-- AlterEnum
+ALTER TYPE "RoleAtendente" ADD VALUE IF NOT EXISTS 'ENFERMEIRO';
+
+-- AlterTable
+ALTER TABLE "encaminhamentos" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "triagemRealizada" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "triagemEm" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "triagemPorId" TEXT,
+ADD COLUMN IF NOT EXISTS "triagemPorNome" TEXT,
+ADD COLUMN IF NOT EXISTS "triagemCoren" TEXT,
+ADD COLUMN IF NOT EXISTS "triagemDados" JSONB,
+ADD COLUMN IF NOT EXISTS "chamadaTriagemEm" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "consultorioTriagem" TEXT;
+
+-- AlterTable
+ALTER TABLE "escalas_especialistas" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE "especialidades_catalogo" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;

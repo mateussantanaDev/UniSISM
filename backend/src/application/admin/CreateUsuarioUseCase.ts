@@ -167,6 +167,7 @@ export class CreateUsuarioUseCase {
         MEDICO: 'MED-',
         MEDICO_ESPECIALISTA: 'ESP-',
         ATENDENTE_CENTRO: 'ATC-',
+        ENFERMEIRO: 'ENF-',
       };
       const prefix = prefixMap[input.role] || 'USR-';
       const cleanedCpf = input.cpf.replace(/\D/g, '');

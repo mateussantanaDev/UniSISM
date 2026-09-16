@@ -108,6 +108,7 @@ import { NotificacaoAusenciaMedicaUseCase } from '../modules/centro/application/
 import { CalcularAlocacaoVagaCentroUseCase } from '../modules/centro/application/use-cases/CalcularAlocacaoVagaCentroUseCase';
 import { GestaoCotasUseCase } from '../modules/centro/application/use-cases/GestaoCotasUseCase';
 import { GestaoEscalasUseCase } from '../modules/centro/application/use-cases/GestaoEscalasUseCase';
+import { TriagemEnfermagemUseCase } from '../modules/centro/application/use-cases/TriagemEnfermagemUseCase';
 import { RemanejamentoLoteUseCase } from '../modules/centro/application/use-cases/RemanejamentoLoteUseCase';
 import { RelatorioBpaUseCase } from '../modules/centro/application/use-cases/RelatorioBpaUseCase';
 import { AuditoriaCentroUseCase } from '../modules/centro/application/use-cases/AuditoriaCentroUseCase';
@@ -430,6 +431,7 @@ export function buildContainer() {
     new NotificacaoAusenciaMedicaUseCase(),
     calcularAlocacaoUC,
     gestaoEscalasUC,
+    new TriagemEnfermagemUseCase(),
   );
 
   const centroGestaoController = new CentroGestaoController(

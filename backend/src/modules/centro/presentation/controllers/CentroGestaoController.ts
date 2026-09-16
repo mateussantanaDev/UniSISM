@@ -61,6 +61,7 @@ const postEspecialidadeSchema = z.object({
   valorTabelaBrl: z.number().default(0),
   documentosObrigatorios: z.array(z.string()).default([]),
   preparoRequerido: z.string().optional(),
+  necessitaTriagem: z.boolean().optional(),
   ativa: z.boolean().default(true),
   tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
   centro: z.string().optional(),

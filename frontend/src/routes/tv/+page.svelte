@@ -10,7 +10,7 @@
 		medicoNome: string;
 		especialidade: string;
 		horario: string;
-		tipo: 'CONSULTA' | 'PROCEDIMENTO' | 'RETORNO';
+		tipo: 'CONSULTA' | 'PROCEDIMENTO' | 'RETORNO' | 'TRIAGEM';
 		chamadoEm: Date;
 	}
 
@@ -101,14 +101,17 @@
 	}
 
 	// Síntese de Voz Simplificada e Humanizada em Português (pt-BR)
-	function falarChamada(paciente: string, consultorio: string) {
+	// Síntese de Voz Simplificada e Humanizada em Português (pt-BR)
+	function falarChamada(paciente: string, consultorio: string, tipo?: string) {
 		if (!vozHabilitada || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 		try {
 			window.speechSynthesis.cancel();
 			const nomeLimpo = (paciente || 'Paciente').trim().replace(/[-_]/g, ' ');
 			const localLimpo = (consultorio || 'Consultório').trim();
 
-			const texto = `Atenção, paciente ${nomeLimpo}. Por favor, comparecer ao ${localLimpo}.`;
+			const texto = tipo === 'TRIAGEM'
+				? `Atenção, paciente ${nomeLimpo}. Por favor, comparecer à ${localLimpo} para triagem de enfermagem.`
+				: `Atenção, paciente ${nomeLimpo}. Por favor, comparecer ao ${localLimpo}.`;
 			const utterance = new SpeechSynthesisUtterance(texto);
 			utterance.lang = 'pt-BR';
 			utterance.rate = 0.92;
@@ -189,7 +192,7 @@
 						medicoNome: maisRecente.medicoNome,
 						especialidade: maisRecente.especialidade,
 						horario: maisRecente.horario,
-						tipo: 'CONSULTA',
+						tipo: (maisRecente.tipo as any) || 'CONSULTA',
 						chamadoEm: new Date(maisRecente.chamadoEm),
 					};
 					ultimasChamadas = tvRes.ultimasChamadas || [];
@@ -197,7 +200,7 @@
 					piscarDestaque = true;
 					setTimeout(() => { piscarDestaque = false; }, 4000);
 					
-					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio);
+					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio, maisRecente.tipo);
 				}
 				return;
 			}
@@ -494,15 +497,22 @@
 					<!-- Tag de status de chamada -->
 					<div class="flex items-center justify-between border-b border-slate-800 pb-4">
 						<div class="flex items-center gap-3">
-							<span class="inline-flex items-center gap-2 border {piscarDestaque ? 'border-amber-600 bg-amber-50 text-amber-900' : 'border-blue-700 bg-blue-950 text-blue-300'} px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest">
-								{#if piscarDestaque}
-									<span class="inline-block h-2 w-2 bg-amber-600"></span>
-									NOVA CHAMADA
-								{:else}
-									<span class="inline-block h-2 w-2 bg-blue-400"></span>
-									ATENDIMENTO ATUAL
-								{/if}
-							</span>
+							{#if chamadaAtual?.tipo === 'TRIAGEM'}
+								<span class="inline-flex items-center gap-2 border border-purple-500 bg-purple-950 text-purple-200 px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest animate-pulse">
+									<span class="inline-block h-2 w-2 bg-purple-400"></span>
+									TRIAGEM DE ENFERMAGEM
+								</span>
+							{:else}
+								<span class="inline-flex items-center gap-2 border {piscarDestaque ? 'border-amber-600 bg-amber-50 text-amber-900' : 'border-blue-700 bg-blue-950 text-blue-300'} px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest">
+									{#if piscarDestaque}
+										<span class="inline-block h-2 w-2 bg-amber-600"></span>
+										NOVA CHAMADA
+									{:else}
+										<span class="inline-block h-2 w-2 bg-blue-400"></span>
+										ATENDIMENTO ATUAL
+									{/if}
+								</span>
+							{/if}
 							<span class="font-mono text-xs tracking-wider text-slate-400 uppercase">
 								Horário: <strong class="text-white font-mono">{chamadaAtual?.horario || horarioAtual}</strong>
 							</span>

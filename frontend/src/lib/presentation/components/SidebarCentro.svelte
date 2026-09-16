@@ -23,7 +23,7 @@
 		const list: NavGroup[] = [];
 
 		// Recepção: Atendentes, Reguladores, Admins e Devs
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ENFERMEIRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
 				titulo: 'RECEPÇÃO',
 				items: [
@@ -31,6 +31,18 @@
 					{ label: 'Agenda do Dia', href: '/centro/recepcao/agenda', shortcut: 'A' },
 					{ label: 'Agendar no Balcão', href: '/centro/recepcao/balcao', shortcut: 'B' },
 					{ label: 'Painel TV (Chamada)', href: '/centro/recepcao/painel', shortcut: 'T' }
+				]
+			});
+		}
+
+		// Enfermagem & Triagem
+		if (role === 'ENFERMEIRO' || role === 'REGULADOR_SMS' || role === 'ATENDENTE_CENTRO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+			list.push({
+				titulo: 'ENFERMAGEM & TRIAGEM',
+				items: [
+					{ label: 'Triagem & Sinais Vitais', href: '/centro/enfermagem/triagem', shortcut: 'E' },
+					{ label: 'Chamar Triagem (Painel)', href: '/centro/recepcao/painel', shortcut: 'T' },
+					{ label: 'Agendar no Balcão', href: '/centro/recepcao/balcao', shortcut: 'B' }
 				]
 			});
 		}

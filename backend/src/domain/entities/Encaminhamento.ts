@@ -138,6 +138,33 @@ export interface Encaminhamento {
   deletadoPorNome?: string | null;
   motivoExclusao?: string | null;
   deletadoEm?: string | null;
+
+  // ───── Triagem de Enfermagem ─────
+  necessitaTriagem?: boolean;
+  triagemRealizada?: boolean;
+  triagemEm?: string | null;
+  triagemPorId?: string | null;
+  triagemPorNome?: string | null;
+  triagemCoren?: string | null;
+  triagemDados?: SinaisVitaisTriagem | any | null;
+  chamadaTriagemEm?: string | null;
+  consultorioTriagem?: string | null;
+}
+
+export interface SinaisVitaisTriagem {
+  pressaoArterial?: string;
+  frequenciaCardiaca?: number;
+  frequenciaRespiratoria?: number;
+  temperatura?: number;
+  glicemiaCapilar?: number;
+  saturacaoO2?: number;
+  peso?: number;
+  altura?: number;
+  imc?: number;
+  classificacaoImc?: string;
+  classificacaoRisco?: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE' | 'AZUL';
+  queixaPrincipal?: string;
+  observacoes?: string;
 }
 
 export interface MetricasDashboard {

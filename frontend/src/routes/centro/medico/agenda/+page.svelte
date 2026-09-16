@@ -12,7 +12,8 @@
 		Alergia,
 		CondicaoCronica,
 		MedicamentoEmUso,
-		ProcedimentoRealizadoItem
+		ProcedimentoRealizadoItem,
+		SinaisVitaisTriagem
 	} from '$lib/api/types';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
@@ -94,6 +95,12 @@
 			especialidade: string;
 			criadoEm: string;
 		};
+		necessitaTriagem?: boolean;
+		triagemRealizada?: boolean;
+		triagemEm?: string;
+		triagemPorNome?: string;
+		triagemCoren?: string;
+		triagemDados?: SinaisVitaisTriagem;
 	}
 
 	// Dynamic State
@@ -536,7 +543,13 @@
 						dataSolicitacao: enc.solicitacao.dataSolicitacao || ''
 					},
 					unidadeOrigem: enc.unidadeOrigem || 'Unidade de Origem',
-					observacoesRegulacao: enc.observacoesRegulacao || ''
+					observacoesRegulacao: enc.observacoesRegulacao || '',
+					necessitaTriagem: (enc as any).necessitaTriagem,
+					triagemRealizada: (enc as any).triagemRealizada,
+					triagemEm: (enc as any).triagemEm,
+					triagemPorNome: (enc as any).triagemPorNome,
+					triagemCoren: (enc as any).triagemCoren,
+					triagemDados: (enc as any).triagemDados
 				};
 			});
 		} catch (e: any) {
@@ -603,6 +616,23 @@
 	let totalEmAtendimento = $derived(consultas.filter(c => c.status === 'EM_ATENDIMENTO').length);
 	let totalConcluidos = $derived(consultas.filter(c => c.status === 'CONCLUIDO').length);
 	let totalFaltas = $derived(consultas.filter(c => c.status === 'FALTOU').length);
+	let taxaOcupacao = $derived(totalAgendados > 0 ? Math.round((totalConcluidos / totalAgendados) * 100) : 0);
+
+	function formatarTimer(seg: number): string {
+		const m = Math.floor(seg / 60).toString().padStart(2, '0');
+		const s = (seg % 60).toString().padStart(2, '0');
+		return `${m}:${s}`;
+	}
+
+	function calcularIdade(dataNasc: string): number {
+		if (!dataNasc) return 0;
+		const nasc = new Date(dataNasc);
+		const hoje = new Date();
+		let idade = hoje.getFullYear() - nasc.getFullYear();
+		const m = hoje.getMonth() - nasc.getMonth();
+		if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+		return idade;
+	}
 
 	// Navigation between days
 	function navegarDia(delta: number) {
@@ -620,15 +650,6 @@
 	function formatarDataExtensa(iso: string) {
 		const d = new Date(iso + 'T12:00:00');
 		return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-	}
-
-	function calcularIdade(dataNasc: string): number {
-		const hoje = new Date();
-		const nasc = new Date(dataNasc);
-		let idade = hoje.getFullYear() - nasc.getFullYear();
-		const m = hoje.getMonth() - nasc.getMonth();
-		if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-		return idade;
 	}
 
 	// Attendance Actions
@@ -654,14 +675,29 @@
 		soapQueixa = c.solicitacao?.justificativaClinica
 			? `Queixa informada na solicitação: ${c.solicitacao.justificativaClinica}`
 			: '';
+
+		// Pré-popula sinais vitais aferidos pela enfermagem na triagem clínica
+		if (c.triagemDados) {
+			soapPa = c.triagemDados.pressaoArterial || '';
+			soapFc = c.triagemDados.frequenciaCardiaca ? String(c.triagemDados.frequenciaCardiaca) : '';
+			soapPeso = c.triagemDados.pesoKg ? String(c.triagemDados.pesoKg) : '';
+			soapAltura = c.triagemDados.alturaCm ? String(c.triagemDados.alturaCm) : '';
+			soapSpo2 = c.triagemDados.saturacaoO2 ? String(c.triagemDados.saturacaoO2) : '';
+			soapTemp = c.triagemDados.temperatura ? String(c.triagemDados.temperatura) : '';
+			soapGlicemia = c.triagemDados.glicemiaCapilar ? String(c.triagemDados.glicemiaCapilar) : '';
+			if (c.triagemDados.queixaPrincipal) {
+				soapQueixa += (soapQueixa ? '\n' : '') + `[TRIAGEM ENFERMAGEM]: ${c.triagemDados.queixaPrincipal}`;
+			}
+		} else {
+			soapPa = '';
+			soapFc = '';
+			soapPeso = '';
+			soapAltura = '';
+			soapSpo2 = '';
+			soapTemp = '';
+			soapGlicemia = '';
+		}
 		soapExameFisico = '';
-		soapPa = '';
-		soapFc = '';
-		soapPeso = '';
-		soapAltura = '';
-		soapSpo2 = '';
-		soapTemp = '';
-		soapGlicemia = '';
 		soapCid10 = c.solicitacao?.cid10 || '';
 		soapDiagnostico = c.solicitacao?.cidDescricao || '';
 		soapConduta = '';
@@ -674,12 +710,6 @@
 		timerInterval = setInterval(() => {
 			timerSegundos++;
 		}, 1000);
-	}
-
-	function formatarTimer(segs: number) {
-		const min = Math.floor(segs / 60);
-		const sec = segs % 60;
-		return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 	}
 
 	async function concluirAtendimento() {
@@ -1066,6 +1096,40 @@
 					<strong>Medicamentos Ativos:</strong> Losartana 50mg, Metformina 850mg
 				</div>
 			</div>
+
+			<!-- Painel de Triagem Clínica da Enfermagem -->
+			{#if consultaAtiva.triagemRealizada && consultaAtiva.triagemDados}
+				<div class="border-b border-emerald-300 bg-emerald-50/90 p-3 text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono">
+					<div class="flex items-center gap-2 flex-wrap">
+						<span class="bg-emerald-700 text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+							<IconCheck size={12} />
+							<span>TRIAGEM DE ENFERMAGEM</span>
+						</span>
+						<span class="text-emerald-950 font-bold font-sans">
+							Enf. {consultaAtiva.triagemPorNome || 'Enfermagem'} ({consultaAtiva.triagemCoren || 'COREN'})
+						</span>
+						{#if consultaAtiva.triagemDados.classificacaoRisco}
+							<span class="px-2 py-0.5 text-[10px] font-bold border {consultaAtiva.triagemDados.classificacaoRisco === 'VERMELHO' ? 'bg-red-600 text-white' : consultaAtiva.triagemDados.classificacaoRisco === 'LARANJA' ? 'bg-orange-500 text-white' : consultaAtiva.triagemDados.classificacaoRisco === 'AMARELO' ? 'bg-yellow-400 text-slate-900' : 'bg-emerald-600 text-white'}">
+								RISCO: {consultaAtiva.triagemDados.classificacaoRisco}
+							</span>
+						{/if}
+					</div>
+					<div class="flex flex-wrap items-center gap-2.5 text-[11px] text-emerald-950">
+						<span class="bg-white border border-emerald-300 px-1.5 py-0.5 font-bold">PA: {consultaAtiva.triagemDados.pressaoArterial}</span>
+						{#if consultaAtiva.triagemDados.frequenciaCardiaca}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">FC: {consultaAtiva.triagemDados.frequenciaCardiaca} bpm</span>{/if}
+						{#if consultaAtiva.triagemDados.temperatura}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Temp: {consultaAtiva.triagemDados.temperatura}°C</span>{/if}
+						{#if consultaAtiva.triagemDados.saturacaoO2}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">SpO2: {consultaAtiva.triagemDados.saturacaoO2}%</span>{/if}
+						{#if consultaAtiva.triagemDados.pesoKg}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Peso: {consultaAtiva.triagemDados.pesoKg}kg</span>{/if}
+						{#if consultaAtiva.triagemDados.alturaCm}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Alt: {consultaAtiva.triagemDados.alturaCm}cm</span>{/if}
+						{#if consultaAtiva.triagemDados.imc}<span class="bg-emerald-200 border border-emerald-400 px-1.5 py-0.5 font-black">IMC: {consultaAtiva.triagemDados.imc}</span>{/if}
+					</div>
+				</div>
+			{:else if consultaAtiva.necessitaTriagem}
+				<div class="border-b border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900 font-bold flex items-center gap-2 font-mono">
+					<span class="bg-amber-600 text-white px-2 py-0.5 text-[10px]">AVISO</span>
+					<span>Especialidade com exigência de triagem prévia de enfermagem (ainda não triado).</span>
+				</div>
+			{/if}
 
 			<!-- Form SOAP da Consulta -->
 			<div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 font-sans">
@@ -1543,6 +1607,17 @@
 									<div class="font-mono text-[10px] text-slate-600">
 										CID-10: <strong>{c.solicitacao.cid10}</strong> ({c.solicitacao.cidDescricao})
 									</div>
+									{#if c.triagemRealizada}
+										<div class="mt-1 flex items-center gap-1 font-mono text-[9px] bg-emerald-50 text-emerald-900 border border-emerald-300 px-1.5 py-0.5 font-bold w-fit">
+											<IconCheck size={11} class="text-emerald-700 shrink-0" />
+											<span>TRIADO ({c.triagemPorNome || 'Enf.'}) — PA: {c.triagemDados?.pressaoArterial || '--'}</span>
+										</div>
+									{:else if c.necessitaTriagem}
+										<div class="mt-1 flex items-center gap-1 font-mono text-[9px] bg-amber-50 text-amber-900 border border-amber-300 px-1.5 py-0.5 font-bold w-fit">
+											<IconClock size={11} class="text-amber-700 shrink-0" />
+											<span>EXIGE TRIAGEM PRÉVIA</span>
+										</div>
+									{/if}
 								</td>
 
 								<!-- Prioridade -->

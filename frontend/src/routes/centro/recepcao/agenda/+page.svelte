@@ -1218,7 +1218,16 @@
 										<div class="font-mono text-[10px] text-slate-500">{enc.paciente.cpf}</div>
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2.5 font-sans text-slate-900 font-semibold">
-										{enc.solicitacao.especialidadeSolicitada}
+										<div>{enc.solicitacao.especialidadeSolicitada}</div>
+										{#if enc.triagemRealizada}
+											<div class="mt-0.5 text-[9px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-300 px-1 py-0.2 font-bold w-fit">
+												TRIADO (Enf. {enc.triagemPorNome || 'Enfermagem'})
+											</div>
+										{:else if enc.necessitaTriagem}
+											<div class="mt-0.5 text-[9px] font-mono text-amber-800 bg-amber-50 border border-amber-300 px-1 py-0.2 font-bold w-fit">
+												EXIGE TRIAGEM
+											</div>
+										{/if}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2.5">
 										<StatusBadge prioridade={enc.solicitacao.prioridade} />

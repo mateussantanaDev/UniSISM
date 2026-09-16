@@ -15,10 +15,34 @@ import type { RegistrarProcedimentosAtendimentoUseCase } from '../../application
 import type { NotificacaoAusenciaMedicaUseCase } from '../../application/use-cases/NotificacaoAusenciaMedicaUseCase';
 import type { CalcularAlocacaoVagaCentroUseCase } from '../../application/use-cases/CalcularAlocacaoVagaCentroUseCase';
 import type { GestaoEscalasUseCase } from '../../application/use-cases/GestaoEscalasUseCase';
+import type { TriagemEnfermagemUseCase } from '../../application/use-cases/TriagemEnfermagemUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { CanalRoteamento, DestinoRegulacao } from '../../../../../generated/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
+
+const chamarTriagemSchema = z.object({
+  consultorio: z.string().optional(),
+});
+
+const realizarTriagemSchema = z.object({
+  consultorio: z.string().optional(),
+  sinaisVitais: z.object({
+    pressaoArterial: z.string().optional(),
+    frequenciaCardiaca: z.number().optional(),
+    frequenciaRespiratoria: z.number().optional(),
+    temperatura: z.number().optional(),
+    glicemiaCapilar: z.number().optional(),
+    saturacaoO2: z.number().optional(),
+    peso: z.number().optional(),
+    altura: z.number().optional(),
+    imc: z.number().optional(),
+    classificacaoImc: z.string().optional(),
+    classificacaoRisco: z.enum(['VERMELHO', 'LARANJA', 'AMARELO', 'VERDE', 'AZUL']).optional(),
+    queixaPrincipal: z.string().optional(),
+    observacoes: z.string().optional(),
+  }),
+});
 
 const agendarSchema = z.object({
   profissional: z.string().optional(),
@@ -149,6 +173,7 @@ export class CentroRecepcaoController {
     private readonly ausenciaMedicaUC: NotificacaoAusenciaMedicaUseCase,
     private readonly calcularAlocacaoUC: CalcularAlocacaoVagaCentroUseCase,
     private readonly gestaoEscalasUC: GestaoEscalasUseCase,
+    private readonly triagemUC: TriagemEnfermagemUseCase,
   ) {}
 
   postCalcularSlot = async (req: Request, res: Response): Promise<void> => {
@@ -465,19 +490,33 @@ export class CentroRecepcaoController {
 
       const chamadas = filtrados.map((r, idx) => {
         const num = ((idx % 8) + 1).toString().padStart(2, '0');
-        const local = ehCeo ? `CADEIRA ODONTOLÓGICA ${num} — SETOR B` : `CONSULTÓRIO ${num} — ALA A`;
+        const ehChamadaTriagem = !!r.chamadaTriagemEm && (!r.atendimentoIniciadoEm || new Date(r.chamadaTriagemEm) > new Date(r.atendimentoIniciadoEm));
+        const local = ehChamadaTriagem
+          ? (r.consultorioTriagem || 'SALA DE TRIAGEM 01 — ENFERMAGEM')
+          : (ehCeo ? `CADEIRA ODONTOLÓGICA ${num} — SETOR B` : `CONSULTÓRIO ${num} — ALA A`);
+        const prof = ehChamadaTriagem
+          ? (r.triagemPorNome ? `Enf. ${r.triagemPorNome}` : 'Equipe de Enfermagem')
+          : (r.profissionalAgendado || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'));
+        const esp = ehChamadaTriagem
+          ? 'Triagem Clínica & Sinais Vitais'
+          : (r.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'));
+        const chamadoEmData = (ehChamadaTriagem && r.chamadaTriagemEm) ? r.chamadaTriagemEm : (r.atendimentoIniciadoEm || r.atualizadoEm || r.criadoEm);
+
         return {
           id: r.id,
           protocolo: r.protocolo,
           pacienteNome: r.paciente?.nome || 'Paciente Identificado',
           consultorio: local,
-          medicoNome: r.profissionalAgendado || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
-          especialidade: r.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
-          horario: new Date(r.atualizadoEm || r.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          medicoNome: prof,
+          especialidade: esp,
+          tipo: (ehChamadaTriagem ? 'TRIAGEM' : 'CONSULTA') as 'CONSULTA' | 'TRIAGEM',
+          horario: new Date(chamadoEmData).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           status: r.statusAtendimentoCentro,
-          chamadoEm: r.atendimentoIniciadoEm || r.atualizadoEm || r.criadoEm,
+          chamadoEm: chamadoEmData,
         };
       });
+
+      chamadas.sort((a, b) => new Date(b.chamadoEm).getTime() - new Date(a.chamadoEm).getTime());
 
       const chamadaAtual = chamadas.length > 0 ? chamadas[0] : null;
       const ultimasChamadas = chamadas.slice(1, 6);
@@ -494,6 +533,59 @@ export class CentroRecepcaoController {
     } catch (err) {
       res.status(500).json({ error: { code: 'ERRO_TV_CHAMADAS', message: 'Falha ao buscar chamadas da TV' } });
     }
+  };
+
+  getFilaTriagem = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const centro = req.query.centro as 'CEM' | 'CEO' | undefined;
+    const status = req.query.status as 'PENDENTE' | 'CHAMADO' | 'CONCLUIDO' | 'TODOS' | undefined;
+    const result = await this.triagemUC.listarFilaTriagem({ centro, status }, scope);
+    res.json(result);
+  };
+
+  postChamarTriagem = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const id = paramString(req, 'id');
+    const body = chamarTriagemSchema.parse(req.body || {});
+    const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
+    if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
+
+    const result = await this.triagemUC.chamarTriagem(
+      {
+        encaminhamentoId: id,
+        enfermeiro: {
+          id: atendente.id,
+          nome: atendente.nome,
+          coren: (atendente as any).coren || (atendente as any).registroProfissional,
+        },
+        consultorio: body.consultorio,
+      },
+      scope,
+    );
+    res.json(result);
+  };
+
+  postRealizarTriagem = async (req: Request, res: Response): Promise<void> => {
+    const scope = scopeFromRequest(req);
+    const id = paramString(req, 'id');
+    const body = realizarTriagemSchema.parse(req.body);
+    const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
+    if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
+
+    const result = await this.triagemUC.realizarTriagem(
+      {
+        encaminhamentoId: id,
+        enfermeiro: {
+          id: atendente.id,
+          nome: atendente.nome,
+          coren: (atendente as any).coren || (atendente as any).registroProfissional,
+        },
+        sinaisVitais: body.sinaisVitais as any,
+        consultorio: body.consultorio,
+      },
+      scope,
+    );
+    res.json(result);
   };
 
   postTvParear = async (req: Request, res: Response): Promise<void> => {

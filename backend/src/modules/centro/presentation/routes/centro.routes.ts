@@ -17,9 +17,19 @@ export function buildCentroRoutes(
 
   const recepcaoRoles = requireRole(
     'ATENDENTE_CENTRO',
+    'ENFERMEIRO',
     'REGULADOR_SMS',
     'COORDENADOR_UBS',
     'ATENDENTE_UBS',
+    'ADMIN',
+    'DESENVOLVEDOR',
+  );
+
+  const enfermagemRoles = requireRole(
+    'ENFERMEIRO',
+    'COORDENADOR_UBS',
+    'REGULADOR_SMS',
+    'ATENDENTE_CENTRO',
     'ADMIN',
     'DESENVOLVEDOR',
   );
@@ -44,6 +54,11 @@ export function buildCentroRoutes(
   // ───── Terminal Smart TV (Sala de Espera) ─────
   router.get('/centro/tv/chamadas', recepcaoController.getTvChamadas);
   router.post('/centro/tv/parear', recepcaoController.postTvParear);
+
+  // ───── Enfermagem & Triagem Clínica (CEM / CEO) ─────
+  router.get('/centro/enfermagem/fila', authenticate, enfermagemRoles, recepcaoController.getFilaTriagem);
+  router.post('/centro/enfermagem/chamar/:id', authenticate, enfermagemRoles, recepcaoController.postChamarTriagem);
+  router.post('/centro/enfermagem/triagem/:id', authenticate, enfermagemRoles, recepcaoController.postRealizarTriagem);
 
   // ───── Recepção & Regulação do Centro (Fase 1) ─────
   router.get('/centro/escalas', authenticate, recepcaoRoles, recepcaoController.getEscalas);

@@ -64,7 +64,7 @@
 				return;
 			}
 
-			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS'];
+			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS', 'ENFERMEIRO'];
 			if (!allowedRoles.includes(sessao.role) && !superUser) {
 				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
@@ -73,7 +73,7 @@
 
 			const path = page.url.pathname as string;
 			if (path === '/cem' || path === '/cem/') {
-				goto('/cem/recepcao/fila');
+				goto(sessao.role === 'ENFERMEIRO' ? '/cem/enfermagem/triagem' : '/cem/recepcao/fila');
 			}
 		} catch (e) {
 			if (e instanceof ApiError && e.status !== 401) {
@@ -86,6 +86,10 @@
 	});
 
 	const pageTitles: Record<string, { label: string; crumb: string }> = {
+		'/cem/enfermagem/triagem': {
+			label: 'ENFERMAGEM CEM · TRIAGEM CLÍNICA & SINAIS VITAIS',
+			crumb: 'CEM / ENFERMAGEM / TRIAGEM'
+		},
 		'/cem/recepcao/fila': {
 			label: 'RECEPÇÃO CEM · FILA DA REGULAÇÃO',
 			crumb: 'CEM / RECEPÇÃO / FILA'

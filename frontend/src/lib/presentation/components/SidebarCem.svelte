@@ -23,7 +23,7 @@
 		const list: NavGroup[] = [];
 
 		// Recepção / Operação CEM
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ENFERMEIRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
 			list.push({
 				titulo: 'OPERAÇÃO CEM',
 				items: [
@@ -32,6 +32,18 @@
 					{ label: 'Agendar no Balcão', href: '/cem/recepcao/balcao', shortcut: 'B' },
 					{ label: 'Painel TV (Chamada)', href: '/cem/recepcao/painel', shortcut: 'T' },
 					{ label: 'Base de Pacientes', href: '/cem/pacientes', shortcut: 'P' }
+				]
+			});
+		}
+
+		// Enfermagem & Triagem CEM
+		if (role === 'ENFERMEIRO' || role === 'REGULADOR_SMS' || role === 'ATENDENTE_CENTRO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+			list.push({
+				titulo: 'ENFERMAGEM & TRIAGEM',
+				items: [
+					{ label: 'Triagem & Sinais Vitais', href: '/cem/enfermagem/triagem', shortcut: 'E' },
+					{ label: 'Chamar Triagem (Painel)', href: '/cem/recepcao/painel', shortcut: 'T' },
+					{ label: 'Agendar no Balcão', href: '/cem/recepcao/balcao', shortcut: 'B' }
 				]
 			});
 		}

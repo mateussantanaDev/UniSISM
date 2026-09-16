@@ -130,6 +130,8 @@ import type {
   AgendarRetornoDirectResponse,
   CalcularSlotCentroRequest,
   CalcularSlotCentroResponse,
+  ListFilaTriagemResponse,
+  RealizarTriagemRequest,
 } from './types';
 
 // ============================================================
@@ -202,6 +204,7 @@ export class ApiClient {
   readonly centroRecepcao: CentroRecepcaoApi;
   readonly centroMedico: CentroMedicoApi;
   readonly centroGestao: CentroGestaoApi;
+  readonly centroEnfermagem: CentroEnfermagemApi;
 
   private _onUnauthorized?: (code: string) => void;
 
@@ -224,6 +227,7 @@ export class ApiClient {
     this.centroRecepcao = this.centro.recepcao;
     this.centroMedico = this.centro.medico;
     this.centroGestao = this.centro.gestao;
+    this.centroEnfermagem = this.centro.enfermagem;
   }
 
   /** Registra callback disparado em qualquer resposta 401 (inclui code do erro). */
@@ -1606,6 +1610,27 @@ export class CentroRecepcaoApi {
   calcularSlot(req: CalcularSlotCentroRequest): Promise<CalcularSlotCentroResponse> {
     return this.api.post<CalcularSlotCentroResponse>('/centro/recepcao/calcular-slot', req);
   }
+
+  /** Listar pacientes na fila de triagem de enfermagem (GET /v1/centro/enfermagem/fila). */
+  listFilaTriagem(query?: { centro?: string; data?: string; busca?: string }): Promise<ListFilaTriagemResponse> {
+    return this.api.get<ListFilaTriagemResponse>('/centro/enfermagem/fila', query as Record<string, unknown> | undefined);
+  }
+
+  /** Chamar paciente para triagem no painel de TV (POST /v1/centro/enfermagem/chamar/:id). */
+  chamarTriagem(id: string, req: { consultorio: string }): Promise<{ sucesso: boolean; mensagem: string }> {
+    return this.api.post<{ sucesso: boolean; mensagem: string }>(
+      `/centro/enfermagem/chamar/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+
+  /** Registrar triagem clínica e aferição de sinais vitais (POST /v1/centro/enfermagem/triagem/:id). */
+  realizarTriagem(id: string, req: RealizarTriagemRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    return this.api.post<{ sucesso: boolean; mensagem: string }>(
+      `/centro/enfermagem/triagem/${encodeURIComponent(id)}`,
+      req
+    );
+  }
 }
 
 export class CentroMedicoApi {
@@ -1855,9 +1880,39 @@ export class CentroGestaoApi {
     return this.api.post<EspecialidadeSigtapCentro>('/centro/gestao/especialidades', req);
   }
 
+  /** Atualizar especialidade do catálogo (PUT /v1/centro/gestao/especialidades/:id). */
+  atualizarEspecialidade(id: string, req: Partial<EspecialidadeSigtapCentro>): Promise<EspecialidadeSigtapCentro> {
+    return this.api.put<EspecialidadeSigtapCentro>(`/centro/gestao/especialidades/${encodeURIComponent(id)}`, req);
+  }
+
   /** Remover/inativar especialidade do catálogo (DELETE /v1/centro/gestao/especialidades/:id). */
   excluirEspecialidade(id: string): Promise<{ sucesso: boolean }> {
     return this.api.delete<{ sucesso: boolean }>(`/centro/gestao/especialidades/${encodeURIComponent(id)}`);
+  }
+}
+
+export class CentroEnfermagemApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Listar pacientes na fila de triagem de enfermagem (GET /v1/centro/enfermagem/fila). */
+  listFila(query?: { centro?: string; data?: string; busca?: string }): Promise<ListFilaTriagemResponse> {
+    return this.api.get<ListFilaTriagemResponse>('/centro/enfermagem/fila', query as Record<string, unknown> | undefined);
+  }
+
+  /** Chamar paciente para triagem no painel de TV (POST /v1/centro/enfermagem/chamar/:id). */
+  chamar(id: string, req: { consultorio: string }): Promise<{ sucesso: boolean; mensagem: string }> {
+    return this.api.post<{ sucesso: boolean; mensagem: string }>(
+      `/centro/enfermagem/chamar/${encodeURIComponent(id)}`,
+      req
+    );
+  }
+
+  /** Registrar triagem clínica e aferição de sinais vitais (POST /v1/centro/enfermagem/triagem/:id). */
+  triar(id: string, req: RealizarTriagemRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    return this.api.post<{ sucesso: boolean; mensagem: string }>(
+      `/centro/enfermagem/triagem/${encodeURIComponent(id)}`,
+      req
+    );
   }
 }
 
@@ -1865,11 +1920,13 @@ export class CentroApi {
   readonly recepcao: CentroRecepcaoApi;
   readonly medico: CentroMedicoApi;
   readonly gestao: CentroGestaoApi;
+  readonly enfermagem: CentroEnfermagemApi;
 
   constructor(api: ApiClient) {
     this.recepcao = new CentroRecepcaoApi(api);
     this.medico = new CentroMedicoApi(api);
     this.gestao = new CentroGestaoApi(api);
+    this.enfermagem = new CentroEnfermagemApi(api);
   }
 }
 

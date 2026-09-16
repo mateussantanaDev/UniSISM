@@ -12,6 +12,7 @@ export interface EspecialidadeCatalogoDTO {
   valorTabelaBrl: number;
   documentosObrigatorios: string[];
   preparoRequerido?: string | null;
+  necessitaTriagem?: boolean;
   ativa?: boolean;
 }
 
@@ -43,6 +44,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
       valorTabelaBrl: e.valorTabelaBrl,
       documentosObrigatorios: e.documentosObrigatorios,
       preparoRequerido: e.preparoRequerido,
+      necessitaTriagem: e.necessitaTriagem ?? false,
       ativa: e.ativa,
     }));
 
@@ -85,6 +87,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
         valorTabelaBrl: data.valorTabelaBrl || 0,
         documentosObrigatorios: docs,
         preparoRequerido: data.preparoRequerido || null,
+        necessitaTriagem: data.necessitaTriagem !== undefined ? data.necessitaTriagem : false,
         ativa: data.ativa !== undefined ? data.ativa : true,
         prefeituraId,
       },
@@ -108,6 +111,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
       valorTabelaBrl: res.valorTabelaBrl,
       documentosObrigatorios: res.documentosObrigatorios,
       preparoRequerido: res.preparoRequerido,
+      necessitaTriagem: res.necessitaTriagem,
       ativa: res.ativa,
     };
   }
@@ -130,6 +134,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
         ...(data.valorTabelaBrl !== undefined && { valorTabelaBrl: data.valorTabelaBrl }),
         ...(data.documentosObrigatorios && { documentosObrigatorios: data.documentosObrigatorios }),
         ...(data.preparoRequerido !== undefined && { preparoRequerido: data.preparoRequerido }),
+        ...(data.necessitaTriagem !== undefined && { necessitaTriagem: data.necessitaTriagem }),
         ...(data.ativa !== undefined && { ativa: data.ativa }),
       },
     });

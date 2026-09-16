@@ -118,6 +118,15 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     deletadoPorNome: r.deletadoPorNome ?? null,
     motivoExclusao: r.motivoExclusao ?? null,
     deletadoEm: safeIsoOrNull(r.deletadoEm),
+    necessitaTriagem: r.necessitaTriagem ?? false,
+    triagemRealizada: r.triagemRealizada ?? false,
+    triagemEm: safeIsoOrNull(r.triagemEm),
+    triagemPorId: r.triagemPorId ?? null,
+    triagemPorNome: r.triagemPorNome ?? null,
+    triagemCoren: r.triagemCoren ?? null,
+    triagemDados: r.triagemDados ?? null,
+    chamadaTriagemEm: safeIsoOrNull(r.chamadaTriagemEm),
+    consultorioTriagem: r.consultorioTriagem ?? null,
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 

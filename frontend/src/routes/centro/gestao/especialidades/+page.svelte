@@ -28,6 +28,7 @@
 		preparoRequerido: string;
 		ativa: boolean;
 		tipoServico: 'CONSULTA' | 'PROCEDIMENTO';
+		necessitaTriagem?: boolean;
 	}
 
 	let carregando = $state(true);
@@ -51,6 +52,7 @@
 	let formTipoServico = $state<'CONSULTA' | 'PROCEDIMENTO'>('PROCEDIMENTO');
 	let formDocs = $state('');
 	let formPreparo = $state('');
+	let formNecessitaTriagem = $state(false);
 
 	async function carregarEspecialidades() {
 		carregando = true;
@@ -93,6 +95,7 @@
 			preparoRequerido: formPreparo.trim() || undefined,
 			ativa: true,
 			tipoServico: formTipoServico,
+			necessitaTriagem: formNecessitaTriagem,
 			centro: siglaOrgao
 		};
 
@@ -104,11 +107,25 @@
 			formCodigo = '';
 			formDocs = '';
 			formPreparo = '';
+			formNecessitaTriagem = false;
 			mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" cadastrado com sucesso no catálogo do ${siglaOrgao}!`;
 			setTimeout(() => mensagemSucesso = '', 4000);
 		} catch (e: any) {
 			console.error(e);
 			erroModal = `Falha ao cadastrar especialidade: ${e?.message || 'Erro do servidor'}`;
+		}
+	}
+
+	async function toggleTriagem(esp: EspecialidadeSigtap) {
+		try {
+			const novoValor = !esp.necessitaTriagem;
+			await api.centroGestao.atualizarEspecialidade(esp.id, { necessitaTriagem: novoValor });
+			esp.necessitaTriagem = novoValor;
+			mensagemSucesso = `✓ Triagem de enfermagem para "${esp.nome}" agora está: ${novoValor ? 'OBRIGATÓRIA' : 'DISPENSADA'}.`;
+			setTimeout(() => mensagemSucesso = '', 3000);
+		} catch (e: any) {
+			console.error(e);
+			erro = `Falha ao atualizar triagem: ${e?.message || 'Erro do servidor'}`;
 		}
 	}
 
@@ -203,6 +220,7 @@
 						<th class="p-3">Tempo Padrão</th>
 						<th class="p-3">Valor Repasse SIA-SUS</th>
 						<th class="p-3">Documentos & Exames Obrigatórios (UBS)</th>
+						<th class="p-3">Triagem Prévia</th>
 						<th class="p-3">Status</th>
 						<th class="p-3 text-right">Ações</th>
 					</tr>
@@ -247,6 +265,22 @@
 								</div>
 							</td>
 							<td class="p-3">
+								<button
+									type="button"
+									onclick={() => toggleTriagem(esp)}
+									class="px-2 py-1 text-[10px] font-bold border transition-colors flex items-center gap-1.5 {esp.necessitaTriagem ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200' : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'}"
+									title="Clique para alternar obrigatoriedade de triagem de enfermagem"
+								>
+									{#if esp.necessitaTriagem}
+										<span class="w-2 h-2 rounded-full bg-amber-600"></span>
+										<span>OBRIGATÓRIA</span>
+									{:else}
+										<span class="w-2 h-2 rounded-full bg-slate-400"></span>
+										<span>DISPENSADA</span>
+									{/if}
+								</button>
+							</td>
+							<td class="p-3">
 								<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold px-2 py-0.5 text-[10px]">
 									HABILITADA
 								</span>
@@ -263,7 +297,7 @@
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="8" class="p-6 text-center text-slate-500 font-sans">
+							<td colspan="9" class="p-6 text-center text-slate-500 font-sans">
 								Nenhum serviço cadastrado nesta categoria.
 							</td>
 						</tr>
@@ -319,6 +353,18 @@
 						<label for="esp-val" class="font-bold text-slate-700 text-[11px]">Valor de Repasse Tabela SUS (R$)</label>
 						<input id="esp-val" type="number" step="0.01" bind:value={formValor} class="border border-slate-300 p-2 text-xs" />
 					</div>
+				</div>
+
+				<div class="flex items-center gap-2.5 p-3 bg-amber-50/70 border border-amber-200 rounded">
+					<input
+						id="esp-triagem"
+						type="checkbox"
+						bind:checked={formNecessitaTriagem}
+						class="w-4 h-4 text-blue-900 border-slate-300 rounded cursor-pointer"
+					/>
+					<label for="esp-triagem" class="font-bold text-slate-800 text-[11px] cursor-pointer">
+						Exige Triagem Prévia de Enfermagem (Aferição de sinais vitais e antropometria antes da consulta)
+					</label>
 				</div>
 
 				<div class="flex flex-col gap-1">

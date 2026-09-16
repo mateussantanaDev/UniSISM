@@ -246,16 +246,19 @@ export const rbac = {
 
 		if (ehCeo) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
+			if (role === 'ENFERMEIRO') return '/ceo/enfermagem/triagem';
 			if (role === 'ATENDENTE_CENTRO') return '/ceo/recepcao/fila';
 			return '/ceo/gestao/dashboard';
 		}
 
 		if (ehCem) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/cem/medico/agenda';
+			if (role === 'ENFERMEIRO') return '/cem/enfermagem/triagem';
 			if (role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
 			return '/cem/gestao/dashboard';
 		}
 
+		if (role === 'ENFERMEIRO') return '/cem/enfermagem/triagem';
 		if (role === 'MEDICO_ESPECIALISTA') return '/centro/medico/agenda';
 		if (role === 'ATENDENTE_CENTRO') return '/centro/recepcao/fila';
 		if (role === 'MEDICO') return '/ubs/dashboard';

@@ -24,6 +24,7 @@ export type Role =
   | 'MEDICO'
   | 'MEDICO_ESPECIALISTA'
   | 'ATENDENTE_CENTRO'
+  | 'ENFERMEIRO'
   | 'ATENDENTE_TFD'
   | 'MOTORISTA_TFD';
 
@@ -344,6 +345,7 @@ export interface Encaminhamento {
   observacoesRegulacao?: string;
   agendamentoPrevisto?: string | null;
   profissionalAgendado?: string | null;
+  profissionalAtribuido?: string | null;
   localAgendamento?: string | null;
   statusAtendimentoCentro?: StatusAtendimentoCentro | null;
   respostaSUS?: RespostaSUS | null;
@@ -356,8 +358,37 @@ export interface Encaminhamento {
   deletadoPorNome?: string | null;
   motivoExclusao?: string | null;
   deletadoEm?: string | null;
+  necessitaTriagem?: boolean;
+  triagemRealizada?: boolean;
+  triagemEm?: string | null;
+  triagemPorId?: string | null;
+  triagemPorNome?: string | null;
+  triagemCoren?: string | null;
+  triagemDados?: SinaisVitaisTriagem | any | null;
+  chamadaTriagemEm?: string | null;
+  consultorioTriagem?: string | null;
   criadoEm: string;
   atualizadoEm: string;
+}
+
+export interface SinaisVitaisTriagem {
+  pressaoArterial?: string;
+  frequenciaCardiaca?: number;
+  frequenciaRespiratoria?: number;
+  temperatura?: number;
+  glicemiaCapilar?: number;
+  saturacaoO2?: number;
+  peso?: number;
+  pesoKg?: number;
+  altura?: number;
+  alturaCm?: number;
+  imc?: number;
+  classificacaoImc?: string;
+  classificacaoRisco?: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE' | 'AZUL';
+  queixaPrincipal?: string;
+  alergiasRelatadas?: string;
+  medicamentosEmUso?: string;
+  observacoes?: string;
 }
 
 // ---- Face 2 · Regulação SMS ----
@@ -1305,6 +1336,15 @@ export interface EncaminhamentoCentroItem {
   deletadoPorNome?: string | null;
   motivoExclusao?: string | null;
   deletadoEm?: string | null;
+  necessitaTriagem?: boolean;
+  triagemRealizada?: boolean;
+  triagemEm?: string | null;
+  triagemPorId?: string | null;
+  triagemPorNome?: string | null;
+  triagemCoren?: string | null;
+  triagemDados?: SinaisVitaisTriagem | any | null;
+  chamadaTriagemEm?: string | null;
+  consultorioTriagem?: string | null;
   paciente: Paciente;
   solicitacao: SolicitacaoMedica;
 }
@@ -1737,6 +1777,31 @@ export interface EspecialidadeSigtapCentro {
   ativa: boolean;
   tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
   centro?: string;
+  necessitaTriagem?: boolean;
+}
+
+export interface ListFilaTriagemResponse {
+  total: number;
+  fila: Encaminhamento[];
+}
+
+export interface RealizarTriagemRequest {
+  consultorio?: string;
+  sinaisVitais?: SinaisVitaisTriagem;
+  pressaoArterial?: string;
+  frequenciaCardiaca?: number;
+  frequenciaRespiratoria?: number;
+  temperatura?: number;
+  glicemiaCapilar?: number;
+  saturacaoO2?: number;
+  pesoKg?: number;
+  alturaCm?: number;
+  imc?: number;
+  classificacaoRisco?: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE' | 'AZUL';
+  queixaPrincipal?: string;
+  alergiasRelatadas?: string;
+  medicamentosEmUso?: string;
+  coren?: string;
 }
 
 export interface ProcedimentoRealizadoItem {

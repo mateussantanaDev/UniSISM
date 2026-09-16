@@ -31,6 +31,7 @@ enum RoleAtendente {
   MEDICO            // médico (CEO/CEM/UBS)
   MEDICO_ESPECIALISTA // médico especialista do Centro de Especialidades / CEO
   ATENDENTE_CENTRO    // atendente/recepcionista do Centro de Especialidades / CEO
+  ENFERMEIRO          // enfermeiro (triagem, sinais vitais, agendamento e chamada TV)
 }
 
 enum Sexo {
@@ -735,6 +736,17 @@ model Encaminhamento {
   deletadoPorId     String?
   deletadoPorNome   String?
   motivoExclusao    String?
+
+  // Triagem de Enfermagem
+  necessitaTriagem   Boolean              @default(false)
+  triagemRealizada   Boolean              @default(false)
+  triagemEm          DateTime?
+  triagemPorId       String?
+  triagemPorNome     String?
+  triagemCoren       String?
+  triagemDados       Json?
+  chamadaTriagemEm   DateTime?
+  consultorioTriagem String?
 
   anexos   AnexoDocumento[]
   timeline EventoTimeline[]
@@ -1981,6 +1993,7 @@ model EscalaEspecialista {
   isMutirao              Boolean            @default(false)
   intervaloDias          Int?               @default(7)         // 7 para semanal, 14 para quinzenal
   dataInicioRecorrencia  String?                                // Data de início para o ciclo quinzenal (YYYY-MM-DD)
+  necessitaTriagem       Boolean            @default(false)
 
   criadoEm        DateTime           @default(now())
   atualizadoEm    DateTime           @updatedAt
@@ -2032,6 +2045,7 @@ model EspecialidadeCatalogo {
   valorTabelaBrl         Float    @default(0)
   documentosObrigatorios String[]
   preparoRequerido       String?
+  necessitaTriagem       Boolean  @default(false)
   ativa                  Boolean  @default(true)
   prefeituraId           String?
 
