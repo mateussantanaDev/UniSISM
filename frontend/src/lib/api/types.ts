@@ -1962,3 +1962,146 @@ export const TIPO_ATENDIMENTO_LABEL: Record<TipoAtendimentoUbs, string> = {
   CURATIVO: 'Curativo / Procedimento',
   ODONTOLOGIA: 'Odontologia / Saúde Bucal',
 };
+
+// ============================================================
+// Módulo CRM WhatsApp Multi-Atendentes & Meta Cloud API
+// ============================================================
+
+export type StatusConversaWhatsApp =
+  | 'PENDENTE'
+  | 'EM_ATENDIMENTO'
+  | 'AGUARDANDO_PACIENTE'
+  | 'RESOLVIDO'
+  | 'FINALIZADO';
+
+export type DirecaoMensagemWhatsApp = 'ENTRADA' | 'SAIDA';
+
+export type OrigemMensagemWhatsApp = 'PACIENTE' | 'ATENDENTE' | 'SISTEMA_BOT';
+
+export type TipoMensagemWhatsApp = 'TEXTO' | 'IMAGEM' | 'DOCUMENTO' | 'AUDIO' | 'TEMPLATE';
+
+export type StatusEnvioWhatsApp = 'PENDENTE' | 'ENVIADO' | 'ENTREGUE' | 'LIDO' | 'FALHA' | 'RECEBIDO';
+
+export interface WhatsAppConfigDTO {
+  id: string;
+  prefeituraId?: string | null;
+  phoneNumberId: string;
+  wabaId?: string | null;
+  accessTokenMascarado?: string;
+  webhookVerifyToken: string;
+  businessPhoneNumber?: string | null;
+  nomeExibicao?: string | null;
+  ativo: boolean;
+  mensagemBoasVindas?: string | null;
+  mensagemForaHorario?: string | null;
+  mensagemConfirmacao?: string | null;
+  horarioInicio?: string | null;
+  horarioFim?: string | null;
+}
+
+export interface SalvarWhatsAppConfigRequest {
+  phoneNumberId: string;
+  wabaId?: string;
+  accessToken: string;
+  webhookVerifyToken: string;
+  businessPhoneNumber?: string;
+  nomeExibicao?: string;
+  ativo?: boolean;
+  mensagemBoasVindas?: string;
+  mensagemForaHorario?: string;
+  mensagemConfirmacao?: string;
+  horarioInicio?: string;
+  horarioFim?: string;
+}
+
+export interface WhatsAppMensagemDTO {
+  id: string;
+  conversaId: string;
+  direcao: DirecaoMensagemWhatsApp;
+  origem: OrigemMensagemWhatsApp;
+  atendenteId?: string | null;
+  atendenteNome?: string | null;
+  corpo: string;
+  tipo: TipoMensagemWhatsApp;
+  mediaUrl?: string | null;
+  whatsappMessageId?: string | null;
+  statusEnvio: StatusEnvioWhatsApp;
+  erroEnvio?: string | null;
+  enviadoEm: string;
+}
+
+export interface WhatsAppConversaDTO {
+  id: string;
+  prefeituraId?: string | null;
+  centroTipo: string;
+  pacienteId?: string | null;
+  paciente?: {
+    id: string;
+    nome: string;
+    cpf: string;
+    cartaoSus?: string | null;
+    telefone?: string | null;
+    dataNascimento?: string;
+    municipio?: string | null;
+    bairro?: string | null;
+    ubs?: { id: string; nome: string };
+  } | null;
+  telefone: string;
+  nomeContato: string;
+  cpf?: string | null;
+  status: StatusConversaWhatsApp;
+  atendenteId?: string | null;
+  atendenteNome?: string | null;
+  ultimaMensagemTexto?: string | null;
+  ultimaMensagemData: string;
+  naoLidas: number;
+  tags: string[];
+  encaminhamentoId?: string | null;
+  encaminhamento?: {
+    id: string;
+    protocolo: string;
+    especialidade: string;
+    profissionalAgendado?: string | null;
+    agendamentoPrevisto?: string | null;
+    status: string;
+    prioridade: string;
+    salaNumero?: string | null;
+  } | null;
+  mensagens?: WhatsAppMensagemDTO[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListarConversasResponse {
+  conversas: WhatsAppConversaDTO[];
+  metricas: {
+    totalPendentes: number;
+    minhasAtivas: number;
+    totalHoje: number;
+  };
+}
+
+export interface EnviarMensagemWhatsAppRequest {
+  corpo: string;
+  tipo?: TipoMensagemWhatsApp;
+  mediaUrl?: string;
+}
+
+export interface EnviarTemplateWhatsAppRequest {
+  tipoTemplate:
+    | 'CONFIRMACAO_CONSULTA'
+    | 'LEMBRETE_VESPERA'
+    | 'VAGA_LIBERADA'
+    | 'ORIENTACOES_PREPARO'
+    | 'PERSONALIZADO';
+  variaveis: {
+    nome?: string;
+    especialidade?: string;
+    medico?: string;
+    data?: string;
+    hora?: string;
+    local?: string;
+    protocolo?: string;
+    textoExtra?: string;
+  };
+}

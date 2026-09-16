@@ -132,6 +132,13 @@ import type {
   CalcularSlotCentroResponse,
   ListFilaTriagemResponse,
   RealizarTriagemRequest,
+  WhatsAppConfigDTO,
+  SalvarWhatsAppConfigRequest,
+  WhatsAppMensagemDTO,
+  WhatsAppConversaDTO,
+  ListarConversasResponse,
+  EnviarMensagemWhatsAppRequest,
+  EnviarTemplateWhatsAppRequest,
 } from './types';
 
 // ============================================================
@@ -205,6 +212,7 @@ export class ApiClient {
   readonly centroMedico: CentroMedicoApi;
   readonly centroGestao: CentroGestaoApi;
   readonly centroEnfermagem: CentroEnfermagemApi;
+  readonly centroWhatsApp: CentroWhatsAppApi;
 
   private _onUnauthorized?: (code: string) => void;
 
@@ -228,6 +236,7 @@ export class ApiClient {
     this.centroMedico = this.centro.medico;
     this.centroGestao = this.centro.gestao;
     this.centroEnfermagem = this.centro.enfermagem;
+    this.centroWhatsApp = this.centro.whatsapp;
   }
 
   /** Registra callback disparado em qualquer resposta 401 (inclui code do erro). */
@@ -1916,17 +1925,78 @@ export class CentroEnfermagemApi {
   }
 }
 
+export class CentroWhatsAppApi {
+  constructor(private readonly api: ApiClient) {}
+
+  /** Obter configuração ativa da Meta Cloud API (GET /v1/centro/whatsapp/config) */
+  getConfig(): Promise<WhatsAppConfigDTO> {
+    return this.api.get<WhatsAppConfigDTO>('/centro/whatsapp/config');
+  }
+
+  /** Salvar parâmetros da Meta Cloud API (POST /v1/centro/whatsapp/config) */
+  salvarConfig(req: SalvarWhatsAppConfigRequest): Promise<WhatsAppConfigDTO> {
+    return this.api.post<WhatsAppConfigDTO>('/centro/whatsapp/config', req);
+  }
+
+  /** Testar conectividade e credenciais com a Meta (POST /v1/centro/whatsapp/config/testar) */
+  testarConexao(): Promise<{ valid: boolean; name?: string; displayPhoneNumber?: string; qualityRating?: string; error?: string }> {
+    return this.api.post<{ valid: boolean; name?: string; displayPhoneNumber?: string; qualityRating?: string; error?: string }>('/centro/whatsapp/config/testar');
+  }
+
+  /** Listar conversas da central com suporte a abas e busca (GET /v1/centro/whatsapp/conversas) */
+  listarConversas(query?: { aba?: string; busca?: string; centroTipo?: string; tag?: string; limite?: number; offset?: number }): Promise<ListarConversasResponse> {
+    return this.api.get<ListarConversasResponse>('/centro/whatsapp/conversas', query as Record<string, unknown> | undefined);
+  }
+
+  /** Obter conversa e histórico completo de mensagens (GET /v1/centro/whatsapp/conversas/:id) */
+  obterConversa(id: string): Promise<WhatsAppConversaDTO> {
+    return this.api.get<WhatsAppConversaDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}`);
+  }
+
+  /** Atendente assume o atendimento da fila (POST /v1/centro/whatsapp/conversas/:id/assumir) */
+  assumirConversa(id: string): Promise<WhatsAppConversaDTO> {
+    return this.api.post<WhatsAppConversaDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/assumir`);
+  }
+
+  /** Transfere a conversa para outro atendente (POST /v1/centro/whatsapp/conversas/:id/transferir) */
+  transferirConversa(id: string, req: { novoAtendenteId: string; novoAtendenteNome: string }): Promise<WhatsAppConversaDTO> {
+    return this.api.post<WhatsAppConversaDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/transferir`, req);
+  }
+
+  /** Envia mensagem de texto pelo atendente via Meta API (POST /v1/centro/whatsapp/conversas/:id/mensagens) */
+  enviarMensagem(id: string, req: EnviarMensagemWhatsAppRequest): Promise<WhatsAppMensagemDTO> {
+    return this.api.post<WhatsAppMensagemDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/mensagens`, req);
+  }
+
+  /** Dispara template pré-aprovado de agendamento ou orientação (POST /v1/centro/whatsapp/conversas/:id/template) */
+  enviarTemplate(id: string, req: EnviarTemplateWhatsAppRequest): Promise<WhatsAppMensagemDTO> {
+    return this.api.post<WhatsAppMensagemDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/template`, req);
+  }
+
+  /** Finaliza o atendimento da conversa (POST /v1/centro/whatsapp/conversas/:id/finalizar) */
+  finalizarConversa(id: string, req?: { motivo?: string }): Promise<WhatsAppConversaDTO> {
+    return this.api.post<WhatsAppConversaDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/finalizar`, req || {});
+  }
+
+  /** Atualiza tags da conversa (POST /v1/centro/whatsapp/conversas/:id/tags) */
+  atualizarTags(id: string, req: { tags: string[] }): Promise<WhatsAppConversaDTO> {
+    return this.api.post<WhatsAppConversaDTO>(`/centro/whatsapp/conversas/${encodeURIComponent(id)}/tags`, req);
+  }
+}
+
 export class CentroApi {
   readonly recepcao: CentroRecepcaoApi;
   readonly medico: CentroMedicoApi;
   readonly gestao: CentroGestaoApi;
   readonly enfermagem: CentroEnfermagemApi;
+  readonly whatsapp: CentroWhatsAppApi;
 
   constructor(api: ApiClient) {
     this.recepcao = new CentroRecepcaoApi(api);
     this.medico = new CentroMedicoApi(api);
     this.gestao = new CentroGestaoApi(api);
     this.enfermagem = new CentroEnfermagemApi(api);
+    this.whatsapp = new CentroWhatsAppApi(api);
   }
 }
 

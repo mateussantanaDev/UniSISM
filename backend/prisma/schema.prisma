@@ -140,6 +140,42 @@ enum RacaCor {
   NAO_INFORMADA
 }
 
+enum StatusConversaWhatsApp {
+  PENDENTE
+  EM_ATENDIMENTO
+  AGUARDANDO_PACIENTE
+  RESOLVIDO
+  FINALIZADO
+}
+
+enum DirecaoMensagemWhatsApp {
+  ENTRADA
+  SAIDA
+}
+
+enum OrigemMensagemWhatsApp {
+  PACIENTE
+  ATENDENTE
+  SISTEMA_BOT
+}
+
+enum TipoMensagemWhatsApp {
+  TEXTO
+  IMAGEM
+  DOCUMENTO
+  AUDIO
+  TEMPLATE
+}
+
+enum StatusEnvioWhatsApp {
+  PENDENTE
+  ENVIADO
+  ENTREGUE
+  LIDO
+  FALHA
+  RECEBIDO
+}
+
 enum TipoAlergia {
   MEDICAMENTO
   ALIMENTO
@@ -519,6 +555,7 @@ model Paciente {
   viagemPassageiroLista  ViagemPassageiro[] @relation("PacienteViagemPassageiro")
   ajudasCusto            AjudaCusto[]       @relation("PacienteAjudaCusto")
   agendamentosCentro     AgendamentoCentro[]
+  conversasWhatsApp      WhatsAppConversa[]
 
   cadastradoEm DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -2129,4 +2166,95 @@ model AgendamentoCentro {
   updatedAt            DateTime                @updatedAt
 
   @@map("agendamentos_centro")
+}
+
+// ============================================================
+// MÓDULO CRM WHATSAPP MULTI-ATENDENTES & META CLOUD API
+// ============================================================
+
+model WhatsAppConfig {
+  id                      String    @id @default(uuid())
+  prefeituraId            String?   @unique
+  phoneNumberId           String    // Meta Cloud API Phone Number ID
+  wabaId                  String?   // WhatsApp Business Account ID
+  accessToken             String    // Token Permanente / System User
+  webhookVerifyToken      String    // Token para validação de Webhook
+  businessPhoneNumber     String?   // Ex: +5575999999999
+  nomeExibicao            String?   // Ex: "Central de Regulação e Especialidades"
+  ativo                   Boolean   @default(true)
+  mensagemBoasVindas      String?   @default("Olá! Bem-vindo(a) ao canal oficial de atendimento do Centro de Especialidades. Como podemos ajudar?")
+  mensagemForaHorario     String?   @default("Olá! Nosso horário de atendimento é de Segunda a Sexta das 07:00 às 18:00. Sua mensagem foi recebida e responderemos em breve!")
+  mensagemConfirmacao     String?   @default("Olá, {{nome}}! Confirmamos sua consulta de {{especialidade}} com {{medico}} para o dia {{data}} às {{hora}}. Responda SIM para confirmar ou NÃO para reagendar.")
+  horarioInicio           String?   @default("07:00")
+  horarioFim              String?   @default("18:00")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@map("whatsapp_config")
+}
+
+model WhatsAppConversa {
+  id                  String                 @id @default(uuid())
+  prefeituraId        String?
+  centroTipo          String                 @default("CEM") // CEM, CEO, SMS
+  pacienteId          String?
+  paciente            Paciente?              @relation(fields: [pacienteId], references: [id])
+  telefone            String                 // Formato E.164: Ex: 5575999999999
+  nomeContato         String
+  cpf                 String?
+  status              StatusConversaWhatsApp @default(PENDENTE)
+  atendenteId         String?
+  atendenteNome       String?
+  ultimaMensagemTexto String?
+  ultimaMensagemData  DateTime               @default(now())
+  naoLidas            Int                    @default(0)
+  tags                String[]               @default([])
+  encaminhamentoId    String?
+
+  mensagens           WhatsAppMensagem[]
+
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([telefone])
+  @@index([status])
+  @@index([atendenteId])
+  @@index([prefeituraId])
+  @@map("whatsapp_conversas")
+}
+
+model WhatsAppMensagem {
+  id                String                  @id @default(uuid())
+  conversaId        String
+  conversa          WhatsAppConversa        @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  direcao           DirecaoMensagemWhatsApp
+  origem            OrigemMensagemWhatsApp
+  atendenteId       String?
+  atendenteNome     String?
+  corpo             String
+  tipo              TipoMensagemWhatsApp    @default(TEXTO)
+  mediaUrl          String?
+  whatsappMessageId String?                 // wamid retornado pela Meta
+  statusEnvio       StatusEnvioWhatsApp     @default(ENVIADO)
+  erroEnvio         String?
+  metadata          Json?
+  enviadoEm         DateTime                @default(now())
+
+  @@index([conversaId])
+  @@index([whatsappMessageId])
+  @@map("whatsapp_mensagens")
+}
+
+model WhatsAppTemplateMensagem {
+  id             String    @id @default(uuid())
+  prefeituraId   String?
+  titulo         String
+  categoria      String    @default("CONFIRMACAO") // CONFIRMACAO, LEMBRETE, REGULACAO, INFORMATIVO
+  conteudo       String
+  ativo          Boolean   @default(true)
+  criadoPorNome  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("whatsapp_templates")
 }

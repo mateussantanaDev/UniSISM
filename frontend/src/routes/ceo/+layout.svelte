@@ -102,6 +102,10 @@
 			label: 'RECEPÇÃO CEO · AGENDAMENTO BALCÃO',
 			crumb: 'CEO / RECEPÇÃO / BALCÃO'
 		},
+		'/ceo/whatsapp': {
+			label: 'CRM WHATSAPP · ATENDIMENTO MULTI-ATENDENTES META API',
+			crumb: 'CEO / WHATSAPP / CRM'
+		},
 		'/ceo/recepcao/painel': {
 			label: 'RECEPÇÃO CEO · PAINEL TV DE CHAMADAS',
 			crumb: 'CEO / RECEPÇÃO / PAINEL'

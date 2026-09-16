@@ -5,12 +5,14 @@ import type { ITokenService } from '../../../../domain/services/ITokenService';
 import type { CentroRecepcaoController } from '../controllers/CentroRecepcaoController';
 import type { CentroGestaoController } from '../controllers/CentroGestaoController';
 import type { CentroMedicoController } from '../controllers/CentroMedicoController';
+import type { WhatsAppCrmController } from '../controllers/WhatsAppCrmController';
 
 export function buildCentroRoutes(
   tokens: ITokenService,
   recepcaoController: CentroRecepcaoController,
   gestaoController: CentroGestaoController,
   medicoController: CentroMedicoController,
+  whatsappController?: WhatsAppCrmController,
 ): Router {
   const router = Router();
   const authenticate = makeAuthenticate(tokens);
@@ -118,6 +120,30 @@ export function buildCentroRoutes(
   router.post('/centro/gestao/remanejamento-lote', authenticate, gestaoRoles, gestaoController.postRemanejamentoLote);
   router.get('/centro/gestao/relatorios/bpa', authenticate, gestaoRoles, gestaoController.getRelatorioBpa);
   router.get('/centro/gestao/auditoria', authenticate, gestaoRoles, gestaoController.getAuditoria);
+
+  // ───── CRM WhatsApp Multi-Atendentes & Meta Cloud API ─────
+  if (whatsappController) {
+    // Webhook público da Meta (handshake e eventos)
+    router.get('/whatsapp/webhook', whatsappController.getWebhookVerification);
+    router.post('/whatsapp/webhook', whatsappController.postWebhook);
+    router.get('/centro/whatsapp/webhook', whatsappController.getWebhookVerification);
+    router.post('/centro/whatsapp/webhook', whatsappController.postWebhook);
+
+    // Configurações e Conectividade
+    router.get('/centro/whatsapp/config', authenticate, gestaoRoles, whatsappController.getConfig);
+    router.post('/centro/whatsapp/config', authenticate, gestaoRoles, whatsappController.saveConfig);
+    router.post('/centro/whatsapp/config/testar', authenticate, gestaoRoles, whatsappController.testConnection);
+
+    // Gestão de Conversas e Atendimento
+    router.get('/centro/whatsapp/conversas', authenticate, recepcaoRoles, whatsappController.listConversas);
+    router.get('/centro/whatsapp/conversas/:id', authenticate, recepcaoRoles, whatsappController.getConversa);
+    router.post('/centro/whatsapp/conversas/:id/assumir', authenticate, recepcaoRoles, whatsappController.assumirConversa);
+    router.post('/centro/whatsapp/conversas/:id/transferir', authenticate, recepcaoRoles, whatsappController.transferirConversa);
+    router.post('/centro/whatsapp/conversas/:id/mensagens', authenticate, recepcaoRoles, whatsappController.enviarMensagem);
+    router.post('/centro/whatsapp/conversas/:id/template', authenticate, recepcaoRoles, whatsappController.enviarTemplate);
+    router.post('/centro/whatsapp/conversas/:id/finalizar', authenticate, recepcaoRoles, whatsappController.finalizarConversa);
+    router.post('/centro/whatsapp/conversas/:id/tags', authenticate, recepcaoRoles, whatsappController.atualizarTags);
+  }
 
   return router;
 }

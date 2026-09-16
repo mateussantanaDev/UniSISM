@@ -21,7 +21,7 @@
     "db:seed-recomendacoes": "ts-node-dev --transpile-only scripts/seed-recomendacoes.ts",
     "tfd:rebuild-audit-chain": "ts-node-dev --transpile-only scripts/rebuild-tfd-audit-chain.ts",
     "setup": "bash scripts/setup.sh",
-    "test": "ts-node --transpile-only tests/ubs-atendimento.test.ts && ts-node --transpile-only tests/centro.test.ts && ts-node --transpile-only tests/e2e-fluxo-integrado.test.ts",
+    "test": "ts-node --transpile-only tests/ubs-atendimento.test.ts && ts-node --transpile-only tests/centro.test.ts && ts-node --transpile-only tests/whatsapp-crm.test.ts && ts-node --transpile-only tests/e2e-fluxo-integrado.test.ts",
     "test:unit": "ts-node --transpile-only tests/ubs-atendimento.test.ts && ts-node --transpile-only tests/centro.test.ts",
     "test:ubs": "ts-node --transpile-only tests/ubs-atendimento.test.ts",
     "test:e2e": "ts-node --transpile-only tests/e2e-fluxo-integrado.test.ts",

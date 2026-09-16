@@ -16,6 +16,7 @@ import { buildEspecialistaRoutes } from '../../modules/gestao/presentation/route
 import type { CentroRecepcaoController } from '../../modules/centro/presentation/controllers/CentroRecepcaoController';
 import type { CentroGestaoController } from '../../modules/centro/presentation/controllers/CentroGestaoController';
 import type { CentroMedicoController } from '../../modules/centro/presentation/controllers/CentroMedicoController';
+import type { WhatsAppCrmController } from '../../modules/centro/presentation/controllers/WhatsAppCrmController';
 import { buildCentroRoutes } from '../../modules/centro/presentation/routes/centro.routes';
 import type { PacienteAppController } from '../../modules/paciente-app/presentation/controllers/PacienteAppController';
 import {
@@ -65,6 +66,7 @@ interface Deps {
   centroRecepcao: CentroRecepcaoController;
   centroGestao: CentroGestaoController;
   centroMedico: CentroMedicoController;
+  whatsAppCrm?: WhatsAppCrmController;
   ubsAtendimento: UbsAtendimentoController;
   pacienteApp: PacienteAppController;
   passwordRecoveryRateLimiter: PasswordRecoveryRateLimiter;
@@ -106,7 +108,7 @@ export function buildRoutes(deps: Deps): Router {
   // que Express trate "/encaminhamentos/arvore" como :id="arvore".
   router.use(buildRegulacaoRoutes(deps.tokens, deps.regulacao));
   router.use(buildEspecialistaRoutes(deps.tokens, deps.especialista));
-  router.use(buildCentroRoutes(deps.tokens, deps.centroRecepcao, deps.centroGestao, deps.centroMedico));
+  router.use(buildCentroRoutes(deps.tokens, deps.centroRecepcao, deps.centroGestao, deps.centroMedico, deps.whatsAppCrm));
   router.use(buildUbsAtendimentoRoutes(deps.tokens, deps.ubsAtendimento));
 
   // ----- Encaminhamentos -----

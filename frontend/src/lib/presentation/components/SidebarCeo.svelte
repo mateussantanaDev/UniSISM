@@ -30,6 +30,7 @@
 					{ label: 'Fila da Regulação', href: '/ceo/recepcao/fila', shortcut: 'F' },
 					{ label: 'Agenda do Dia', href: '/ceo/recepcao/agenda', shortcut: 'A' },
 					{ label: 'Agendar no Balcão', href: '/ceo/recepcao/balcao', shortcut: 'B' },
+					{ label: 'CRM WhatsApp (Meta API)', href: '/ceo/whatsapp', shortcut: 'W' },
 					{ label: 'Painel TV (Chamada)', href: '/ceo/recepcao/painel', shortcut: 'T' },
 					{ label: 'Base de Pacientes', href: '/ceo/pacientes', shortcut: 'P' }
 				]

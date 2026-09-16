@@ -102,6 +102,10 @@
 			label: 'RECEPÇÃO CEM · AGENDAMENTO BALCÃO',
 			crumb: 'CEM / RECEPÇÃO / BALCÃO'
 		},
+		'/cem/whatsapp': {
+			label: 'CRM WHATSAPP · ATENDIMENTO MULTI-ATENDENTES META API',
+			crumb: 'CEM / WHATSAPP / CRM'
+		},
 		'/cem/recepcao/painel': {
 			label: 'RECEPÇÃO CEM · PAINEL TV DE CHAMADAS',
 			crumb: 'CEM / RECEPÇÃO / PAINEL'

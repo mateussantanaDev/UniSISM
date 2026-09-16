@@ -125,6 +125,8 @@ import { AgendarRetornoMedicoUseCase } from '../modules/centro/application/use-c
 import { CentroRecepcaoController } from '../modules/centro/presentation/controllers/CentroRecepcaoController';
 import { CentroGestaoController } from '../modules/centro/presentation/controllers/CentroGestaoController';
 import { CentroMedicoController } from '../modules/centro/presentation/controllers/CentroMedicoController';
+import { WhatsAppCrmUseCase } from '../modules/centro/application/use-cases/WhatsAppCrmUseCase';
+import { WhatsAppCrmController } from '../modules/centro/presentation/controllers/WhatsAppCrmController';
 
 import { UpdateUsuarioUseCase } from '../application/admin/UpdateUsuarioUseCase';
 import { DeleteUsuarioUseCase } from '../application/admin/DeleteUsuarioUseCase';
@@ -457,6 +459,9 @@ export function buildContainer() {
     new AgendarRetornoMedicoUseCase(),
   );
 
+  const whatsAppCrmUC = new WhatsAppCrmUseCase();
+  const whatsAppCrmController = new WhatsAppCrmController(whatsAppCrmUC, atendentes);
+
   // ----- Módulo Prontuário (CRUD de sub-documentos) -----
   const prontuarioAudit = new PrismaProntuarioAuditLogger();
   const prontuarioController = new ProntuarioController({
@@ -603,6 +608,7 @@ export function buildContainer() {
     centroRecepcao: centroRecepcaoController,
     centroGestao: centroGestaoController,
     centroMedico: centroMedicoController,
+    whatsAppCrm: whatsAppCrmController,
     ubsAtendimento: ubsAtendimentoController,
     pacienteApp: pacienteAppController,
     passwordRecoveryRateLimiter,
