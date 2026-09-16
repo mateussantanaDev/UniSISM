@@ -9,13 +9,18 @@ export interface EscalaProfissionalCentro {
 	registro: string; // CRM ou CRO
 	centro: TipoCentro;
 	especialidade: string;
-	diasSemana: Array<'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB' | string>;
+	diasSemana: Array<'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB' | 'DOM' | string>;
 	horarioInicio: string; // "08:00"
 	horarioFim: string; // "12:00"
 	duracaoMinutos: number; // Ex: 20 min (CEM) ou 30-40 min (CEO)
 	vagasPorTurno: number;
 	consultorio?: string;
 	status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA' | 'BLOQUEADA_PARCIAL';
+	tipoRecorrencia?: 'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO';
+	datasEspecificas?: string[];
+	isMutirao?: boolean;
+	intervaloDias?: number;
+	dataInicioRecorrencia?: string;
 }
 
 export interface ResultadoAlocacaoAutomatica {
@@ -118,6 +123,59 @@ export function formatarDataBr(iso: string): string {
 	return `${dia}/${mes}/${ano}`;
 }
 
+export function escalaAtendeNaData(escala: EscalaProfissionalCentro, data: Date): boolean {
+	const ano = data.getFullYear();
+	const mes = String(data.getMonth() + 1).padStart(2, '0');
+	const dia = String(data.getDate()).padStart(2, '0');
+	const iso = `${ano}-${mes}-${dia}`;
+	const diaSemana = data.getDay(); // 0 a 6
+
+	// 1. Datas Específicas / Pontuais
+	if (escala.datasEspecificas && escala.datasEspecificas.length > 0) {
+		if (escala.datasEspecificas.includes(iso)) return true;
+		if (escala.tipoRecorrencia === 'DATAS_ESPECIFICAS') return false;
+	}
+
+	// 2. Mini Mutirão (sábado, domingo ou datas pontuais)
+	if (escala.isMutirao || escala.tipoRecorrencia === 'MUTIRAO') {
+		if (escala.datasEspecificas && escala.datasEspecificas.length > 0) {
+			return escala.datasEspecificas.includes(iso);
+		}
+		const diasNumericos = Array.from(new Set(
+			(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
+		));
+		return diasNumericos.includes(diaSemana);
+	}
+
+	// 3. Recorrência Quinzenal
+	if (escala.tipoRecorrencia === 'QUINZENAL') {
+		const diasNumericos = Array.from(new Set(
+			(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
+		));
+		if (!diasNumericos.includes(diaSemana)) return false;
+
+		if (escala.dataInicioRecorrencia) {
+			const base = new Date(escala.dataInicioRecorrencia + 'T00:00:00Z');
+			const cur = new Date(iso + 'T00:00:00Z');
+			const diffMs = cur.getTime() - base.getTime();
+			const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+			const diffWeeks = Math.floor(diffDays / 7);
+			return diffWeeks >= 0 && diffWeeks % 2 === 0;
+		} else {
+			const primeiroJan = new Date(data.getFullYear(), 0, 1);
+			const diasDoAno = Math.floor((data.getTime() - primeiroJan.getTime()) / (24 * 60 * 60 * 1000));
+			const semanaDoAno = Math.ceil((diasDoAno + primeiroJan.getDay() + 1) / 7);
+			return semanaDoAno % 2 === 0;
+		}
+	}
+
+	// 4. Semanal Padrão
+	const diasNumericos = Array.from(new Set(
+		(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
+	));
+	return diasNumericos.includes(diaSemana);
+}
+
 export function alocarVagaPorProfissionalEEscala(params: {
 	centro: TipoCentro;
 	medicoNome?: string;
@@ -161,10 +219,6 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		return null;
 	}
 
-	const diasNumericos = Array.from(new Set(
-		escala.diasSemana.map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
-	));
-
 	const slotsBase = gerarSlotsTurno(escala.horarioInicio, escala.horarioFim, escala.duracaoMinutos);
 	const ehCeo = centro === 'CEO';
 
@@ -198,8 +252,7 @@ export function alocarVagaPorProfissionalEEscala(params: {
 
 	let maxTentativas = 60;
 	while (maxTentativas > 0) {
-		const diaSemanaCursor = dataCursor.getDay();
-		if (diasNumericos.includes(diaSemanaCursor)) {
+		if (escalaAtendeNaData(escala, dataCursor)) {
 			const ano = dataCursor.getFullYear();
 			const mes = String(dataCursor.getMonth() + 1).padStart(2, '0');
 			const dia = String(dataCursor.getDate()).padStart(2, '0');

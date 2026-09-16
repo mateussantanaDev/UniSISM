@@ -37,20 +37,32 @@ export class DeleteEncaminhamentoUseCase {
       throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
     }
 
+    const editor = await prisma.atendente.findUnique({
+      where: { id: editorId },
+      select: { id: true, nome: true, role: true },
+    });
+    const editorNome = editor?.nome || 'Operador Responsável';
+    const editorRole = editor?.role || 'ATENDENTE';
+
     await prisma.encaminhamento.update({
       where: { id: encaminhamentoId },
-      data: { deletadoEm: new Date() },
+      data: {
+        deletadoEm: new Date(),
+        deletadoPorId: editorId,
+        deletadoPorNome: editorNome,
+        motivoExclusao: motivo.trim(),
+      },
     });
 
-    // Registra evento administrativo na timeline (preserva trilha)
+    // Registra evento administrativo na timeline (preserva trilha completa)
     await prisma.eventoTimeline.create({
       data: {
         encaminhamentoId,
         tipo: 'OBSERVACAO',
-        titulo: 'Excluído administrativamente',
-        descricao: motivo.trim() || 'Exclusão administrativa',
-        autor: 'ADMINISTRADOR',
-        autorPapel: 'Admin / Suporte',
+        titulo: 'Excluído do Sistema',
+        descricao: `Excluído por ${editorNome} (${editorRole}). Motivo: ${motivo.trim()}`,
+        autor: editorNome,
+        autorPapel: editorRole,
       },
     });
 
@@ -61,9 +73,30 @@ export class DeleteEncaminhamentoUseCase {
       atendenteId: editorId,
       payload: {
         protocolo: alvo.protocolo,
+        pacienteNome: alvo.pacienteNome,
         statusAnterior: alvo.status,
         ubsId: alvo.ubsId,
+        operadorNome: editorNome,
+        operadorRole: editorRole,
         motivo: motivo.slice(0, 500),
+      },
+    });
+
+    await prisma.auditoriaLog.create({
+      data: {
+        acao: 'CENTRO_EXCLUIR_ENCAMINHAMENTO',
+        recurso: 'CENTRO_ESPECIALIDADES',
+        recursoId: encaminhamentoId,
+        atendenteId: editorId,
+        payload: {
+          protocolo: alvo.protocolo,
+          pacienteNome: alvo.pacienteNome,
+          statusAnterior: alvo.status,
+          ubsId: alvo.ubsId,
+          operadorNome: editorNome,
+          operadorRole: editorRole,
+          motivo: motivo.trim(),
+        },
       },
     });
 

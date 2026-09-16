@@ -13,6 +13,8 @@ export interface AgendarConsultaCentroInput {
   profissional?: string;
   nota?: string;
   localAgendamento?: string;
+  dataAgendada?: string; // YYYY-MM-DD
+  horaAgendada?: string; // HH:MM
   atendente: {
     id: string;
     nome: string;
@@ -37,12 +39,28 @@ export class AgendarConsultaCentroUseCase {
 
     const enc = rowParaEncaminhamento(row);
 
-    const otimizado = await calcularOtimizacaoAgendamento({
-      profissional: input.profissional,
-      nota: input.nota,
-      especialidade: enc.solicitacao.especialidadeSolicitada,
-      prioridade: enc.solicitacao.prioridade,
-    });
+    let finalDateTime: Date;
+    let finalDateStr: string;
+    let finalTimeStr: string;
+    let finalDoctorNome: string;
+
+    if (input.dataAgendada && input.horaAgendada) {
+      finalDateStr = input.dataAgendada;
+      finalTimeStr = input.horaAgendada;
+      finalDateTime = new Date(`${input.dataAgendada}T${input.horaAgendada}:00`);
+      finalDoctorNome = input.profissional || enc.profissionalAgendado || 'Especialista da Escala';
+    } else {
+      const otimizado = await calcularOtimizacaoAgendamento({
+        profissional: input.profissional,
+        nota: input.nota,
+        especialidade: enc.solicitacao.especialidadeSolicitada,
+        prioridade: enc.solicitacao.prioridade,
+      });
+      finalDateStr = otimizado.dateStr;
+      finalTimeStr = otimizado.timeStr;
+      finalDateTime = otimizado.dateTime;
+      finalDoctorNome = otimizado.doctor.nome;
+    }
 
     const localAg = input.localAgendamento || row.localAgendamento || 'Centro Municipal de Especialidades';
 
@@ -52,10 +70,10 @@ export class AgendarConsultaCentroUseCase {
         data: {
           encaminhamentoId: row.id,
           tipo: TipoEventoTimeline.AGENDADO,
-          titulo: 'Consulta Agendada · Centro de Especialidades',
-          descricao: `Agendado para ${otimizado.dateStr} às ${otimizado.timeStr} no local ${localAg}. Médico: ${otimizado.doctor.nome}. ${input.nota ? `Obs: ${input.nota}` : ''}`,
+          titulo: 'Consulta Agendada · Regulação do Centro',
+          descricao: `Agendado para ${finalDateStr} às ${finalTimeStr} no local ${localAg}. Especialista: ${finalDoctorNome}. ${input.nota ? `Obs: ${input.nota}` : ''}`,
           autor: input.atendente.nome,
-          autorPapel: 'Recepção · Centro de Especialidades',
+          autorPapel: 'Regulação · Centro de Especialidades',
         },
       });
 
@@ -64,10 +82,10 @@ export class AgendarConsultaCentroUseCase {
         where: { id: row.id },
         data: {
           status: StatusEncaminhamento.APROVADO,
-          agendamentoPrevisto: otimizado.dateTime,
-          profissionalAgendado: otimizado.doctor.nome,
+          agendamentoPrevisto: finalDateTime,
+          profissionalAgendado: finalDoctorNome,
           localAgendamento: localAg,
-          observacoesRegulacao: input.nota || `Agendado com ${otimizado.doctor.nome} para ${otimizado.dateStr} às ${otimizado.timeStr}`,
+          observacoesRegulacao: input.nota || `Agendado com ${finalDoctorNome} para ${finalDateStr} às ${finalTimeStr}`,
           statusAtendimentoCentro: 'AGENDADO',
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
@@ -82,9 +100,9 @@ export class AgendarConsultaCentroUseCase {
           atendenteId: input.atendente.id,
           payload: {
             protocolo: row.protocolo,
-            dataAgendada: otimizado.dateStr,
-            horario: otimizado.timeStr,
-            medico: otimizado.doctor.nome,
+            dataAgendada: finalDateStr,
+            horario: finalTimeStr,
+            medico: finalDoctorNome,
             local: localAg,
           },
         },
@@ -99,10 +117,10 @@ export class AgendarConsultaCentroUseCase {
         pacienteNome: updated.pacienteNome,
         encaminhamentoId: updated.id,
         tipo: 'AGENDADO',
-        ...MENSAGENS.agendado(updated.protocolo, otimizado.dateTime.toISOString()),
+        ...MENSAGENS.agendado(updated.protocolo, finalDateTime.toISOString()),
         payload: {
           protocolo: updated.protocolo,
-          agendamentoPrevisto: otimizado.dateTime.toISOString(),
+          agendamentoPrevisto: finalDateTime.toISOString(),
         },
       })
       .catch(() => {});

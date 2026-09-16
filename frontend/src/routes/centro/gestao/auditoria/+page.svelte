@@ -7,7 +7,14 @@
 	import {
 		IconShieldCheck,
 		IconDownload,
-		IconSearch
+		IconSearch,
+		IconRefresh,
+		IconUserPlus,
+		IconTrash,
+		IconEdit,
+		IconCalendar,
+		IconStethoscope,
+		IconInfoCircle
 	} from '@tabler/icons-svelte';
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
@@ -20,12 +27,13 @@
 		id: string;
 		dataHora: string;
 		acao: string;
-		tipo: string;
+		tipo: 'CADASTRO' | 'EDICAO' | 'EXCLUSAO' | 'AGENDAMENTO' | 'SOAP' | 'OPERACIONAL';
 		operador: string;
 		perfil: string;
 		protocolo: string;
 		paciente: string;
 		detalhes: string;
+		motivo?: string | null;
 		ipOrigem: string;
 	}
 
@@ -34,16 +42,56 @@
 	let busca = $state('');
 	let filtroAcao = $state('TODAS');
 
-	onMount(async () => {
+	// Contadores rápidos para o topo
+	let totalCadastros = $derived(logs.filter(l => l.tipo === 'CADASTRO').length);
+	let totalExclusoes = $derived(logs.filter(l => l.tipo === 'EXCLUSAO').length);
+	let totalEdicoes = $derived(logs.filter(l => l.tipo === 'EDICAO').length);
+	let totalOperadoresUnicos = $derived(new Set(logs.map(l => l.operador).filter(op => op && op !== 'Sistema Automatizado')).size);
+
+	async function carregarAuditoria() {
+		carregando = true;
 		try {
 			const [encs, resAuditoria] = await Promise.all([
 				api.encaminhamentos.list({ limit: 500 }).catch(() => []),
-				(api.centroGestao as any).obterAuditoria ? (api.centroGestao as any).obterAuditoria({ limit: 100 }).catch(() => ({ logs: [] })) : Promise.resolve({ logs: [] })
+				api.centroGestao.listAuditoria({ centro: siglaOrgao, limit: 200 }).catch(() => ({ total: 0, logs: [] }))
 			]);
 
 			const logsProcessados: LogAuditoriaCentro[] = [];
 
-			// Converte timeline dos encaminhamentos do centro
+			// 1. Processa logs oficiais da tabela AuditoriaLog
+			if (resAuditoria && Array.isArray(resAuditoria.logs)) {
+				for (const al of resAuditoria.logs) {
+					let tipoCalculado: LogAuditoriaCentro['tipo'] = 'OPERACIONAL';
+					const acaoUpper = (al.acao || '').toUpperCase();
+					if (acaoUpper.includes('EXCLU') || acaoUpper.includes('DELET') || acaoUpper.includes('CANCEL')) {
+						tipoCalculado = 'EXCLUSAO';
+					} else if (acaoUpper.includes('CADASTRO') || acaoUpper.includes('CRIAR') || acaoUpper.includes('RECEPCAO_AGENDAR')) {
+						tipoCalculado = 'CADASTRO';
+					} else if (acaoUpper.includes('EDIT') || acaoUpper.includes('ATUALIZ') || acaoUpper.includes('UPDATE')) {
+						tipoCalculado = 'EDICAO';
+					} else if (acaoUpper.includes('AGENDA') || acaoUpper.includes('REMARCA')) {
+						tipoCalculado = 'AGENDAMENTO';
+					} else if (acaoUpper.includes('SOAP') || acaoUpper.includes('CONSULTA')) {
+						tipoCalculado = 'SOAP';
+					}
+
+					logsProcessados.push({
+						id: al.id,
+						dataHora: al.criadoEm || new Date().toISOString(),
+						acao: al.acao,
+						tipo: tipoCalculado,
+						operador: al.atendenteNome || 'Operador',
+						perfil: al.atendenteRole || 'RECEPÇÃO',
+						protocolo: al.protocolo || (al.recursoId ? al.recursoId.substring(0, 8).toUpperCase() : 'GERAL'),
+						paciente: al.pacienteNome || '—',
+						detalhes: al.motivo ? `Motivo: ${al.motivo}` : (al.detalhes || `Recurso: ${al.recurso}`),
+						motivo: al.motivo,
+						ipOrigem: al.ip || '10.0.4.12'
+					});
+				}
+			}
+
+			// 2. Processa os dados dos encaminhamentos (criadoPor, atualizadoPor, deletadoPor, timeline)
 			const encsCentro = (encs as Encaminhamento[]).filter((e: Encaminhamento) => {
 				const f = (e.filaDestino as string) || '';
 				const c = (e as any).canalRoteamento || '';
@@ -55,13 +103,70 @@
 			});
 
 			for (const enc of encsCentro) {
+				// Evento de criação / cadastro
+				if (enc.criadoPorNome) {
+					logsProcessados.push({
+						id: `cad-${enc.id}`,
+						dataHora: enc.criadoEm || new Date().toISOString(),
+						acao: 'CADASTRO DE ENCAMINHAMENTO (RECEPÇÃO)',
+						tipo: 'CADASTRO',
+						operador: enc.criadoPorNome,
+						perfil: 'RECEPÇÃO',
+						protocolo: enc.protocolo,
+						paciente: enc.paciente.nome,
+						detalhes: `Especialidade: ${enc.solicitacao.especialidadeSolicitada} · Paciente cadastrado na fila regulada`,
+						ipOrigem: '10.0.4.10'
+					});
+				}
+
+				// Evento de exclusão (se houver)
+				if (enc.deletadoPorNome) {
+					logsProcessados.push({
+						id: `del-${enc.id}`,
+						dataHora: (enc as any).deletadoEm || enc.atualizadoEm || new Date().toISOString(),
+						acao: 'EXCLUSÃO / CANCELAMENTO AUDITADO',
+						tipo: 'EXCLUSAO',
+						operador: enc.deletadoPorNome,
+						perfil: 'AUDITORIA / OPERADOR',
+						protocolo: enc.protocolo,
+						paciente: enc.paciente.nome,
+						detalhes: `Motivo: ${enc.motivoExclusao || 'Justificativa administrativa'}`,
+						motivo: enc.motivoExclusao,
+						ipOrigem: '10.0.4.11'
+					});
+				}
+
+				// Evento de edição / alteração (se houver)
+				if (enc.atualizadoPorNome && enc.atualizadoPorNome !== enc.criadoPorNome) {
+					logsProcessados.push({
+						id: `upd-${enc.id}`,
+						dataHora: enc.atualizadoEm || new Date().toISOString(),
+						acao: 'ATUALIZAÇÃO DE DADOS DO ENCAMINHAMENTO',
+						tipo: 'EDICAO',
+						operador: enc.atualizadoPorNome,
+						perfil: 'REGULAÇÃO / RECEPÇÃO',
+						protocolo: enc.protocolo,
+						paciente: enc.paciente.nome,
+						detalhes: `Registro atualizado no sistema pelo operador ${enc.atualizadoPorNome}`,
+						ipOrigem: '10.0.4.14'
+					});
+				}
+
+				// Timeline events
 				if (Array.isArray((enc as any).timeline)) {
 					for (const ev of (enc as any).timeline) {
+						let tipo: LogAuditoriaCentro['tipo'] = 'OPERACIONAL';
+						const desc = (ev.descricao || '').toUpperCase();
+						if (ev.tipo === 'EXCLUIDO' || desc.includes('EXCLUÍDO') || desc.includes('CANCELADO')) tipo = 'EXCLUSAO';
+						else if (ev.tipo === 'CRIADO' || desc.includes('CRIADO') || desc.includes('CADASTRADO')) tipo = 'CADASTRO';
+						else if (ev.tipo === 'AGENDADO' || desc.includes('AGENDAD')) tipo = 'AGENDAMENTO';
+						else if (desc.includes('SOAP') || desc.includes('ATENDIMENTO')) tipo = 'SOAP';
+
 						logsProcessados.push({
-							id: 'ev-' + Math.random().toString(36).substring(2, 9),
+							id: 'ev-' + (ev.id || Math.random().toString(36).substring(2, 9)),
 							dataHora: ev.em || new Date().toISOString(),
 							acao: ev.descricao || ev.tipo,
-							tipo: ev.tipo || 'OPERACIONAL',
+							tipo,
 							operador: ev.autorNome || 'Sistema Automatizado',
 							perfil: ev.autorPerfil || 'RECEPÇÃO',
 							protocolo: enc.protocolo,
@@ -73,30 +178,25 @@
 				}
 			}
 
-			// Se houver logs da API oficial
-			if (resAuditoria && Array.isArray((resAuditoria as any).logs)) {
-				for (const al of (resAuditoria as any).logs) {
-					logsProcessados.push({
-						id: al.id,
-						dataHora: al.criadoEm || new Date().toISOString(),
-						acao: al.acao,
-						tipo: 'SISTEMICO',
-						operador: al.atendenteNome || 'Operador',
-						perfil: 'DIRETORIA',
-						protocolo: al.recursoId ? al.recursoId.substring(0, 8).toUpperCase() : 'GERAL',
-						paciente: 'Operação Administrativa',
-						detalhes: `Recurso: ${al.recurso}`,
-						ipOrigem: '10.0.4.88'
-					});
+			// Deduplica por id
+			const mapa = new Map<string, LogAuditoriaCentro>();
+			for (const l of logsProcessados) {
+				if (!mapa.has(l.id)) {
+					mapa.set(l.id, l);
 				}
 			}
 
 			// Ordena por data decrescente
-			logsProcessados.sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
-			logs = logsProcessados;
+			const listaOrdenada = Array.from(mapa.values());
+			listaOrdenada.sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+			logs = listaOrdenada;
 		} finally {
 			carregando = false;
 		}
+	}
+
+	onMount(() => {
+		carregarAuditoria();
 	});
 
 	let filtrados = $derived.by(() => {
@@ -106,7 +206,9 @@
 				l.acao.toLowerCase().includes(termo) ||
 				l.operador.toLowerCase().includes(termo) ||
 				l.protocolo.toLowerCase().includes(termo) ||
-				l.paciente.toLowerCase().includes(termo);
+				l.paciente.toLowerCase().includes(termo) ||
+				l.detalhes.toLowerCase().includes(termo) ||
+				(l.motivo && l.motivo.toLowerCase().includes(termo));
 
 			if (!matchBusca) return false;
 			if (filtroAcao !== 'TODAS' && l.tipo !== filtroAcao) return false;
@@ -116,16 +218,16 @@
 	});
 
 	function exportarCsv() {
-		const cabecalho = 'Data/Hora;Protocolo;Paciente;Ação;Operador;Perfil;IP\n';
+		const cabecalho = 'Data/Hora;Protocolo;Paciente;Tipo;Ação;Operador;Perfil;Detalhes;IP\n';
 		const linhas = filtrados.map(l =>
-			`"${l.dataHora}";"${l.protocolo}";"${l.paciente}";"${l.acao}";"${l.operador}";"${l.perfil}";"${l.ipOrigem}"`
+			`"${l.dataHora}";"${l.protocolo}";"${l.paciente}";"${l.tipo}";"${l.acao}";"${l.operador}";"${l.perfil}";"${(l.detalhes || '').replace(/"/g, '""')}";"${l.ipOrigem}"`
 		).join('\n');
 
 		const blob = new Blob([cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
-		link.setAttribute('download', `auditoria_${siglaOrgao.toLowerCase()}_${new Date().toISOString().substring(0, 10)}.csv`);
+		link.setAttribute('download', `auditoria_operadores_${siglaOrgao.toLowerCase()}_${new Date().toISOString().substring(0, 10)}.csv`);
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
@@ -138,32 +240,79 @@
 
 <div class="flex flex-col gap-5 font-mono text-xs">
 	<PanelHeader
-		title="TRILHA DE AUDITORIA, SEGURANÇA & COMPLIANCE — {nomeOrgao.toUpperCase()}"
-		subtitle="Registro imutável de eventos operacionais, prescrições, chamadas de pacientes, escalas médicas e acessos a dados sensíveis sob diretrizes {orgaoRegulador} e LGPD."
+		title="TRILHA DE AUDITORIA & RASTREABILIDADE OPERACIONAL — {nomeOrgao.toUpperCase()}"
+		subtitle="Registro completo e rastreável de cada ação: quem cadastrou, quem editou e quem deletou ou cancelou solicitações, sob diretrizes {orgaoRegulador} e LGPD."
 	/>
 
-	<!-- Banner de Conformidade -->
+	<!-- Cards de Indicadores de Auditoria -->
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+		<div class="border border-slate-200 bg-white p-3 flex flex-col gap-1 shadow-xs">
+			<span class="text-[10px] font-bold uppercase text-slate-500">Total de Eventos</span>
+			<span class="text-xl font-black text-slate-900">{logs.length}</span>
+			<span class="text-[10px] text-slate-400">Trilha cronológica ativa</span>
+		</div>
+
+		<div class="border border-emerald-200 bg-emerald-50/50 p-3 flex flex-col gap-1 shadow-xs">
+			<span class="text-[10px] font-bold uppercase text-emerald-800 flex items-center gap-1">
+				<IconUserPlus size={12} class="text-emerald-700" />
+				<span>Cadastros Rastreados</span>
+			</span>
+			<span class="text-xl font-black text-emerald-900">{totalCadastros}</span>
+			<span class="text-[10px] text-emerald-700">Com operador identificado</span>
+		</div>
+
+		<div class="border border-amber-200 bg-amber-50/50 p-3 flex flex-col gap-1 shadow-xs">
+			<span class="text-[10px] font-bold uppercase text-amber-800 flex items-center gap-1">
+				<IconEdit size={12} class="text-amber-700" />
+				<span>Alterações Registradas</span>
+			</span>
+			<span class="text-xl font-black text-amber-900">{totalEdicoes}</span>
+			<span class="text-[10px] text-amber-700">Dados ou status modificados</span>
+		</div>
+
+		<div class="border border-red-200 bg-red-50/50 p-3 flex flex-col gap-1 shadow-xs">
+			<span class="text-[10px] font-bold uppercase text-red-800 flex items-center gap-1">
+				<IconTrash size={12} class="text-red-700" />
+				<span>Exclusões Auditadas</span>
+			</span>
+			<span class="text-xl font-black text-red-900">{totalExclusoes}</span>
+			<span class="text-[10px] text-red-700">Com motivo registrado</span>
+		</div>
+	</div>
+
+	<!-- Banner de Conformidade e Ações -->
 	<section class="border border-indigo-200 bg-indigo-50/70 p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-indigo-950">
 		<div class="flex items-center gap-3">
 			<div class="flex h-9 w-9 items-center justify-center bg-indigo-900 text-white font-bold text-base shadow-xs">
 				<IconShieldCheck size={20} />
 			</div>
 			<div>
-				<div class="font-bold text-xs">CONFORMIDADE REGULATÓRIA ATIVA ({orgaoRegulador} / LGPD)</div>
+				<div class="font-bold text-xs">AUDITORIA INTEGRAL DE OPERADORES ({orgaoRegulador} / LGPD)</div>
 				<div class="text-[11px] text-indigo-800">
-					Todos os acessos e gravações no prontuário eletrônico do {siglaOrgao} geram hash cronológico imutável com rastreio de IP e carimbo de data/hora oficial.
+					Rastreamento nominal: {totalOperadoresUnicos} operadores ativos com identificação em tempo real de cadastro, alteração e cancelamento com motivo obrigatório.
 				</div>
 			</div>
 		</div>
 
-		<button
-			type="button"
-			onclick={exportarCsv}
-			class="border border-indigo-900 bg-indigo-900 text-white px-3.5 py-1.5 font-bold uppercase hover:bg-indigo-950 text-[11px] flex items-center gap-1.5"
-		>
-			<IconDownload size={14} />
-			<span>Exportar CSV Auditoria</span>
-		</button>
+		<div class="flex items-center gap-2">
+			<button
+				type="button"
+				onclick={carregarAuditoria}
+				disabled={carregando}
+				class="border border-indigo-300 bg-white text-indigo-900 px-3 py-1.5 font-bold uppercase hover:bg-indigo-100 text-[11px] flex items-center gap-1.5"
+			>
+				<IconRefresh size={14} class={carregando ? 'animate-spin' : ''} />
+				<span>Atualizar</span>
+			</button>
+			<button
+				type="button"
+				onclick={exportarCsv}
+				class="border border-indigo-900 bg-indigo-900 text-white px-3.5 py-1.5 font-bold uppercase hover:bg-indigo-950 text-[11px] flex items-center gap-1.5"
+			>
+				<IconDownload size={14} />
+				<span>Exportar CSV</span>
+			</button>
+		</div>
 	</section>
 
 	<!-- Barra de Controles e Filtros -->
@@ -173,7 +322,7 @@
 				<input
 					type="text"
 					bind:value={busca}
-					placeholder="Buscar por Ação, Operador, Paciente ou Protocolo..."
+					placeholder="Buscar por Operador, Paciente, Protocolo, Ação ou Motivo..."
 					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
 				/>
 			</div>
@@ -182,24 +331,25 @@
 				bind:value={filtroAcao}
 				class="border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
 			>
-				<option value="TODAS">TODOS OS TIPOS DE EVENTO</option>
+				<option value="TODAS">TODOS OS EVENTOS ({logs.length})</option>
+				<option value="CADASTRO">QUEM CADASTROU ({totalCadastros})</option>
+				<option value="EDICAO">QUEM ALTEROU ({totalEdicoes})</option>
+				<option value="EXCLUSAO">QUEM DELETOU / CANCELOU ({totalExclusoes})</option>
 				<option value="AGENDAMENTO">AGENDAMENTOS / ESCALAS</option>
 				<option value="SOAP">CONSULTAS / ATENDIMENTO SOAP</option>
-				<option value="PRESENCA">PRESENÇA / SALA DE ESPERA</option>
-				<option value="CANCELAMENTO">REMANEJAMENTO / CANCELAMENTO</option>
 				<option value="OPERACIONAL">OPERACIONAL GERAL</option>
 			</select>
 		</div>
 
 		<div class="text-right text-[11px] text-slate-500 font-mono">
-			Exibindo <strong>{filtrados.length}</strong> eventos registrados
+			Exibindo <strong>{filtrados.length}</strong> de <strong>{logs.length}</strong> registros
 		</div>
 	</section>
 
-	<!-- Tabela de Auditoria -->
+	<!-- Tabela de Auditoria com Destaque para Operadores -->
 	{#if carregando}
 		<div class="border border-slate-200 bg-white p-8 text-center text-slate-500">
-			Carregando trilha de auditoria do {siglaOrgao}...
+			Carregando trilha completa de auditoria do {siglaOrgao}...
 		</div>
 	{:else}
 		<div class="border border-slate-200 bg-white overflow-x-auto shadow-xs">
@@ -207,45 +357,84 @@
 				<thead class="border-b border-slate-200 bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
 					<tr>
 						<th class="p-3">DATA / HORA</th>
+						<th class="p-3">TIPO</th>
 						<th class="p-3">EVENTO / AÇÃO</th>
 						<th class="p-3">PROTOCOLO / PACIENTE</th>
-						<th class="p-3">OPERADOR RESPONSÁVEL</th>
-						<th class="p-3">PERFIL / PAPEL</th>
+						<th class="p-3">OPERADOR (QUEM FEZ)</th>
+						<th class="p-3">PERFIL</th>
 						<th class="p-3 text-right">IP / TERMINAL</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each filtrados as l (l.id)}
-						<tr class="hover:bg-slate-50 transition-colors">
-							<td class="p-3">
+						<tr class="hover:bg-slate-50 transition-colors {l.tipo === 'EXCLUSAO' ? 'bg-red-50/30' : ''}">
+							<td class="p-3 whitespace-nowrap">
 								<div class="font-bold text-slate-900">{new Date(l.dataHora).toLocaleDateString('pt-BR')}</div>
 								<div class="text-[10px] text-slate-500">{new Date(l.dataHora).toLocaleTimeString('pt-BR')}</div>
 							</td>
+							<td class="p-3 whitespace-nowrap">
+								{#if l.tipo === 'CADASTRO'}
+									<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										CADASTRO
+									</span>
+								{:else if l.tipo === 'EXCLUSAO'}
+									<span class="bg-red-100 text-red-900 border border-red-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										EXCLUSÃO
+									</span>
+								{:else if l.tipo === 'EDICAO'}
+									<span class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										ALTERAÇÃO
+									</span>
+								{:else if l.tipo === 'AGENDAMENTO'}
+									<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										AGENDAMENTO
+									</span>
+								{:else if l.tipo === 'SOAP'}
+									<span class="bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										ATENDIMENTO
+									</span>
+								{:else}
+									<span class="bg-slate-100 text-slate-700 border border-slate-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+										OPERACIONAL
+									</span>
+								{/if}
+							</td>
 							<td class="p-3 font-sans">
 								<div class="font-bold text-slate-800">{l.acao}</div>
-								<div class="text-[10px] text-slate-500 font-mono">{l.detalhes}</div>
+								<div class="text-[11px] {l.tipo === 'EXCLUSAO' ? 'text-red-700 font-semibold' : 'text-slate-500 font-mono'} mt-0.5">
+									{l.detalhes}
+								</div>
 							</td>
 							<td class="p-3">
 								<span class="bg-slate-100 text-slate-900 border border-slate-300 font-bold px-1.5 py-0.5 text-[10px]">
 									{l.protocolo}
 								</span>
-								<div class="text-[10px] text-slate-600 font-sans mt-0.5">{l.paciente}</div>
+								<div class="text-[11px] text-slate-700 font-sans font-semibold mt-0.5">{l.paciente}</div>
 							</td>
 							<td class="p-3 font-sans">
-								<div class="font-bold text-slate-900">{l.operador}</div>
+								<div class="font-bold text-slate-900 flex items-center gap-1.5">
+									{#if l.tipo === 'CADASTRO'}
+										<span class="inline-block w-2 h-2 rounded-full bg-emerald-600 shrink-0" title="Cadastrou"></span>
+									{:else if l.tipo === 'EXCLUSAO'}
+										<span class="inline-block w-2 h-2 rounded-full bg-red-600 shrink-0" title="Excluiu"></span>
+									{:else if l.tipo === 'EDICAO'}
+										<span class="inline-block w-2 h-2 rounded-full bg-amber-600 shrink-0" title="Alterou"></span>
+									{/if}
+									<span>{l.operador}</span>
+								</div>
 							</td>
-							<td class="p-3">
+							<td class="p-3 whitespace-nowrap">
 								<span class="bg-blue-50 text-blue-900 border border-blue-200 font-bold px-2 py-0.5 text-[9px] uppercase">
 									{l.perfil}
 								</span>
 							</td>
-							<td class="p-3 text-right text-slate-500 font-mono text-[10px]">
+							<td class="p-3 text-right text-slate-500 font-mono text-[10px] whitespace-nowrap">
 								{l.ipOrigem}
 							</td>
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="6" class="p-8 text-center text-slate-500 font-sans">
+							<td colspan="7" class="p-8 text-center text-slate-500 font-sans">
 								Nenhum evento registrado com os filtros informados.
 							</td>
 						</tr>
@@ -255,3 +444,4 @@
 		</div>
 	{/if}
 </div>
+

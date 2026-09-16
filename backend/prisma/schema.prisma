@@ -727,6 +727,15 @@ model Encaminhamento {
   atendenteId   String
   atendente     Atendente @relation(fields: [atendenteId], references: [id])
 
+  // Trilha de Auditoria com Identificação de Operador
+  criadoPorId       String?
+  criadoPorNome     String?
+  atualizadoPorId   String?
+  atualizadoPorNome String?
+  deletadoPorId     String?
+  deletadoPorNome   String?
+  motivoExclusao    String?
+
   anexos   AnexoDocumento[]
   timeline EventoTimeline[]
   /// Pedidos TFD que anexaram este encaminhamento p/ ganhar prioridade.
@@ -1961,10 +1970,17 @@ model EscalaEspecialista {
   diasSemana      String[]           // ["SEG", "TER", "QUA", "QUI", "SEX"]
   horarioInicio   String             // "08:00"
   horarioFim      String             // "12:00"
-  duracaoMinutos  Int                @default(20)
-  vagasPorTurno   Int                @default(12)
-  status          StatusAgendaMedica @default(ATIVA)
-  ativo           Boolean            @default(true)
+  duracaoMinutos         Int                @default(20)
+  vagasPorTurno          Int                @default(12)
+  status                 StatusAgendaMedica @default(ATIVA)
+  ativo                  Boolean            @default(true)
+
+  // Recorrência flexível & Mini Mutirão
+  tipoRecorrencia        String             @default("SEMANAL") // "SEMANAL" | "QUINZENAL" | "DATAS_ESPECIFICAS" | "MUTIRAO"
+  datasEspecificas       String[]           @default([])        // Datas pontuais YYYY-MM-DD
+  isMutirao              Boolean            @default(false)
+  intervaloDias          Int?               @default(7)         // 7 para semanal, 14 para quinzenal
+  dataInicioRecorrencia  String?                                // Data de início para o ciclo quinzenal (YYYY-MM-DD)
 
   criadoEm        DateTime           @default(now())
   atualizadoEm    DateTime           @updatedAt

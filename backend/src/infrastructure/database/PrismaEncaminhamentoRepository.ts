@@ -194,6 +194,8 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
           ubsId: input.ubsId,
           atendenteId: input.atendenteId,
           atendenteResponsavel: input.atendenteResponsavel,
+          criadoPorId: input.atendenteId,
+          criadoPorNome: input.atendenteResponsavel,
           unidadeOrigem: input.unidadeOrigem,
           pacienteId: pacienteFK.id,
           pacienteNome: input.paciente.nome,

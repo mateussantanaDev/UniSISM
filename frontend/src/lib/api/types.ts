@@ -348,6 +348,14 @@ export interface Encaminhamento {
   statusAtendimentoCentro?: StatusAtendimentoCentro | null;
   respostaSUS?: RespostaSUS | null;
   filaDestino?: FilaDestino | null;
+  criadoPorId?: string | null;
+  criadoPorNome?: string | null;
+  atualizadoPorId?: string | null;
+  atualizadoPorNome?: string | null;
+  deletadoPorId?: string | null;
+  deletadoPorNome?: string | null;
+  motivoExclusao?: string | null;
+  deletadoEm?: string | null;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -1289,6 +1297,14 @@ export interface EncaminhamentoCentroItem {
   atendimentoIniciadoEm?: string | null;
   atendimentoConcluidoEm?: string | null;
   unidadeOrigem?: string;
+  criadoPorId?: string | null;
+  criadoPorNome?: string | null;
+  atualizadoPorId?: string | null;
+  atualizadoPorNome?: string | null;
+  deletadoPorId?: string | null;
+  deletadoPorNome?: string | null;
+  motivoExclusao?: string | null;
+  deletadoEm?: string | null;
   paciente: Paciente;
   solicitacao: SolicitacaoMedica;
 }
@@ -1308,9 +1324,11 @@ export interface ListFilaEsperaResponse {
 }
 
 export interface AgendarConsultaCentroRequest {
-  profissional: string;
+  profissional?: string;
   nota?: string;
   localAgendamento?: string;
+  dataAgendada?: string;
+  horaAgendada?: string;
 }
 
 export interface AgendarConsultaCentroResponse {
@@ -1335,14 +1353,9 @@ export interface AgendamentoDiaCentroItem {
     endereco?: string;
   };
   solicitacao: {
-    medicoSolicitante?: string;
-    crm?: string;
     especialidadeSolicitada: string;
-    cid10?: string;
-    cidDescricao?: string;
-    justificativaClinica?: string;
     prioridade: PrioridadeClinica;
-    dataSolicitacao?: string;
+    cid10?: string;
   };
   unidadeOrigem?: string;
   observacoesRegulacao?: string;
@@ -1361,10 +1374,12 @@ export interface ListAgendaDiaCentroResponse {
   total: number;
 }
 
-export interface ConfirmarPresencaCentroRequest {
+export interface RegistrarPresencaCentroRequest {
   status: StatusAtendimentoCentro;
   observacao?: string;
 }
+
+export type ConfirmarPresencaCentroRequest = RegistrarPresencaCentroRequest;
 
 export interface AgendarBalcaoCentroRequest {
   paciente: Paciente;
@@ -1381,6 +1396,7 @@ export interface AgendarBalcaoCentroRequest {
   centro?: string;
   confirmarPresenca?: boolean;
   statusAtendimento?: string;
+  agendarDireto?: boolean;
 }
 
 export interface AgendamentoBalcaoRetroativoRequest {
@@ -1575,6 +1591,11 @@ export interface EscalaMedicoCentro {
   status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA' | 'BLOQUEADA_PARCIAL';
   observacoes?: string;
   ativo?: boolean;
+  tipoRecorrencia?: 'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO';
+  datasEspecificas?: string[];
+  isMutirao?: boolean;
+  intervaloDias?: number;
+  dataInicioRecorrencia?: string;
 }
 
 export interface CalcularSlotCentroRequest {
@@ -1661,15 +1682,20 @@ export interface LogAuditoriaCentroItem {
   id: string;
   acao: string;
   recurso?: string;
-  recursoId?: string;
-  atendenteId?: string;
+  recursoId?: string | null;
+  payload?: any;
+  atendenteId?: string | null;
   atendenteNome?: string;
+  atendenteRole?: string;
+  protocolo?: string;
+  pacienteNome?: string;
+  motivo?: string;
+  detalhes?: string;
+  ip?: string | null;
   criadoEm?: string;
   timestamp?: string;
   operador?: string;
   papel?: string;
-  detalhes?: string;
-  ip?: string;
 }
 
 export interface ListAuditoriaCentroResponse {

@@ -45,13 +45,18 @@
 		crm: string;
 		especialidade: string;
 		tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
-		diasSemana: string[]; // ['SEG', 'QUA', 'SEX']
+		diasSemana: string[]; // ['SEG', 'QUA', 'SEX', 'SAB', 'DOM']
 		horarioInicio: string;
 		horarioFim: string;
 		duracaoMinutos: number;
 		vagasPorTurno: number;
 		status: 'ATIVA' | 'FERIAS' | 'BLOQUEADA_PARCIAL';
 		observacoes?: string;
+		tipoRecorrencia?: 'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO';
+		datasEspecificas?: string[];
+		isMutirao?: boolean;
+		intervaloDias?: number;
+		dataInicioRecorrencia?: string;
 	}
 
 	// State
@@ -96,6 +101,28 @@
 	let novoHorarioFim = $state('12:00');
 	let novaDuracao = $state(20);
 	let novasVagas = $state(12);
+	let novoTipoRecorrencia = $state<'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO'>('SEMANAL');
+	let novasDatasEspecificas = $state<string[]>([]);
+	let inputDataEspecifica = $state('');
+	let novoIsMutirao = $state(false);
+	let novaDataInicioRecorrencia = $state('');
+
+	function adicionarDataEspecifica() {
+		if (!inputDataEspecifica) return;
+		if (!novasDatasEspecificas.includes(inputDataEspecifica)) {
+			novasDatasEspecificas = [...novasDatasEspecificas, inputDataEspecifica].sort();
+		}
+		inputDataEspecifica = '';
+	}
+
+	function removerDataEspecifica(data: string) {
+		novasDatasEspecificas = novasDatasEspecificas.filter(d => d !== data);
+	}
+
+	function formatarDataBrLocal(iso: string): string {
+		const [ano, mes, dia] = iso.split('-');
+		return `${dia}/${mes}/${ano}`;
+	}
 
 	let modalFeriasAberto = $state(false);
 	let escalaFerias = $state<EscalaEspecialista | null>(null);
@@ -308,12 +335,28 @@
 		novoHorarioInicio = '08:00';
 		novoHorarioFim = '12:00';
 		novaDuracao = 20;
+		novasVagas = 12;
+		novoTipoRecorrencia = 'SEMANAL';
+		novasDatasEspecificas = [];
+		inputDataEspecifica = '';
+		novoIsMutirao = false;
+		novaDataInicioRecorrencia = '';
 		modalNovaEscalaAberto = true;
 	}
 
 	async function salvarNovaEscala() {
 		if (!novoMedicoNome.trim() || !novoCrm.trim()) {
 			erroModalEscala = 'Preencha o nome do médico e o registro profissional CRM.';
+			return;
+		}
+
+		if (novoTipoRecorrencia === 'DATAS_ESPECIFICAS' && novasDatasEspecificas.length === 0) {
+			erroModalEscala = 'Adicione ao menos uma data pontual de atendimento para a escala do médico.';
+			return;
+		}
+
+		if (novoTipoRecorrencia !== 'DATAS_ESPECIFICAS' && novosDias.length === 0 && novasDatasEspecificas.length === 0) {
+			erroModalEscala = 'Selecione os dias de atendimento ou informe datas específicas.';
 			return;
 		}
 
@@ -336,7 +379,11 @@
 			horarioFim: novoHorarioFim,
 			duracaoMinutos: novaDuracao,
 			vagasPorTurno: Math.max(4, isNaN(vagasCalculadas) ? 12 : vagasCalculadas),
-			status: 'ATIVA'
+			status: 'ATIVA',
+			tipoRecorrencia: novoTipoRecorrencia,
+			datasEspecificas: novasDatasEspecificas,
+			isMutirao: novoTipoRecorrencia === 'MUTIRAO' || novoIsMutirao,
+			dataInicioRecorrencia: novaDataInicioRecorrencia || undefined
 		};
 
 		try {
@@ -352,7 +399,11 @@
 				horarioFim: nova.horarioFim,
 				duracaoMinutos: nova.duracaoMinutos,
 				vagasPorTurno: nova.vagasPorTurno,
-				status: nova.status
+				status: nova.status,
+				tipoRecorrencia: novoTipoRecorrencia,
+				datasEspecificas: novasDatasEspecificas,
+				isMutirao: novoTipoRecorrencia === 'MUTIRAO' || novoIsMutirao,
+				dataInicioRecorrencia: novaDataInicioRecorrencia || undefined
 			});
 
 			const atualizadas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
@@ -640,7 +691,7 @@
 						<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
 							<th class="border-r border-slate-200 px-4 py-3">Especialista / CRM</th>
 							<th class="border-r border-slate-200 px-3 py-3">Especialidade</th>
-							<th class="border-r border-slate-200 px-3 py-3 text-center">Dias de Atendimento</th>
+							<th class="border-r border-slate-200 px-3 py-3 text-center">Dias / Modalidade</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Horário do Turno</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Duração / Vagas</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Status da Agenda</th>
@@ -661,15 +712,54 @@
 									{esc.especialidade}
 								</td>
 
-								<!-- Dias -->
+								<!-- Dias / Modalidade -->
 								<td class="border-r border-slate-100 px-3 py-3 text-center">
-									<div class="flex justify-center gap-1">
-										{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX'] as d}
-											<span class="px-1.5 py-0.5 text-[9px] font-bold border {esc.diasSemana.includes(d) ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-200 bg-slate-100 text-slate-400'}">
-												{d}
+									{#if esc.isMutirao || esc.tipoRecorrencia === 'MUTIRAO'}
+										<div class="flex flex-col items-center gap-1">
+											<span class="px-2 py-0.5 text-[9px] font-bold border border-orange-600 bg-orange-100 text-orange-950 uppercase tracking-wider">
+												⚡ MINI MUTIRÃO
 											</span>
-										{/each}
-									</div>
+											<div class="text-[10px] text-slate-700 font-semibold">
+												{#if esc.datasEspecificas && esc.datasEspecificas.length > 0}
+													{esc.datasEspecificas.map(d => formatarDataBrLocal(d)).join(', ')}
+												{:else}
+													{esc.diasSemana.join(', ')}
+												{/if}
+											</div>
+										</div>
+									{:else if esc.tipoRecorrencia === 'DATAS_ESPECIFICAS'}
+										<div class="flex flex-col items-center gap-1">
+											<span class="px-2 py-0.5 text-[9px] font-bold border border-indigo-700 bg-indigo-50 text-indigo-900 uppercase">
+												DATAS PONTUAIS ({esc.datasEspecificas?.length || 0})
+											</span>
+											<div class="text-[10px] text-slate-700 font-semibold max-w-[190px] truncate" title={(esc.datasEspecificas || []).map(d => formatarDataBrLocal(d)).join(', ')}>
+												{(esc.datasEspecificas || []).map(d => formatarDataBrLocal(d)).join(', ')}
+											</div>
+										</div>
+									{:else if esc.tipoRecorrencia === 'QUINZENAL'}
+										<div class="flex flex-col items-center gap-1">
+											<span class="px-2 py-0.5 text-[9px] font-bold border border-purple-700 bg-purple-50 text-purple-900 uppercase">
+												QUINZENAL (15 DIAS)
+											</span>
+											<div class="flex justify-center gap-1">
+												{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
+													{#if esc.diasSemana.includes(d)}
+														<span class="px-1.5 py-0.5 text-[9px] font-bold border border-purple-900 bg-purple-900 text-white">
+															{d}
+														</span>
+													{/if}
+												{/each}
+											</div>
+										</div>
+									{:else}
+										<div class="flex justify-center gap-1">
+											{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
+												<span class="px-1.5 py-0.5 text-[9px] font-bold border {esc.diasSemana.includes(d) ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-200 bg-slate-100 text-slate-400'}">
+													{d}
+												</span>
+											{/each}
+										</div>
+									{/if}
 								</td>
 
 								<!-- Turno -->
@@ -939,20 +1029,182 @@
 			</div>
 		</div>
 
-		<div class="flex flex-col gap-1">
-			<span class="text-[10px] font-bold text-slate-600 uppercase">Dias de Atendimento na Semana</span>
-			<div class="flex gap-2">
-				{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'] as d}
-					<button
-						type="button"
-						onclick={() => toggleDia(d)}
-						class="px-3 py-1.5 font-bold text-xs border transition-colors {novosDias.includes(d) ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
-					>
-						{d}
-					</button>
-				{/each}
+		<!-- Seletor de Modalidade da Escala -->
+		<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
+			<span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+				Modalidade da Escala / Recorrência de Atendimento *
+			</span>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+				<button
+					type="button"
+					onclick={() => { novoTipoRecorrencia = 'SEMANAL'; novoIsMutirao = false; }}
+					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'SEMANAL' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Semanal
+				</button>
+				<button
+					type="button"
+					onclick={() => { novoTipoRecorrencia = 'QUINZENAL'; novoIsMutirao = false; }}
+					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'QUINZENAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Quinzenal (15 dias)
+				</button>
+				<button
+					type="button"
+					onclick={() => { novoTipoRecorrencia = 'DATAS_ESPECIFICAS'; novoIsMutirao = false; }}
+					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'DATAS_ESPECIFICAS' ? 'border-indigo-900 bg-indigo-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					Datas Pontuais
+				</button>
+				<button
+					type="button"
+					onclick={() => { novoTipoRecorrencia = 'MUTIRAO'; novoIsMutirao = true; if (novasVagas < 30) novasVagas = 40; if (!novosDias.includes('SAB')) novosDias = ['SAB']; }}
+					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'MUTIRAO' ? 'border-orange-600 bg-orange-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+				>
+					⚡ Mini Mutirão
+				</button>
 			</div>
 		</div>
+
+		<!-- Configuração de Dias ou Datas baseado na Modalidade -->
+		{#if novoTipoRecorrencia === 'SEMANAL' || novoTipoRecorrencia === 'QUINZENAL'}
+			<div class="flex flex-col gap-1">
+				<span class="text-[10px] font-bold text-slate-600 uppercase">
+					{novoTipoRecorrencia === 'QUINZENAL' ? 'Dias de Atendimento na Quinzena' : 'Dias de Atendimento na Semana'}
+				</span>
+				<div class="flex flex-wrap gap-1.5">
+					{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
+						<button
+							type="button"
+							onclick={() => toggleDia(d)}
+							class="px-3 py-1.5 font-bold text-xs border transition-colors {novosDias.includes(d) ? (novoTipoRecorrencia === 'QUINZENAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-blue-900 bg-blue-900 text-white') : 'border-slate-300 bg-white text-slate-700'}"
+						>
+							{d}
+						</button>
+					{/each}
+				</div>
+
+				{#if novoTipoRecorrencia === 'QUINZENAL'}
+					<div class="mt-2 flex flex-col gap-1 border border-purple-200 bg-purple-50 p-2.5 text-purple-950">
+						<label for="esc-ini-quinz" class="text-[10px] font-bold uppercase">
+							Data Inicial de Início do Ciclo Quinzenal (Opcional)
+						</label>
+						<input
+							id="esc-ini-quinz"
+							type="date"
+							bind:value={novaDataInicioRecorrencia}
+							class="border border-purple-300 bg-white p-1.5 text-xs font-mono font-bold text-slate-800"
+						/>
+						<span class="text-[10px] text-purple-800">
+							Define a primeira semana de atendimento para alternar quinzenalmente (a cada 15 dias).
+						</span>
+					</div>
+				{/if}
+			</div>
+		{:else if novoTipoRecorrencia === 'DATAS_ESPECIFICAS'}
+			<div class="flex flex-col gap-2 border border-indigo-200 bg-indigo-50 p-3">
+				<span class="text-[10px] font-bold text-indigo-900 uppercase">
+					Calendário de Datas de Trabalho do Médico (Sem dia fixo da semana)
+				</span>
+				<p class="text-[11px] text-slate-600">
+					Selecione as datas em que o especialista estará no centro para atendimento.
+				</p>
+				<div class="flex gap-2">
+					<input
+						type="date"
+						bind:value={inputDataEspecifica}
+						class="border border-slate-300 bg-white p-2 text-xs font-mono font-bold flex-1"
+					/>
+					<button
+						type="button"
+						onclick={adicionarDataEspecifica}
+						class="border border-indigo-900 bg-indigo-900 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-indigo-950"
+					>
+						+ Adicionar Data
+					</button>
+				</div>
+
+				{#if novasDatasEspecificas.length > 0}
+					<div class="flex flex-wrap gap-1.5 mt-1">
+						{#each novasDatasEspecificas as dt}
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-indigo-700 text-indigo-950 font-mono text-[11px] font-bold">
+								{formatarDataBrLocal(dt)}
+								<button
+									type="button"
+									onclick={() => removerDataEspecifica(dt)}
+									class="text-red-600 font-bold hover:text-red-800"
+									title="Remover data"
+								>
+									×
+								</button>
+							</span>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-[11px] text-slate-500 italic">
+						Nenhuma data selecionada. Adicione as datas no campo acima.
+					</p>
+				{/if}
+			</div>
+		{:else if novoTipoRecorrencia === 'MUTIRAO'}
+			<div class="flex flex-col gap-2 border border-orange-300 bg-orange-50 p-3 text-orange-950">
+				<div class="font-bold text-xs uppercase flex items-center gap-1.5 text-orange-900">
+					⚡ Configuração do Mini Mutirão (Carga Expandida de Consultas)
+				</div>
+				<p class="text-[11px] text-orange-900">
+					Permite atendimento intensivo no final de semana (<strong>Sábado</strong> e <strong>Domingo</strong>) ou em datas extras de campanha com alto volume de vagas.
+				</p>
+
+				<div class="flex flex-col gap-1 mt-1">
+					<span class="text-[10px] font-bold text-orange-900 uppercase">Dias do Mutirão</span>
+					<div class="flex flex-wrap gap-2">
+						{#each ['SAB', 'DOM', 'SEX', 'SEG'] as d}
+							<button
+								type="button"
+								onclick={() => toggleDia(d)}
+								class="px-3 py-1.5 font-bold text-xs border transition-colors {novosDias.includes(d) ? 'border-orange-700 bg-orange-600 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+							>
+								{d === 'SAB' ? 'Sábado (SAB)' : d === 'DOM' ? 'Domingo (DOM)' : d}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1 mt-2">
+					<span class="text-[10px] font-bold text-orange-900 uppercase">Ou selecione datas pontuais do mutirão</span>
+					<div class="flex gap-2">
+						<input
+							type="date"
+							bind:value={inputDataEspecifica}
+							class="border border-slate-300 bg-white p-2 text-xs font-mono font-bold flex-1"
+						/>
+						<button
+							type="button"
+							onclick={adicionarDataEspecifica}
+							class="border border-orange-700 bg-orange-600 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-orange-700"
+						>
+							+ Adicionar Data
+						</button>
+					</div>
+					{#if novasDatasEspecificas.length > 0}
+						<div class="flex flex-wrap gap-1.5 mt-1">
+							{#each novasDatasEspecificas as dt}
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-orange-600 text-orange-950 font-mono text-[11px] font-bold">
+									{formatarDataBrLocal(dt)}
+									<button
+										type="button"
+										onclick={() => removerDataEspecifica(dt)}
+										class="text-red-600 font-bold hover:text-red-800"
+									>
+										×
+									</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
@@ -978,8 +1230,10 @@
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<label for="esc-vagas" class="text-[10px] font-bold text-slate-600 uppercase">Capacidade Vagas / Turno</label>
-				<input id="esc-vagas" type="number" bind:value={novasVagas} min="1" max="50" class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
+				<label for="esc-vagas" class="text-[10px] font-bold text-slate-600 uppercase">
+					{novoTipoRecorrencia === 'MUTIRAO' ? 'Capacidade Mutirão (Carga Extra)' : 'Capacidade Vagas / Turno'}
+				</label>
+				<input id="esc-vagas" type="number" bind:value={novasVagas} min="1" max="150" class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
 			</div>
 		</div>
 

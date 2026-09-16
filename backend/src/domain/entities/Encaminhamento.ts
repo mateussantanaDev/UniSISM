@@ -128,6 +128,16 @@ export interface Encaminhamento {
   presencaRegistradaEm?: string | null;
   atendimentoIniciadoEm?: string | null;
   atendimentoConcluidoEm?: string | null;
+
+  // ───── Trilha de Auditoria com Identificação de Operador ─────
+  criadoPorId?: string | null;
+  criadoPorNome?: string | null;
+  atualizadoPorId?: string | null;
+  atualizadoPorNome?: string | null;
+  deletadoPorId?: string | null;
+  deletadoPorNome?: string | null;
+  motivoExclusao?: string | null;
+  deletadoEm?: string | null;
 }
 
 export interface MetricasDashboard {

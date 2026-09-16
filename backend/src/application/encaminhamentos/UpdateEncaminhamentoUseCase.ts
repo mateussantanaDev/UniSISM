@@ -180,7 +180,11 @@ export class UpdateEncaminhamentoUseCase {
       });
       return tx.encaminhamento.update({
         where: { id },
-        data,
+        data: {
+          ...data,
+          atualizadoPorId: editorId,
+          atualizadoPorNome: editorNome,
+        },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });
     });
@@ -190,7 +194,13 @@ export class UpdateEncaminhamentoUseCase {
       recurso: 'Encaminhamento',
       recursoId: id,
       atendenteId: editorId,
-      payload: { protocolo: atualizado.protocolo, camposAlterados },
+      payload: {
+        protocolo: atualizado.protocolo,
+        pacienteNome: atualizado.pacienteNome,
+        camposAlterados,
+        operadorNome: editorNome,
+        operadorPapel: editorPapel,
+      },
     });
 
     void invalidarCacheArvorePorUbs(atualizado.ubsId);

@@ -110,6 +110,14 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     presencaRegistradaEm: safeIsoOrNull(r.presencaRegistradaEm),
     atendimentoIniciadoEm: safeIsoOrNull(r.atendimentoIniciadoEm),
     atendimentoConcluidoEm: safeIsoOrNull(r.atendimentoConcluidoEm),
+    criadoPorId: r.criadoPorId ?? r.atendenteId ?? null,
+    criadoPorNome: r.criadoPorNome ?? r.atendenteResponsavel ?? null,
+    atualizadoPorId: r.atualizadoPorId ?? null,
+    atualizadoPorNome: r.atualizadoPorNome ?? null,
+    deletadoPorId: r.deletadoPorId ?? null,
+    deletadoPorNome: r.deletadoPorNome ?? null,
+    motivoExclusao: r.motivoExclusao ?? null,
+    deletadoEm: safeIsoOrNull(r.deletadoEm),
   };
   if (r.observacoesRegulacao) enc.observacoesRegulacao = r.observacoesRegulacao;
 

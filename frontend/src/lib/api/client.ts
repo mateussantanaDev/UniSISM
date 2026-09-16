@@ -330,10 +330,11 @@ export class ApiClient {
   }
 
   /** DELETE. */
-  async delete<T>(path: string): Promise<T> {
+  async delete<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.buildUrl(path), {
       method: 'DELETE',
-      headers: this.headers(),
+      headers: body !== undefined ? { ...this.headers(), 'Content-Type': 'application/json' } : this.headers(),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     return this.parse<T>(res);
   }
@@ -473,6 +474,11 @@ class EncaminhamentosApi {
   /** Editar dados do encaminhamento (apenas AGUARDANDO_REGULACAO). */
   update(id: string, req: AtualizarEncaminhamentoRequest): Promise<Encaminhamento> {
     return this.api.patch<Encaminhamento>(`/encaminhamentos/${encodeURIComponent(id)}`, req);
+  }
+
+  /** Excluir encaminhamento administrativamente com motivo (DELETE /v1/encaminhamentos/:id). */
+  delete(id: string, req: { motivo: string }): Promise<void> {
+    return this.api.delete<void>(`/encaminhamentos/${encodeURIComponent(id)}`, req);
   }
 
   async resolverPendencia(
@@ -1800,8 +1806,23 @@ export class CentroGestaoApi {
   }
 
   /** Consultar trilha de auditoria imutável (GET /v1/centro/gestao/auditoria). */
-  listAuditoria(limit = 50, offset = 0): Promise<ListAuditoriaCentroResponse> {
-    return this.api.get<ListAuditoriaCentroResponse>(`/centro/gestao/auditoria?limit=${limit}&offset=${offset}`);
+  listAuditoria(params?: { limit?: number; offset?: number; acao?: string; centro?: string; busca?: string } | number, offsetFallback = 0): Promise<ListAuditoriaCentroResponse> {
+    const q = new URLSearchParams();
+    if (typeof params === 'number') {
+      q.set('limit', String(params));
+      q.set('offset', String(offsetFallback));
+    } else if (params) {
+      if (params.limit) q.set('limit', String(params.limit));
+      if (params.offset) q.set('offset', String(params.offset));
+      if (params.acao) q.set('acao', params.acao);
+      if (params.centro) q.set('centro', params.centro);
+      if (params.busca) q.set('busca', params.busca);
+    } else {
+      q.set('limit', '50');
+      q.set('offset', '0');
+    }
+    const qs = q.toString();
+    return this.api.get<ListAuditoriaCentroResponse>(`/centro/gestao/auditoria${qs ? `?${qs}` : ''}`);
   }
 
   /** Listar consultórios e salas físicas (GET /v1/centro/gestao/salas). */

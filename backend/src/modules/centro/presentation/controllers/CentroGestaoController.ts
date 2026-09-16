@@ -27,13 +27,18 @@ const postEscalaSchema = z.object({
   especialidade: z.string().min(2),
   tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).optional(),
   procedimentoId: z.string().optional(),
-  diasSemana: z.array(z.string()).min(1),
+  diasSemana: z.array(z.string()).default([]).optional(),
   horarioInicio: z.string().regex(/^\d{2}:\d{2}$/),
   horarioFim: z.string().regex(/^\d{2}:\d{2}$/),
   duracaoMinutos: z.number().int().default(20),
   vagasPorTurno: z.number().int().default(12),
   status: z.enum(['ATIVA', 'FERIAS', 'LICENCA', 'BLOQUEADA']).optional(),
   prefeituraId: z.string().optional(),
+  tipoRecorrencia: z.enum(['SEMANAL', 'QUINZENAL', 'DATAS_ESPECIFICAS', 'MUTIRAO']).default('SEMANAL').optional(),
+  datasEspecificas: z.array(z.string()).default([]).optional(),
+  isMutirao: z.boolean().default(false).optional(),
+  intervaloDias: z.number().int().optional(),
+  dataInicioRecorrencia: z.string().optional(),
 });
 
 const putEscalaSchema = postEscalaSchema.partial();
@@ -318,8 +323,10 @@ export class CentroGestaoController {
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
     const offset = req.query.offset ? Number(req.query.offset) : undefined;
     const acao = req.query.acao as string | undefined;
+    const centro = req.query.centro as any;
+    const busca = req.query.busca as string | undefined;
 
-    const audit = await this.auditoriaUC.exec({ limit, offset, acao }, scope);
+    const audit = await this.auditoriaUC.exec({ limit, offset, acao, centro, busca }, scope);
     res.json(audit);
   };
 }

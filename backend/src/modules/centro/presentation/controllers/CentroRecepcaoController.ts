@@ -24,6 +24,8 @@ const agendarSchema = z.object({
   profissional: z.string().optional(),
   nota: z.string().optional(),
   localAgendamento: z.string().optional(),
+  dataAgendada: z.string().optional(),
+  horaAgendada: z.string().optional(),
 });
 
 const presencaSchema = z.object({
@@ -77,6 +79,7 @@ const balcaoSchema = z.object({
   centro: z.string().optional(),
   confirmarPresenca: z.boolean().optional(),
   statusAtendimento: z.string().optional(),
+  agendarDireto: z.boolean().optional().default(false),
 });
 
 const desmarcarReagendarSchema = z.object({
@@ -200,6 +203,8 @@ export class CentroRecepcaoController {
         profissional: body.profissional,
         nota: body.nota,
         localAgendamento: body.localAgendamento,
+        dataAgendada: body.dataAgendada,
+        horaAgendada: body.horaAgendada,
         atendente: {
           id: atendente.id,
           nome: atendente.nome,
@@ -312,6 +317,7 @@ export class CentroRecepcaoController {
         horaAgendada: body.horaAgendada,
         consultorio: body.consultorio,
         ubsId: body.ubsId,
+        agendarDireto: body.agendarDireto,
         atendente: {
           id: atendente.id,
           nome: atendente.nome,

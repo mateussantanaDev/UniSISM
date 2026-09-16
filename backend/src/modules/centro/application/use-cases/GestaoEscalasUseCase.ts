@@ -12,13 +12,18 @@ export interface EscalaEspecialistaDTO {
   especialidade: string;
   tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
   procedimentoId?: string;
-  diasSemana: string[];
+  diasSemana?: string[];
   horarioInicio: string;
   horarioFim: string;
   duracaoMinutos: number;
   vagasPorTurno: number;
   status?: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA';
   ativo?: boolean;
+  tipoRecorrencia?: 'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO';
+  datasEspecificas?: string[];
+  isMutirao?: boolean;
+  intervaloDias?: number;
+  dataInicioRecorrencia?: string;
 }
 
 export class GestaoEscalasUseCase {
@@ -41,7 +46,7 @@ export class GestaoEscalasUseCase {
       orderBy: { medicoNome: 'asc' },
     });
 
-    const dtoArray = escalas.map((e) => ({
+    const dtoArray: EscalaEspecialistaDTO[] = escalas.map((e) => ({
       id: e.id,
       medicoId: e.medicoId ?? undefined,
       medicoNome: e.medicoNome,
@@ -56,6 +61,11 @@ export class GestaoEscalasUseCase {
       vagasPorTurno: e.vagasPorTurno,
       status: (e.status as any) || 'ATIVA',
       ativo: e.ativo,
+      tipoRecorrencia: (e.tipoRecorrencia as any) || 'SEMANAL',
+      datasEspecificas: e.datasEspecificas || [],
+      isMutirao: e.isMutirao || false,
+      intervaloDias: e.intervaloDias ?? 7,
+      dataInicioRecorrencia: e.dataInicioRecorrencia ?? undefined,
     }));
 
     return filterEspecialidadesByCentro(dtoArray, centro);
@@ -80,12 +90,17 @@ export class GestaoEscalasUseCase {
         especialidade: data.especialidade,
         tipoServico: data.tipoServico || 'CONSULTA',
         procedimentoId: data.procedimentoId,
-        diasSemana: data.diasSemana,
+        diasSemana: data.diasSemana || [],
         horarioInicio: data.horarioInicio,
         horarioFim: data.horarioFim,
         duracaoMinutos: data.duracaoMinutos || 20,
         vagasPorTurno: data.vagasPorTurno || 12,
         status: data.status || 'ATIVA',
+        tipoRecorrencia: data.tipoRecorrencia || 'SEMANAL',
+        datasEspecificas: data.datasEspecificas || [],
+        isMutirao: data.isMutirao || false,
+        intervaloDias: data.intervaloDias ?? 7,
+        dataInicioRecorrencia: data.dataInicioRecorrencia || null,
         prefeituraId,
       },
     });
@@ -115,6 +130,11 @@ export class GestaoEscalasUseCase {
       vagasPorTurno: res.vagasPorTurno,
       status: (res.status as any) || 'ATIVA',
       ativo: res.ativo,
+      tipoRecorrencia: (res.tipoRecorrencia as any) || 'SEMANAL',
+      datasEspecificas: res.datasEspecificas || [],
+      isMutirao: res.isMutirao || false,
+      intervaloDias: res.intervaloDias ?? 7,
+      dataInicioRecorrencia: res.dataInicioRecorrencia ?? undefined,
     };
   }
 
@@ -143,6 +163,11 @@ export class GestaoEscalasUseCase {
         ...(data.vagasPorTurno && { vagasPorTurno: data.vagasPorTurno }),
         ...(data.status && { status: data.status as any }),
         ...(data.ativo !== undefined && { ativo: data.ativo }),
+        ...(data.tipoRecorrencia && { tipoRecorrencia: data.tipoRecorrencia }),
+        ...(data.datasEspecificas !== undefined && { datasEspecificas: data.datasEspecificas }),
+        ...(data.isMutirao !== undefined && { isMutirao: data.isMutirao }),
+        ...(data.intervaloDias !== undefined && { intervaloDias: data.intervaloDias }),
+        ...(data.dataInicioRecorrencia !== undefined && { dataInicioRecorrencia: data.dataInicioRecorrencia }),
       },
     });
 
@@ -171,6 +196,11 @@ export class GestaoEscalasUseCase {
       vagasPorTurno: res.vagasPorTurno,
       status: (res.status as any) || 'ATIVA',
       ativo: res.ativo,
+      tipoRecorrencia: (res.tipoRecorrencia as any) || 'SEMANAL',
+      datasEspecificas: res.datasEspecificas || [],
+      isMutirao: res.isMutirao || false,
+      intervaloDias: res.intervaloDias ?? 7,
+      dataInicioRecorrencia: res.dataInicioRecorrencia ?? undefined,
     };
   }
 

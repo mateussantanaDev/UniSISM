@@ -81,9 +81,9 @@
 			const [resCentro, resTodos, resEscalas] = await Promise.all([
 				api.centroRecepcao.listFilaEspera({
 					centro: centroParam,
-					status: 'APROVADO'
+					status: 'TODOS'
 				}).catch(() => null),
-				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
+				api.encaminhamentos.list({ limit: 1000 }).catch(() => []),
 				api.centroRecepcao.listEscalas({ centro: centroParam }).catch(() => [])
 			]);
 
@@ -214,6 +214,52 @@
 		modalAgendamento = true;
 	}
 
+	// Estado do modal de exclusão auditada
+	let modalExcluirAberto = $state(false);
+	let encParaExcluir = $state<Encaminhamento | null>(null);
+	let motivoExclusao = $state('');
+	let processandoExclusao = $state(false);
+	let erroExclusao = $state('');
+
+	function abrirModalExcluir(enc: Encaminhamento) {
+		encParaExcluir = enc;
+		motivoExclusao = '';
+		erroExclusao = '';
+		modalExcluirAberto = true;
+	}
+
+	function fecharModalExcluir() {
+		modalExcluirAberto = false;
+		encParaExcluir = null;
+		motivoExclusao = '';
+		erroExclusao = '';
+	}
+
+	async function confirmarExclusao() {
+		if (!encParaExcluir) return;
+		if (motivoExclusao.trim().length < 5) {
+			erroExclusao = 'Informe um motivo claro com no mínimo 5 caracteres.';
+			return;
+		}
+
+		processandoExclusao = true;
+		erroExclusao = '';
+		try {
+			await api.encaminhamentos.delete(encParaExcluir.id, {
+				motivo: motivoExclusao.trim()
+			});
+			mensagemSucesso = `✓ Solicitação [${encParaExcluir.protocolo}] de ${encParaExcluir.paciente.nome} excluída com sucesso! Registro de auditoria gravado.`;
+			fecharModalExcluir();
+			await carregarFila();
+			if (timerMensagem) clearTimeout(timerMensagem);
+			timerMensagem = setTimeout(() => { mensagemSucesso = ''; }, 6000);
+		} catch (err: any) {
+			erroExclusao = err?.message || 'Falha ao excluir solicitação.';
+		} finally {
+			processandoExclusao = false;
+		}
+	}
+
 	function fecharAgendamento() {
 		modalAgendamento = false;
 		selecionado = null;
@@ -263,7 +309,9 @@
 				await api.centroRecepcao.agendar(selecionado.id, {
 					profissional: medicoSelecionado.nome,
 					nota: notaCompleta,
-					localAgendamento: localNome
+					localAgendamento: localNome,
+					dataAgendada: dataCalculada,
+					horaAgendada: horaCalculada
 				});
 			}
 
@@ -430,6 +478,7 @@
 						<th class="border-r border-slate-200 px-3 py-2">Especialidade</th>
 						<th class="border-r border-slate-200 px-3 py-2">CID-10</th>
 						<th class="border-r border-slate-200 px-3 py-2">Prioridade</th>
+						<th class="border-r border-slate-200 px-3 py-2">Cadastrado por</th>
 						<th class="px-3 py-2 text-center">Ações</th>
 					</tr>
 				</thead>
@@ -437,14 +486,14 @@
 					{#if carregando}
 						{#each Array(6) as _, i (i)}
 							<tr class="border-b border-slate-100">
-								<td colspan="7" class="px-3 py-3.5">
+								<td colspan="8" class="px-3 py-3.5">
 									<div class="h-3.5 w-full animate-pulse bg-slate-100"></div>
 								</td>
 							</tr>
 						{/each}
 					{:else if paginados.length === 0}
 						<tr>
-							<td colspan="7" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
+							<td colspan="8" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
 								Nenhum paciente aguardando agendamento na fila.
 							</td>
 						</tr>
@@ -468,16 +517,48 @@
 									{enc.solicitacao.cid10}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2">
-									<StatusBadge prioridade={enc.solicitacao.prioridade} />
+									<div class="flex flex-col gap-1 items-start">
+										<StatusBadge prioridade={enc.solicitacao.prioridade} />
+										{#if enc.status === 'AGUARDANDO_REGULACAO'}
+											<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase bg-amber-100 text-amber-900 border border-amber-300">
+												Aguardando Regulação
+											</span>
+										{:else if enc.agendamentoPrevisto}
+											<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase bg-blue-100 text-blue-900 border border-blue-300">
+												Agendado
+											</span>
+										{/if}
+									</div>
+								</td>
+								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
+									<div class="font-bold flex items-center gap-1">
+										<IconUser size={13} class="text-slate-400 shrink-0" />
+										<span>{enc.criadoPorNome || enc.atendenteResponsavel || 'Recepção'}</span>
+									</div>
+									{#if enc.atualizadoPorNome}
+										<div class="text-[9px] text-slate-500 font-sans mt-0.5">
+											Alt: {enc.atualizadoPorNome}
+										</div>
+									{/if}
 								</td>
 								<td class="px-3 py-2 text-center whitespace-nowrap">
-									<button
-										type="button"
-										onclick={() => abrirAgendamento(enc)}
-										class="{enc.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-2.5 py-1 font-bold text-[10px] uppercase font-mono tracking-wider"
-									>
-										{enc.agendamentoPrevisto ? 'Remarcar' : 'Agendar'}
-									</button>
+									<div class="inline-flex items-center gap-1.5">
+										<button
+											type="button"
+											onclick={() => abrirAgendamento(enc)}
+											class="{enc.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : enc.status === 'AGUARDANDO_REGULACAO' ? 'bg-emerald-700 border-emerald-700 hover:bg-emerald-800' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-2.5 py-1 font-bold text-[10px] uppercase font-mono tracking-wider shadow-xs cursor-pointer"
+										>
+											{enc.agendamentoPrevisto ? 'Remarcar' : enc.status === 'AGUARDANDO_REGULACAO' ? 'Liberar Data / Regular' : 'Agendar'}
+										</button>
+										<button
+											type="button"
+											onclick={() => abrirModalExcluir(enc)}
+											title="Excluir ou cancelar da fila com justificativa auditada"
+											class="border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 px-2 py-1 font-bold text-[10px] uppercase font-mono tracking-wider transition-colors cursor-pointer"
+										>
+											Excluir
+										</button>
+									</div>
 								</td>
 							</tr>
 						{/each}
@@ -522,7 +603,7 @@
 		<div class="w-full max-w-lg border-2 border-slate-900 bg-white font-mono shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
 			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
 				<div class="font-bold uppercase tracking-wider text-xs">
-					{selecionado.agendamentoPrevisto ? 'Remarcação de Consulta' : 'Agendamento em Grade do Especialista'}
+					{selecionado.agendamentoPrevisto ? 'Remarcação de Consulta' : (selecionado.status === 'AGUARDANDO_REGULACAO' ? 'Liberação de Data pela Regulação' : 'Agendamento em Grade do Especialista')}
 				</div>
 				<button
 					type="button"
@@ -720,7 +801,92 @@
 						disabled={processandoAgendamento}
 						class="{selecionado?.agendamentoPrevisto ? 'bg-purple-900 border-purple-900 hover:bg-purple-950' : 'bg-blue-900 border-blue-900 hover:bg-blue-950'} text-white border px-4 py-2 font-bold uppercase"
 					>
-						{processandoAgendamento ? 'Salvando...' : (selecionado?.agendamentoPrevisto ? 'Confirmar Remarcação' : 'Confirmar e Agendar')}
+						{processandoAgendamento ? 'Salvando...' : (selecionado?.agendamentoPrevisto ? 'Confirmar Remarcação' : (selecionado?.status === 'AGUARDANDO_REGULACAO' ? 'Liberar Data e Agendar' : 'Confirmar e Agendar'))}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if modalExcluirAberto && encParaExcluir}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+		<div class="w-full max-w-md border-2 border-red-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.3)]">
+			<div class="flex items-center justify-between border-b-2 border-red-900 bg-red-900 px-4 py-3 text-white">
+				<div class="flex items-center gap-2">
+					<IconAlertTriangle size={18} class="text-red-200" />
+					<h3 class="font-bold uppercase tracking-wider text-sm">Excluir Solicitação (Auditoria)</h3>
+				</div>
+				<button
+					type="button"
+					onclick={fecharModalExcluir}
+					disabled={processandoExclusao}
+					class="font-bold text-red-200 hover:text-white"
+				>
+					✕
+				</button>
+			</div>
+
+			<div class="p-5 flex flex-col gap-4 text-xs font-mono">
+				<div class="border border-slate-200 bg-slate-50 p-3 flex flex-col gap-1.5 font-sans">
+					<div class="flex items-center justify-between font-mono text-[11px]">
+						<span class="font-bold text-slate-800">Protocolo: {encParaExcluir.protocolo}</span>
+						<span class="text-slate-500 font-semibold">{encParaExcluir.solicitacao.especialidadeSolicitada}</span>
+					</div>
+					<div class="text-sm font-black text-slate-900">
+						{encParaExcluir.paciente.nome}
+					</div>
+					<div class="text-[11px] text-slate-600 font-mono">
+						CPF: {encParaExcluir.paciente.cpf}
+					</div>
+					{#if encParaExcluir.criadoPorNome}
+						<div class="mt-1 pt-1 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+							Cadastrado originariamente por: <strong class="text-slate-800">{encParaExcluir.criadoPorNome}</strong>
+						</div>
+					{/if}
+				</div>
+
+				<div class="bg-amber-50 border border-amber-300 p-2.5 text-amber-900 font-sans text-xs">
+					<strong>Atenção:</strong> Esta ação será registrada no histórico oficial de auditoria com seu usuário, nome, data/hora e justificativa.
+				</div>
+
+				<div class="flex flex-col gap-1 font-sans">
+					<label for="motivo-exclusao" class="text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+						Motivo da Exclusão / Cancelamento * (mínimo 5 caracteres)
+					</label>
+					<textarea
+						id="motivo-exclusao"
+						rows="3"
+						bind:value={motivoExclusao}
+						disabled={processandoExclusao}
+						placeholder="Ex: Paciente informou que já realizou o procedimento em outra rede / Solicitação duplicada..."
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-sm text-slate-900 outline-none focus:border-red-700 resize-none"
+					></textarea>
+				</div>
+
+				{#if erroExclusao}
+					<div class="border border-red-700 bg-red-50 px-3 py-2 text-red-800 font-bold flex items-center gap-1.5">
+						<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+						<span>{erroExclusao}</span>
+					</div>
+				{/if}
+
+				<div class="flex justify-end gap-2 border-t border-slate-200 pt-4 mt-1">
+					<button
+						type="button"
+						onclick={fecharModalExcluir}
+						disabled={processandoExclusao}
+						class="border border-slate-300 bg-white px-4 py-2 font-bold text-slate-700 hover:border-slate-500 uppercase"
+					>
+						Cancelar
+					</button>
+					<button
+						type="button"
+						onclick={confirmarExclusao}
+						disabled={processandoExclusao || motivoExclusao.trim().length < 5}
+						class="bg-red-800 border border-red-900 text-white px-4 py-2 font-bold uppercase hover:bg-red-900 disabled:opacity-50"
+					>
+						{processandoExclusao ? 'Excluindo...' : 'Confirmar Exclusão'}
 					</button>
 				</div>
 			</div>

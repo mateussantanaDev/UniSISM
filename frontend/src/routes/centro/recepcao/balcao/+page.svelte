@@ -518,6 +518,7 @@
 	}
 
 	// Opção de Lançamento de Ficha Antiga (Retroativo)
+	let agendarDireto = $state(false);
 	let habilitarRetroativo = $state(false);
 	let dataRetroativa = $state(new Date().toISOString().substring(0, 10));
 	let horaRetroativa = $state('08:00');
@@ -831,8 +832,10 @@
 			return;
 		}
 
-		if (!habilitarRetroativo && !slotEscolhido && !alocacaoOtimizadaBalcao) {
-			erroAgendamento = 'Nenhum dia/horário da escala do especialista foi selecionado.';
+		const efetuarAgendamentoDireto = agendarDireto || habilitarRetroativo;
+
+		if (efetuarAgendamentoDireto && !habilitarRetroativo && !slotEscolhido && !alocacaoOtimizadaBalcao) {
+			erroAgendamento = 'Nenhum dia/horário da escala do especialista foi selecionado para o agendamento direto.';
 			return;
 		}
 
@@ -863,10 +866,12 @@
 			consultorioCalculado = alocacaoOtimizadaBalcao.consultorio;
 		}
 
-		const nomeProfissionalFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || 'Especialista da Escala';
+		const nomeProfissionalFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || (efetuarAgendamentoDireto ? 'Especialista da Escala' : 'A definir pela Regulação');
 		const crmProfissionalFinal = medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm || (ehCeo ? 'CRO 0000' : 'CRM 0000');
 
-		const notaAgendamento = `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarRetroativo ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : '');
+		const notaAgendamento = efetuarAgendamentoDireto
+			? (`Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarRetroativo ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : ''))
+			: (`Acolhimento Presencial de Balcão [${nomeOrgao}] | Especialidade: ${especialidade} | Prioridade: ${prioridade} | Demanda inserida na fila da Regulação Municipal | Obs: ${recomendacoes.trim() || 'Sem observações'}`);
 
 		const numFinal = semNumero || !pacienteNumero.trim() ? 'S/N' : pacienteNumero.trim();
 		const endCompleto = [
@@ -951,15 +956,16 @@
 						paciente: pacientePayload,
 						solicitacao: solicitacaoPayload,
 						nota: notaAgendamento,
-						medicoDesejado: nomeProfissionalFinal,
-						dataAgendada: dataCalculada,
-						horaAgendada: horaCalculada,
-						consultorio: consultorioCalculado,
+						medicoDesejado: (medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome) || undefined,
+						dataAgendada: efetuarAgendamentoDireto ? dataCalculada : undefined,
+						horaAgendada: efetuarAgendamentoDireto ? horaCalculada : undefined,
+						consultorio: efetuarAgendamentoDireto ? consultorioCalculado : undefined,
 						ubsId: pacienteUbsId || undefined,
 						status: habilitarRetroativo ? statusRetroativo : undefined,
 						centro: siglaOrgao,
-						confirmarPresenca: confirmarPresencaImediata,
-						statusAtendimento: confirmarPresencaImediata ? 'AGUARDANDO_ATENDIMENTO' : undefined
+						confirmarPresenca: efetuarAgendamentoDireto ? confirmarPresencaImediata : false,
+						statusAtendimento: (efetuarAgendamentoDireto && confirmarPresencaImediata) ? 'AGUARDANDO_ATENDIMENTO' : undefined,
+						agendarDireto: efetuarAgendamentoDireto
 					});
 
 					if (resBalcao && resBalcao.encaminhamento) {
@@ -977,17 +983,23 @@
 				});
 				protocoloFinal = criado.protocolo;
 
-				await api.encaminhamentos.aprovar(criado.id, {
-					filaDestino: ehCeo ? 'CEO' : 'CENTRO_ESPECIALIDADES',
-					agendamentoPrevisto: `${dataCalculada}T${horaCalculada}:00`,
-					nota: notaAgendamento
-				});
+				if (efetuarAgendamentoDireto) {
+					await api.encaminhamentos.aprovar(criado.id, {
+						filaDestino: ehCeo ? 'CEO' : 'CENTRO_ESPECIALIDADES',
+						agendamentoPrevisto: `${dataCalculada}T${horaCalculada}:00`,
+						nota: notaAgendamento
+					});
+				}
 			}
 
-			const statusPresencaTexto = confirmarPresencaImediata
-				? '\nStatus: PRESENÇA CONFIRMADA (Encaminhado para a Sala de Espera / Fila de Chamada)'
-				: '';
-			sucessoAgendamento = `Protocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nEspecialidade: ${especialidade.toUpperCase()}\nData Agendada: ${dataCalculada} às ${horaCalculada}\nLocal: ${consultorioCalculado || nomeOrgao}${statusPresencaTexto}`;
+			if (!efetuarAgendamentoDireto) {
+				sucessoAgendamento = `SOLICITAÇÃO CADASTRADA NA FILA DA REGULAÇÃO COM SUCESSO!\nProtocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nEspecialidade: ${especialidade.toUpperCase()}\nUnidade Destino: ${siglaOrgao} — ${nomeOrgao}\nPrioridade: ${prioridade}\nStatus: AGUARDANDO REGULAÇÃO\n\n📌 O paciente foi cadastrado na fila de espera com sucesso. A equipe da Regulação Municipal avaliará o pedido e liberará a data e o horário do atendimento.`;
+			} else {
+				const statusPresencaTexto = confirmarPresencaImediata
+					? '\nStatus: PRESENÇA CONFIRMADA (Encaminhado para a Sala de Espera / Fila de Chamada)'
+					: '';
+				sucessoAgendamento = `AGENDAMENTO DIRETO CONCLUÍDO COM SUCESSO\nProtocolo: ${protocoloFinal || 'GERADO'}\nPaciente: ${pacienteNome.trim()} (CPF: ${sanitizadoCpf})\nProfissional: ${nomeProfissionalFinal} (${crmProfissionalFinal})\nEspecialidade: ${especialidade.toUpperCase()}\nData Agendada: ${dataCalculada} às ${horaCalculada}\nLocal: ${consultorioCalculado || nomeOrgao}${statusPresencaTexto}`;
+			}
 
 			// Limpa formulário
 			pacienteCpf = '';
@@ -1014,6 +1026,7 @@
 			ultimoCpfPesquisado = '';
 			procedimentoSolicitado = '';
 			recomendacoes = '';
+			agendarDireto = false;
 			habilitarRetroativo = false;
 			confirmarPresencaImediata = false;
 			slotEscolhido = null;
@@ -1054,10 +1067,10 @@
 			{/if}
 			<div>
 				<h1 class="text-base font-bold font-mono text-slate-900 tracking-tight uppercase">
-					Agendamento de Balcão & Retorno · {centroSelecionado}
+					Acolhimento no Balcão · Entrada na Fila de Regulação ({centroSelecionado})
 				</h1>
 				<p class="text-slate-500 text-xs">
-					{nomeOrgao} — Alocação em tempo real baseada na Escala Oficial do Especialista
+					{nomeOrgao} — Acolhimento presencial da demanda para avaliação e liberação de data pela Regulação
 				</p>
 			</div>
 		</div>
@@ -2010,20 +2023,49 @@
 
 			<!-- Rodapé de Ação -->
 			<div class="bg-slate-50 p-4 border-t border-slate-200 flex flex-col gap-3 font-mono text-xs">
+				{#if !agendarDireto && !habilitarRetroativo}
+					<div class="border border-blue-200 bg-blue-50/70 p-3 flex items-start gap-2.5 text-blue-950 font-sans text-xs">
+						<IconCheck size={18} class="text-blue-700 shrink-0 mt-0.5" />
+						<div>
+							<div class="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-900">
+								Fluxo Municipal: Inclusão na Fila de Regulação
+							</div>
+							<p class="mt-0.5 text-blue-800 leading-relaxed text-[11px]">
+								O paciente será acolhido e cadastrado na fila de espera com status <strong>AGUARDANDO REGULAÇÃO</strong>. A equipe de Regulação avaliará e liberará a data e o horário da consulta diretamente na tela da Fila de Espera.
+							</p>
+						</div>
+					</div>
+				{/if}
+
 				{#if erroAgendamento}
 					<div class="border border-red-700 bg-red-50 px-3 py-2 text-red-800 font-bold">
 						{erroAgendamento}
 					</div>
 				{/if}
 
-				<div class="flex justify-end">
+				<div class="flex items-center justify-between flex-wrap gap-3 pt-1 border-t border-slate-200">
+					<label class="flex items-center gap-2 cursor-pointer select-none font-mono text-xs text-slate-700 hover:text-slate-900">
+						<input
+							type="checkbox"
+							bind:checked={agendarDireto}
+							class="w-4 h-4 text-blue-900 border-slate-300 focus:ring-0"
+						/>
+						<span>Autorizar Agendamento Direto Imediato (Exceção / Encaixe de Urgência)</span>
+					</label>
+
 					<button
 						type="button"
 						onclick={agendarBalcao}
-						disabled={processandoAgendamento || (!habilitarRetroativo && !slotEscolhido)}
-						class="bg-blue-900 hover:bg-blue-950 text-white border border-blue-900 px-6 py-2.5 font-bold uppercase tracking-wider disabled:opacity-50 transition-colors"
+						disabled={processandoAgendamento || (agendarDireto && !slotEscolhido && !alocacaoOtimizadaBalcao) || (habilitarRetroativo && !dataRetroativa)}
+						class="bg-blue-900 hover:bg-blue-950 text-white border border-blue-900 px-6 py-2.5 font-bold uppercase tracking-wider disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
 					>
-						{processandoAgendamento ? 'PROCESSANDO...' : 'CONFIRMAR E AGENDAR NO BALCÃO ↵'}
+						{processandoAgendamento
+							? 'PROCESSANDO...'
+							: habilitarRetroativo
+							? 'SALVAR REGISTRO HISTÓRICO RETROATIVO ↵'
+							: agendarDireto
+							? 'CONFIRMAR AGENDAMENTO DIRETO NO BALCÃO ↵'
+							: 'CADASTRAR PACIENTE NA FILA DE REGULAÇÃO ↵'}
 					</button>
 				</div>
 			</div>

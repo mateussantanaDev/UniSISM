@@ -113,6 +113,50 @@ function formatarDataIso(d: Date): string {
   return `${y}-${m}-${dia}`;
 }
 
+function escalaAtendeNaData(escala: any, data: Date): boolean {
+  const iso = formatarDataIso(data);
+  const diaSemana = data.getDay(); // 0 a 6
+
+  // 1. Datas Específicas / Pontuais
+  if (escala.datasEspecificas && Array.isArray(escala.datasEspecificas) && escala.datasEspecificas.length > 0) {
+    if (escala.datasEspecificas.includes(iso)) return true;
+    if (escala.tipoRecorrencia === 'DATAS_ESPECIFICAS') return false;
+  }
+
+  // 2. Mini Mutirão (inclui sábados e domingos ou datas pontuais)
+  if (escala.isMutirao || escala.tipoRecorrencia === 'MUTIRAO') {
+    if (escala.datasEspecificas && Array.isArray(escala.datasEspecificas) && escala.datasEspecificas.length > 0) {
+      return escala.datasEspecificas.includes(iso);
+    }
+    const diasAtend = parseDiasSemana(escala.diasSemana || []);
+    return diasAtend.includes(diaSemana);
+  }
+
+  // 3. Recorrência Quinzenal (a cada 15 dias)
+  if (escala.tipoRecorrencia === 'QUINZENAL') {
+    const diasAtend = parseDiasSemana(escala.diasSemana || []);
+    if (!diasAtend.includes(diaSemana)) return false;
+
+    if (escala.dataInicioRecorrencia) {
+      const base = new Date(escala.dataInicioRecorrencia + 'T00:00:00Z');
+      const cur = new Date(iso + 'T00:00:00Z');
+      const diffMs = cur.getTime() - base.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffWeeks = Math.floor(diffDays / 7);
+      return diffWeeks >= 0 && diffWeeks % 2 === 0;
+    } else {
+      const primeiroJan = new Date(data.getFullYear(), 0, 1);
+      const diasDoAno = Math.floor((data.getTime() - primeiroJan.getTime()) / (24 * 60 * 60 * 1000));
+      const semanaDoAno = Math.ceil((diasDoAno + primeiroJan.getDay() + 1) / 7);
+      return semanaDoAno % 2 === 0;
+    }
+  }
+
+  // 4. Recorrência Semanal Padrão
+  const diasAtend = parseDiasSemana(escala.diasSemana || []);
+  return diasAtend.includes(diaSemana);
+}
+
 function formatarDataBr(iso: string): string {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
@@ -295,8 +339,7 @@ export class CalcularAlocacaoVagaCentroUseCase {
     // Procura o próximo dia útil da escala com slot livre
     let tentativas = 0;
     while (tentativas < 60) {
-      const diaSemana = dataCalculada.getDay(); // 0 a 6
-      if (diasAtendimento.includes(diaSemana)) {
+      if (escalaAtendeNaData(escalaSelecionada, dataCalculada)) {
         const iso = formatarDataIso(dataCalculada);
         // Procura slot vago no turno
         for (const slot of slotsPadrao) {
@@ -341,9 +384,9 @@ export class CalcularAlocacaoVagaCentroUseCase {
     hojeZero.setHours(0, 0, 0, 0);
 
     const cursorGrade = new Date(hojeZero);
-    for (let d = 0; d < 35; d++) {
+    for (let d = 0; d < 45; d++) {
       const diaSemanaIndex = cursorGrade.getDay();
-      if (diasAtendimento.includes(diaSemanaIndex)) {
+      if (escalaAtendeNaData(escalaSelecionada, cursorGrade)) {
         const iso = formatarDataIso(cursorGrade);
         const dataBr = formatarDataBr(iso);
         const diaSemanaNome = NOMES_DIAS[diaSemanaIndex] || 'Dia Útil';
@@ -375,7 +418,15 @@ export class CalcularAlocacaoVagaCentroUseCase {
       cursorGrade.setDate(cursorGrade.getDate() + 1);
     }
 
-    const justificativaCompleta = `${justificativaTexto} Profissional: ${escalaSelecionada.medicoNome} (${escalaSelecionada.crm}), escala em ${escalaSelecionada.diasSemana.join(', ')} das ${escalaSelecionada.horarioInicio} às ${escalaSelecionada.horarioFim}. Vaga alocada no ${consultorioNome}.`;
+    const rotuloDias = escalaSelecionada.tipoRecorrencia === 'DATAS_ESPECIFICAS'
+      ? `Datas Específicas (${(escalaSelecionada.datasEspecificas || []).length} datas)`
+      : escalaSelecionada.tipoRecorrencia === 'QUINZENAL'
+      ? `Quinzenal (${(escalaSelecionada.diasSemana || []).join(', ')})`
+      : (escalaSelecionada.isMutirao || escalaSelecionada.tipoRecorrencia === 'MUTIRAO')
+      ? `Mini Mutirão (${(escalaSelecionada.diasSemana || []).join(', ') || (escalaSelecionada.datasEspecificas || []).join(', ')})`
+      : `escala em ${(escalaSelecionada.diasSemana || []).join(', ')}`;
+
+    const justificativaCompleta = `${justificativaTexto} Profissional: ${escalaSelecionada.medicoNome} (${escalaSelecionada.crm}), ${rotuloDias} das ${escalaSelecionada.horarioInicio} às ${escalaSelecionada.horarioFim}. Vaga alocada no ${consultorioNome}.`;
 
     return {
       sucesso: true,
