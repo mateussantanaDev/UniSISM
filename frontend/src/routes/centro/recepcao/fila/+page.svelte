@@ -306,13 +306,22 @@
 					motivo: notaAgendamento.trim() || 'Remarcação de consulta realizada pela recepção.'
 				});
 			} else {
-				await api.centroRecepcao.agendar(selecionado.id, {
-					profissional: medicoSelecionado.nome,
-					nota: notaCompleta,
-					localAgendamento: localNome,
-					dataAgendada: dataCalculada,
-					horaAgendada: horaCalculada
-				});
+				try {
+					await api.centroRecepcao.agendar(selecionado.id, {
+						profissional: medicoSelecionado.nome,
+						nota: notaCompleta,
+						localAgendamento: localNome,
+						dataAgendada: dataCalculada,
+						horaAgendada: horaCalculada
+					});
+				} catch (errAgendar: any) {
+					console.warn('[UniSISM] Fallback para api.encaminhamentos.aprovar', errAgendar);
+					await api.encaminhamentos.aprovar(selecionado.id, {
+						filaDestino: centroAtivo,
+						agendamentoPrevisto: dataCalculada,
+						nota: notaCompleta
+					});
+				}
 			}
 
 			// Atualiza estado local imediatamente para refletir o agendamento
