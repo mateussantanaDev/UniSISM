@@ -68,14 +68,17 @@
 	let rotuloEspaco = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório Médico');
 
 	// Modo de Visualização da Agenda (Calendário Mensal por Médico vs Grade de Horários vs Lista)
-	let visaoModo = $state<'CALENDARIO' | 'GRADE' | 'LISTA'>('CALENDARIO');
+	let visaoModo = $state<'CALENDARIO' | 'GRADE' | 'LISTA'>((page.url.searchParams.get('modo') as any) || 'CALENDARIO');
 
 	// Seletor de Especialista / Médico em foco (ID ou 'TODOS')
 	let medicoSelecionadoId = $state<string>('');
 
 	// Seletor de Data da Agenda
-	let dataAgenda = $state(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD (hoje)
-	let mesCalendario = $state(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0')); // YYYY-MM
+	let dataAgenda = $state(page.url.searchParams.get('data') || new Date().toISOString().substring(0, 10)); // YYYY-MM-DD (hoje)
+	let mesCalendario = $state(
+		page.url.searchParams.get('data')?.substring(0, 7) ||
+		new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0')
+	); // YYYY-MM
 
 	// Filtros complementares
 	let busca = $state('');
