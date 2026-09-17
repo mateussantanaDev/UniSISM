@@ -76,10 +76,8 @@
 				goto(sessao.role === 'ENFERMEIRO' ? '/ceo/enfermagem/triagem' : '/ceo/recepcao/fila');
 			}
 		} catch (e) {
-			if (e instanceof ApiError && e.status !== 401) {
-				api.tokens.set(null);
-				goto('/login', { replaceState: true });
-			}
+			api.tokens.set(null);
+			goto('/login', { replaceState: true });
 		} finally {
 			autenticando = false;
 		}

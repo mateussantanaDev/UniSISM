@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import type { Encaminhamento, SinaisVitaisTriagem, RealizarTriagemRequest } from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
@@ -123,7 +124,13 @@
 			pacientes = res.fila || [];
 		} catch (e: any) {
 			console.error(e);
-			erro = `Falha ao carregar fila de triagem: ${e?.message || 'Erro do servidor'}`;
+			if (e?.status === 401 || e?.code === 'TOKEN_AUSENTE' || e?.code === 'TOKEN_EXPIRADO') {
+				erro = 'Sessão expirada ou não autenticada. Redirecionando para o login...';
+				api.tokens.set(null);
+				setTimeout(() => goto('/login', { replaceState: true }), 1200);
+			} else {
+				erro = `Falha ao carregar fila de triagem: ${e?.message || 'Erro do servidor'}`;
+			}
 			pacientes = [];
 		} finally {
 			carregando = false;
@@ -136,6 +143,12 @@
 			if (salvo) salaTriagemPadrao = salvo;
 			const corenSalvo = localStorage.getItem('unisism_coren_enfermagem');
 			if (corenSalvo) formCoren = corenSalvo;
+		}
+		if (!api.tokens.get()) {
+			erro = 'Sessão não identificada. Redirecionando para login...';
+			carregando = false;
+			goto('/login', { replaceState: true });
+			return;
 		}
 		carregarFila();
 	});

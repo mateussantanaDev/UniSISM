@@ -76,10 +76,8 @@
 				goto(sessao.role === 'ENFERMEIRO' ? '/cem/enfermagem/triagem' : '/cem/recepcao/fila');
 			}
 		} catch (e) {
-			if (e instanceof ApiError && e.status !== 401) {
-				api.tokens.set(null);
-				goto('/login', { replaceState: true });
-			}
+			api.tokens.set(null);
+			goto('/login', { replaceState: true });
 		} finally {
 			autenticando = false;
 		}
