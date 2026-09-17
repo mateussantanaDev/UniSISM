@@ -480,7 +480,7 @@
 						id: enc.id,
 						protocolo: enc.protocolo,
 						horario: extrairHorarioReal(enc, idx),
-						status: (enc.statusAtendimentoCentro || 'AGUARDANDO') as any,
+						status: (enc.statusAtendimentoCentro === 'AGUARDANDO_ATENDIMENTO' || enc.statusAtendimentoCentro === 'AGENDADO' ? 'AGUARDANDO' : (enc.statusAtendimentoCentro || 'AGUARDANDO')) as any,
 						pacienteId: (enc.paciente as any).id || enc.id,
 						paciente: {
 							nome: enc.paciente.nome,
@@ -1661,7 +1661,7 @@
 										</button>
 
 										<!-- Fluxo de Atendimento -->
-										{#if c.status === 'AGUARDANDO'}
+										{#if c.status === 'AGUARDANDO' || c.status === 'AGUARDANDO_ATENDIMENTO' || c.status === 'AGENDADO'}
 											<button
 												type="button"
 												onclick={() => iniciarAtendimento(c)}
