@@ -1,4 +1,4 @@
-import { TipoEventoTimeline } from '../../../../../generated/prisma';
+import { TipoEventoTimeline, StatusEncaminhamento } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento, SinaisVitaisTriagem } from '../../../../domain/entities/Encaminhamento';
@@ -37,7 +37,10 @@ export class TriagemEnfermagemUseCase {
   async chamarTriagem(input: ChamarTriagemInput, scope: AccessScope): Promise<Encaminhamento> {
     const row = await prisma.encaminhamento.findUnique({
       where: { id: input.encaminhamentoId },
-      include: INCLUDE_ENCAMINHAMENTO_FULL,
+      include: {
+        ...INCLUDE_ENCAMINHAMENTO_FULL,
+        ubs: { select: { id: true, prefeituraId: true } },
+      },
     });
 
     if (!row) {
@@ -98,7 +101,10 @@ export class TriagemEnfermagemUseCase {
   async realizarTriagem(input: RealizarTriagemInput, scope: AccessScope): Promise<Encaminhamento> {
     const row = await prisma.encaminhamento.findUnique({
       where: { id: input.encaminhamentoId },
-      include: INCLUDE_ENCAMINHAMENTO_FULL,
+      include: {
+        ...INCLUDE_ENCAMINHAMENTO_FULL,
+        ubs: { select: { id: true, prefeituraId: true } },
+      },
     });
 
     if (!row) {
@@ -176,7 +182,7 @@ export class TriagemEnfermagemUseCase {
 
     const where: any = {
       deletadoEm: null,
-      status: { in: ['APROVADO', 'AGENDADO'] },
+      status: StatusEncaminhamento.APROVADO,
     };
 
     if (scope.kind === 'PREFEITURA') {
@@ -185,25 +191,47 @@ export class TriagemEnfermagemUseCase {
       where.ubsId = scope.ubsId;
     }
 
+    const andConditions: any[] = [];
+
     if (ehCeo) {
-      where.OR = [
-        { canalRoteamento: 'CENTRO_ODONTOLOGICO' },
-        { destinoRegulacao: 'CENTRO_ODONTOLOGICO' },
-        { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
-        { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { canalRoteamento: 'CENTRO_ODONTOLOGICO' },
+          { destinoRegulacao: 'CENTRO_ODONTOLOGICO' },
+          { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
+          { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
+        ],
+      });
     } else {
-      where.OR = [
-        { canalRoteamento: 'CENTRO_ESPECIALIDADES' },
-        { destinoRegulacao: 'CENTRO_ESPECIALIDADES' },
-        {
-          AND: [
-            { canalRoteamento: null, destinoRegulacao: null },
-            { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
-            { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
-          ],
-        },
-      ];
+      andConditions.push({
+        OR: [
+          { canalRoteamento: 'CENTRO_ESPECIALIDADES' },
+          { destinoRegulacao: 'CENTRO_ESPECIALIDADES' },
+          {
+            AND: [
+              { canalRoteamento: null, destinoRegulacao: null },
+              { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
+              { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
+            ],
+          },
+        ],
+      });
+    }
+
+    if (input.data && input.data.trim()) {
+      const startOfDay = new Date(`${input.data.trim()}T00:00:00.000Z`);
+      const endOfDay = new Date(`${input.data.trim()}T23:59:59.999Z`);
+      andConditions.push({
+        OR: [
+          { agendamentoPrevisto: { gte: startOfDay, lte: endOfDay } },
+          { chamadaTriagemEm: { gte: startOfDay, lte: endOfDay } },
+          { triagemEm: { gte: startOfDay, lte: endOfDay } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     if (input.status === 'PENDENTE') {

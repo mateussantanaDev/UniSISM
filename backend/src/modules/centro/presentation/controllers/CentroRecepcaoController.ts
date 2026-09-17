@@ -539,7 +539,8 @@ export class CentroRecepcaoController {
     const scope = scopeFromRequest(req);
     const centro = req.query.centro as 'CEM' | 'CEO' | undefined;
     const status = req.query.status as 'PENDENTE' | 'CHAMADO' | 'CONCLUIDO' | 'TODOS' | undefined;
-    const result = await this.triagemUC.listarFilaTriagem({ centro, status }, scope);
+    const data = req.query.data as string | undefined;
+    const result = await this.triagemUC.listarFilaTriagem({ centro, status, data }, scope);
     res.json(result);
   };
 

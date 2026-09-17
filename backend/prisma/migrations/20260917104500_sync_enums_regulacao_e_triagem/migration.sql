@@ -1,0 +1,11 @@
+-- AlterEnum DestinoRegulacao
+ALTER TYPE "DestinoRegulacao" ADD VALUE IF NOT EXISTS 'SUS';
+ALTER TYPE "DestinoRegulacao" ADD VALUE IF NOT EXISTS 'CENTRO_ESPECIALIDADES';
+ALTER TYPE "DestinoRegulacao" ADD VALUE IF NOT EXISTS 'CENTRO_ODONTOLOGICO';
+
+-- AlterEnum StatusAtendimentoCentro
+ALTER TYPE "StatusAtendimentoCentro" ADD VALUE IF NOT EXISTS 'AGUARDANDO_ATENDIMENTO';
+ALTER TYPE "StatusAtendimentoCentro" ADD VALUE IF NOT EXISTS 'CONCLUIDO';
+
+-- AlterEnum TipoEventoTimeline
+ALTER TYPE "TipoEventoTimeline" ADD VALUE IF NOT EXISTS 'REMARCACAO';

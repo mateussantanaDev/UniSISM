@@ -27,6 +27,7 @@ import { AuditoriaCentroUseCase } from '../src/modules/centro/application/use-ca
 import { MetricasDashboardDiretoriaUseCase } from '../src/modules/centro/application/use-cases/MetricasDashboardDiretoriaUseCase';
 import { GestaoSalasUseCase } from '../src/modules/centro/application/use-cases/GestaoSalasUseCase';
 import { GestaoEspecialidadesCatalogoUseCase } from '../src/modules/centro/application/use-cases/GestaoEspecialidadesCatalogoUseCase';
+import { TriagemEnfermagemUseCase } from '../src/modules/centro/application/use-cases/TriagemEnfermagemUseCase';
 
 async function runTests() {
   console.log('🧪 Running ERP Gestão do Centro de Especialidades unit tests (v3.1.0)...');
@@ -71,11 +72,16 @@ async function runTests() {
   const salasUC = new GestaoSalasUseCase();
   const especialidadesUC = new GestaoEspecialidadesCatalogoUseCase();
 
+  // Test 5: Enfermagem & Triagem Clínica (Fase CEM/CEO)
+  const triagemUC = new TriagemEnfermagemUseCase();
+  const filaTriagem = await triagemUC.listarFilaTriagem({ centro: 'CEM' }, { kind: 'GLOBAL' });
+  assert.ok(typeof filaTriagem.total === 'number');
+
   assert(filaUC && agendarUC && agendaDiaUC && presencaUC && balcaoUC && desmarcarReagendarUC && remarcarUC && procedimentosUC && ausenciaMedicaUC, 'All Reception use cases loaded');
   assert(agendaMedicoUC && chamarUC && prontuarioUC && registrarSoapUC && intermunicipalUC && solicitarEncaminhamentoUC && retornoUC, 'All Doctor use cases loaded');
-  assert(cotasUC && escalasUC && remanejamentoUC && bpaUC && auditUC && dashboardUC && salasUC && especialidadesUC, 'All Management ERP use cases loaded');
+  assert(cotasUC && escalasUC && remanejamentoUC && bpaUC && auditUC && dashboardUC && salasUC && especialidadesUC && triagemUC, 'All Management ERP and Enfermagem use cases loaded');
 
-  console.log('✅ All 20 ERP Centro de Especialidades UseCases instantiated successfully');
+  console.log('✅ All 21 ERP Centro de Especialidades & Enfermagem UseCases instantiated and verified successfully');
   console.log('🎉 All tests completed successfully!');
 }
 
