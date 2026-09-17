@@ -80,11 +80,11 @@ export class WhatsAppCloudApiService {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data: any = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         const errorMsg = data?.error?.message || `Erro HTTP ${res.status}: ${res.statusText}`;
-        logger.error(`[WhatsAppCloudApi] Erro ao enviar mensagem para ${cleanTo}: ${errorMsg}`, data);
+        logger.error({ data }, `[WhatsAppCloudApi] Erro ao enviar mensagem para ${cleanTo}: ${errorMsg}`);
         return { success: false, error: errorMsg, details: data };
       }
 
@@ -92,7 +92,7 @@ export class WhatsAppCloudApiService {
       logger.info(`[WhatsAppCloudApi] Mensagem enviada com sucesso para ${cleanTo}. Wamid: ${messageId}`);
       return { success: true, messageId, details: data };
     } catch (err: any) {
-      logger.error(`[WhatsAppCloudApi] Exceção de rede ao enviar para ${cleanTo}: ${err?.message}`);
+      logger.error({ err }, `[WhatsAppCloudApi] Exceção de rede ao enviar para ${cleanTo}: ${err?.message}`);
       return { success: false, error: err?.message || 'Falha de conexão com a API da Meta' };
     }
   }
@@ -142,11 +142,11 @@ export class WhatsAppCloudApiService {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data: any = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         const errorMsg = data?.error?.message || `Erro HTTP ${res.status}`;
-        logger.error(`[WhatsAppCloudApi] Erro ao enviar botões para ${cleanTo}: ${errorMsg}`, data);
+        logger.error({ data }, `[WhatsAppCloudApi] Erro ao enviar botões para ${cleanTo}: ${errorMsg}`);
         return { success: false, error: errorMsg, details: data };
       }
 
@@ -190,7 +190,7 @@ export class WhatsAppCloudApiService {
         },
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data: any = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         const errorMsg = data?.error?.message || `Erro HTTP ${res.status}`;

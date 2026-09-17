@@ -1,5 +1,5 @@
 import { prisma } from '../../../../infrastructure/database/prisma';
-import { NotFound, BadRequest } from '../../../../shared/errors';
+import { AppError, NotFound, BadRequest } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
 import { logger } from '../../../../infrastructure/logger';
 import { WhatsAppCloudApiService } from '../../../../infrastructure/services/WhatsAppCloudApiService';
@@ -114,7 +114,7 @@ export class WhatsAppCrmUseCase {
    */
   async salvarConfig(input: SalvarConfigInput, prefeituraId?: string | null) {
     if (!input.phoneNumberId || !input.accessToken || !input.webhookVerifyToken) {
-      throw new BadRequest('Phone Number ID, Access Token e Webhook Verify Token são obrigatórios.');
+      throw BadRequest('DADOS_OBRIGATORIOS', 'Phone Number ID, Access Token e Webhook Verify Token são obrigatórios.');
     }
 
     try {
@@ -161,7 +161,7 @@ export class WhatsAppCrmUseCase {
       });
     } catch (err: any) {
       logger.error(`[WhatsAppCrm] Erro ao salvar config: ${err?.message}`);
-      throw new BadRequest(`Erro ao persistir configuração: ${err?.message}`);
+      throw BadRequest('ERRO_CONFIGURACAO', `Erro ao persistir configuração: ${err?.message}`);
     }
   }
 
@@ -297,7 +297,7 @@ export class WhatsAppCrmUseCase {
         },
       });
 
-      if (!conversa) throw new NotFound('Conversa não encontrada.');
+      if (!conversa) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
 
       // Zera contador de não lidas quando o operador abre o chat
       if (conversa.naoLidas > 0) {
@@ -310,19 +310,31 @@ export class WhatsAppCrmUseCase {
       // Se conversa tem encaminhamento vinculado, busca resumo
       let encaminhamento = null;
       if (conversa.encaminhamentoId) {
-        encaminhamento = await prisma.encaminhamento.findUnique({
+        const enc = await prisma.encaminhamento.findUnique({
           where: { id: conversa.encaminhamentoId },
           select: {
             id: true,
             protocolo: true,
-            especialidade: true,
+            especialidadeSolicitada: true,
             profissionalAgendado: true,
             agendamentoPrevisto: true,
             status: true,
             prioridade: true,
-            salaNumero: true,
+            localAgendamento: true,
           },
         });
+        if (enc) {
+          encaminhamento = {
+            id: enc.id,
+            protocolo: enc.protocolo,
+            especialidade: enc.especialidadeSolicitada,
+            profissionalAgendado: enc.profissionalAgendado,
+            agendamentoPrevisto: enc.agendamentoPrevisto ? enc.agendamentoPrevisto.toISOString() : null,
+            status: enc.status,
+            prioridade: enc.prioridade,
+            salaNumero: enc.localAgendamento,
+          };
+        }
       }
 
       return {
@@ -330,8 +342,8 @@ export class WhatsAppCrmUseCase {
         encaminhamento,
       };
     } catch (err: any) {
-      if (err instanceof NotFound) throw err;
-      throw new BadRequest(`Erro ao obter conversa: ${err?.message}`);
+      if (err instanceof AppError) throw err;
+      throw BadRequest('ERRO_OBTER_CONVERSA', `Erro ao obter conversa: ${err?.message}`);
     }
   }
 
@@ -363,7 +375,7 @@ export class WhatsAppCrmUseCase {
 
       return conversa;
     } catch (err: any) {
-      throw new BadRequest(`Erro ao assumir conversa: ${err?.message}`);
+      throw BadRequest('ERRO_ASSUMIR_CONVERSA', `Erro ao assumir conversa: ${err?.message}`);
     }
   }
 
@@ -399,7 +411,7 @@ export class WhatsAppCrmUseCase {
 
       return conversa;
     } catch (err: any) {
-      throw new BadRequest(`Erro ao transferir conversa: ${err?.message}`);
+      throw BadRequest('ERRO_TRANSFERIR_CONVERSA', `Erro ao transferir conversa: ${err?.message}`);
     }
   }
 
@@ -408,13 +420,13 @@ export class WhatsAppCrmUseCase {
    */
   async enviarMensagem(input: EnviarMensagemInput, atendenteId: string, atendenteNome: string) {
     if (!input.corpo || !input.corpo.trim()) {
-      throw new BadRequest('O corpo da mensagem não pode estar vazio.');
+      throw BadRequest('CORPO_OBRIGATORIO', 'O corpo da mensagem não pode estar vazio.');
     }
 
     const conversa = await prisma.whatsAppConversa.findUnique({
       where: { id: input.conversaId },
     });
-    if (!conversa) throw new NotFound('Conversa não encontrada.');
+    if (!conversa) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
 
     const config = await this.obterConfig(conversa.prefeituraId);
 
@@ -473,7 +485,7 @@ export class WhatsAppCrmUseCase {
     const conversa = await prisma.whatsAppConversa.findUnique({
       where: { id: input.conversaId },
     });
-    if (!conversa) throw new NotFound('Conversa não encontrada.');
+    if (!conversa) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
 
     const v = input.variaveis;
     let texto = '';
@@ -531,7 +543,7 @@ export class WhatsAppCrmUseCase {
 
       return conversa;
     } catch (err: any) {
-      throw new BadRequest(`Erro ao finalizar conversa: ${err?.message}`);
+      throw BadRequest('ERRO_FINALIZAR_CONVERSA', `Erro ao finalizar conversa: ${err?.message}`);
     }
   }
 
