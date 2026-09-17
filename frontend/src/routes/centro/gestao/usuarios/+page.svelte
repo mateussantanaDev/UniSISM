@@ -200,7 +200,7 @@
 				const ehDoCeo = tipoU === 'CEO' || cargoU.includes('CEO') || cargoU.includes('DENTIST') || cargoU.includes('ODONTOL') || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
 				if (!ehDoCeo && tipoU && tipoU !== 'CEO') return false;
 			} else {
-				const ehDoCem = tipoU === 'CEM' || cargoU.includes('CEM') || cargoU.includes('MÉDIC') || cargoU.includes('MEDIC') || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
+				const ehDoCem = tipoU === 'CEM' || cargoU.includes('CEM') || cargoU.includes('MÉDIC') || cargoU.includes('MEDIC') || cargoU.includes('ENFERM') || roleU === 'ENFERMEIRO' || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
 				if (!ehDoCem && tipoU && tipoU !== 'CEM') return false;
 			}
 
@@ -567,6 +567,7 @@
 				<option value="TODOS">Todos os Perfis</option>
 				<option value="MEDICO">{ehCeo ? 'Cirurgiões-Dentistas' : 'Médicos Especialistas'}</option>
 				<option value="MEDICO_ESPECIALISTA">{ehCeo ? 'Dentistas Plantonistas' : 'Médicos Plantonistas'}</option>
+				<option value="ENFERMEIRO">Enfermeiro(a) / Triagem</option>
 				<option value="ATENDENTE_CENTRO">Atendentes / Recepção</option>
 				<option value="REGULADOR_SMS">Reguladores / Recepção</option>
 				<option value="COORDENADOR_UBS">Coordenação / Supervisão</option>
@@ -829,6 +830,7 @@
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
+								<option value="ENFERMEIRO">Enfermeiro(a) / Triagem CEM</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
 								<option value="REGULADOR_SMS">Regulador do CEM</option>
 							{/if}
@@ -956,6 +958,7 @@
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
+								<option value="ENFERMEIRO">Enfermeiro(a) / Triagem CEM</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
 								<option value="REGULADOR_SMS">Regulador do CEM</option>
 							{/if}
