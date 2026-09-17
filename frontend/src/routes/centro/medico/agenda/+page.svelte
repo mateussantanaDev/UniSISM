@@ -103,8 +103,7 @@
 		triagemDados?: SinaisVitaisTriagem;
 	}
 
-	// Dynamic State
-	let dataAgenda = $state(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
+	let dataAgenda = $state(page.url.searchParams.get('data') || new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
 	let medicoLogado = $state('Especialista');
 	let medicoCrm = $state('Regulação');
 	let busca = $state('');
@@ -982,8 +981,15 @@
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<div>
 					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">DATA DA AGENDA DO MÉDICO</div>
-					<div class="mt-0.5 text-sm font-bold text-slate-900 capitalize">
-						{formatarDataExtensa(dataAgenda)}
+					<div class="mt-0.5 text-sm font-bold text-slate-900 capitalize flex flex-wrap items-center gap-2">
+						<span>{formatarDataExtensa(dataAgenda)}</span>
+						<input
+							type="date"
+							bind:value={dataAgenda}
+							onchange={carregarAgendaDoDia}
+							class="border border-slate-300 bg-slate-50 px-2 py-0.5 font-mono text-xs font-normal"
+							title="Selecionar data específica da agenda"
+						/>
 					</div>
 				</div>
 
