@@ -65,6 +65,7 @@ export const roleEnum = z.enum([
   'MEDICO',
   'MEDICO_ESPECIALISTA',
   'ATENDENTE_CENTRO',
+  'ENFERMEIRO',
 ]);
 
 export const criarUsuarioSchema = z.object({

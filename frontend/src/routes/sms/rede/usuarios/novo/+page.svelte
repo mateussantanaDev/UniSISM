@@ -52,6 +52,7 @@
 			'ADMIN',
 			'ATENDENTE_UBS',
 			'ATENDENTE_CENTRO',
+			'ENFERMEIRO',
 			'REGULADOR_SMS',
 			'MEDICO',
 			'MEDICO_ESPECIALISTA',
@@ -68,6 +69,7 @@
 	let exigePrefeitura = $derived(
 		role === 'ADMIN' ||
 			role === 'REGULADOR_SMS' ||
+			role === 'ENFERMEIRO' ||
 			role === 'GESTOR_TFD' ||
 			role === 'REGULADOR_TFD' ||
 			role === 'ATENDENTE_TFD' ||

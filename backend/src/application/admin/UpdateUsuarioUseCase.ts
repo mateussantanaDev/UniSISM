@@ -83,6 +83,7 @@ export class UpdateUsuarioUseCase {
         else if (role === 'MEDICO') data['cargo'] = 'Cirurgião-Dentista Especialista';
         else if (role === 'MEDICO_ESPECIALISTA') data['cargo'] = 'Cirurgião-Dentista Plantonista';
         else if (role === 'ATENDENTE_CENTRO' || role === 'ATENDENTE_UBS') data['cargo'] = 'Atendente / Recepção CEO';
+        else if (role === 'ENFERMEIRO') data['cargo'] = 'Enfermeiro(a) do CEO';
         else if (role === 'REGULADOR_SMS') data['cargo'] = 'Regulador(a) do CEO';
       } else if (tipo === 'CEM') {
         if (role === 'COORDENADOR_UBS') data['cargo'] = 'Coordenador(a) do CEM';
@@ -90,6 +91,7 @@ export class UpdateUsuarioUseCase {
         else if (role === 'MEDICO') data['cargo'] = 'Médico(a) Especialista';
         else if (role === 'MEDICO_ESPECIALISTA') data['cargo'] = 'Médico(a) Plantonista';
         else if (role === 'ATENDENTE_CENTRO' || role === 'ATENDENTE_UBS') data['cargo'] = 'Atendente / Recepção CEM';
+        else if (role === 'ENFERMEIRO') data['cargo'] = 'Enfermeiro(a) de Triagem CEM';
         else if (role === 'REGULADOR_SMS') data['cargo'] = 'Regulador(a) do CEM';
       }
     }

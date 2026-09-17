@@ -98,7 +98,8 @@ export class CreateUsuarioUseCase {
       case 'REGULADOR_TFD':
       case 'MEDICO':
       case 'MEDICO_ESPECIALISTA':
-      case 'ATENDENTE_CENTRO': {
+      case 'ATENDENTE_CENTRO':
+      case 'ENFERMEIRO': {
         if (!effectivePrefId) {
           throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
         }
@@ -144,7 +145,7 @@ export class CreateUsuarioUseCase {
     const tipoUnidade =
       input.tipoUnidade ??
       (() => {
-        if (['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO'].includes(input.role)) return 'CEO';
+        if (['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'ENFERMEIRO'].includes(input.role)) return 'CEM';
         if (['ATENDENTE_UBS', 'COORDENADOR_UBS'].includes(input.role) || ubsId) return 'UBS';
         if (['GESTOR_TFD', 'ATENDENTE_TFD', 'REGULADOR_TFD', 'MOTORISTA_TFD'].includes(input.role)) return 'TFD';
         return 'SMS';
