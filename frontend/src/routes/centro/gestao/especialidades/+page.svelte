@@ -62,7 +62,7 @@
 			if (Array.isArray(res)) {
 				listaEspecialidades = (res as any[]).map(e => ({
 					...e,
-					tipoServico: e.tipoServico || (e.nome.toLowerCase().includes('exame') || e.nome.toLowerCase().includes('procedimento') || e.nome.toLowerCase().includes('eletro') || e.nome.toLowerCase().includes('biópsia') || e.nome.toLowerCase().includes('raspagem') || e.nome.toLowerCase().includes('canal') ? 'PROCEDIMENTO' : 'CONSULTA')
+					tipoServico: e.tipoServico || (e.nome.toLowerCase().includes('exame') || e.nome.toLowerCase().includes('procedimento') || e.nome.toLowerCase().includes('eletro') || e.nome.toLowerCase().includes('eco') || e.nome.toLowerCase().includes('ultra') || e.nome.toLowerCase().includes('biópsia') || e.nome.toLowerCase().includes('raspagem') || e.nome.toLowerCase().includes('canal') ? 'PROCEDIMENTO' : 'CONSULTA')
 				}));
 			} else {
 				listaEspecialidades = [];

@@ -1,0 +1,63 @@
+================================================================================
+UNISISM - DIAGNÓSTICOS, GAPS E ROADMAP DE CORREÇÕES (PLAYWRIGHT AUDIT)
+Arquivo: TODO_Playwright.txt
+Data de Início: 17/09/2026
+Módulo Auditado: Centro de Especialidades Médicas (CEM)
+================================================================================
+
+[FASE 1: MATRIZ DE USUÁRIOS, CARGOS E RBAC] - STATUS: CONCLUÍDO (24/24 PASSOS)
+
+1. [CORRIGIDO NO REPOSITÓRIO - PENDENTE DEPLOY VPS] Habilitação do Cargo 'ENFERMEIRO'
+   - Problema: O enum 'ENFERMEIRO' existia no banco PostgreSQL (RoleAtendente), porém o schema de validação Zod do backend ('backend/src/presentation/schemas/adminSchemas.ts') e os use cases 'CreateUsuarioUseCase.ts' e 'UpdateUsuarioUseCase.ts' não aceitavam 'ENFERMEIRO', disparando HTTP 400 (PAYLOAD_INVALIDO: Invalid enum value).
+   - Frontend: A tela 'centro/gestao/usuarios/+page.svelte' também não incluía a opção de Enfermeiro nos seletores de criação/edição e filtros de perfil.
+   - Status: Corrigido nos commits 7efa994 e b7e1f58. 
+   - Ação pendente na VPS: Executar 'git pull origin main && docker compose up -d --build backend'.
+
+2. [MELHORIA DE UX/UI] Inconsistência no Filtro de Especialistas Médicos
+   - Problema: Na tela 'centro/gestao/usuarios/+page.svelte', o filtro exibia a opção "Médicos Especialistas" com valor técnico 'MEDICO', enquanto os especialistas do CEM são cadastrados com 'MEDICO_ESPECIALISTA' (que estava rotulado como "Médicos Plantonistas").
+   - Impacto: Ao filtrar por "Médicos Especialistas", o especialista Dr. Roberto Medeiros desaparecia da tabela.
+   - Ação recomendada: Ajustar o filtro para que "Médicos Especialistas" filtre tanto 'MEDICO' quanto 'MEDICO_ESPECIALISTA', ou renomear com clareza os rótulos no seletor.
+
+3. [BUG DE ISOLAMENTO DE DADOS] Vazamento de Procedimentos do CEO no Dashboard do CEM
+   - Problema: A Torre de Controle Executiva do CEM ('/cem/gestao/dashboard') listou o procedimento 'exodontia siso' em "Demanda por Especialidade".
+   - Causa Raiz: Em 'backend/src/modules/centro/application/use-cases/MetricasDashboardDiretoriaUseCase.ts', o fallback para atendimentos antigos sem 'canalRoteamento' explícito verifica termos como 'Odonto', 'Bucomaxilo' e 'CEO', mas 'exodontia' escapa desse filtro.
+   - Ação recomendada: Incluir 'exodontia' e termos odontológicos no filtro de exclusão do CEM, e assegurar que todos os agendamentos do CEO gravem 'canalRoteamento: CENTRO_ODONTOLOGICO'.
+
+4. [SEGURANÇA / RBAC DEFESA EM PROFUNDIDADE] Guarda de Rotas por Digitação Direta de URL
+   - Problema: Embora os menus laterais ocultem perfeitamente os módulos clínicos para o Atendente e os módulos de gestão para o Médico, se um Atendente digitar diretamente '/cem/medico/agenda', a página carrega exibindo o atendente como "Especialista Responsável". Da mesma forma, se o Médico digitar '/cem/gestao/usuarios', a página carrega (embora sem dados da tabela).
+   - Ação recomendada: Implementar guarda de rota no SvelteKit ('+page.svelte' ou '+layout.svelte') que valide 'me.role' e redirecione com segurança para a página padrão do perfil.
+
+5. [PADRONIZAÇÃO DE BOTÕES E ACESSIBILIDADE] Rótulos de Ação no Frontend
+   - Identificado: O botão de cadastro no topo da tabela utiliza o texto '+ NOVO PROFISSIONAL / USUÁRIO', enquanto no rodapé do modal utiliza 'CADASTRAR USUÁRIO'. Manter padrão claro e adicionar aria-labels consistentes.
+
+================================================================================
+[FASE 2: GESTÃO DE RECURSOS - SALAS, ESPECIALIDADES E ESCALAS] - STATUS: CONCLUÍDO (8/8 PASSOS)
+
+6. [CONCLUÍDO COM SUCESSO] Cadastro de Consultório Médico Adicional (CONS-04)
+   - Realizado: Cadastrado Consultório 04 com sucesso ('CONS-04 - Métodos Gráficos & Cardiologia Avançada') na Ala Médica A com equipamentos de alta complexidade e alocação do Dr. Roberto Medeiros.
+   - Evidências: Screenshots 22, 23 e 24 salvos.
+
+7. [CONCLUÍDO COM SUCESSO] Procedimento com Triagem Obrigatória (necessitaTriagem: true)
+   - Realizado: Cadastrado no Catálogo SIGTAP o procedimento 'Ecocardiograma Transtorácico' (cód: 0205010032, R$ 120,00, 30 min) com flag 'necessitaTriagem: true'.
+   - Validação: O badge 'TRIAGEM PRÉVIA: OBRIGATÓRIA' foi renderizado em amarelo na listagem oficial.
+   - Evidências: Screenshots 25, 26 e 27 salvos.
+
+8. [MELHORIA DE SCHEMA PRISMA] Persistência do Campo 'tipoServico' em EspecialidadeCatalogo
+   - Problema: O modelo Prisma 'EspecialidadeCatalogo' não possui o campo 'tipoServico' (CONSULTA ou PROCEDIMENTO). Ao listar, o frontend inferia por palavras-chave ('exame', 'procedimento', 'eletro', etc.).
+   - Correção aplicada: Termos como 'eco' e 'ultra' foram adicionados ao regex de detecção automática no frontend, e recomenda-se incluir 'tipoServico' formalmente no schema Prisma numa futura migração.
+
+9. [CORRIGIDO NO REPOSITÓRIO] Cálculo da Taxa de Ocupação no Top Cards de Vagas
+   - Problema: Em '/cem/gestao/vagas', a fórmula '(totalAlocadas / (totalVagasMes || 1)) * 100' exibia '800%' quando a cota total do mês estava zerada.
+   - Correção: Ajustado para retornar 0% quando 'totalVagasMes === 0'.
+
+10. [CONCLUÍDO COM SUCESSO] Criação de Escala Médica do Especialista
+    - Realizado: Criada escala semanal para Dr. Roberto Medeiros (CRM MED-14920) em Cardiologia/Ecocardiograma, turnos de 08:00 às 12:00, 20 min/consulta e 12 vagas/dia, com status 'AGENDA ATIVA'.
+    - Evidências: Screenshots 28, 29, 30 e 31 salvos.
+
+================================================================================
+[FASE 3: RECEPÇÃO, AGENDAMENTO NO BALCÃO E FILA DE ESPERA] - PRÓXIMA ETAPA:
+- [ ] Agendamento presencial no Balcão de Recepção (/cem/recepcao/balcao) para o procedimento Ecocardiograma Transtorácico (que exige triagem)
+- [ ] Verificação da entrada do paciente na Fila de Espera (/cem/recepcao/fila)
+- [ ] Deferimento / Aceite do agendamento pelo Gestor
+- [ ] Registro fotográfico Playwright de cada etapa
+================================================================================

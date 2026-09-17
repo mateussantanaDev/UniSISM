@@ -218,7 +218,7 @@
 	let totalVagasMes = $derived(cotasUbsList.reduce((acc, c) => acc + c.totalCotasMes, 0));
 	let totalAlocadas = $derived(cotasUbsList.reduce((acc, c) => acc + c.alocadas, 0));
 	let totalDisponiveis = $derived(cotasUbsList.reduce((acc, c) => acc + c.disponiveis, 0));
-	let taxaOcupacao = $derived(Math.round((totalAlocadas / (totalVagasMes || 1)) * 100));
+	let taxaOcupacao = $derived(totalVagasMes > 0 ? Math.round((totalAlocadas / totalVagasMes) * 100) : 0);
 
 	let escalasFiltradas = $derived(
 		escalasList.filter(e =>
