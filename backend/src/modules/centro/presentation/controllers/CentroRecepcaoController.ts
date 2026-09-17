@@ -41,7 +41,21 @@ const realizarTriagemSchema = z.object({
     classificacaoRisco: z.enum(['VERMELHO', 'LARANJA', 'AMARELO', 'VERDE', 'AZUL']).optional(),
     queixaPrincipal: z.string().optional(),
     observacoes: z.string().optional(),
-  }),
+  }).optional(),
+  pressaoArterial: z.string().optional(),
+  frequenciaCardiaca: z.number().optional(),
+  frequenciaRespiratoria: z.number().optional(),
+  temperatura: z.number().optional(),
+  glicemiaCapilar: z.number().optional(),
+  saturacaoO2: z.number().optional(),
+  pesoKg: z.number().optional(),
+  alturaCm: z.number().optional(),
+  imc: z.number().optional(),
+  classificacaoRisco: z.enum(['VERMELHO', 'LARANJA', 'AMARELO', 'VERDE', 'AZUL']).optional(),
+  queixaPrincipal: z.string().optional(),
+  alergiasRelatadas: z.string().optional(),
+  medicamentosEmUso: z.string().optional(),
+  coren: z.string().optional(),
 });
 
 const agendarSchema = z.object({
@@ -573,15 +587,29 @@ export class CentroRecepcaoController {
     const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
     if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
 
+    const sinaisVitaisFinal = body.sinaisVitais || {
+      pressaoArterial: body.pressaoArterial,
+      frequenciaCardiaca: body.frequenciaCardiaca,
+      frequenciaRespiratoria: body.frequenciaRespiratoria,
+      temperatura: body.temperatura,
+      glicemiaCapilar: body.glicemiaCapilar,
+      saturacaoO2: body.saturacaoO2,
+      peso: body.pesoKg,
+      altura: body.alturaCm,
+      imc: body.imc,
+      classificacaoRisco: body.classificacaoRisco,
+      queixaPrincipal: body.queixaPrincipal,
+    };
+
     const result = await this.triagemUC.realizarTriagem(
       {
         encaminhamentoId: id,
         enfermeiro: {
           id: atendente.id,
           nome: atendente.nome,
-          coren: (atendente as any).coren || (atendente as any).registroProfissional,
+          coren: body.coren || (atendente as any).coren || (atendente as any).registroProfissional,
         },
-        sinaisVitais: body.sinaisVitais as any,
+        sinaisVitais: sinaisVitaisFinal as any,
         consultorio: body.consultorio,
       },
       scope,

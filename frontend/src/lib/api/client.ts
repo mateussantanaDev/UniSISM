@@ -1918,9 +1918,26 @@ export class CentroEnfermagemApi {
 
   /** Registrar triagem clínica e aferição de sinais vitais (POST /v1/centro/enfermagem/triagem/:id). */
   triar(id: string, req: RealizarTriagemRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    const sinaisVitais = req.sinaisVitais || {
+      pressaoArterial: req.pressaoArterial,
+      frequenciaCardiaca: req.frequenciaCardiaca,
+      frequenciaRespiratoria: req.frequenciaRespiratoria,
+      temperatura: req.temperatura,
+      glicemiaCapilar: req.glicemiaCapilar,
+      saturacaoO2: req.saturacaoO2,
+      peso: req.pesoKg,
+      altura: req.alturaCm,
+      imc: req.imc,
+      classificacaoRisco: req.classificacaoRisco,
+      queixaPrincipal: req.queixaPrincipal,
+    };
     return this.api.post<{ sucesso: boolean; mensagem: string }>(
       `/centro/enfermagem/triagem/${encodeURIComponent(id)}`,
-      req
+      {
+        consultorio: req.consultorio,
+        sinaisVitais,
+        ...req,
+      }
     );
   }
 }
