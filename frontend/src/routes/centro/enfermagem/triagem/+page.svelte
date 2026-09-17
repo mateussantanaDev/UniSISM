@@ -232,20 +232,26 @@
 				localStorage.setItem('unisism_coren_enfermagem', formCoren.trim());
 			}
 
-			const payload: RealizarTriagemRequest = {
+			const sinaisVitaisObj = {
 				pressaoArterial: formPressao.trim(),
 				frequenciaCardiaca: formFc ? Number(formFc) : undefined,
 				frequenciaRespiratoria: formFr ? Number(formFr) : undefined,
 				temperatura: formTemp ? Number(formTemp) : undefined,
 				glicemiaCapilar: formGlicemia ? Number(formGlicemia) : undefined,
 				saturacaoO2: formSpo2 ? Number(formSpo2) : undefined,
-				pesoKg: formPeso ? Number(formPeso) : undefined,
-				alturaCm: formAltura ? Number(formAltura) : undefined,
+				peso: formPeso ? Number(formPeso) : undefined,
+				altura: formAltura ? Number(formAltura) : undefined,
 				imc: imcCalculado ?? undefined,
+				classificacaoImc: classificacaoImc?.texto || undefined,
 				classificacaoRisco: formClassificacaoRisco,
 				queixaPrincipal: formQueixa.trim() || undefined,
-				alergiasRelatadas: formAlergias.trim() || undefined,
-				medicamentosEmUso: formMedicamentos.trim() || undefined,
+				observacoes: formMedicamentos.trim() ? `Medicamentos: ${formMedicamentos.trim()}` : undefined
+			};
+
+			const payload: any = {
+				consultorio: salaTriagemPadrao,
+				sinaisVitais: sinaisVitaisObj,
+				...sinaisVitaisObj,
 				coren: formCoren.trim()
 			};
 
