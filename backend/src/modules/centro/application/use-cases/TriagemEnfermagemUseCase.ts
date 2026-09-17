@@ -226,6 +226,7 @@ export class TriagemEnfermagemUseCase {
           { agendamentoPrevisto: { gte: startOfDay, lte: endOfDay } },
           { chamadaTriagemEm: { gte: startOfDay, lte: endOfDay } },
           { triagemEm: { gte: startOfDay, lte: endOfDay } },
+          { presencaRegistradaEm: { gte: startOfDay, lte: endOfDay } },
         ],
       });
     }
