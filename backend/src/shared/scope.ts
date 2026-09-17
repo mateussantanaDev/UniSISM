@@ -53,10 +53,10 @@ export function buildScope(ctx: AuthContext): AccessScope {
  * Use em endpoints que recebem ubsId no payload (ex.: criar atendente).
  * Retorna 404 NotFound para evitar enumeração de recursos fora do tenant.
  */
-export function ensureUbsAcessivel(scope: AccessScope, ubs: { id: string; prefeituraId: string }) {
+export function ensureUbsAcessivel(scope: AccessScope, ubs: { id?: string | null; prefeituraId?: string | null }) {
   if (scope.kind === 'GLOBAL') return;
-  if (scope.kind === 'PREFEITURA' && scope.prefeituraId === ubs.prefeituraId) return;
-  if (scope.kind === 'UBS' && scope.ubsId === ubs.id) return;
+  if (scope.kind === 'PREFEITURA' && (!ubs.prefeituraId || scope.prefeituraId === ubs.prefeituraId)) return;
+  if (scope.kind === 'UBS' && ubs.id && scope.ubsId === ubs.id) return;
   throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
 }
 

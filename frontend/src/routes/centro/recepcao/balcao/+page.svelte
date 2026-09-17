@@ -888,7 +888,7 @@
 				cartaoSus: pacienteSus.trim(),
 				dataNascimento: pacienteNasc,
 				sexo: pacienteSexo,
-				telefone: pacienteTel.trim(),
+				telefone: pacienteTel.trim() || '87999990000',
 				endereco: endCompleto || pacienteRua.trim() || 'Águas Belas',
 				bairro: pacienteBairro.trim() || undefined,
 				municipio: pacienteMunicipio.trim() || 'Águas Belas',

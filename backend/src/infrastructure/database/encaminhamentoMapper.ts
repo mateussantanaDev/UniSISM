@@ -21,11 +21,13 @@ import { safeIsoString, safeIsoOrNull, ymd } from './mappers';
 export type EncaminhamentoFull = EncaminhamentoRow & {
   anexos: AnexoRow[];
   timeline: EventoRow[];
+  ubs?: any;
 };
 
 export const INCLUDE_ENCAMINHAMENTO_FULL = {
   anexos: true,
   timeline: true,
+  ubs: { select: { id: true, prefeituraId: true } },
 } satisfies Prisma.EncaminhamentoInclude;
 
 function safeTime(d: any): number {
