@@ -81,7 +81,7 @@
 			// Quem não puder (ex.: ATENDENTE_UBS) é redirecionado
 			// automaticamente pra Face correta (UBS), evitando vazamento de UI.
 			if (!rbac.podeAcessarFace2SMS(sessao.role)) {
-				goto(rbac.faceDestinoPadrao(sessao.role), { replaceState: true });
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;

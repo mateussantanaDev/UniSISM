@@ -23,7 +23,7 @@
 	let senhaConfirmar = $state('');
 	let cargo = $state('');
 	let role = $state<Role>('ATENDENTE_UBS');
-	let tipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEO');
+	let tipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('SMS');
 	let prefeituraId = $state('');
 	let ubsId = $state('');
 

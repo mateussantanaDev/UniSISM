@@ -60,7 +60,7 @@
 			// Guard 2: a role do usuário pode acessar a Face 1 (UBS)?
 			// Quem não puder é redirecionado pra Face correta.
 			if (!rbac.podeAcessarFace1UBS(sessao.role)) {
-				goto(rbac.faceDestinoPadrao(sessao.role), { replaceState: true });
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;

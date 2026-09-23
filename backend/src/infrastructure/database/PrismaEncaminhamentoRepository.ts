@@ -265,7 +265,15 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
   }
 
   async listar(filtro: ListarEncaminhamentosFiltro): Promise<Encaminhamento[]> {
-    const where: Prisma.EncaminhamentoWhereInput = { ...whereByScopeViaUbs(filtro.scope) };
+    const where: Prisma.EncaminhamentoWhereInput = {
+      ...whereByScopeViaUbs(filtro.scope),
+      NOT: [
+        { destinoRegulacao: 'CENTRO_ESPECIALIDADES' },
+        { destinoRegulacao: 'CENTRO_ODONTOLOGICO' },
+        { canalRoteamento: 'CENTRO_ESPECIALIDADES' },
+        { canalRoteamento: 'CENTRO_ODONTOLOGICO' },
+      ],
+    };
     if (filtro.status) where.status = filtro.status;
     if (filtro.pacienteId) where.pacienteId = filtro.pacienteId;
     if (filtro.desde || filtro.ate) {
@@ -380,7 +388,15 @@ export class PrismaEncaminhamentoRepository implements IEncaminhamentoRepository
     inicioSemana.setHours(0, 0, 0, 0);
     inicioSemana.setDate(inicioSemana.getDate() - 7);
 
-    const baseWhere = whereByScopeViaUbs(scope);
+    const baseWhere: Prisma.EncaminhamentoWhereInput = {
+      ...whereByScopeViaUbs(scope),
+      NOT: [
+        { destinoRegulacao: 'CENTRO_ESPECIALIDADES' },
+        { destinoRegulacao: 'CENTRO_ODONTOLOGICO' },
+        { canalRoteamento: 'CENTRO_ESPECIALIDADES' },
+        { canalRoteamento: 'CENTRO_ODONTOLOGICO' },
+      ],
+    };
 
     const [hoje, aguardando, pendencias, aprovadosHoje, semana, todos, enviados, respondidos] = await Promise.all([
       prisma.encaminhamento.count({ where: { ...baseWhere, criadoEm: { gte: inicioHoje } } }),

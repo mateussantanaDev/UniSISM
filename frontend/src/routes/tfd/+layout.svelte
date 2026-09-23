@@ -72,7 +72,7 @@
 			// Guard 2: a role pode acessar a Face 4 (TFD)?
 			// Quem não puder é redirecionado pra Face padrão da role.
 			if (!rbac.podeAcessarFace4TFD(sessao.role)) {
-				goto(rbac.faceDestinoPadrao(sessao.role), { replaceState: true });
+				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;

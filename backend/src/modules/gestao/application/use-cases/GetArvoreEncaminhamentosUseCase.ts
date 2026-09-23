@@ -170,6 +170,8 @@ export class GetArvoreEncaminhamentosUseCase {
     const conditions: Prisma.Sql[] = [
       Prisma.sql`"ubsId" = ANY(${ids})`,
       Prisma.sql`"deletadoEm" IS NULL`,
+      Prisma.sql`("destinoRegulacao" IS NULL OR "destinoRegulacao" = 'SUS')`,
+      Prisma.sql`("canalRoteamento" IS NULL OR "canalRoteamento" = 'SUS')`,
     ];
 
     if (respostaSUS === true) {
@@ -232,6 +234,8 @@ export class GetArvoreEncaminhamentosUseCase {
     const conditions: Prisma.Sql[] = [
       Prisma.sql`"ubsId" = ${ubsId}`,
       Prisma.sql`"deletadoEm" IS NULL`,
+      Prisma.sql`("destinoRegulacao" IS NULL OR "destinoRegulacao" = 'SUS')`,
+      Prisma.sql`("canalRoteamento" IS NULL OR "canalRoteamento" = 'SUS')`,
     ];
 
     if (respostaSUS === true) {
@@ -274,7 +278,9 @@ export class GetArvoreEncaminhamentosUseCase {
     const conditions: Prisma.Sql[] = [
       Prisma.sql`"ubsId" = ${ubsId}`,
       Prisma.sql`"deletadoEm" IS NULL`,
-      Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`
+      Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`,
+      Prisma.sql`("destinoRegulacao" IS NULL OR "destinoRegulacao" = 'SUS')`,
+      Prisma.sql`("canalRoteamento" IS NULL OR "canalRoteamento" = 'SUS')`,
     ];
 
     if (respostaSUS === true) {
@@ -318,7 +324,9 @@ export class GetArvoreEncaminhamentosUseCase {
       Prisma.sql`"ubsId" = ${ubsId}`,
       Prisma.sql`"deletadoEm" IS NULL`,
       Prisma.sql`EXTRACT(YEAR FROM ${Prisma.raw(dateField)}) = ${ano}::int`,
-      Prisma.sql`EXTRACT(MONTH FROM ${Prisma.raw(dateField)}) = ${mes}::int`
+      Prisma.sql`EXTRACT(MONTH FROM ${Prisma.raw(dateField)}) = ${mes}::int`,
+      Prisma.sql`("destinoRegulacao" IS NULL OR "destinoRegulacao" = 'SUS')`,
+      Prisma.sql`("canalRoteamento" IS NULL OR "canalRoteamento" = 'SUS')`,
     ];
 
     if (respostaSUS === true) {

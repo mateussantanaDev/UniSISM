@@ -70,6 +70,26 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 		return cargo;
 	}
 
+	if (tipo === 'SMS') {
+		switch (role) {
+			case 'COORDENADOR_UBS':
+				return 'Coordenador(a) da SMS';
+			case 'ADMIN':
+				return 'Diretor(a) / Gestor(a) da SMS';
+			case 'MEDICO':
+				return 'Médico(a) Regulador(a)';
+			case 'MEDICO_ESPECIALISTA':
+				return 'Médico(a) Especialista da SMS';
+			case 'ATENDENTE_CENTRO':
+			case 'ATENDENTE_UBS':
+				return 'Atendente / Recepção da SMS';
+			case 'ENFERMEIRO':
+				return 'Enfermeiro(a) / Regulação';
+			case 'REGULADOR_SMS':
+				return 'Regulador(a) da SMS';
+		}
+	}
+
 	if (tipo === 'CEO') {
 		switch (role) {
 			case 'COORDENADOR_UBS':
@@ -83,6 +103,8 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 			case 'ATENDENTE_CENTRO':
 			case 'ATENDENTE_UBS':
 				return 'Atendente / Recepção CEO';
+			case 'ENFERMEIRO':
+				return 'Enfermeiro(a) do CEO';
 			case 'REGULADOR_SMS':
 				return 'Regulador(a) do CEO';
 		}
@@ -95,9 +117,9 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 			case 'ADMIN':
 				return 'Diretor(a) / Gestor Geral do CEM';
 			case 'MEDICO':
-				return 'Médico(a) Especialista';
+				return 'Médico(a) Especialista CEM';
 			case 'MEDICO_ESPECIALISTA':
-				return 'Médico(a) Plantonista';
+				return 'Médico(a) Plantonista CEM';
 			case 'ATENDENTE_CENTRO':
 			case 'ATENDENTE_UBS':
 				return 'Atendente / Recepção CEM';
@@ -105,6 +127,19 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 				return 'Enfermeiro(a) de Triagem CEM';
 			case 'REGULADOR_SMS':
 				return 'Regulador(a) do CEM';
+		}
+	}
+
+	if (tipo === 'UBS') {
+		switch (role) {
+			case 'COORDENADOR_UBS':
+				return 'Coordenador(a) de UBS';
+			case 'ATENDENTE_UBS':
+				return 'Atendente de UBS';
+			case 'ENFERMEIRO':
+				return 'Enfermeiro(a) de UBS';
+			case 'MEDICO':
+				return 'Médico(a) de Família / UBS';
 		}
 	}
 
@@ -127,7 +162,7 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 		case 'ATENDENTE_UBS':
 			return 'Atendente de UBS';
 		case 'ATENDENTE_CENTRO':
-			return 'Atendente do Centro de Especialidades';
+			return 'Atendente de Recepção';
 		case 'ENFERMEIRO':
 			return 'Enfermeiro(a) / Triagem';
 		case 'MEDICO':

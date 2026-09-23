@@ -221,17 +221,35 @@ export const rbac = {
 
 		const tipoUnidade = me?.tipoUnidade?.toUpperCase();
 		const nomeUnidade = me?.unidade?.toUpperCase() || '';
-		const cargo = me?.cargo?.toUpperCase() || '';
-		const ehCeo =
-			tipoUnidade === 'CEO' ||
-			nomeUnidade.includes('CEO') ||
-			nomeUnidade.includes('ODONTOL') ||
-			cargo.includes('CEO') ||
-			cargo.includes('DENTIST');
-		const ehCem =
-			tipoUnidade === 'CEM' ||
-			(nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO')) ||
-			cargo.includes('CEM');
+
+		// 1. Verificação explícita do tipoUnidade (Face registrada)
+		if (tipoUnidade === 'SMS') {
+			if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD') return '/tfd/dashboard';
+			return '/sms/dashboard';
+		}
+		if (tipoUnidade === 'TFD') {
+			if (role === 'MOTORISTA_TFD') return '/tfd/viagens';
+			return '/tfd/dashboard';
+		}
+		if (tipoUnidade === 'UBS') {
+			return '/ubs/dashboard';
+		}
+		if (tipoUnidade === 'CEM') {
+			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/cem/medico/agenda';
+			if (role === 'ENFERMEIRO') return '/cem/enfermagem/triagem';
+			if (role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
+			return '/cem/gestao/dashboard';
+		}
+		if (tipoUnidade === 'CEO') {
+			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
+			if (role === 'ENFERMEIRO') return '/ceo/enfermagem/triagem';
+			if (role === 'ATENDENTE_CENTRO') return '/ceo/recepcao/fila';
+			return '/ceo/gestao/dashboard';
+		}
+
+		// 2. Fallback de compatibilidade apenas se tipoUnidade não estiver definido
+		const ehCeo = nomeUnidade.includes('CEO') || nomeUnidade.includes('ODONTOL');
+		const ehCem = nomeUnidade.includes('CEM');
 
 		if (ehCeo) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
@@ -247,16 +265,13 @@ export const rbac = {
 			return '/cem/gestao/dashboard';
 		}
 
-		if (role === 'ENFERMEIRO') return '/cem/enfermagem/triagem';
-		if (role === 'MEDICO_ESPECIALISTA') return '/centro/medico/agenda';
-		if (role === 'ATENDENTE_CENTRO') return '/centro/recepcao/fila';
-		if (role === 'MEDICO') return '/ubs/dashboard';
-		if (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') return '/ubs/dashboard';
-		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD')
-			return '/tfd/dashboard';
+		if (role === 'REGULADOR_SMS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') return '/sms/dashboard';
+		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD') return '/tfd/dashboard';
 		if (role === 'MOTORISTA_TFD') return '/tfd/viagens';
-		if (role === 'REGULADOR_SMS' || role === 'ADMIN') return '/sms/dashboard';
-		if (role === 'DESENVOLVEDOR') return '/sms/dashboard';
-		return '/login';
+		if (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS' || role === 'MEDICO') return '/ubs/dashboard';
+		if (role === 'ENFERMEIRO') return '/cem/enfermagem/triagem';
+		if (role === 'MEDICO_ESPECIALISTA') return '/cem/medico/agenda';
+		if (role === 'ATENDENTE_CENTRO') return '/cem/recepcao/fila';
+		return '/sms/dashboard';
 	}
 };
