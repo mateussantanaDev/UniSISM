@@ -14,12 +14,13 @@
  *
  * Sem essas variáveis configuradas, o módulo NÃO inicializa nada (zero overhead).
  */
-const enabled = (process.env['OTEL_ENABLED'] ?? '').toLowerCase() === 'true';
-const endpoint = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
+import { env } from '../shared/env';
+
+const enabled = env.OTEL_ENABLED;
+const endpoint = env.OTEL_EXPORTER_OTLP_ENDPOINT;
 
 if (enabled && endpoint) {
   // Imports dinâmicos pra zero overhead quando desligado.
-  /* eslint-disable @typescript-eslint/no-var-requires */
   const { NodeSDK } = require('@opentelemetry/sdk-node') as typeof import('@opentelemetry/sdk-node');
   const {
     getNodeAutoInstrumentations,
@@ -27,10 +28,9 @@ if (enabled && endpoint) {
   const {
     OTLPTraceExporter,
   } = require('@opentelemetry/exporter-trace-otlp-http') as typeof import('@opentelemetry/exporter-trace-otlp-http');
-  /* eslint-enable @typescript-eslint/no-var-requires */
 
   const sdk = new NodeSDK({
-    serviceName: process.env['OTEL_SERVICE_NAME'] ?? 'unisism-backend',
+    serviceName: env.OTEL_SERVICE_NAME,
     traceExporter: new OTLPTraceExporter({
       url: `${endpoint.replace(/\/$/, '')}/v1/traces`,
     }),
@@ -45,10 +45,8 @@ if (enabled && endpoint) {
 
   try {
     sdk.start();
-    // eslint-disable-next-line no-console
     console.log(`[otel] tracing habilitado → ${endpoint}/v1/traces`);
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[otel] falha ao iniciar tracing:', err);
   }
 

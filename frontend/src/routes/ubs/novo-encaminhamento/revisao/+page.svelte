@@ -61,23 +61,17 @@
 	}
 
 	// Complementares essenciais efetivamente faltantes (filtragem de CAMPOS_COMPLEMENTARES).
-	let complementaresFaltantes = $derived(
-		CAMPOS_COMPLEMENTARES.filter((c) => precisa(c))
-	);
+	let complementaresFaltantes = $derived(CAMPOS_COMPLEMENTARES.filter((c) => precisa(c)));
 
 	// Oferecer opcionais úteis quando o paciente existe + vale a pena completar.
 	// (Não são "essenciais" do backend, mas enriquecem o cadastro.)
-	let oferecerOpcionais = $derived(
-		s.pacienteExistente !== null && !s.cadastroCompleto
-	);
+	let oferecerOpcionais = $derived(s.pacienteExistente !== null && !s.cadastroCompleto);
 
 	// Algum campo base (em `s`) está faltante? Usuário deve revisar.
 	let basePendente = $derived(CAMPOS_BASE.some(precisa));
 
 	// Índices dos painéis — depende de quantos blocos antes dele.
-	let temComplementos = $derived(
-		complementaresFaltantes.length > 0 || oferecerOpcionais
-	);
+	let temComplementos = $derived(complementaresFaltantes.length > 0 || oferecerOpcionais);
 	let anexosIdx = $derived(temComplementos ? '03' : '02');
 	let checklistIdx = $derived(temComplementos ? '04' : '03');
 
@@ -103,9 +97,7 @@
 
 			<div class="p-4">
 				<div class="mb-3 border-b border-slate-200 pb-2">
-					<span
-						class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase"
-					>
+					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						Identificação do Paciente
 						{#if basePendente}
 							<span class="ml-2 text-amber-700">· revisar campos pendentes</span>
@@ -121,13 +113,7 @@
 						bind:value={s.nomePaciente}
 					/>
 					<FormField label="CPF" name="cpf" span={3} mono bind:value={s.cpf} />
-					<FormField
-						label="Cartão SUS"
-						name="sus"
-						span={3}
-						mono
-						bind:value={s.cartaoSus}
-					/>
+					<FormField label="Cartão SUS" name="sus" span={3} mono bind:value={s.cartaoSus} />
 					<FormField
 						label="Data Nasc."
 						name="dataNasc"
@@ -190,12 +176,7 @@
 							{/each}
 						</select>
 					</div>
-					<FormField
-						label="Descrição CID-10"
-						name="cidDesc"
-						span={6}
-						bind:value={s.cidDescricao}
-					/>
+					<FormField label="Descrição CID-10" name="cidDesc" span={6} bind:value={s.cidDescricao} />
 					<div class="col-span-6 flex flex-col">
 						<label
 							for="justificativa"
@@ -221,9 +202,7 @@
 			<div
 				class="mt-4 flex items-center gap-3 border border-slate-300 bg-slate-50 px-4 py-2 font-mono text-[11px] tracking-wider text-slate-600 uppercase"
 			>
-				<div
-					class="h-3 w-3 animate-spin border-[2px] border-blue-900 border-t-transparent"
-				></div>
+				<div class="h-3 w-3 animate-spin border-[2px] border-blue-900 border-t-transparent"></div>
 				Verificando cadastro do paciente...
 			</div>
 		{:else if s.pacienteExistente && s.cadastroCompleto}
@@ -268,11 +247,11 @@
 				>
 					{#if s.pacienteExistente}
 						Os campos abaixo serão <strong>preenchidos</strong> no cadastro
-						<strong>sem sobrescrever</strong> valores existentes. Deixe em branco o que
-						você não tiver certeza.
+						<strong>sem sobrescrever</strong> valores existentes. Deixe em branco o que você não tiver
+						certeza.
 					{:else}
-						Preencha o que puder — o paciente é novo e o cadastro é criado junto.
-						Todos os campos são opcionais exceto os marcados acima como pendentes.
+						Preencha o que puder — o paciente é novo e o cadastro é criado junto. Todos os campos
+						são opcionais exceto os marcados acima como pendentes.
 					{/if}
 				</div>
 
@@ -327,7 +306,9 @@
 
 					<!-- Opcionais úteis (sempre oferecidos quando há flow de enriquecimento) -->
 					{#if oferecerOpcionais || !s.pacienteExistente}
-						<div class="col-span-12 mt-2 border-t border-slate-200 pt-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+						<div
+							class="col-span-12 mt-2 border-t border-slate-200 pt-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+						>
 							Opcionais · enriquecem o prontuário
 						</div>
 						<FormField
@@ -455,9 +436,7 @@
 				</li>
 				<li class="flex items-center justify-between px-4 py-2.5">
 					<span class="text-slate-700">DADOS DO PACIENTE</span>
-					<span
-						class="font-bold {s.nomePaciente && s.cpf ? 'text-emerald-700' : 'text-amber-700'}"
-					>
+					<span class="font-bold {s.nomePaciente && s.cpf ? 'text-emerald-700' : 'text-amber-700'}">
 						{s.nomePaciente && s.cpf ? '✓ COMPLETO' : '◐ INCOMPLETO'}
 					</span>
 				</li>
@@ -469,9 +448,7 @@
 				</li>
 				<li class="flex items-center justify-between px-4 py-2.5">
 					<span class="text-slate-700">JUSTIFICATIVA</span>
-					<span
-						class="font-bold {s.justificativa ? 'text-emerald-700' : 'text-amber-700'}"
-					>
+					<span class="font-bold {s.justificativa ? 'text-emerald-700' : 'text-amber-700'}">
 						{s.justificativa ? '✓ OK' : '◐ FALTA'}
 					</span>
 				</li>
@@ -481,7 +458,9 @@
 						<span class="font-bold text-emerald-700">✓ COMPLETO</span>
 					{:else if complementaresFaltantes.length > 0}
 						<span class="font-bold text-amber-700">
-							◐ {complementaresFaltantes.length} PENDENTE{complementaresFaltantes.length === 1 ? '' : 'S'}
+							◐ {complementaresFaltantes.length} PENDENTE{complementaresFaltantes.length === 1
+								? ''
+								: 'S'}
 						</span>
 					{:else if !s.pacienteExistente && s.cpf}
 						<span class="font-bold text-blue-900">+ NOVO</span>
@@ -491,9 +470,7 @@
 				</li>
 				<li class="flex items-center justify-between px-4 py-2.5">
 					<span class="text-slate-700">ANEXOS COMPLEMENTARES</span>
-					<span
-						class="font-bold {s.anexos.length > 0 ? 'text-emerald-700' : 'text-slate-500'}"
-					>
+					<span class="font-bold {s.anexos.length > 0 ? 'text-emerald-700' : 'text-slate-500'}">
 						{s.anexos.length > 0 ? `✓ ${s.anexos.length} ARQUIVOS` : '◐ OPCIONAL'}
 					</span>
 				</li>
@@ -505,9 +482,7 @@
 				<PanelHeader title="Anexos" index="05" />
 				<ul class="divide-y divide-slate-100 px-4 py-2">
 					{#each s.anexos as f, i (f.name + i)}
-						<li
-							class="flex items-center justify-between gap-2 py-1.5 font-mono text-[11px]"
-						>
+						<li class="flex items-center justify-between gap-2 py-1.5 font-mono text-[11px]">
 							<span class="flex-1 truncate text-slate-800">{f.name}</span>
 							<span class="text-slate-500">{(f.size / 1024).toFixed(0)} KB</span>
 							<button

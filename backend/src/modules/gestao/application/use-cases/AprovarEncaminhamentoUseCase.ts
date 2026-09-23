@@ -33,7 +33,6 @@ import {
   NotificacaoPacienteService,
 } from '../../../../infrastructure/services/NotificacaoPacienteService';
 import { invalidarCacheArvorePorUbs } from '../../../../infrastructure/cache/arvoreCacheInvalidator';
-import { calcularOtimizacaoAgendamento } from './OtimizadorVagas';
 
 export interface AutorRegulacao {
   nome: string;

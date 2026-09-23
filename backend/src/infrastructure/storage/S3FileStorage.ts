@@ -39,7 +39,7 @@ export class S3FileStorage implements IFileStorage {
   private readonly bucket: string;
   private bucketChecked = false;
 
-  constructor(private readonly cfg: S3Config) {
+  constructor(cfg: S3Config) {
     this.bucket = cfg.bucket;
     const clientConfig: {
       region: string;

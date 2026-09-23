@@ -75,16 +75,13 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard
-			label="Doses Aplicadas"
-			value={p.vacinacoes.length}
-			sublabel="Histórico completo"
-		/>
+		<MetricCard label="Doses Aplicadas" value={p.vacinacoes.length} sublabel="Histórico completo" />
 		<MetricCard
 			label="Vacinas Distintas"
 			value={vacinasDistintas}

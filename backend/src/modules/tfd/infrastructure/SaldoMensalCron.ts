@@ -20,6 +20,7 @@ import * as cron from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
+import { env } from '../../../shared/env';
 
 function ymdMes(d: Date = new Date()): string {
   const y = d.getUTCFullYear();
@@ -107,11 +108,12 @@ export class SaldoMensalCron {
    * Cron padrão: dia 1º às 00:30 UTC. Override via env `TFD_SALDO_CRON`.
    */
   start(): void {
-    const expr = process.env['TFD_SALDO_CRON'] ?? '30 0 1 * *';
+    const expr = env.TFD_SALDO_CRON;
     if (!cron.validate(expr)) {
       logger.error({ expr }, 'TFD_SALDO_CRON inválida — cron de saldos NÃO ativado');
       return;
     }
+    const tz = env.TFD_SALDO_CRON_TZ;
 
     // Catch-up no boot — não bloqueia o startup.
     void this.runOnce('boot-catchup').catch((err) =>
@@ -125,10 +127,10 @@ export class SaldoMensalCron {
           logger.error({ err }, 'sweep mensal de saldos falhou'),
         );
       },
-      { timezone: process.env['TFD_SALDO_CRON_TZ'] ?? 'UTC' },
+      { timezone: tz },
     );
     logger.info(
-      { expr, tz: process.env['TFD_SALDO_CRON_TZ'] ?? 'UTC' },
+      { expr, tz },
       '✓ cron mensal de saldos TFD iniciado',
     );
   }

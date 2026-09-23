@@ -11,7 +11,12 @@
 import type { Request } from 'express';
 import { Forbidden, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
-import type { Prisma, FonteRecursoTFD } from '../../../../generated/prisma';
+import type {
+  AporteSaldoAjudaCusto,
+  FonteRecursoTFD,
+  Prisma,
+  SaldoAjudaCusto,
+} from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
@@ -42,7 +47,20 @@ export interface AporteSaldoAjudaInput {
 
 const FONTES_REQUER_DOC = new Set<FonteRecursoTFD>(['EMPENHO', 'PORTARIA']);
 
-function rowParaSaldo(prefeituraId: string, mes: string, s: any) {
+type SaldoAjudaLike = Partial<
+  Pick<
+    SaldoAjudaCusto,
+    | 'saldoMensal'
+    | 'saldoConsumido'
+    | 'saldoReservado'
+    | 'tetoAlimentacao'
+    | 'tetoHospedagem'
+    | 'tetoDeslocamento'
+    | 'atualizadoEm'
+  >
+>;
+
+function rowParaSaldo(prefeituraId: string, mes: string, s: SaldoAjudaLike) {
   const mensal = Number(s.saldoMensal ?? 0);
   const cons = Number(s.saldoConsumido ?? 0);
   const res = Number(s.saldoReservado ?? 0);
@@ -62,7 +80,7 @@ function rowParaSaldo(prefeituraId: string, mes: string, s: any) {
   };
 }
 
-function rowParaAporte(a: any) {
+function rowParaAporte(a: AporteSaldoAjudaCusto) {
   return {
     id: a.id,
     mes: a.mes,

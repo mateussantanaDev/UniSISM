@@ -43,9 +43,7 @@
 	);
 
 	/** Já com agendamento previsto definido. */
-	let comAgendamento = $derived(
-		aprovados.filter((e) => !!e.agendamentoPrevisto).length
-	);
+	let comAgendamento = $derived(aprovados.filter((e) => !!e.agendamentoPrevisto).length);
 </script>
 
 <div class="flex flex-col gap-4">

@@ -12,7 +12,7 @@
  *     userAgent: req.header('user-agent'),
  *   });
  *
- * PII sensível deve ser mascarada antes de passar em `payload`.
+ * PII sensível é mascarada antes de persistir o `payload`.
  */
 import type { Prisma } from '../../../generated/prisma';
 import { prisma } from '../database/prisma';
@@ -32,31 +32,92 @@ export interface IAuditLogger {
   registrar(entry: AuditEntry): Promise<void>;
 }
 
+const SENSITIVE_KEYS = new Set([
+  'authorization',
+  'cookie',
+  'senha',
+  'senhaatual',
+  'novasenha',
+  'password',
+  'secret',
+  'clientsecret',
+  'apikey',
+  'jwt',
+]);
+
+function normalizeKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+}
+
+function isSensitiveKey(key: string): boolean {
+  const normalized = normalizeKey(key);
+  return (
+    SENSITIVE_KEYS.has(normalized)
+    || normalized.endsWith('token')
+    || normalized.endsWith('tokenhash')
+  );
+}
+
+function maskCpf(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 11) {
+    return value.replace(/(\d{3}\.\d{3}\.)\d{3}(-\d{2})/, '$1***$2');
+  }
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.***-${digits.slice(9)}`;
+}
+
+function maskCartaoSus(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 15) {
+    return value.replace(/(\d{3}\s\d{4}\s)\d{4}(\s\d{4})/, '$1****$2');
+  }
+  return `${digits.slice(0, 3)} ${digits.slice(3, 7)} **** ${digits.slice(11)}`;
+}
+
+function shouldMaskCpf(key: string): boolean {
+  const normalized = normalizeKey(key);
+  return normalized === 'cpf' || normalized.endsWith('cpf');
+}
+
+function shouldMaskCartaoSus(key: string): boolean {
+  const normalized = normalizeKey(key);
+  return normalized === 'cartaosus' || normalized.endsWith('cartaosus');
+}
+
+export function mascararPayloadAuditoria(value: unknown, key = ''): unknown {
+  if (key && isSensitiveKey(key)) {
+    return '[REDACTED]';
+  }
+
+  if (key && typeof value === 'string' && shouldMaskCpf(key)) {
+    return maskCpf(value);
+  }
+
+  if (key && typeof value === 'string' && shouldMaskCartaoSus(key)) {
+    return maskCartaoSus(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => mascararPayloadAuditoria(item));
+  }
+
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [childKey, childValue] of Object.entries(value)) {
+      if (childValue !== undefined) {
+        out[childKey] = mascararPayloadAuditoria(childValue, childKey);
+      }
+    }
+    return out;
+  }
+
+  return value;
+}
+
 /** Mascara valores sensíveis antes de gravar em payload JSON. */
 function mascararPII(obj: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   if (!obj) return obj;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    const low = k.toLowerCase();
-    if (
-      low === 'senha' ||
-      low === 'senhaatual' ||
-      low === 'novasenha' ||
-      low === 'password' ||
-      low === 'token' ||
-      low === 'refreshtoken' ||
-      low === 'resettoken'
-    ) {
-      out[k] = '[REDACTED]';
-    } else if (low === 'cpf' && typeof v === 'string') {
-      out[k] = v.replace(/(\d{3}\.\d{3}\.)\d{3}(-\d{2})/, '$1***$2');
-    } else if (low === 'cartaosus' && typeof v === 'string') {
-      out[k] = v.replace(/(\d{3}\s\d{4}\s)\d{4}(\s\d{4})/, '$1****$2');
-    } else {
-      out[k] = v;
-    }
-  }
-  return out;
+  return mascararPayloadAuditoria(obj) as Record<string, unknown>;
 }
 
 export class PrismaAuditLogger implements IAuditLogger {

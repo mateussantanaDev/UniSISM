@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import net from 'node:net';
 import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
+import type { ConfiguracaoIntegracao } from '../../../generated/prisma';
 import { PdfParseService } from '../../infrastructure/services/PdfParseService';
 import { prisma } from '../../infrastructure/database/prisma';
+import { env } from '../../shared/env';
 
 export interface IntegracaoStatus {
   nome: string;
@@ -31,6 +33,10 @@ export interface IntegracoesResponse {
 const dummyPdfBuffer = Buffer.from(
   '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 21 >>\nstream\nBT /F1 12 Tf ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000216 00000 n \ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n288\n%%EOF'
 );
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
 export class GetIntegracoesUseCase {
   async exec(): Promise<IntegracoesResponse> {
@@ -104,13 +110,13 @@ export class GetIntegracoesUseCase {
           msg: `Falha no servidor remoto: HTTP ${res.status}`,
         };
       }
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timer);
       const latencyMs = Date.now() - start;
       return {
         status: 'offline',
         latencyMs,
-        msg: `Falha na conexão: ${err.message ?? err}`,
+        msg: `Falha na conexão: ${errorMessage(err)}`,
       };
     }
   }
@@ -119,7 +125,7 @@ export class GetIntegracoesUseCase {
     nome: string,
     descricao: string,
     tipo: 'Federal' | 'Interno',
-    configsMap: Map<string, any>
+    configsMap: Map<string, ConfiguracaoIntegracao>
   ): Promise<IntegracaoStatus> {
     const config = configsMap.get(nome);
     if (!config) {
@@ -153,20 +159,20 @@ export class GetIntegracoesUseCase {
   }
 
   private async checkStorageS3(): Promise<IntegracaoStatus> {
-    const provider = process.env['STORAGE_PROVIDER'] || 'disk';
+    const provider = env.STORAGE_PROVIDER;
     const start = Date.now();
 
     if (provider === 's3') {
-      const bucket = process.env['S3_BUCKET'] || '';
+      const bucket = env.S3_BUCKET;
       try {
         const clientConfig = {
-          region: process.env['S3_REGION'] || 'us-east-1',
+          region: env.S3_REGION,
           credentials: {
-            accessKeyId: process.env['S3_ACCESS_KEY'] || '',
-            secretAccessKey: process.env['S3_SECRET_KEY'] || '',
+            accessKeyId: env.S3_ACCESS_KEY,
+            secretAccessKey: env.S3_SECRET_KEY,
           },
-          endpoint: process.env['S3_ENDPOINT'],
-          forcePathStyle: (process.env['S3_FORCE_PATH_STYLE'] ?? 'true') === 'true',
+          endpoint: env.S3_ENDPOINT || undefined,
+          forcePathStyle: env.S3_FORCE_PATH_STYLE,
         };
         const client = new S3Client(clientConfig);
         await client.send(new HeadBucketCommand({ Bucket: bucket }));
@@ -179,7 +185,7 @@ export class GetIntegracoesUseCase {
           latencyMs,
           mensagem: `Object Storage S3 ativo (bucket: ${bucket})`,
         };
-      } catch (err: any) {
+      } catch (err) {
         const latencyMs = Date.now() - start;
         return {
           nome: 'Storage S3',
@@ -187,13 +193,13 @@ export class GetIntegracoesUseCase {
           tipo: 'Interno',
           status: 'offline',
           latencyMs,
-          mensagem: `Erro de conexão S3 bucket "${bucket}": ${err.message}`,
+          mensagem: `Erro de conexão S3 bucket "${bucket}": ${errorMessage(err)}`,
         };
       }
     }
 
     // Disk
-    const uploadDir = process.env['UPLOAD_DIR'] || './uploads';
+    const uploadDir = env.UPLOAD_DIR;
     try {
       fs.accessSync(uploadDir, fs.constants.W_OK);
       const latencyMs = Date.now() - start;
@@ -205,7 +211,7 @@ export class GetIntegracoesUseCase {
         latencyMs,
         mensagem: `Armazenamento local gravação OK (${uploadDir})`,
       };
-    } catch (err: any) {
+    } catch (err) {
       const latencyMs = Date.now() - start;
       return {
         nome: 'Storage S3',
@@ -213,14 +219,14 @@ export class GetIntegracoesUseCase {
         tipo: 'Interno',
         status: 'offline',
         latencyMs,
-        mensagem: `Armazenamento local inacessível: ${err.message}`,
+        mensagem: `Armazenamento local inacessível: ${errorMessage(err)}`,
       };
     }
   }
 
   private async checkClamav(): Promise<IntegracaoStatus> {
-    const host = process.env['CLAMAV_HOST'];
-    const port = Number(process.env['CLAMAV_PORT'] ?? 3310);
+    const host = env.CLAMAV_HOST;
+    const port = env.CLAMAV_PORT;
 
     if (!host) {
       return {
@@ -291,7 +297,7 @@ export class GetIntegracoesUseCase {
         latencyMs,
         mensagem: 'Serviço de parsing PDF/OCR operacional',
       };
-    } catch (err: any) {
+    } catch (err) {
       const latencyMs = Date.now() - start;
       return {
         nome: 'OCR Service',
@@ -299,7 +305,7 @@ export class GetIntegracoesUseCase {
         tipo: 'Interno',
         status: 'offline',
         latencyMs,
-        mensagem: `Erro no motor de OCR: ${err.message}`,
+        mensagem: `Erro no motor de OCR: ${errorMessage(err)}`,
       };
     }
   }

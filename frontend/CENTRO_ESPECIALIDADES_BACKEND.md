@@ -43,17 +43,18 @@ O **Centro Municipal de Especialidades** gerencia a atenção secundária e espe
 
 ## 2. Visão de Papéis e Permissões (RBAC)
 
-| Papel | Rota / Módulo | Funcionalidades Principais |
-|---|---|---|
-| `REGULADOR_SMS` / `ATENDENTE_UBS` | `/centro/recepcao/*` | Agendar vagas via algoritmo, gerenciar agenda do dia da recepção, cadastro e agendamento direto de balcão. |
-| `COORDENADOR_UBS` / `MEDICO` | `/centro/medico/agenda` | Visualizar agenda diária por especialidade/data, consultar solicitação original, ver Prontuário (PEC), realizar atendimento SOAP e gerar encaminhamentos intermunicipais. |
-| `REGULADOR_SMS` / `COORDENADOR_UBS` / `ADMIN` / `DESENVOLVEDOR` | `/centro/gestao/*` | **Domínio Absoluto da Diretoria**: distribuição de cotas por UBS, cadastro de escalas de especialistas, bloqueio de férias, remanejamento emergencial em lote, analytics de produção faturável BPA/SUS e logs de auditoria imutáveis. |
+| Papel                                                           | Rota / Módulo           | Funcionalidades Principais                                                                                                                                                                                                            |
+| --------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REGULADOR_SMS` / `ATENDENTE_UBS`                               | `/centro/recepcao/*`    | Agendar vagas via algoritmo, gerenciar agenda do dia da recepção, cadastro e agendamento direto de balcão.                                                                                                                            |
+| `COORDENADOR_UBS` / `MEDICO`                                    | `/centro/medico/agenda` | Visualizar agenda diária por especialidade/data, consultar solicitação original, ver Prontuário (PEC), realizar atendimento SOAP e gerar encaminhamentos intermunicipais.                                                             |
+| `REGULADOR_SMS` / `COORDENADOR_UBS` / `ADMIN` / `DESENVOLVEDOR` | `/centro/gestao/*`      | **Domínio Absoluto da Diretoria**: distribuição de cotas por UBS, cadastro de escalas de especialistas, bloqueio de férias, remanejamento emergencial em lote, analytics de produção faturável BPA/SUS e logs de auditoria imutáveis. |
 
 ---
 
 ## 3. Fase 3: Módulo de Gestão & Diretoria Executiva
 
 ### 3.1. Controle de Cotas por UBS
+
 O Diretor pode estipular limites de vagas por especialidade para cada Unidade Básica de Saúde. O backend deve validar essas cotas no momento do agendamento automático.
 
 - **HTTP**: `GET /v1/centro/gestao/cotas`
@@ -62,18 +63,19 @@ O Diretor pode estipular limites de vagas por especialidade para cada Unidade B�
 
 ```json
 {
-  "totalCotasMes": 350,
-  "especialidades": {
-    "Cardiologia": 80,
-    "Oftalmologia": 100,
-    "Dermatologia": 50,
-    "Ortopedia": 70,
-    "Neurologia": 50
-  }
+	"totalCotasMes": 350,
+	"especialidades": {
+		"Cardiologia": 80,
+		"Oftalmologia": 100,
+		"Dermatologia": 50,
+		"Ortopedia": 70,
+		"Neurologia": 50
+	}
 }
 ```
 
 ### 3.2. Escalas de Trabalho e Grade de Atendimento dos Médicos
+
 O backend armazena os dias, turnos e tempo de consulta por especialista:
 
 - **HTTP**: `GET /v1/centro/gestao/escalas`
@@ -82,18 +84,19 @@ O backend armazena os dias, turnos e tempo de consulta por especialista:
 
 ```json
 {
-  "medicoNome": "Dr. Roberto Medeiros",
-  "crm": "CRM 12345",
-  "especialidade": "Cardiologia",
-  "diasSemana": ["SEG", "QUA", "SEX"],
-  "horarioInicio": "08:00",
-  "horarioFim": "12:00",
-  "duracaoMinutos": 20,
-  "vagasPorTurno": 12
+	"medicoNome": "Dr. Roberto Medeiros",
+	"crm": "CRM 12345",
+	"especialidade": "Cardiologia",
+	"diasSemana": ["SEG", "QUA", "SEX"],
+	"horarioInicio": "08:00",
+	"horarioFim": "12:00",
+	"duracaoMinutos": 20,
+	"vagasPorTurno": 12
 }
 ```
 
 ### 3.3. Registro de Férias e Remanejamento Emergencial em Lote
+
 Quando um médico entra em férias ou sofre imprevisto, o diretor pode acionar o remanejamento em lote:
 
 - **HTTP**: `POST /v1/centro/gestao/remanejamento-lote`
@@ -101,19 +104,21 @@ Quando um médico entra em férias ou sofre imprevisto, o diretor pode acionar o
 
 ```json
 {
-  "medicoOrigem": "Dr. Roberto Medeiros",
-  "dataOrigem": "2026-07-27",
-  "medicoDestino": "Dra. Sandra Regina",
-  "dataDestino": "2026-07-28",
-  "notificarSms": true
+	"medicoOrigem": "Dr. Roberto Medeiros",
+	"dataOrigem": "2026-07-27",
+	"medicoDestino": "Dra. Sandra Regina",
+	"dataDestino": "2026-07-28",
+	"notificarSms": true
 }
 ```
 
 ### 3.4. Relatórios Oficiais e Faturamento BPA / SIA-SUS
+
 - **HTTP**: `GET /v1/centro/gestao/relatorios/bpa?periodo=2026-07`
 - **Uso**: Gera os arquivos de faturamento de produção ambulatória para o SUS e órgãos de controle em PDF, CSV ou XLSX.
 
 ### 3.5. Trilha de Auditoria (Audit Trail Compliance)
+
 - **HTTP**: `GET /v1/centro/gestao/auditoria`
 - **Uso**: Registro imutável de todas as ações no Centro (agendamentos, alterações de cotas, desmarcamentos, atendimentos e TFDs).
 
@@ -125,4 +130,4 @@ Quando um médico entra em férias ou sofre imprevisto, o diretor pode acionar o
 - **RBAC**: Proteção em profundidade com sincronia frontend-backend.
 - **Auditoria CFM**: Conforme Resolução CFM 1.821/2007 para guarda e auditoria de registros eletrônicos de saúde.
 
-*UNISISM · Coordenação de Tecnologia e Sistemas de Saúde Municipal · 2026*
+_UNISISM · Coordenação de Tecnologia e Sistemas de Saúde Municipal · 2026_

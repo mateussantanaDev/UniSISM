@@ -113,8 +113,8 @@
 		carregando = true;
 		erro = null;
 		try {
-			const getQuery = (extra: any) => {
-				const q = { ...flagsArvore(), ...extra };
+			const getQuery = (extra: Record<string, unknown>) => {
+				const q: Record<string, unknown> = { ...flagsArvore(), ...extra };
 				if (tipoFiltro === 'enviados') q.respostaSUS = false;
 				if (tipoFiltro === 'respostas') q.respostaSUS = true;
 				return q;
@@ -140,7 +140,9 @@
 					ubsNodes = nodes;
 				}
 			} else if (nivel === 'ano') {
-				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId! }))) as ArvoreAnoNode[];
+				const nodes = (await api.encaminhamentos.arvore(
+					getQuery({ ubsId: ubsId! })
+				)) as ArvoreAnoNode[];
 				if (tipoFiltro === 'solicitacoes') {
 					anoNodes = nodes
 						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
@@ -159,7 +161,9 @@
 					anoNodes = nodes;
 				}
 			} else if (nivel === 'mes') {
-				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId!, ano: ano! }))) as ArvoreMesNode[];
+				const nodes = (await api.encaminhamentos.arvore(
+					getQuery({ ubsId: ubsId!, ano: ano! })
+				)) as ArvoreMesNode[];
 				if (tipoFiltro === 'solicitacoes') {
 					mesNodes = nodes
 						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
@@ -178,7 +182,9 @@
 					mesNodes = nodes;
 				}
 			} else if (nivel === 'dia') {
-				const nodes = (await api.encaminhamentos.arvore(getQuery({ ubsId: ubsId!, ano: ano!, mes: mes! }))) as ArvoreDiaNode[];
+				const nodes = (await api.encaminhamentos.arvore(
+					getQuery({ ubsId: ubsId!, ano: ano!, mes: mes! })
+				)) as ArvoreDiaNode[];
 				if (tipoFiltro === 'solicitacoes') {
 					diaNodes = nodes
 						.filter((u) => u.statusContagem.aguardando > 0 || u.statusContagem.pendencia > 0)
@@ -210,13 +216,9 @@
 				if (typeof respostaSUS === 'boolean') q.respostaSUS = respostaSUS;
 
 				const lista = await api.encaminhamentos.list(q);
-				encsDoDia = lista.filter((e) =>
-					excluirRascunho ? e.status !== 'RASCUNHO' : true
-				);
+				encsDoDia = lista.filter((e) => (excluirRascunho ? e.status !== 'RASCUNHO' : true));
 				if (ubsId) {
-					encsDoDia = encsDoDia.filter((e) =>
-						e.unidadeOrigem?.length ? true : true
-					);
+					encsDoDia = encsDoDia.filter((e) => (e.unidadeOrigem?.length ? true : true));
 				}
 
 				// Apply client-side filters based on tipoFiltro
@@ -225,13 +227,9 @@
 						(e) => e.status === 'AGUARDANDO_REGULACAO' || e.status === 'PENDENCIA_DOCUMENTO'
 					);
 				} else if (tipoFiltro === 'enviados') {
-					encsDoDia = encsDoDia.filter(
-						(e) => e.status === 'APROVADO' && !e.respostaSUS
-					);
+					encsDoDia = encsDoDia.filter((e) => e.status === 'APROVADO' && !e.respostaSUS);
 				} else if (tipoFiltro === 'respostas') {
-					encsDoDia = encsDoDia.filter(
-						(e) => e.status === 'APROVADO' && !!e.respostaSUS
-					);
+					encsDoDia = encsDoDia.filter((e) => e.status === 'APROVADO' && !!e.respostaSUS);
 				}
 			}
 		} catch (e) {
@@ -299,14 +297,14 @@
 		return NOMES_MES[n - 1] ?? String(n).padStart(2, '0');
 	}
 
-	function totaisDeNo(c: { aguardando: number; pendencia: number; aprovado: number; rejeitado: number } | undefined) {
+	function totaisDeNo(
+		c: { aguardando: number; pendencia: number; aprovado: number; rejeitado: number } | undefined
+	) {
 		return c ?? { aguardando: 0, pendencia: 0, aprovado: 0, rejeitado: 0 };
 	}
 
 	let crumbs = $derived.by(() => {
-		const items: Array<{ label: string; href?: string }> = [
-			{ label: titulo, href: basePath }
-		];
+		const items: Array<{ label: string; href?: string }> = [{ label: titulo, href: basePath }];
 		if (ubsId) {
 			items.push({
 				label: ubsNome ?? 'UBS',
@@ -351,7 +349,9 @@
 		/>
 
 		{#if erro}
-			<div class="border-b border-red-700 bg-red-50 px-4 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+			<div
+				class="border-b border-red-700 bg-red-50 px-4 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+			>
 				⚠ {erro}
 			</div>
 		{/if}
@@ -367,7 +367,9 @@
 		{:else if nivel === 'ubs'}
 			<!-- Nível 1: UBSs -->
 			{#if ubsNodes.length === 0}
-				<div class="flex flex-col items-center gap-2 px-6 py-16 text-center font-sans text-slate-500">
+				<div
+					class="flex flex-col items-center gap-2 px-6 py-16 text-center font-sans text-slate-500"
+				>
 					<div class="text-3xl">{emojiVazio}</div>
 					<div class="font-mono text-xs tracking-widest uppercase">{mensagemVazio}</div>
 				</div>
@@ -433,9 +435,7 @@
 										</span>
 									{/if}
 									{#if c.rejeitado > 0}
-										<span
-											class="border border-red-700 bg-red-50 px-1 py-px font-bold text-red-800"
-										>
+										<span class="border border-red-700 bg-red-50 px-1 py-px font-bold text-red-800">
 											✗ {c.rejeitado}
 										</span>
 									{/if}
@@ -459,8 +459,7 @@
 					{#each anoNodes as a (a.ano)}
 						<button
 							type="button"
-							onclick={() =>
-								navegar({ ubsId: ubsId!, ubs: ubsNome ?? '', ano: a.ano })}
+							onclick={() => navegar({ ubsId: ubsId!, ubs: ubsNome ?? '', ano: a.ano })}
 							class="group flex flex-col items-center gap-2 bg-white px-3 py-5 text-center transition-colors hover:bg-slate-50"
 						>
 							<div class="font-mono text-3xl font-bold text-slate-900 group-hover:text-blue-900">
@@ -576,7 +575,9 @@
 									>
 										{e.protocolo}
 									</td>
-									<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+									>
 										{e.paciente.nome}
 										<div class="text-[10px] text-slate-500">{e.paciente.cpf}</div>
 									</td>

@@ -110,6 +110,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3333
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_URL: postgresql://${POSTGRES_USER:-unisism}:${POSTGRES_PASSWORD:-unisism}@postgres:5432/${POSTGRES_DB:-unisism_ubs}?schema=public
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
@@ -117,6 +118,14 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      CORS_ALLOW_VERCEL_PREVIEW: ${CORS_ALLOW_VERCEL_PREVIEW:-true}
+      CORS_VERCEL_PROJECT: ${CORS_VERCEL_PROJECT:-unisism}
+      HTTP_KEEP_ALIVE_TIMEOUT_MS: ${HTTP_KEEP_ALIVE_TIMEOUT_MS:-65000}
+      HTTP_HEADERS_TIMEOUT_MS: ${HTTP_HEADERS_TIMEOUT_MS:-66000}
+      HTTP_REQUEST_TIMEOUT_MS: ${HTTP_REQUEST_TIMEOUT_MS:-300000}
+      SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-10000}
+      API_KEY: ${API_KEY:-}
+      API_KEY_HEADER: ${API_KEY_HEADER:-x-api-key}
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
@@ -124,15 +133,21 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-unisism}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-unisism12345}
       S3_FORCE_PATH_STYLE: "true"
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
       METRICS_ENABLED: "true"
       OUTBOX_ENABLED: "true"
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-500}
       UPLOAD_DIR: /app/uploads
+      APP_RESET_SENHA_URL: ${APP_RESET_SENHA_URL:-http://localhost:5173/redefinir-senha}
       # Push notifications (ntfy.sh self-hosted)
       PUSH_PROVIDER: ${PUSH_PROVIDER:-ntfy}
+      PUSH_DISPATCHER_ENABLED: ${PUSH_DISPATCHER_ENABLED:-true}
+      PUSH_DISPATCHER_INTERVAL_MS: ${PUSH_DISPATCHER_INTERVAL_MS:-15000}
       NTFY_BASE_URL: ${NTFY_BASE_URL_INTERNAL:-http://ntfy}
       NTFY_AUTH_TOKEN: ${NTFY_AUTH_TOKEN:-}
+      NTFY_TIMEOUT_MS: ${NTFY_TIMEOUT_MS:-10000}
       NTFY_PUBLIC_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8080}
     ports:
       - "${BACKEND_PORT:-3333}:3333"
@@ -145,7 +160,13 @@ services:
         condition: service_healthy
     volumes:
       - ./uploads:/app/uploads
-    command: ["sh", "-c", "until nc -z -w 2 postgres 5432; do echo 'Waiting for database on postgres:5432...'; sleep 1; done && npx prisma migrate deploy && node dist/main/server.js"]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3333/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    command: ["sh", "-c", "npm run start:container"]
 
 volumes:
   postgres_data:

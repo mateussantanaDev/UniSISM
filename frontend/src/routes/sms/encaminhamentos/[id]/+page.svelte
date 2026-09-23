@@ -1,5 +1,4 @@
 <script lang="ts">
-	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import StatusBadge from '$lib/presentation/components/StatusBadge.svelte';
 	import ScanBadge from '$lib/presentation/components/ScanBadge.svelte';
 	import AnexoActions from '$lib/presentation/components/AnexoActions.svelte';
@@ -36,10 +35,7 @@
 		if (q === 'anexos' || q === 'clinico') return q;
 		return 'paciente';
 	});
-	let aba = $state<'paciente' | 'clinico' | 'anexos'>('paciente');
-	$effect(() => {
-		aba = abaInicial;
-	});
+	let aba = $derived(abaInicial);
 
 	let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 	function notificar(t: 'ok' | 'erro', texto: string) {
@@ -113,9 +109,7 @@
 			CPF: 6,
 			OUTRO: 7
 		};
-		return [...enc.anexos].sort(
-			(a, b) => (ordem[a.tipo] ?? 99) - (ordem[b.tipo] ?? 99)
-		);
+		return [...enc.anexos].sort((a, b) => (ordem[a.tipo] ?? 99) - (ordem[b.tipo] ?? 99));
 	});
 
 	function voltar() {
@@ -133,17 +127,24 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
 	{#if carregando}
-		<div class="border border-slate-200 bg-white px-6 py-12 text-center font-sans text-sm text-slate-500">
-			<div class="mx-auto mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
+		<div
+			class="border border-slate-200 bg-white px-6 py-12 text-center font-sans text-sm text-slate-500"
+		>
+			<div
+				class="mx-auto mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
+			></div>
 			Carregando encaminhamento...
 		</div>
 	{:else if erro}
-		<div class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+		>
 			⚠ {erro}
 		</div>
 		<button
@@ -156,7 +157,9 @@
 	{:else if enc}
 		<!-- Cabeçalho -->
 		<div class="border border-slate-200 bg-white">
-			<div class="flex flex-col gap-2 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+			<div
+				class="flex flex-col gap-2 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 md:flex-row md:items-center md:justify-between"
+			>
 				<div class="leading-tight">
 					<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
 						{enc.unidadeOrigem}
@@ -201,17 +204,13 @@
 				{#if aba === 'paciente'}
 					<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 						<div class="border border-slate-200 bg-slate-50 px-4 py-3">
-							<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-								Nome
-							</div>
+							<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Nome</div>
 							<div class="mt-1 font-sans text-base font-bold text-slate-900">
 								{enc.paciente.nome}
 							</div>
 						</div>
 						<div class="border border-slate-200 bg-slate-50 px-4 py-3">
-							<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-								CPF
-							</div>
+							<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">CPF</div>
 							<div class="mt-1 font-mono text-sm font-bold text-slate-900">
 								{enc.paciente.cpf}
 							</div>
@@ -322,7 +321,7 @@
 								Justificativa Clínica
 							</div>
 							<div
-								class="mt-2 border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[13px] leading-relaxed text-blue-900 whitespace-pre-wrap"
+								class="mt-2 border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[13px] leading-relaxed whitespace-pre-wrap text-blue-900"
 							>
 								{enc.solicitacao.justificativaClinica}
 							</div>
@@ -331,7 +330,9 @@
 				{:else if aba === 'anexos'}
 					<div class="flex flex-col gap-3">
 						{#if anexosOrdenados.length === 0}
-							<div class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500">
+							<div
+								class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500"
+							>
 								Nenhum anexo neste encaminhamento.
 							</div>
 						{:else}
@@ -352,7 +353,9 @@
 									<tbody class="font-mono">
 										{#each anexosOrdenados as a (a.id)}
 											<tr class="border-b border-slate-100 hover:bg-slate-50">
-												<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+												<td
+													class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+												>
 													{a.nome}
 												</td>
 												<td class="border-r border-slate-100 px-3 py-2">
@@ -390,9 +393,12 @@
 							>
 								<strong class="font-mono tracking-widest uppercase">Como funciona:</strong>
 								<br />
-								<strong>Visualizar</strong> abre o documento no motor PDF deste navegador, dentro de uma janela.
-								<strong>Baixar</strong> abre uma nova aba com o visualizador padrão do navegador (use os botões dele para baixar/imprimir).
-								<strong>Compartilhar</strong> envia o arquivo via WhatsApp/Email/etc. quando o dispositivo suporta, ou copia uma referência segura para a área de transferência.
+								<strong>Visualizar</strong> abre o documento no motor PDF deste navegador, dentro de
+								uma janela.
+								<strong>Baixar</strong> abre uma nova aba com o visualizador padrão do navegador
+								(use os botões dele para baixar/imprimir).
+								<strong>Compartilhar</strong> envia o arquivo via WhatsApp/Email/etc. quando o dispositivo
+								suporta, ou copia uma referência segura para a área de transferência.
 							</div>
 						{/if}
 					</div>

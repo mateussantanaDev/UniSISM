@@ -79,20 +79,27 @@ export class OutboxPublisher {
       this.running = true;
       try {
         await this.processBatch();
+      } catch (err) {
+        logger.error({ err }, 'outbox publisher batch falhou');
       } finally {
         this.running = false;
       }
     };
-    this.timer = setInterval(tick, this.intervalMs);
+    void tick();
+    this.timer = setInterval(() => void tick(), this.intervalMs);
     logger.info({ intervalMs: this.intervalMs }, 'outbox publisher iniciado');
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
-      logger.info('outbox publisher parado');
     }
+    const inicio = Date.now();
+    while (this.running && Date.now() - inicio < 10_000) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    logger.info('outbox publisher parado');
   }
 
   private async processBatch(): Promise<void> {

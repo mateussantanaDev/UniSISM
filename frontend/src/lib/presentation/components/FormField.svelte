@@ -61,8 +61,8 @@
 			{readonly}
 			bind:value
 			class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none
-				focus:border-blue-900 focus:ring-1 focus:ring-blue-900
-				read-only:bg-slate-50 read-only:text-slate-700
+				read-only:bg-slate-50 read-only:text-slate-700 focus:border-blue-900
+				focus:ring-1 focus:ring-blue-900
 				{mono ? 'font-mono tracking-wide' : ''}
 				{loading ? 'animate-pulse' : ''}"
 		/>

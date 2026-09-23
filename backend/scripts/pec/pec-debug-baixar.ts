@@ -5,10 +5,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { PEC, sleep, getLaunchOptions } from './pec-common';
+import { PEC, sleep } from './pec-common';
 
 async function main() {
-  const browser = await chromium.launch(getLaunchOptions());
+  const browser = await chromium.launch({
+    headless: process.env.PEC_HEADLESS !== 'false',
+    channel: 'chrome',
+  });
   const ctx = await browser.newContext({
     viewport: { width: 1366, height: 900 },
     acceptDownloads: true,

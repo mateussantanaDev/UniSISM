@@ -138,17 +138,15 @@
 		</div>
 
 		{#if erro}
-			<div class="mx-4 mb-3 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+			<div
+				class="mx-4 mb-3 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+			>
 				⚠ {erro}
 			</div>
 		{/if}
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => goto('/sms/rede/ubs')}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => goto('/sms/rede/ubs')} />
 			<PrimaryButton label="Cadastrar UBS" type="submit" loading={enviando} />
 		</div>
 	</form>

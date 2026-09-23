@@ -117,7 +117,6 @@ export async function dadosEncaminhamentosPorEspecialidade(
   escopo: EscopoData,
   janela: JanelaPeriodo,
 ): Promise<LinhaDados[]> {
-  const base = { ...whereEscopo(escopo), criadoEm: wherePeriodo(janela) };
   // Agregado em SQL puro — mais eficiente que fazer findMany+agrupar em JS
   type Row = {
     especialidade: string;

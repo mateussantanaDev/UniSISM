@@ -43,7 +43,11 @@
 		<MetricCard label="Total de Viagens" value={p.viagensTFD.length} sublabel="TFD · histórico" />
 		<MetricCard label="Realizadas" value={realizadas} sublabel="Concluídas" accent="success" />
 		<MetricCard label="Agendadas" value={agendadas} sublabel="Em fila" accent="warning" />
-		<MetricCard label="Custo Acumulado" value={formatarBRL(custoTotal)} sublabel="Recurso público SMS" />
+		<MetricCard
+			label="Custo Acumulado"
+			value={formatarBRL(custoTotal)}
+			sublabel="Recurso público SMS"
+		/>
 	</section>
 
 	<div class="border border-slate-200 bg-white">

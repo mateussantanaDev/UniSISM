@@ -9,7 +9,9 @@
 	let { title, subtitle = '', index = '', children }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
+<div
+	class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-3"
+>
 	<div class="flex items-center gap-3">
 		{#if index}
 			<span

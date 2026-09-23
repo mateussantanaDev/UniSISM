@@ -105,10 +105,7 @@ function posicaoAtual(timeoutMs = 5000): Promise<GeolocationPosition> {
 }
 
 /** Reverse geocoding via Nominatim. */
-async function reverseGeocode(
-	lat: number,
-	lon: number
-): Promise<LocationInfo | null> {
+async function reverseGeocode(lat: number, lon: number): Promise<LocationInfo | null> {
 	const url = new URL('https://nominatim.openstreetmap.org/reverse');
 	url.searchParams.set('format', 'json');
 	url.searchParams.set('lat', String(lat));

@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type APIRequestContext, type Page } from 'playwright';
-import { PEC, PACIENTES_DIR, sleep, log, getLaunchOptions } from './pec-common';
+import { PEC, PACIENTES_DIR, sleep, log } from './pec-common';
 
 fs.mkdirSync(PACIENTES_DIR, { recursive: true });
 const OUTPUT = path.join(PACIENTES_DIR, 'pacientes.jsonl');
@@ -164,7 +164,10 @@ function appendJsonl(items: any[]): void {
 
 async function main() {
   log('INFO', '🚀 pec-graphql-scraper · GraphQL direto');
-  const browser = await chromium.launch(getLaunchOptions());
+  const browser = await chromium.launch({
+    headless: process.env.PEC_HEADLESS !== 'false',
+    channel: 'chrome',
+  });
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await ctx.newPage();
 

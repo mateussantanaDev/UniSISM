@@ -9,7 +9,15 @@
 		closable?: boolean;
 	}
 
-	let { isOpen = false, onClose, title, subtitle = '', children, maxWidth = 'md', closable = true }: Props = $props();
+	let {
+		isOpen = false,
+		onClose,
+		title,
+		subtitle = '',
+		children,
+		maxWidth = 'md',
+		closable = true
+	}: Props = $props();
 
 	const widths = {
 		sm: 'max-w-md',
@@ -40,9 +48,13 @@
 		onclick={handleBackdrop}
 	>
 		<div
-			class="flex max-h-[calc(100vh-5rem)] w-full {widths[maxWidth]} flex-col border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+			class="flex max-h-[calc(100vh-5rem)] w-full {widths[
+				maxWidth
+			]} flex-col border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4"
+			>
 				<div>
 					<h2 class="font-mono text-sm font-bold tracking-wide text-slate-900 uppercase">
 						{title}

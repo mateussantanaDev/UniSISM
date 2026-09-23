@@ -20,9 +20,19 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 
 	let tipo = String(u.tipoUnidade || '').toUpperCase();
 	if (!tipo || tipo === 'NULL' || tipo === 'UNDEFINED') {
-		if (cargoUpper.includes('CEO') || cargoUpper.includes('DENTIST') || cargoUpper.includes('ODONTOL') || funcaoUpper.includes('CEO') || funcaoUpper.includes('ODONTOL')) {
+		if (
+			cargoUpper.includes('CEO') ||
+			cargoUpper.includes('DENTIST') ||
+			cargoUpper.includes('ODONTOL') ||
+			funcaoUpper.includes('CEO') ||
+			funcaoUpper.includes('ODONTOL')
+		) {
 			tipo = 'CEO';
-		} else if (cargoUpper.includes('CEM') || funcaoUpper.includes('CEM') || funcaoUpper.includes('ESPECIALIDADES MÉDICAS')) {
+		} else if (
+			cargoUpper.includes('CEM') ||
+			funcaoUpper.includes('CEM') ||
+			funcaoUpper.includes('ESPECIALIDADES MÉDICAS')
+		) {
 			tipo = 'CEM';
 		}
 	}
@@ -30,18 +40,30 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 	// Se o cargo foi definido explicitamente e não é o placeholder legado genérico
 	if (cargo && !cargoUpper.includes('ATENDENTE DE REGULAÇÃO')) {
 		if (tipo === 'CEO') {
-			if (cargoUpper.includes('COORDENADOR') && (cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))) {
+			if (
+				cargoUpper.includes('COORDENADOR') &&
+				(cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
+			) {
 				return 'Coordenador(a) do CEO';
 			}
-			if (cargoUpper.includes('REGULADOR') && (cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))) {
+			if (
+				cargoUpper.includes('REGULADOR') &&
+				(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
+			) {
 				return 'Regulador(a) do CEO';
 			}
 		}
 		if (tipo === 'CEM') {
-			if (cargoUpper.includes('COORDENADOR') && (cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))) {
+			if (
+				cargoUpper.includes('COORDENADOR') &&
+				(cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
+			) {
 				return 'Coordenador(a) do CEM';
 			}
-			if (cargoUpper.includes('REGULADOR') && (cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))) {
+			if (
+				cargoUpper.includes('REGULADOR') &&
+				(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
+			) {
 				return 'Regulador(a) do CEM';
 			}
 		}

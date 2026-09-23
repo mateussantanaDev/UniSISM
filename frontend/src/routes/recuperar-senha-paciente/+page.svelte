@@ -87,8 +87,8 @@
 						✓ Solicitação enviada
 					</div>
 					<p class="mt-1 text-blue-950">
-						Se houver uma conta com este CPF e email cadastrado, você receberá um
-						link de redefinição em <strong>até 5 minutos</strong>.
+						Se houver uma conta com este CPF e email cadastrado, você receberá um link de
+						redefinição em <strong>até 5 minutos</strong>.
 					</p>
 				</div>
 				<p class="text-slate-600">
@@ -107,8 +107,8 @@
 				}}
 			>
 				<p class="text-sm text-slate-600">
-					Informe seu CPF. Se houver uma conta vinculada com email cadastrado,
-					enviaremos um link para criar uma nova senha.
+					Informe seu CPF. Se houver uma conta vinculada com email cadastrado, enviaremos um link
+					para criar uma nova senha.
 				</p>
 
 				<div class="flex flex-col">
@@ -148,10 +148,8 @@
 				</div>
 
 				<p class="text-center text-[11px] text-slate-500">
-					<button
-						type="button"
-						onclick={() => goto('/login')}
-						class="text-blue-900 underline">Voltar ao login</button
+					<button type="button" onclick={() => goto('/login')} class="text-blue-900 underline"
+						>Voltar ao login</button
 					>
 				</p>
 			</form>

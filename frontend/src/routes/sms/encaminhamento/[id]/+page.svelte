@@ -64,11 +64,15 @@
 				</div>
 			</div>
 			<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Tempo em Fila</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+					Tempo em Fila
+				</div>
 				<div class="mt-1 font-mono text-sm font-bold text-slate-900">{tempoEmFila}</div>
 			</div>
 			<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">UBS de Origem</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+					UBS de Origem
+				</div>
 				<div class="mt-1 font-mono text-[11px] font-semibold text-slate-900">
 					{enc.unidadeOrigem}
 				</div>
@@ -216,9 +220,7 @@
 						: 's'}
 				</div>
 			</div>
-			<div
-				class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-slate-50"
-			>
+			<div class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-slate-50">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"

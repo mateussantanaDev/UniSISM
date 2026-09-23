@@ -56,18 +56,18 @@ o frontend já espera `PacienteCompleto` em DELETE, mantenha 200 + body.
 
 ### 1.2 Total de rotas
 
-| Recurso             | POST | PATCH/PUT | DELETE | Total |
-| ------------------- | :--: | :-------: | :----: | :---: |
-| Paciente (cadastro) |  —   |    1      |   —    |   1   |
-| Alergias            |  1   |    —      |   1    |   2   |
-| Condições crônicas  |  1   |    1      |   1    |   3   |
-| Medicamentos        |  1   |    1      |   1    |   3   |
-| Histórico familiar  |  —   |    1      |   —    |   1   |
-| Atendimentos        |  1   |    —      |   1    |   2   |
-| Exames              |  1   |    —      |   1    |   2   |
-| Vacinação           |  1   |    —      |   1    |   2   |
-| Viagens TFD         |  1   |    1      |   1    |   3   |
-| **Total**           | **7**| **5**     | **7**  |**19** |
+| Recurso             | POST  | PATCH/PUT | DELETE | Total  |
+| ------------------- | :---: | :-------: | :----: | :----: |
+| Paciente (cadastro) |   —   |     1     |   —    |   1    |
+| Alergias            |   1   |     —     |   1    |   2    |
+| Condições crônicas  |   1   |     1     |   1    |   3    |
+| Medicamentos        |   1   |     1     |   1    |   3    |
+| Histórico familiar  |   —   |     1     |   —    |   1    |
+| Atendimentos        |   1   |     —     |   1    |   2    |
+| Exames              |   1   |     —     |   1    |   2    |
+| Vacinação           |   1   |     —     |   1    |   2    |
+| Viagens TFD         |   1   |     1     |   1    |   3    |
+| **Total**           | **7** |   **5**   | **7**  | **19** |
 
 (+1 do PATCH `/pacientes/:id` já existente como contrato em `AtualizarPacienteRequest`.)
 
@@ -111,30 +111,30 @@ Toda rota recebe `pacienteId` no path. O backend DEVE:
 
 ### 2.5 Status HTTP
 
-| Código | Uso                                               |
-| ------ | ------------------------------------------------- |
-| 200    | GET, PATCH, PUT, DELETE bem-sucedidos (com body)  |
-| 201    | POST que cria recurso (com body `PacienteCompleto`) |
-| 400    | Payload mal-formado / Zod falhou                  |
-| 401    | Sem token / token inválido                        |
-| 403    | Autenticado mas sem permissão na ação             |
+| Código | Uso                                                  |
+| ------ | ---------------------------------------------------- |
+| 200    | GET, PATCH, PUT, DELETE bem-sucedidos (com body)     |
+| 201    | POST que cria recurso (com body `PacienteCompleto`)  |
+| 400    | Payload mal-formado / Zod falhou                     |
+| 401    | Sem token / token inválido                           |
+| 403    | Autenticado mas sem permissão na ação                |
 | 404    | Paciente fora do escopo OU recurso filho inexistente |
-| 409    | Duplicata (substância de alergia, protocolo TFD…) |
-| 422    | Regra de negócio (transição inválida, data futura…) |
-| 500    | Falha não tratada                                 |
+| 409    | Duplicata (substância de alergia, protocolo TFD…)    |
+| 422    | Regra de negócio (transição inválida, data futura…)  |
+| 500    | Falha não tratada                                    |
 
 ### 2.6 Formato de erro padrão
 
 ```json
 {
-  "error": {
-    "code": "ITEM_DUPLICADO",
-    "message": "Já existe alergia ativa para esta substância.",
-    "details": {
-      "substancia": "Dipirona",
-      "alergiaExistenteId": "9b8c..."
-    }
-  }
+	"error": {
+		"code": "ITEM_DUPLICADO",
+		"message": "Já existe alergia ativa para esta substância.",
+		"details": {
+			"substancia": "Dipirona",
+			"alergiaExistenteId": "9b8c..."
+		}
+	}
 }
 ```
 
@@ -667,13 +667,13 @@ Consumido em [`RegistrarVacina.svelte`](src/lib/presentation/components/prontuar
 
 ```ts
 {
-  data: string;                // YYYY-MM-DD
-  vacina: string;              // OBRIGATÓRIO ex.: "Pfizer COVID-19"
-  dose: string;                // OBRIGATÓRIO ex.: "1ª Dose", "Reforço"
-  lote: string;                // OBRIGATÓRIO
-  aplicador: string;           // OBRIGATÓRIO ex.: "Enf. Ana · COREN/BA 012345"
-  unidade: string;
-  via: 'INTRAMUSCULAR' | 'SUBCUTANEA' | 'ORAL' | 'INTRADERMICA';
+	data: string; // YYYY-MM-DD
+	vacina: string; // OBRIGATÓRIO ex.: "Pfizer COVID-19"
+	dose: string; // OBRIGATÓRIO ex.: "1ª Dose", "Reforço"
+	lote: string; // OBRIGATÓRIO
+	aplicador: string; // OBRIGATÓRIO ex.: "Enf. Ana · COREN/BA 012345"
+	unidade: string;
+	via: 'INTRAMUSCULAR' | 'SUBCUTANEA' | 'ORAL' | 'INTRADERMICA';
 }
 ```
 
@@ -773,36 +773,36 @@ Soft delete. **Apenas `ADMIN+`** — viagem afeta orçamento municipal.
 
 ## 10. Matriz RBAC
 
-| Recurso              | ATEND_UBS | COORD_UBS | REGUL_SMS | REGUL_TFD | GESTOR_TFD | ADMIN | DEV |
-| -------------------- | :-------: | :-------: | :-------: | :-------: | :--------: | :---: | :-: |
-| **Cadastro paciente**|           |           |           |           |            |       |     |
-| PATCH                | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Alergias**         |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Condições**        |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| PATCH                | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ❌        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Medicamentos**     |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| PATCH                | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ❌        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Histórico**        |           |           |           |           |            |       |     |
-| PUT                  | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Atendimentos**     |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ❌        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Exames**           |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ❌        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Vacinação**        |           |           |           |           |            |       |     |
-| POST                 | ✅        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| DELETE               | ❌        | ✅        | ❌        | ❌        | ❌         | ✅    | ✅  |
-| **Viagens TFD**      |           |           |           |           |            |       |     |
-| POST                 | ❌        | ✅        | ✅        | ✅        | ✅         | ✅    | ✅  |
-| PATCH (status/dados) | ❌        | ✅        | ✅        | ✅        | ✅         | ✅    | ✅  |
-| DELETE               | ❌        | ❌        | ❌        | ❌        | ❌         | ✅    | ✅  |
+| Recurso               | ATEND_UBS | COORD_UBS | REGUL_SMS | REGUL_TFD | GESTOR_TFD | ADMIN | DEV |
+| --------------------- | :-------: | :-------: | :-------: | :-------: | :--------: | :---: | :-: |
+| **Cadastro paciente** |           |           |           |           |            |       |     |
+| PATCH                 |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Alergias**          |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Condições**         |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| PATCH                 |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Medicamentos**      |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| PATCH                 |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Histórico**         |           |           |           |           |            |       |     |
+| PUT                   |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Atendimentos**      |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Exames**            |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Vacinação**         |           |           |           |           |            |       |     |
+| POST                  |    ✅     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ✅     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
+| **Viagens TFD**       |           |           |           |           |            |       |     |
+| POST                  |    ❌     |    ✅     |    ✅     |    ✅     |     ✅     |  ✅   | ✅  |
+| PATCH (status/dados)  |    ❌     |    ✅     |    ✅     |    ✅     |     ✅     |  ✅   | ✅  |
+| DELETE                |    ❌     |    ❌     |    ❌     |    ❌     |     ❌     |  ✅   | ✅  |
 
 **Princípios:**
 
@@ -811,7 +811,7 @@ Soft delete. **Apenas `ADMIN+`** — viagem afeta orçamento municipal.
    não atendimento). Só TFD entra no escopo deles.
 3. Admin opera dentro da própria prefeitura. DEV cross-prefeitura.
 4. Frontend já esconde botões via `auth.podeConsolidarEncaminhamento ||
-   auth.ehAdminOuDev` ([`+page.svelte` de cada aba](src/routes/ubs/pacientes/[id]/)).
+auth.ehAdminOuDev` ([`+page.svelte` de cada aba](src/routes/ubs/pacientes/[id]/)).
    **Backend é a fonte da verdade** — retornar 403 mesmo que o frontend tenha
    deixado escapar.
 
@@ -823,17 +823,17 @@ Toda escrita gera linha em `paciente_prontuario_audit` (schema em §3).
 
 **Colunas obrigatórias por linha:**
 
-| Coluna       | Origem                                                |
-| ------------ | ----------------------------------------------------- |
-| `operador_id`| `req.user.id` (do JWT)                                |
-| `paciente_id`| Path param                                            |
-| `recurso`    | `ALERGIA \| CONDICAO \| MEDICAMENTO \| HISTORICO_FAMILIAR \| ATENDIMENTO \| EXAME \| VACINA \| VIAGEM_TFD \| PACIENTE` |
-| `recurso_id` | UUID do sub-doc (null em `HISTORICO_FAMILIAR` e `PACIENTE` PATCH) |
-| `acao`       | `CREATE \| UPDATE \| DELETE`                          |
-| `antes`      | snapshot JSON do estado anterior (null em CREATE)     |
-| `depois`     | snapshot JSON do estado novo (null em DELETE)         |
-| `ip`         | `X-Forwarded-For` ou `req.ip`                         |
-| `user_agent` | `req.headers['user-agent']`                           |
+| Coluna        | Origem                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `operador_id` | `req.user.id` (do JWT)                                                                                                 |
+| `paciente_id` | Path param                                                                                                             |
+| `recurso`     | `ALERGIA \| CONDICAO \| MEDICAMENTO \| HISTORICO_FAMILIAR \| ATENDIMENTO \| EXAME \| VACINA \| VIAGEM_TFD \| PACIENTE` |
+| `recurso_id`  | UUID do sub-doc (null em `HISTORICO_FAMILIAR` e `PACIENTE` PATCH)                                                      |
+| `acao`        | `CREATE \| UPDATE \| DELETE`                                                                                           |
+| `antes`       | snapshot JSON do estado anterior (null em CREATE)                                                                      |
+| `depois`      | snapshot JSON do estado novo (null em DELETE)                                                                          |
+| `ip`          | `X-Forwarded-For` ou `req.ip`                                                                                          |
+| `user_agent`  | `req.headers['user-agent']`                                                                                            |
 
 **Implementação sugerida:** middleware/decorator que envolve cada handler
 e grava a auditoria após o commit da transação principal. Ou trigger
@@ -857,23 +857,23 @@ Os códigos abaixo já estão em
 serão adicionados — o frontend só exibe códigos conhecidos com mensagem
 traduzida; demais caem em `e.message` direto.
 
-| Code                              | HTTP | Quando                                              |
-| --------------------------------- | :--: | --------------------------------------------------- |
-| `PACIENTE_NAO_ENCONTRADO`         | 404  | Paciente fora do escopo do JWT, ou inexistente      |
-| `ITEM_NAO_ENCONTRADO`             | 404  | Sub-documento (alergia/medicamento/etc.) inexistente|
-| `PERMISSAO_INSUFICIENTE`          | 403  | Role sem permissão na ação                          |
-| `PAYLOAD_INVALIDO`                | 400  | Falha de schema (Zod / class-validator)             |
-| `DADOS_OBRIGATORIOS_AUSENTES`     | 400  | Campos required missing                             |
-| `NENHUMA_ALTERACAO`               | 400  | PATCH/PUT sem mudança real                          |
-| `CID_INVALIDO`                    | 422  | Regex CID-10 não casa                               |
-| `DATA_INVALIDA`                   | 422  | Data futura proibida, formato inválido              |
-| `ITEM_DUPLICADO`                  | 409  | Substância de alergia / CID ativo / protocolo TFD   |
-| `VACINA_DUPLICADA`                | 409  | (paciente,vacina,dose,lote) repetidos               |
-| `HISTORICO_FAMILIAR_MUITO_LONGO`  | 422  | `itens.length > 50`                                 |
-| `TRANSICAO_INVALIDA`              | 422  | Status TFD muda para estado não permitido           |
-| `EDICAO_NAO_PERMITIDA`            | 403  | Tentar alterar campo imutável (cid10, protocolo…)   |
-| `RATE_LIMIT`                      | 429  | Limite por IP/operador                              |
-| `ERRO_INTERNO`                    | 500  | Genérico                                            |
+| Code                             | HTTP | Quando                                               |
+| -------------------------------- | :--: | ---------------------------------------------------- |
+| `PACIENTE_NAO_ENCONTRADO`        | 404  | Paciente fora do escopo do JWT, ou inexistente       |
+| `ITEM_NAO_ENCONTRADO`            | 404  | Sub-documento (alergia/medicamento/etc.) inexistente |
+| `PERMISSAO_INSUFICIENTE`         | 403  | Role sem permissão na ação                           |
+| `PAYLOAD_INVALIDO`               | 400  | Falha de schema (Zod / class-validator)              |
+| `DADOS_OBRIGATORIOS_AUSENTES`    | 400  | Campos required missing                              |
+| `NENHUMA_ALTERACAO`              | 400  | PATCH/PUT sem mudança real                           |
+| `CID_INVALIDO`                   | 422  | Regex CID-10 não casa                                |
+| `DATA_INVALIDA`                  | 422  | Data futura proibida, formato inválido               |
+| `ITEM_DUPLICADO`                 | 409  | Substância de alergia / CID ativo / protocolo TFD    |
+| `VACINA_DUPLICADA`               | 409  | (paciente,vacina,dose,lote) repetidos                |
+| `HISTORICO_FAMILIAR_MUITO_LONGO` | 422  | `itens.length > 50`                                  |
+| `TRANSICAO_INVALIDA`             | 422  | Status TFD muda para estado não permitido            |
+| `EDICAO_NAO_PERMITIDA`           | 403  | Tentar alterar campo imutável (cid10, protocolo…)    |
+| `RATE_LIMIT`                     | 429  | Limite por IP/operador                               |
+| `ERRO_INTERNO`                   | 500  | Genérico                                             |
 
 > **Observação:** se algum código novo aparecer aqui que não exista em
 > `ErrorCode`, basta adicioná-lo no enum em [`types.ts:805`](src/lib/api/types.ts).
@@ -895,25 +895,25 @@ traduzida; demais caem em `e.message` direto.
 
 ### Endpoints (19 rotas + PATCH paciente)
 
-- [ ] `PATCH  /v1/pacientes/:id`                                   · §4
-- [ ] `POST   /v1/pacientes/:id/alergias`                          · §5.1
-- [ ] `DELETE /v1/pacientes/:id/alergias/:alergiaId`               · §5.1
-- [ ] `POST   /v1/pacientes/:id/condicoes-cronicas`                · §5.2
-- [ ] `PATCH  /v1/pacientes/:id/condicoes-cronicas/:condicaoId`    · §5.2
-- [ ] `DELETE /v1/pacientes/:id/condicoes-cronicas/:condicaoId`    · §5.2
-- [ ] `POST   /v1/pacientes/:id/medicamentos`                      · §5.3
-- [ ] `PATCH  /v1/pacientes/:id/medicamentos/:medicamentoId`       · §5.3
-- [ ] `DELETE /v1/pacientes/:id/medicamentos/:medicamentoId`       · §5.3
-- [ ] `PUT    /v1/pacientes/:id/historico-familiar`                · §5.4
-- [ ] `POST   /v1/pacientes/:id/atendimentos`                      · §6.1
-- [ ] `DELETE /v1/pacientes/:id/atendimentos/:atendimentoId`       · §6.2
-- [ ] `POST   /v1/pacientes/:id/exames`                            · §7.1
-- [ ] `DELETE /v1/pacientes/:id/exames/:exameId`                   · §7.2
-- [ ] `POST   /v1/pacientes/:id/vacinacoes`                        · §8.1
-- [ ] `DELETE /v1/pacientes/:id/vacinacoes/:vacinaId`              · §8.2
-- [ ] `POST   /v1/pacientes/:id/viagens`                           · §9.1
-- [ ] `PATCH  /v1/pacientes/:id/viagens/:viagemId`                 · §9.2
-- [ ] `DELETE /v1/pacientes/:id/viagens/:viagemId`                 · §9.3
+- [ ] `PATCH  /v1/pacientes/:id` · §4
+- [ ] `POST   /v1/pacientes/:id/alergias` · §5.1
+- [ ] `DELETE /v1/pacientes/:id/alergias/:alergiaId` · §5.1
+- [ ] `POST   /v1/pacientes/:id/condicoes-cronicas` · §5.2
+- [ ] `PATCH  /v1/pacientes/:id/condicoes-cronicas/:condicaoId` · §5.2
+- [ ] `DELETE /v1/pacientes/:id/condicoes-cronicas/:condicaoId` · §5.2
+- [ ] `POST   /v1/pacientes/:id/medicamentos` · §5.3
+- [ ] `PATCH  /v1/pacientes/:id/medicamentos/:medicamentoId` · §5.3
+- [ ] `DELETE /v1/pacientes/:id/medicamentos/:medicamentoId` · §5.3
+- [ ] `PUT    /v1/pacientes/:id/historico-familiar` · §5.4
+- [ ] `POST   /v1/pacientes/:id/atendimentos` · §6.1
+- [ ] `DELETE /v1/pacientes/:id/atendimentos/:atendimentoId` · §6.2
+- [ ] `POST   /v1/pacientes/:id/exames` · §7.1
+- [ ] `DELETE /v1/pacientes/:id/exames/:exameId` · §7.2
+- [ ] `POST   /v1/pacientes/:id/vacinacoes` · §8.1
+- [ ] `DELETE /v1/pacientes/:id/vacinacoes/:vacinaId` · §8.2
+- [ ] `POST   /v1/pacientes/:id/viagens` · §9.1
+- [ ] `PATCH  /v1/pacientes/:id/viagens/:viagemId` · §9.2
+- [ ] `DELETE /v1/pacientes/:id/viagens/:viagemId` · §9.3
 - [ ] **Todos retornam `PacienteCompleto` em 200/201** (corpo completo)
 
 ### Validação
@@ -970,14 +970,14 @@ traduzida; demais caem em `e.message` direto.
 
 ### Frontend (referência — não alterar)
 
-| Arquivo                                                                                       | Papel                                                  |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [`src/lib/api/types.ts`](src/lib/api/types.ts)                                                | Todos os DTOs e enums citados aqui (canônico)          |
-| [`src/lib/api/client.ts`](src/lib/api/client.ts) (`PacientesApi`)                             | Métodos HTTP — ver §1.2                                |
-| [`src/lib/api/erros-tfd.ts`](src/lib/api/erros-tfd.ts)                                        | Tradução de códigos TFD para pt-BR                     |
-| [`src/lib/presentation/components/prontuario/`](src/lib/presentation/components/prontuario/)  | Modais de registro (referência de validação)           |
-| [`src/lib/presentation/contexts/pacienteContext.ts`](src/lib/presentation/contexts/pacienteContext.ts) | Estado canônico do paciente — `atualizar(p)`           |
-| [`src/routes/ubs/pacientes/[id]/`](src/routes/ubs/pacientes/[id]/)                            | Páginas que consomem cada endpoint                     |
+| Arquivo                                                                                                | Papel                                         |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| [`src/lib/api/types.ts`](src/lib/api/types.ts)                                                         | Todos os DTOs e enums citados aqui (canônico) |
+| [`src/lib/api/client.ts`](src/lib/api/client.ts) (`PacientesApi`)                                      | Métodos HTTP — ver §1.2                       |
+| [`src/lib/api/erros-tfd.ts`](src/lib/api/erros-tfd.ts)                                                 | Tradução de códigos TFD para pt-BR            |
+| [`src/lib/presentation/components/prontuario/`](src/lib/presentation/components/prontuario/)           | Modais de registro (referência de validação)  |
+| [`src/lib/presentation/contexts/pacienteContext.ts`](src/lib/presentation/contexts/pacienteContext.ts) | Estado canônico do paciente — `atualizar(p)`  |
+| [`src/routes/ubs/pacientes/[id]/`](src/routes/ubs/pacientes/[id]/)                                     | Páginas que consomem cada endpoint            |
 
 ### Backend (a implementar)
 
@@ -1007,4 +1007,4 @@ verificar gaps contra esta especificação.)
 
 ---
 
-*Versão: v0.7.0+ · Frontend pós-prontuário-completo · Atualizado em 2026-04-30.*
+_Versão: v0.7.0+ · Frontend pós-prontuário-completo · Atualizado em 2026-04-30._

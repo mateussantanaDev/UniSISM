@@ -77,7 +77,7 @@
 				role: r.role ?? usuario.role,
 				cargo: (r as any).cargo ?? cargo,
 				funcao: (r as any).funcao ?? funcao,
-				tipoUnidade: (r as any).tipoUnidade ?? tipoUnidade as any
+				tipoUnidade: (r as any).tipoUnidade ?? (tipoUnidade as any)
 			};
 			onSaved(atualizado);
 		} catch (e) {
@@ -114,9 +114,7 @@
 	<!-- Identidade -->
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Identificação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Identificação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Nome Completo" name="nome" span={12} bind:value={nome} />
@@ -148,14 +146,17 @@
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<div class="col-span-6 flex flex-col">
-				<label for="ed-tipo" class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+				<label
+					for="ed-tipo"
+					class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+				>
 					Unidade / Face
 				</label>
 				<select
 					id="ed-tipo"
 					bind:value={tipoUnidade}
 					onchange={aoMudarTipoOuRole}
-					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 font-bold"
+					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-900 outline-none focus:border-blue-900"
 				>
 					<option value="CEO">CEO · Centro Odontológico</option>
 					<option value="CEM">CEM · Centro Médico</option>
@@ -166,14 +167,17 @@
 			</div>
 
 			<div class="col-span-6 flex flex-col">
-				<label for="ed-role" class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+				<label
+					for="ed-role"
+					class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+				>
 					Perfil de Acesso (Role)
 				</label>
 				<select
 					id="ed-role"
 					bind:value={role}
 					onchange={aoMudarTipoOuRole}
-					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 font-bold"
+					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-900 outline-none focus:border-blue-900"
 				>
 					{#if tipoUnidade === 'CEO'}
 						<option value="COORDENADOR_UBS">Coordenador(a) do CEO</option>

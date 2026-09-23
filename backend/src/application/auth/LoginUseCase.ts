@@ -1,4 +1,4 @@
-import { Forbidden, Unauthorized, Unprocessable } from '../../shared/errors';
+import { Forbidden, Unauthorized } from '../../shared/errors';
 import type { IAtendenteRepository } from '../../domain/repositories/IAtendenteRepository';
 import type { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import type { ISessaoRepository } from '../../domain/repositories/ISessaoRepository';

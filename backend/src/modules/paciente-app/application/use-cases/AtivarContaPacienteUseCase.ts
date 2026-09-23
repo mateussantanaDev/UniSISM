@@ -6,7 +6,7 @@
  * Define a senha inicial.
  */
 import { prisma } from '../../../../infrastructure/database/prisma';
-import { Conflict, NotFound, Unprocessable } from '../../../../shared/errors';
+import { Unprocessable } from '../../../../shared/errors';
 import type { IPasswordHasher } from '../../../../domain/services/IPasswordHasher';
 import {
   formatarCpf,

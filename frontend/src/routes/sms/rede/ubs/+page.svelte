@@ -62,11 +62,7 @@
 			sublabel="Desabilitadas"
 			accent="critical"
 		/>
-		<MetricCard
-			label="Com CNES"
-			value={carregando ? '—' : comCnes}
-			sublabel="Registro nacional"
-		/>
+		<MetricCard label="Com CNES" value={carregando ? '—' : comCnes} sublabel="Registro nacional" />
 	</section>
 
 	<!-- Lista -->
@@ -82,11 +78,7 @@
 				{filtrada.length} / {lista.length}
 			</span>
 			{#if auth.podeCriarUbs}
-				<PrimaryButton
-					label="+ Nova UBS"
-					shortcut="N"
-					onclick={() => goto('/sms/rede/ubs/nova')}
-				/>
+				<PrimaryButton label="+ Nova UBS" shortcut="N" onclick={() => goto('/sms/rede/ubs/nova')} />
 			{/if}
 		</PanelHeader>
 

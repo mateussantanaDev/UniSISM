@@ -84,15 +84,19 @@
 			<StatusBadge status={encaminhamento.status} />
 		</div>
 		<div class="text-sm font-bold text-blue-900">{encaminhamento.protocolo}</div>
-		<div class="text-xs font-sans font-semibold text-slate-900">
+		<div class="font-sans text-xs font-semibold text-slate-900">
 			{encaminhamento.paciente.nome}
 		</div>
 		<div class="text-[11px] text-slate-700">
 			{encaminhamento.solicitacao.especialidadeSolicitada} · CID {encaminhamento.solicitacao.cid10}
 		</div>
 		{#if encaminhamento.agendamentoPrevisto}
-			<div class="mt-1.5 border-l-4 border-emerald-700 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-900">
-				Agendamento previsto: <strong>{new Date(encaminhamento.agendamentoPrevisto).toLocaleDateString('pt-BR')}</strong>
+			<div
+				class="mt-1.5 border-l-4 border-emerald-700 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-900"
+			>
+				Agendamento previsto: <strong
+					>{new Date(encaminhamento.agendamentoPrevisto).toLocaleDateString('pt-BR')}</strong
+				>
 			</div>
 		{/if}
 	</section>
@@ -104,7 +108,9 @@
 				PDF de Resposta Oficial do SUS
 			</h3>
 		</div>
-		<div class="mb-2 border-l-4 border-purple-700 bg-purple-50 px-3 py-2 text-[11px] text-purple-900">
+		<div
+			class="mb-2 border-l-4 border-purple-700 bg-purple-50 px-3 py-2 text-[11px] text-purple-900"
+		>
 			Documento oficial recebido do SUS federal após o encaminhamento. Será armazenado como anexo
 			tipo <strong>RESPOSTA_SUS</strong> e gerará o evento <strong>RESPOSTA_SUS_RECEBIDA</strong>
 			na linha do tempo.
@@ -135,8 +141,8 @@
 			class="w-full resize-none border border-slate-300 bg-white px-3 py-2 font-sans text-sm text-slate-900 outline-none focus:border-purple-700 focus:ring-1 focus:ring-purple-700"
 		></textarea>
 		<div class="mt-1 text-[10px] tracking-wider text-slate-500 uppercase">
-			Texto curado · vira <code class="bg-slate-100 px-1">respostaSUS.observacao</code> e descrição
-			do evento na timeline
+			Texto curado · vira <code class="bg-slate-100 px-1">respostaSUS.observacao</code> e descrição do
+			evento na timeline
 		</div>
 	</section>
 
@@ -152,7 +158,9 @@
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-purple-700">✓</span>
-				<span>Campo <code class="bg-white px-1">respostaSUS</code> preenchido no encaminhamento</span>
+				<span
+					>Campo <code class="bg-white px-1">respostaSUS</code> preenchido no encaminhamento</span
+				>
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-purple-700">✓</span>
@@ -170,7 +178,9 @@
 	</section>
 
 	{#if erro}
-		<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+		>
 			⚠ {erro}
 		</div>
 	{/if}

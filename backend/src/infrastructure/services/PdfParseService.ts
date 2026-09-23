@@ -31,7 +31,6 @@ const RE_CPF_FORMATADO = /(\d{3}\.\d{3}\.\d{3}-\d{2})/g;
 const RE_CPF_PURO = /(?<![\d.])\d{11}(?![\d.])/g;
 const RE_CNS = /(?<!\d)(\d{15}|\d{3}\s?\d{4}\s?\d{4}\s?\d{4})(?!\d)/g;
 const RE_DATA_BR = /(\d{2}\/\d{2}\/\d{4})/g;
-const RE_TELEFONE = /\((\d{2})\)\s?(\d{4,5})-?(\d{4})/;
 const RE_CRM = /CRM[\s/]*([A-Z]{2})\s*([\d.]+)/i;
 const RE_CID10 = /\b([A-Z]\d{2}(?:\.\d)?)\b/;
 

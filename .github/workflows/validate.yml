@@ -1,0 +1,93 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: unisism_ci
+          POSTGRES_USER: unisism
+          POSTGRES_PASSWORD: unisism
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U unisism -d unisism_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://unisism:unisism@localhost:5432/unisism_ci?schema=public
+      SMOKE_DATABASE_URL: postgresql://unisism:unisism@localhost:5432/unisism_ci_smoke?schema=public
+      POSTGRES_USER: unisism
+      POSTGRES_PASSWORD: unisism
+      NODE_ENV: test
+      JWT_SECRET: ci-jwt-secret-ci-jwt-secret-ci-jwt-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret-ci-refresh-secret-ci
+      CORS_ORIGIN: https://unisism.vercel.app
+      CORS_ALLOW_VERCEL_PREVIEW: "false"
+      CORS_VERCEL_PROJECT: unisism
+      API_KEY: ci-smoke-api-key
+      API_KEY_HEADER: x-api-key
+      EMAIL_PROVIDER: log
+      STORAGE_PROVIDER: disk
+      UPLOAD_DIR: ./uploads-ci-smoke
+      PUSH_PROVIDER: noop
+      OUTBOX_ENABLED: "false"
+      PUSH_DISPATCHER_ENABLED: "false"
+      NTFY_BASE_URL: https://ntfy.example.com
+      METRICS_ENABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: sudo apt-get update && sudo apt-get install --no-install-recommends -y postgresql-client
+      - run: npm ci --no-audit --no-fund
+      - run: npm run validate
+      - run: npm run test:coverage
+      - run: npm run db:validate-migrations
+      - run: npm run test:smoke:all
+      - run: npm audit --omit=dev
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_BASE_URL: https://api.unisism.example/v1
+      VITE_API_KEY: ci-public-browser-key
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run playwright:install -- --with-deps
+      - run: npm run check
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:browser
+      - run: npm run test:coverage
+      - run: npm run build

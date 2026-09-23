@@ -137,7 +137,9 @@
 							{#each porUbs as u (u.nome)}
 								{@const pct = (u.pacientes / maxUbs) * 100}
 								<tr class="border-b border-slate-100">
-									<td class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900"
+									>
 										{u.nome}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2 font-bold text-slate-900">
@@ -149,7 +151,11 @@
 									<td class="border-r border-slate-100 px-3 py-2 text-blue-900">
 										{u.encAtivos}
 									</td>
-									<td class="border-r border-slate-100 px-3 py-2 {u.abandono > 0 ? 'text-red-700 font-bold' : 'text-slate-400'}">
+									<td
+										class="border-r border-slate-100 px-3 py-2 {u.abandono > 0
+											? 'font-bold text-red-700'
+											: 'text-slate-400'}"
+									>
 										{u.abandono}
 									</td>
 									<td class="px-3 py-2">

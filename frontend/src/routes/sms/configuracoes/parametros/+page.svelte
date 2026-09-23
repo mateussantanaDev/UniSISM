@@ -60,13 +60,19 @@
 				if (res.senha) {
 					senhaMin = String(res.senha.minComprimento ?? res.senha.minLen ?? senhaMin);
 					senhaValidade = String(res.senha.validadeDias ?? res.senha.expiryDays ?? senhaValidade);
-					senhaTentativas = String(res.senha.maxTentativas ?? res.senha.maxAttempts ?? senhaTentativas);
-					senhaBloqueio = String(res.senha.bloqueioMinutos ?? res.senha.lockoutMins ?? senhaBloqueio);
+					senhaTentativas = String(
+						res.senha.maxTentativas ?? res.senha.maxAttempts ?? senhaTentativas
+					);
+					senhaBloqueio = String(
+						res.senha.bloqueioMinutos ?? res.senha.lockoutMins ?? senhaBloqueio
+					);
 					twoFA = Boolean(res.senha.twoFactorObrigatorio ?? res.senha.twoFa ?? twoFA);
 				} else {
 					senhaMin = String(res.senhaMinComprimento ?? res.senhaMin ?? senhaMin);
 					senhaValidade = String(res.senhaValidadeDias ?? res.senhaValidade ?? senhaValidade);
-					senhaTentativas = String(res.senhaMaxTentativas ?? res.senhaTentativas ?? senhaTentativas);
+					senhaTentativas = String(
+						res.senhaMaxTentativas ?? res.senhaTentativas ?? senhaTentativas
+					);
 					senhaBloqueio = String(res.senhaBloqueioMinutos ?? res.senhaBloqueio ?? senhaBloqueio);
 					twoFA = Boolean(res.twoFactorObrigatorio ?? res.twoFa ?? twoFA);
 				}
@@ -74,7 +80,9 @@
 				// 3. Uploads
 				if (res.uploads) {
 					uploadMaxArq = String(res.uploads.maxArquivoMb ?? res.uploads.maxFileMb ?? uploadMaxArq);
-					uploadMaxReq = String(res.uploads.maxRequisicaoMb ?? res.uploads.maxRequestMb ?? uploadMaxReq);
+					uploadMaxReq = String(
+						res.uploads.maxRequisicaoMb ?? res.uploads.maxRequestMb ?? uploadMaxReq
+					);
 					const mimes = res.uploads.mimesSuportados ?? res.uploads.mimes ?? [];
 					uploadMimes = Array.isArray(mimes) ? mimes.join(', ') : String(mimes);
 					uploadScan = Boolean(res.uploads.scanAtivo ?? res.uploads.scan ?? uploadScan);
@@ -88,18 +96,36 @@
 
 				// 4. Retenção
 				if (res.retencao) {
-					retencaoEncaminhamentos = String(res.retencao.encaminhamentosAnos ?? res.retencao.referralsYears ?? retencaoEncaminhamentos);
-					retencaoProntuario = String(res.retencao.prontuarioAnos ?? res.retencao.pecYears ?? retencaoProntuario);
-					retencaoAudit = String(res.retencao.auditLogAnos ?? res.retencao.auditYears ?? retencaoAudit);
-					retencaoSessoes = String(res.retencao.sessoesExpiradasDias ?? res.retencao.sessionsDays ?? retencaoSessoes);
+					retencaoEncaminhamentos = String(
+						res.retencao.encaminhamentosAnos ??
+							res.retencao.referralsYears ??
+							retencaoEncaminhamentos
+					);
+					retencaoProntuario = String(
+						res.retencao.prontuarioAnos ?? res.retencao.pecYears ?? retencaoProntuario
+					);
+					retencaoAudit = String(
+						res.retencao.auditLogAnos ?? res.retencao.auditYears ?? retencaoAudit
+					);
+					retencaoSessoes = String(
+						res.retencao.sessoesExpiradasDias ?? res.retencao.sessionsDays ?? retencaoSessoes
+					);
 				} else {
-					retencaoEncaminhamentos = String(res.retencaoEncaminhamentosAnos ?? res.retencaoEncaminhamentos ?? retencaoEncaminhamentos);
-					retencaoProntuario = String(res.retencaoProntuarioAnos ?? res.retencaoProntuario ?? retencaoProntuario);
+					retencaoEncaminhamentos = String(
+						res.retencaoEncaminhamentosAnos ??
+							res.retencaoEncaminhamentos ??
+							retencaoEncaminhamentos
+					);
+					retencaoProntuario = String(
+						res.retencaoProntuarioAnos ?? res.retencaoProntuario ?? retencaoProntuario
+					);
 					retencaoAudit = String(res.retencaoAuditLogAnos ?? res.retencaoAudit ?? retencaoAudit);
-					retencaoSessoes = String(res.retencaoSessoesExpiradasDias ?? res.retencaoSessoes ?? retencaoSessoes);
+					retencaoSessoes = String(
+						res.retencaoSessoesExpiradasDias ?? res.retencaoSessoes ?? retencaoSessoes
+					);
 				}
 			}
-		} catch (e: any) {
+		} catch (e) {
 			console.error('Erro ao carregar configuracoes:', e);
 			erro = 'Não foi possível carregar as configurações do servidor. Exibindo defaults.';
 		} finally {
@@ -112,7 +138,10 @@
 		erro = '';
 		sucessoMsg = '';
 		try {
-			const mimesArray = uploadMimes.split(',').map(m => m.trim().toLowerCase()).filter(Boolean);
+			const mimesArray = uploadMimes
+				.split(',')
+				.map((m) => m.trim().toLowerCase())
+				.filter(Boolean);
 
 			// Constrói payload híbrido (plano e aninhado) para compatibilidade garantida com qualquer spec de backend
 			const payload = {
@@ -165,9 +194,11 @@
 
 			await api.admin.updateConfiguracoes(payload);
 			sucessoMsg = 'Parâmetros atualizados com sucesso!';
-			setTimeout(() => { sucessoMsg = ''; }, 4000);
-		} catch (e: any) {
-			erro = e.message || 'Falha ao atualizar parâmetros.';
+			setTimeout(() => {
+				sucessoMsg = '';
+			}, 4000);
+		} catch (e) {
+			erro = e instanceof Error ? e.message : 'Falha ao atualizar parâmetros.';
 		} finally {
 			enviando = false;
 		}
@@ -176,13 +207,17 @@
 
 <section class="flex flex-col gap-4">
 	{#if erro}
-		<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-900 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-900 uppercase"
+		>
 			⚠ {erro}
 		</div>
 	{/if}
 
 	{#if sucessoMsg}
-		<div class="border border-emerald-700 bg-emerald-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-emerald-900 uppercase">
+		<div
+			class="border border-emerald-700 bg-emerald-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-emerald-900 uppercase"
+		>
 			✓ {sucessoMsg}
 		</div>
 	{/if}
@@ -194,13 +229,11 @@
 			index="02"
 		>
 			{#if podeEditar}
-				<PrimaryButton
-					label="Salvar Alterações"
-					loading={enviando}
-					onclick={salvar}
-				/>
+				<PrimaryButton label="Salvar Alterações" loading={enviando} onclick={salvar} />
 			{:else}
-				<span class="border border-slate-300 bg-slate-50 px-2 py-1 font-mono text-[9px] tracking-widest text-slate-500 uppercase">
+				<span
+					class="border border-slate-300 bg-slate-50 px-2 py-1 font-mono text-[9px] tracking-widest text-slate-500 uppercase"
+				>
 					Apenas Leitura
 				</span>
 			{/if}
@@ -211,11 +244,12 @@
 				<div class="h-6 w-6 animate-spin border-2 border-slate-900 border-t-transparent"></div>
 			</div>
 		{:else}
-			<div class="p-6 flex flex-col gap-8">
-				
+			<div class="flex flex-col gap-8 p-6">
 				<!-- Seção 1: SLAs -->
 				<div>
-					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+					<h3
+						class="mb-3 border-b border-slate-200 pb-1 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase"
+					>
 						01. SLAs de Regulação (Horas)
 					</h3>
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -260,7 +294,9 @@
 
 				<!-- Seção 2: Políticas de Senha -->
 				<div>
-					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+					<h3
+						class="mb-3 border-b border-slate-200 pb-1 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase"
+					>
 						02. Segurança e Contas de Usuários
 					</h3>
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
@@ -300,16 +336,18 @@
 							bind:value={senhaBloqueio}
 							hint="minutos"
 						/>
-						
+
 						<div class="col-span-12 flex items-center pt-2">
-							<label class="flex items-center gap-2 cursor-pointer">
+							<label class="flex cursor-pointer items-center gap-2">
 								<input
 									type="checkbox"
 									disabled={!podeEditar}
 									bind:checked={twoFA}
 									class="h-4 w-4 accent-slate-950"
 								/>
-								<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase">
+								<span
+									class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase"
+								>
 									Exigir 2FA obrigatório para ADMIN e REGULADOR_SMS
 								</span>
 							</label>
@@ -319,7 +357,9 @@
 
 				<!-- Seção 3: Uploads -->
 				<div>
-					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+					<h3
+						class="mb-3 border-b border-slate-200 pb-1 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase"
+					>
 						03. Upload e Segurança de Anexos
 					</h3>
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
@@ -352,14 +392,16 @@
 						/>
 
 						<div class="col-span-12 flex items-center pt-2">
-							<label class="flex items-center gap-2 cursor-pointer">
+							<label class="flex cursor-pointer items-center gap-2">
 								<input
 									type="checkbox"
 									disabled={!podeEditar}
 									bind:checked={uploadScan}
 									class="h-4 w-4 accent-slate-950"
 								/>
-								<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase">
+								<span
+									class="font-mono text-[10px] font-semibold tracking-widest text-slate-700 uppercase"
+								>
 									Executar scan assíncrono de antivírus nos anexos (ClamAV)
 								</span>
 							</label>
@@ -369,7 +411,9 @@
 
 				<!-- Seção 4: Retenção LGPD -->
 				<div>
-					<h3 class="mb-3 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase border-b border-slate-200 pb-1">
+					<h3
+						class="mb-3 border-b border-slate-200 pb-1 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase"
+					>
 						04. Prazos de Retenção (LGPD)
 					</h3>
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -411,7 +455,6 @@
 						/>
 					</div>
 				</div>
-
 			</div>
 		{/if}
 	</div>

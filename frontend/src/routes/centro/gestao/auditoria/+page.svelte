@@ -19,7 +19,11 @@
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 	let orgaoRegulador = $derived(ehCeo ? 'CFO / CRO' : 'CFM / CRM');
 
@@ -43,17 +47,21 @@
 	let filtroAcao = $state('TODAS');
 
 	// Contadores rápidos para o topo
-	let totalCadastros = $derived(logs.filter(l => l.tipo === 'CADASTRO').length);
-	let totalExclusoes = $derived(logs.filter(l => l.tipo === 'EXCLUSAO').length);
-	let totalEdicoes = $derived(logs.filter(l => l.tipo === 'EDICAO').length);
-	let totalOperadoresUnicos = $derived(new Set(logs.map(l => l.operador).filter(op => op && op !== 'Sistema Automatizado')).size);
+	let totalCadastros = $derived(logs.filter((l) => l.tipo === 'CADASTRO').length);
+	let totalExclusoes = $derived(logs.filter((l) => l.tipo === 'EXCLUSAO').length);
+	let totalEdicoes = $derived(logs.filter((l) => l.tipo === 'EDICAO').length);
+	let totalOperadoresUnicos = $derived(
+		new Set(logs.map((l) => l.operador).filter((op) => op && op !== 'Sistema Automatizado')).size
+	);
 
 	async function carregarAuditoria() {
 		carregando = true;
 		try {
 			const [encs, resAuditoria] = await Promise.all([
 				api.encaminhamentos.list({ limit: 500 }).catch(() => []),
-				api.centroGestao.listAuditoria({ centro: siglaOrgao, limit: 200 }).catch(() => ({ total: 0, logs: [] }))
+				api.centroGestao
+					.listAuditoria({ centro: siglaOrgao, limit: 200 })
+					.catch(() => ({ total: 0, logs: [] }))
 			]);
 
 			const logsProcessados: LogAuditoriaCentro[] = [];
@@ -63,11 +71,23 @@
 				for (const al of resAuditoria.logs) {
 					let tipoCalculado: LogAuditoriaCentro['tipo'] = 'OPERACIONAL';
 					const acaoUpper = (al.acao || '').toUpperCase();
-					if (acaoUpper.includes('EXCLU') || acaoUpper.includes('DELET') || acaoUpper.includes('CANCEL')) {
+					if (
+						acaoUpper.includes('EXCLU') ||
+						acaoUpper.includes('DELET') ||
+						acaoUpper.includes('CANCEL')
+					) {
 						tipoCalculado = 'EXCLUSAO';
-					} else if (acaoUpper.includes('CADASTRO') || acaoUpper.includes('CRIAR') || acaoUpper.includes('RECEPCAO_AGENDAR')) {
+					} else if (
+						acaoUpper.includes('CADASTRO') ||
+						acaoUpper.includes('CRIAR') ||
+						acaoUpper.includes('RECEPCAO_AGENDAR')
+					) {
 						tipoCalculado = 'CADASTRO';
-					} else if (acaoUpper.includes('EDIT') || acaoUpper.includes('ATUALIZ') || acaoUpper.includes('UPDATE')) {
+					} else if (
+						acaoUpper.includes('EDIT') ||
+						acaoUpper.includes('ATUALIZ') ||
+						acaoUpper.includes('UPDATE')
+					) {
 						tipoCalculado = 'EDICAO';
 					} else if (acaoUpper.includes('AGENDA') || acaoUpper.includes('REMARCA')) {
 						tipoCalculado = 'AGENDAMENTO';
@@ -82,9 +102,10 @@
 						tipo: tipoCalculado,
 						operador: al.atendenteNome || 'Operador',
 						perfil: al.atendenteRole || 'RECEPÇÃO',
-						protocolo: al.protocolo || (al.recursoId ? al.recursoId.substring(0, 8).toUpperCase() : 'GERAL'),
+						protocolo:
+							al.protocolo || (al.recursoId ? al.recursoId.substring(0, 8).toUpperCase() : 'GERAL'),
 						paciente: al.pacienteNome || '—',
-						detalhes: al.motivo ? `Motivo: ${al.motivo}` : (al.detalhes || `Recurso: ${al.recurso}`),
+						detalhes: al.motivo ? `Motivo: ${al.motivo}` : al.detalhes || `Recurso: ${al.recurso}`,
 						motivo: al.motivo,
 						ipOrigem: al.ip || '10.0.4.12'
 					});
@@ -98,7 +119,11 @@
 				if (ehCeo) {
 					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
 				} else {
-					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+					return (
+						f === 'CENTRO_ESPECIALIDADES' ||
+						f === 'CEM' ||
+						(f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO')
+					);
 				}
 			});
 
@@ -157,8 +182,10 @@
 					for (const ev of (enc as any).timeline) {
 						let tipo: LogAuditoriaCentro['tipo'] = 'OPERACIONAL';
 						const desc = (ev.descricao || '').toUpperCase();
-						if (ev.tipo === 'EXCLUIDO' || desc.includes('EXCLUÍDO') || desc.includes('CANCELADO')) tipo = 'EXCLUSAO';
-						else if (ev.tipo === 'CRIADO' || desc.includes('CRIADO') || desc.includes('CADASTRADO')) tipo = 'CADASTRO';
+						if (ev.tipo === 'EXCLUIDO' || desc.includes('EXCLUÍDO') || desc.includes('CANCELADO'))
+							tipo = 'EXCLUSAO';
+						else if (ev.tipo === 'CRIADO' || desc.includes('CRIADO') || desc.includes('CADASTRADO'))
+							tipo = 'CADASTRO';
 						else if (ev.tipo === 'AGENDADO' || desc.includes('AGENDAD')) tipo = 'AGENDAMENTO';
 						else if (desc.includes('SOAP') || desc.includes('ATENDIMENTO')) tipo = 'SOAP';
 
@@ -200,9 +227,10 @@
 	});
 
 	let filtrados = $derived.by(() => {
-		return logs.filter(l => {
+		return logs.filter((l) => {
 			const termo = busca.toLowerCase().trim();
-			const matchBusca = !termo ||
+			const matchBusca =
+				!termo ||
 				l.acao.toLowerCase().includes(termo) ||
 				l.operador.toLowerCase().includes(termo) ||
 				l.protocolo.toLowerCase().includes(termo) ||
@@ -219,15 +247,21 @@
 
 	function exportarCsv() {
 		const cabecalho = 'Data/Hora;Protocolo;Paciente;Tipo;Ação;Operador;Perfil;Detalhes;IP\n';
-		const linhas = filtrados.map(l =>
-			`"${l.dataHora}";"${l.protocolo}";"${l.paciente}";"${l.tipo}";"${l.acao}";"${l.operador}";"${l.perfil}";"${(l.detalhes || '').replace(/"/g, '""')}";"${l.ipOrigem}"`
-		).join('\n');
+		const linhas = filtrados
+			.map(
+				(l) =>
+					`"${l.dataHora}";"${l.protocolo}";"${l.paciente}";"${l.tipo}";"${l.acao}";"${l.operador}";"${l.perfil}";"${(l.detalhes || '').replace(/"/g, '""')}";"${l.ipOrigem}"`
+			)
+			.join('\n');
 
 		const blob = new Blob([cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
-		link.setAttribute('download', `auditoria_operadores_${siglaOrgao.toLowerCase()}_${new Date().toISOString().substring(0, 10)}.csv`);
+		link.setAttribute(
+			'download',
+			`auditoria_operadores_${siglaOrgao.toLowerCase()}_${new Date().toISOString().substring(0, 10)}.csv`
+		);
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
@@ -245,15 +279,15 @@
 	/>
 
 	<!-- Cards de Indicadores de Auditoria -->
-	<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-		<div class="border border-slate-200 bg-white p-3 flex flex-col gap-1 shadow-xs">
-			<span class="text-[10px] font-bold uppercase text-slate-500">Total de Eventos</span>
+	<div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+		<div class="flex flex-col gap-1 border border-slate-200 bg-white p-3 shadow-xs">
+			<span class="text-[10px] font-bold text-slate-500 uppercase">Total de Eventos</span>
 			<span class="text-xl font-black text-slate-900">{logs.length}</span>
 			<span class="text-[10px] text-slate-400">Trilha cronológica ativa</span>
 		</div>
 
-		<div class="border border-emerald-200 bg-emerald-50/50 p-3 flex flex-col gap-1 shadow-xs">
-			<span class="text-[10px] font-bold uppercase text-emerald-800 flex items-center gap-1">
+		<div class="flex flex-col gap-1 border border-emerald-200 bg-emerald-50/50 p-3 shadow-xs">
+			<span class="flex items-center gap-1 text-[10px] font-bold text-emerald-800 uppercase">
 				<IconUserPlus size={12} class="text-emerald-700" />
 				<span>Cadastros Rastreados</span>
 			</span>
@@ -261,8 +295,8 @@
 			<span class="text-[10px] text-emerald-700">Com operador identificado</span>
 		</div>
 
-		<div class="border border-amber-200 bg-amber-50/50 p-3 flex flex-col gap-1 shadow-xs">
-			<span class="text-[10px] font-bold uppercase text-amber-800 flex items-center gap-1">
+		<div class="flex flex-col gap-1 border border-amber-200 bg-amber-50/50 p-3 shadow-xs">
+			<span class="flex items-center gap-1 text-[10px] font-bold text-amber-800 uppercase">
 				<IconEdit size={12} class="text-amber-700" />
 				<span>Alterações Registradas</span>
 			</span>
@@ -270,8 +304,8 @@
 			<span class="text-[10px] text-amber-700">Dados ou status modificados</span>
 		</div>
 
-		<div class="border border-red-200 bg-red-50/50 p-3 flex flex-col gap-1 shadow-xs">
-			<span class="text-[10px] font-bold uppercase text-red-800 flex items-center gap-1">
+		<div class="flex flex-col gap-1 border border-red-200 bg-red-50/50 p-3 shadow-xs">
+			<span class="flex items-center gap-1 text-[10px] font-bold text-red-800 uppercase">
 				<IconTrash size={12} class="text-red-700" />
 				<span>Exclusões Auditadas</span>
 			</span>
@@ -281,15 +315,22 @@
 	</div>
 
 	<!-- Banner de Conformidade e Ações -->
-	<section class="border border-indigo-200 bg-indigo-50/70 p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-indigo-950">
+	<section
+		class="flex flex-col justify-between gap-3 border border-indigo-200 bg-indigo-50/70 p-3.5 text-indigo-950 md:flex-row md:items-center"
+	>
 		<div class="flex items-center gap-3">
-			<div class="flex h-9 w-9 items-center justify-center bg-indigo-900 text-white font-bold text-base shadow-xs">
+			<div
+				class="flex h-9 w-9 items-center justify-center bg-indigo-900 text-base font-bold text-white shadow-xs"
+			>
 				<IconShieldCheck size={20} />
 			</div>
 			<div>
-				<div class="font-bold text-xs">AUDITORIA INTEGRAL DE OPERADORES ({orgaoRegulador} / LGPD)</div>
+				<div class="text-xs font-bold">
+					AUDITORIA INTEGRAL DE OPERADORES ({orgaoRegulador} / LGPD)
+				</div>
 				<div class="text-[11px] text-indigo-800">
-					Rastreamento nominal: {totalOperadoresUnicos} operadores ativos com identificação em tempo real de cadastro, alteração e cancelamento com motivo obrigatório.
+					Rastreamento nominal: {totalOperadoresUnicos} operadores ativos com identificação em tempo real
+					de cadastro, alteração e cancelamento com motivo obrigatório.
 				</div>
 			</div>
 		</div>
@@ -299,7 +340,7 @@
 				type="button"
 				onclick={carregarAuditoria}
 				disabled={carregando}
-				class="border border-indigo-300 bg-white text-indigo-900 px-3 py-1.5 font-bold uppercase hover:bg-indigo-100 text-[11px] flex items-center gap-1.5"
+				class="flex items-center gap-1.5 border border-indigo-300 bg-white px-3 py-1.5 text-[11px] font-bold text-indigo-900 uppercase hover:bg-indigo-100"
 			>
 				<IconRefresh size={14} class={carregando ? 'animate-spin' : ''} />
 				<span>Atualizar</span>
@@ -307,7 +348,7 @@
 			<button
 				type="button"
 				onclick={exportarCsv}
-				class="border border-indigo-900 bg-indigo-900 text-white px-3.5 py-1.5 font-bold uppercase hover:bg-indigo-950 text-[11px] flex items-center gap-1.5"
+				class="flex items-center gap-1.5 border border-indigo-900 bg-indigo-900 px-3.5 py-1.5 text-[11px] font-bold text-white uppercase hover:bg-indigo-950"
 			>
 				<IconDownload size={14} />
 				<span>Exportar CSV</span>
@@ -316,20 +357,22 @@
 	</section>
 
 	<!-- Barra de Controles e Filtros -->
-	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+	<section
+		class="flex flex-col justify-between gap-3 border border-slate-200 bg-white p-4 md:flex-row md:items-center"
+	>
 		<div class="flex flex-1 items-center gap-2">
 			<div class="relative w-full max-w-md">
 				<input
 					type="text"
 					bind:value={busca}
 					placeholder="Buscar por Operador, Paciente, Protocolo, Ação ou Motivo..."
-					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs outline-none focus:border-slate-900 focus:bg-white"
 				/>
 			</div>
 
 			<select
 				bind:value={filtroAcao}
-				class="border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+				class="border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs outline-none focus:border-slate-900 focus:bg-white"
 			>
 				<option value="TODAS">TODOS OS EVENTOS ({logs.length})</option>
 				<option value="CADASTRO">QUEM CADASTROU ({totalCadastros})</option>
@@ -341,7 +384,7 @@
 			</select>
 		</div>
 
-		<div class="text-right text-[11px] text-slate-500 font-mono">
+		<div class="text-right font-mono text-[11px] text-slate-500">
 			Exibindo <strong>{filtrados.length}</strong> de <strong>{logs.length}</strong> registros
 		</div>
 	</section>
@@ -352,9 +395,11 @@
 			Carregando trilha completa de auditoria do {siglaOrgao}...
 		</div>
 	{:else}
-		<div class="border border-slate-200 bg-white overflow-x-auto shadow-xs">
+		<div class="overflow-x-auto border border-slate-200 bg-white shadow-xs">
 			<table class="w-full text-left font-mono text-xs">
-				<thead class="border-b border-slate-200 bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
+				<thead
+					class="border-b border-slate-200 bg-slate-100 text-[10px] font-bold text-slate-600 uppercase"
+				>
 					<tr>
 						<th class="p-3">DATA / HORA</th>
 						<th class="p-3">TIPO</th>
@@ -367,68 +412,107 @@
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each filtrados as l (l.id)}
-						<tr class="hover:bg-slate-50 transition-colors {l.tipo === 'EXCLUSAO' ? 'bg-red-50/30' : ''}">
+						<tr
+							class="transition-colors hover:bg-slate-50 {l.tipo === 'EXCLUSAO'
+								? 'bg-red-50/30'
+								: ''}"
+						>
 							<td class="p-3 whitespace-nowrap">
-								<div class="font-bold text-slate-900">{new Date(l.dataHora).toLocaleDateString('pt-BR')}</div>
-								<div class="text-[10px] text-slate-500">{new Date(l.dataHora).toLocaleTimeString('pt-BR')}</div>
+								<div class="font-bold text-slate-900">
+									{new Date(l.dataHora).toLocaleDateString('pt-BR')}
+								</div>
+								<div class="text-[10px] text-slate-500">
+									{new Date(l.dataHora).toLocaleTimeString('pt-BR')}
+								</div>
 							</td>
 							<td class="p-3 whitespace-nowrap">
 								{#if l.tipo === 'CADASTRO'}
-									<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-emerald-300 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-900 uppercase"
+									>
 										CADASTRO
 									</span>
 								{:else if l.tipo === 'EXCLUSAO'}
-									<span class="bg-red-100 text-red-900 border border-red-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-red-300 bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-900 uppercase"
+									>
 										EXCLUSÃO
 									</span>
 								{:else if l.tipo === 'EDICAO'}
-									<span class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-900 uppercase"
+									>
 										ALTERAÇÃO
 									</span>
 								{:else if l.tipo === 'AGENDAMENTO'}
-									<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-blue-300 bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-900 uppercase"
+									>
 										AGENDAMENTO
 									</span>
 								{:else if l.tipo === 'SOAP'}
-									<span class="bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-purple-300 bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold text-purple-900 uppercase"
+									>
 										ATENDIMENTO
 									</span>
 								{:else}
-									<span class="bg-slate-100 text-slate-700 border border-slate-300 font-bold px-1.5 py-0.5 text-[9px] uppercase">
+									<span
+										class="border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-700 uppercase"
+									>
 										OPERACIONAL
 									</span>
 								{/if}
 							</td>
 							<td class="p-3 font-sans">
 								<div class="font-bold text-slate-800">{l.acao}</div>
-								<div class="text-[11px] {l.tipo === 'EXCLUSAO' ? 'text-red-700 font-semibold' : 'text-slate-500 font-mono'} mt-0.5">
+								<div
+									class="text-[11px] {l.tipo === 'EXCLUSAO'
+										? 'font-semibold text-red-700'
+										: 'font-mono text-slate-500'} mt-0.5"
+								>
 									{l.detalhes}
 								</div>
 							</td>
 							<td class="p-3">
-								<span class="bg-slate-100 text-slate-900 border border-slate-300 font-bold px-1.5 py-0.5 text-[10px]">
+								<span
+									class="border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-900"
+								>
 									{l.protocolo}
 								</span>
-								<div class="text-[11px] text-slate-700 font-sans font-semibold mt-0.5">{l.paciente}</div>
+								<div class="mt-0.5 font-sans text-[11px] font-semibold text-slate-700">
+									{l.paciente}
+								</div>
 							</td>
 							<td class="p-3 font-sans">
-								<div class="font-bold text-slate-900 flex items-center gap-1.5">
+								<div class="flex items-center gap-1.5 font-bold text-slate-900">
 									{#if l.tipo === 'CADASTRO'}
-										<span class="inline-block w-2 h-2 rounded-full bg-emerald-600 shrink-0" title="Cadastrou"></span>
+										<span
+											class="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-600"
+											title="Cadastrou"
+										></span>
 									{:else if l.tipo === 'EXCLUSAO'}
-										<span class="inline-block w-2 h-2 rounded-full bg-red-600 shrink-0" title="Excluiu"></span>
+										<span
+											class="inline-block h-2 w-2 shrink-0 rounded-full bg-red-600"
+											title="Excluiu"
+										></span>
 									{:else if l.tipo === 'EDICAO'}
-										<span class="inline-block w-2 h-2 rounded-full bg-amber-600 shrink-0" title="Alterou"></span>
+										<span
+											class="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-600"
+											title="Alterou"
+										></span>
 									{/if}
 									<span>{l.operador}</span>
 								</div>
 							</td>
 							<td class="p-3 whitespace-nowrap">
-								<span class="bg-blue-50 text-blue-900 border border-blue-200 font-bold px-2 py-0.5 text-[9px] uppercase">
+								<span
+									class="border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-900 uppercase"
+								>
 									{l.perfil}
 								</span>
 							</td>
-							<td class="p-3 text-right text-slate-500 font-mono text-[10px] whitespace-nowrap">
+							<td class="p-3 text-right font-mono text-[10px] whitespace-nowrap text-slate-500">
 								{l.ipOrigem}
 							</td>
 						</tr>
@@ -444,4 +528,3 @@
 		</div>
 	{/if}
 </div>
-

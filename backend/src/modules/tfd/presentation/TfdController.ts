@@ -9,11 +9,11 @@ import { scopeFromRequest } from '../../../shared/requestScope';
 import { BadRequest, UnsupportedMediaType } from '../../../shared/errors';
 import type { VeiculosTfdUseCases } from '../application/veiculos';
 import type { MotoristasTfdUseCases } from '../application/motoristas';
-import type { SolicitacoesTfdUseCases } from '../application/solicitacoes';
+import type { AnexoUploadInput, SolicitacoesTfdUseCases } from '../application/solicitacoes';
 import type { ViagensTfdUseCases } from '../application/viagens';
 import type { AbastecimentosUseCases } from '../application/abastecimentos';
 import type { SaldoUseCases } from '../application/saldo';
-import type { AjudasCustoUseCases } from '../application/ajudas-custo';
+import type { AjudasCustoUseCases, PagarAjudaInput } from '../application/ajudas-custo';
 import type { AuditoriaTfdUseCases } from '../application/auditoria';
 import type {
   ListarTfdPacienteSolicAdminUseCase,
@@ -213,8 +213,8 @@ export class TfdController {
   postAnexarSolicitacao = async (req: Request, res: Response): Promise<void> => {
     const file = req.file;
     if (!file) throw BadRequest('ARQUIVO_OBRIGATORIO', 'Anexe um arquivo');
-    const tipo = String(req.body?.tipo ?? 'OUTRO');
-    const TIPOS = new Set([
+    const tipo = String(req.body?.tipo ?? 'OUTRO') as AnexoUploadInput['tipo'];
+    const TIPOS = new Set<AnexoUploadInput['tipo']>([
       'ENCAMINHAMENTO',
       'COMPROVANTE_CONSULTA',
       'LAUDO_MEDICO',
@@ -232,7 +232,7 @@ export class TfdController {
           nomeOriginal: file.originalname,
           mimeType: file.mimetype,
           buffer: file.buffer,
-          tipo: tipo as any,
+          tipo,
         },
       ),
     );
@@ -438,7 +438,7 @@ export class TfdController {
   postPagarAjuda = async (req: Request, res: Response): Promise<void> => {
     const file = req.file;
     if (!file) throw BadRequest('ARQUIVO_OBRIGATORIO', 'Anexe comprovante de pagamento');
-    const metodo = String(req.body?.metodoPagamento ?? '');
+    const metodo = String(req.body?.metodoPagamento ?? '') as PagarAjudaInput['metodoPagamento'];
     if (!['PIX', 'TRANSFERENCIA', 'DINHEIRO_RH'].includes(metodo)) {
       throw BadRequest('METODO_INVALIDO', 'metodoPagamento inválido');
     }
@@ -446,7 +446,7 @@ export class TfdController {
       await this.uc.ajudasCusto.pagar(
         scopeFromRequest(req), req, req.auth!.sub, paramString(req, 'id'),
         {
-          metodoPagamento: metodo as any,
+          metodoPagamento: metodo,
           comprovante: { nomeOriginal: file.originalname, mimeType: file.mimetype, buffer: file.buffer },
         },
       ),

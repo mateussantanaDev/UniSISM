@@ -1,5 +1,19 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../../shared/env';
+
+export function isValidApiKey(provided: string | undefined, expected: string): boolean {
+  if (!provided || !expected) return false;
+
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+}
 
 export function apiKeyGuard(req: Request, res: Response, next: NextFunction) {
   if (req.method === 'OPTIONS') {
@@ -17,7 +31,7 @@ export function apiKeyGuard(req: Request, res: Response, next: NextFunction) {
 
   const provided = req.get(env.API_KEY_HEADER) ?? req.get('x-api-key');
 
-  if (provided === env.API_KEY) {
+  if (isValidApiKey(provided, env.API_KEY)) {
     return next();
   }
 

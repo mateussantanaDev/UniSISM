@@ -185,8 +185,8 @@
 	<section
 		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
 	>
-		CPF e Cartão SUS são imutáveis (identidade). Todo o resto pode ser atualizado.
-		Alterações são auditadas por paciente.
+		CPF e Cartão SUS são imutáveis (identidade). Todo o resto pode ser atualizado. Alterações são
+		auditadas por paciente.
 	</section>
 
 	{#if !compacto}
@@ -237,9 +237,7 @@
 	<!-- Filiação -->
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Filiação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Filiação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField
@@ -249,12 +247,7 @@
 				hint="obrigatório"
 				bind:value={nomeMae}
 			/>
-			<FormField
-				label="Nome do Pai (opcional)"
-				name="nomePai"
-				span={6}
-				bind:value={nomePai}
-			/>
+			<FormField label="Nome do Pai (opcional)" name="nomePai" span={6} bind:value={nomePai} />
 		</div>
 	</section>
 
@@ -314,9 +307,7 @@
 	<!-- Contato -->
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Contato
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Contato</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Telefone" name="telefone" span={4} mono bind:value={telefone} />
@@ -343,9 +334,7 @@
 	<!-- Endereço -->
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Endereço
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Endereço</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Logradouro" name="endereco" span={9} bind:value={endereco} />

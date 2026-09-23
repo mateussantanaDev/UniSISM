@@ -95,7 +95,10 @@
 						notificar('erro', 'UBS possui usuários vinculados. Migre-os antes de excluir.');
 						break;
 					case 'UBS_TEM_ENCAMINHAMENTOS':
-						notificar('erro', 'UBS possui encaminhamentos no histórico. Desative em vez de excluir.');
+						notificar(
+							'erro',
+							'UBS possui encaminhamentos no histórico. Desative em vez de excluir.'
+						);
 						break;
 					case 'PERMISSAO_INSUFICIENTE':
 						notificar('erro', 'Sem permissão para esta ação.');
@@ -122,9 +125,7 @@
 	let aprovados = $derived(encaminhamentos.filter((e) => e.status === 'APROVADO').length);
 
 	let podeAdmin = $derived(auth.ehAdminOuDev);
-	let podeExcluir = $derived(
-		podeAdmin && (usuarios.length === 0 || totalEncaminhamentos === 0)
-	);
+	let podeExcluir = $derived(podeAdmin && (usuarios.length === 0 || totalEncaminhamentos === 0));
 </script>
 
 {#if carregando}
@@ -158,7 +159,8 @@
 					? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 					: 'border-red-700 bg-red-50 text-red-900'}"
 			>
-				{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+				{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+				{mensagem.texto}
 			</div>
 		{/if}
 
@@ -174,11 +176,7 @@
 				</div>
 			</div>
 			<div class="flex items-center gap-2">
-				<PrimaryButton
-					label="← Voltar"
-					variant="secondary"
-					onclick={() => goto('/sms/rede/ubs')}
-				/>
+				<PrimaryButton label="← Voltar" variant="secondary" onclick={() => goto('/sms/rede/ubs')} />
 			</div>
 		</div>
 
@@ -196,15 +194,11 @@
 				</PanelHeader>
 				<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4">
 					<div class="col-span-12">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-							Nome
-						</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Nome</dt>
 						<dd class="mt-0.5 text-sm font-bold text-slate-900">{ubs.nome}</dd>
 					</div>
 					<div class="col-span-4">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-							CNES
-						</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">CNES</dt>
 						<dd class="mt-0.5 font-mono text-sm text-slate-900">{ubs.cnes ?? '—'}</dd>
 					</div>
 					<div class="col-span-4">
@@ -214,9 +208,7 @@
 						<dd class="mt-0.5 text-sm text-slate-900">{ubs.municipio}</dd>
 					</div>
 					<div class="col-span-4">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-							UF
-						</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">UF</dt>
 						<dd class="mt-0.5 text-sm text-slate-900">{ubs.uf}</dd>
 					</div>
 					<div class="col-span-12">
@@ -323,7 +315,8 @@
 							<div
 								class="ml-auto border border-amber-300 bg-amber-50 px-3 py-1 font-mono text-[10px] tracking-wider text-amber-800 uppercase"
 							>
-								⚠ Exclusão bloqueada · existem {usuarios.length} usuário(s) e {totalEncaminhamentos} encaminhamento(s) vinculados
+								⚠ Exclusão bloqueada · existem {usuarios.length} usuário(s) e {totalEncaminhamentos} encaminhamento(s)
+								vinculados
 							</div>
 						{/if}
 					</div>
@@ -429,33 +422,28 @@
 			: acaoEmCurso === 'desativar'
 				? 'Confirmar Desativação'
 				: 'Confirmar Reativação'}
-		subtitle={acaoEmCurso === 'excluir'
-			? 'Ação irreversível · auditada'
-			: 'Alterar status da UBS'}
+		subtitle={acaoEmCurso === 'excluir' ? 'Ação irreversível · auditada' : 'Alterar status da UBS'}
 		maxWidth="md"
 	>
 		<div class="flex flex-col gap-4 font-mono text-slate-900">
 			{#if acaoEmCurso === 'excluir'}
-				<div
-					class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900"
-				>
-					<strong>Atenção:</strong> excluir <strong>{ubs.nome}</strong> é permanente. O registro
-					ficará arquivado apenas para auditoria. Esta UBS não aparecerá mais em nenhuma listagem
-					nem aceitará novos encaminhamentos.
+				<div class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900">
+					<strong>Atenção:</strong> excluir <strong>{ubs.nome}</strong> é permanente. O registro ficará
+					arquivado apenas para auditoria. Esta UBS não aparecerá mais em nenhuma listagem nem aceitará
+					novos encaminhamentos.
 				</div>
 			{:else if acaoEmCurso === 'desativar'}
 				<div
 					class="border-l-4 border-amber-600 bg-amber-50 px-3 py-2 font-sans text-[12px] text-amber-900"
 				>
-					<strong>{ubs.nome}</strong> ficará indisponível para novos encaminhamentos. Os usuários
-					vinculados não poderão fazer login na Face UBS. Pode ser reativada depois.
+					<strong>{ubs.nome}</strong> ficará indisponível para novos encaminhamentos. Os usuários vinculados
+					não poderão fazer login na Face UBS. Pode ser reativada depois.
 				</div>
 			{:else}
 				<div
 					class="border-l-4 border-emerald-700 bg-emerald-50 px-3 py-2 font-sans text-[12px] text-emerald-900"
 				>
-					<strong>{ubs.nome}</strong> voltará a aceitar encaminhamentos e os usuários poderão
-					operar normalmente.
+					<strong>{ubs.nome}</strong> voltará a aceitar encaminhamentos e os usuários poderão operar normalmente.
 				</div>
 			{/if}
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">

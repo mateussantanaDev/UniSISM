@@ -274,10 +274,8 @@
 					label: `ENVIADOS · ${ano}/${String(mes).padStart(2, '0')}`,
 					crumb: `SMS / ENVIADOS / UBS / ${ano} / ${mes}`
 				};
-			if (ano)
-				return { label: `ENVIADOS · ${ano}`, crumb: `SMS / ENVIADOS / UBS / ${ano}` };
-			if (ingMatch[1])
-				return { label: 'ENVIADOS · UBS', crumb: 'SMS / ENVIADOS / UBS' };
+			if (ano) return { label: `ENVIADOS · ${ano}`, crumb: `SMS / ENVIADOS / UBS / ${ano}` };
+			if (ingMatch[1]) return { label: 'ENVIADOS · UBS', crumb: 'SMS / ENVIADOS / UBS' };
 			return { label: 'ENCAMINHAMENTOS ENVIADOS', crumb: 'SMS / ENVIADOS' };
 		}
 		return pageTitles[page.url.pathname] ?? { label: 'SMS', crumb: 'SMS' };
@@ -309,9 +307,7 @@
 {#if autenticando}
 	<div class="flex h-screen items-center justify-center bg-slate-50">
 		<div class="flex flex-col items-center gap-3">
-			<div
-				class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
-			></div>
+			<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
 			<div class="font-mono text-xs tracking-widest text-slate-600 uppercase">
 				Verificando sessão...
 			</div>

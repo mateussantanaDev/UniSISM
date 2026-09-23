@@ -1,5 +1,5 @@
 /**
- * Seed completo do paciente Mateus Santana — pronto pra demo do app.
+ * Seed completo do paciente João da Silva Sauro — pronto pra demo do app.
  *
  * Idempotente: pode rodar várias vezes sem duplicar.
  */
@@ -7,9 +7,9 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { prisma } from '../src/infrastructure/database/prisma';
 
-const CPF = '53474131826';
-const CPF_FMT = '534.741.318-26';
-const NOME = 'Mateus Santana';
+const CPF = '12345678909';
+const CPF_FMT = '123.456.789-09';
+const NOME = 'João da Silva Sauro';
 const NASCIMENTO = new Date('2004-07-10T00:00:00Z');
 
 async function main() {
@@ -62,7 +62,19 @@ async function main() {
       prefeituraId: prefeitura.id,
     },
   });
-  console.log(`✓ UBS: ${ubs.nome}`);
+  // Limpa dados de pacientes anteriores pra evitar conflito de unique (CPF/cartaoSus)
+  await prisma.tfdPacienteSolicitacao.deleteMany({});
+  await prisma.solicitacaoTFD.deleteMany({});
+  await prisma.encaminhamento.deleteMany({});
+  await prisma.alergia.deleteMany({});
+  await prisma.condicaoCronica.deleteMany({});
+  await prisma.medicamentoEmUso.deleteMany({});
+  await prisma.atendimento.deleteMany({});
+  await prisma.vacinaAplicada.deleteMany({});
+  await prisma.exameRealizado.deleteMany({});
+  await prisma.notificacaoPaciente.deleteMany({});
+  await prisma.pacienteConta.deleteMany({});
+  await prisma.paciente.deleteMany({});
 
   // ─── 3) Paciente clínico (10/07/2004 · A−) ───────────────────
   const senhaHash = await bcrypt.hash(CPF, 10);
@@ -449,11 +461,39 @@ async function main() {
   });
   await prisma.viagemFrota.deleteMany({ where: { prefeituraId: prefeitura.id } });
 
+  // ─── 15) Viagens TFD futuras ────────────────────────────────
+  // ⚠ FK: tfd_paciente_solicitacoes referencia viagemFrota — deletar dependentes antes
+  await prisma.tfdPacienteSolicitacao.deleteMany({
+    where: { viagem: { prefeituraId: prefeitura.id } },
+  });
+  await prisma.viagemFrota.deleteMany({ where: { prefeituraId: prefeitura.id } });
+
+  // 1. Viagem para Garanhuns (saindo de Águas Belas)
+  const viagemGaranhuns = await prisma.viagemFrota.create({
+    data: {
+      prefeituraId: prefeitura.id,
+      data: new Date('2026-08-15T00:00:00Z'),
+      horaSaida: '07:00',
+      horaPrevistaRetorno: '17:00',
+      veiculoId: veiculo.id,
+      motoristaId: motorista.id,
+      destino: 'Garanhuns',
+      unidadeDestino: 'Hospital Regional Dom Moura',
+      rotaResumo: 'Águas Belas → Garanhuns',
+      kmEstimados: 85,
+      vagasTotais: 15,
+      observacoes: 'Saída da UBS Centro Águas Belas às 07h00',
+      status: 'AGENDADA',
+      criadaPorId: adminDev.id,
+    },
+  });
+
+  // 2. Viagem para Recife (saindo de Águas Belas)
   const viagemRecife = await prisma.viagemFrota.create({
     data: {
       prefeituraId: prefeitura.id,
-      data: new Date('2026-06-08T00:00:00Z'),
-      horaSaida: '06:30',
+      data: new Date('2026-08-20T00:00:00Z'),
+      horaSaida: '05:30',
       horaPrevistaRetorno: '20:00',
       veiculoId: veiculo.id,
       motoristaId: motorista.id,
@@ -469,27 +509,49 @@ async function main() {
     },
   });
 
-  await prisma.viagemFrota.create({
+  // 3. Viagem para Caruaru (saindo de Águas Belas)
+  const viagemCaruaru = await prisma.viagemFrota.create({
     data: {
       prefeituraId: prefeitura.id,
-      data: new Date('2026-06-15T00:00:00Z'),
-      horaSaida: '05:00',
-      horaPrevistaRetorno: '21:00',
+      data: new Date('2026-08-25T00:00:00Z'),
+      horaSaida: '06:00',
+      horaPrevistaRetorno: '18:30',
       veiculoId: veiculo.id,
       motoristaId: motorista.id,
-      destino: 'Petrolina',
-      unidadeDestino: 'Hospital Universitário Dom Malan',
-      rotaResumo: 'Águas Belas → Arcoverde → Petrolina',
-      kmEstimados: 480,
-      vagasTotais: 10,
+      destino: 'Caruaru',
+      unidadeDestino: 'Hospital Regional do Agreste (HRA)',
+      rotaResumo: 'Águas Belas → Garanhuns → Caruaru',
+      kmEstimados: 160,
+      vagasTotais: 14,
+      observacoes: 'Saída da UBS Centro Águas Belas às 06h00',
       status: 'AGENDADA',
       criadaPorId: adminDev.id,
     },
   });
-  console.log(`✓ 2 viagens TFD: Recife (08/06 06:30) · Petrolina (15/06 05:00)`);
+  console.log(`✓ 3 viagens TFD: Garanhuns (15/08) · Recife (20/08) · Caruaru (25/08) - Todas saindo de Águas Belas`);
 
-  // ─── 16) Solicitação TFD aprovada do paciente ────────────────
+  // ─── 16) Solicitações TFD aprovadas com vagas/assentos atribuídos ────────────────
   await prisma.tfdPacienteSolicitacao.deleteMany({ where: { contaId: conta.id } });
+
+  // Solicitação 1: Garanhuns (Assento 03)
+  await prisma.tfdPacienteSolicitacao.create({
+    data: {
+      contaId: conta.id,
+      viagemId: viagemGaranhuns.id,
+      status: 'APROVADA',
+      prioridade: 'NORMAL',
+      justificativaPaciente: 'Consulta de Oftalmologia agendada — encaminhamento UBS-2026-100138',
+      encaminhamentoId: encB.id,
+      encaminhamentoProtocolo: encB.protocolo,
+      numeroAssento: '03',
+      operadorId: adminDev.id,
+      operadorNome: adminDev.nome,
+      operadorMatricula: adminDev.matricula,
+      aprovadaEm: new Date('2026-05-20T10:00:00Z'),
+    },
+  });
+
+  // Solicitação 2: Recife (Assento 07)
   await prisma.tfdPacienteSolicitacao.create({
     data: {
       contaId: conta.id,
@@ -506,7 +568,25 @@ async function main() {
       aprovadaEm: new Date('2026-05-27T10:00:00Z'),
     },
   });
-  console.log(`✓ 1 solicitação TFD APROVADA (assento 07 · viagem Recife)`);
+
+  // Solicitação 3: Caruaru (Assento 12)
+  await prisma.tfdPacienteSolicitacao.create({
+    data: {
+      contaId: conta.id,
+      viagemId: viagemCaruaru.id,
+      status: 'APROVADA',
+      prioridade: 'PRIORITARIA',
+      justificativaPaciente: 'Consulta de Endocrinologia agendada — encaminhamento UBS-2026-100139',
+      encaminhamentoId: encC.id,
+      encaminhamentoProtocolo: encC.protocolo,
+      numeroAssento: '12',
+      operadorId: adminDev.id,
+      operadorNome: adminDev.nome,
+      operadorMatricula: adminDev.matricula,
+      aprovadaEm: new Date('2026-05-28T14:00:00Z'),
+    },
+  });
+  console.log(`✓ 3 solicitações TFD APROVADAS com vagas atribuídas (Assento 03 · Assento 07 · Assento 12)`);
 
   console.log('\n═══════════════════════════════════════════════════════════');
   console.log('  ✅ SEED COMPLETO');

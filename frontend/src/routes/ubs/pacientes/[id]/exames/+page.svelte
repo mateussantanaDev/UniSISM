@@ -68,9 +68,7 @@
 	let categoriaFiltro = $state<FiltroCat>('TODOS');
 
 	let filtrados = $derived(
-		categoriaFiltro === 'TODOS'
-			? p.exames
-			: p.exames.filter((e) => e.categoria === categoriaFiltro)
+		categoriaFiltro === 'TODOS' ? p.exames : p.exames.filter((e) => e.categoria === categoriaFiltro)
 	);
 
 	let normais = $derived(p.exames.filter((e) => e.resultado === 'NORMAL').length);
@@ -94,7 +92,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -107,12 +106,7 @@
 			sublabel="Requerem acompanhamento"
 			accent="warning"
 		/>
-		<MetricCard
-			label="Críticos"
-			value={criticos}
-			sublabel="Atenção imediata"
-			accent="critical"
-		/>
+		<MetricCard label="Críticos" value={criticos} sublabel="Atenção imediata" accent="critical" />
 	</section>
 
 	<div class="border border-slate-200 bg-white">
@@ -242,11 +236,7 @@
 	subtitle="Entrada no histórico clínico"
 	maxWidth="lg"
 >
-	<RegistrarExame
-		pacienteId={p.id}
-		onCancel={() => (modalAberto = false)}
-		onSalvo={handleSalvo}
-	/>
+	<RegistrarExame pacienteId={p.id} onCancel={() => (modalAberto = false)} onSalvo={handleSalvo} />
 </Modal>
 
 <Modal

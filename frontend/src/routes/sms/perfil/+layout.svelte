@@ -42,7 +42,9 @@
 
 <div class="flex flex-col gap-4">
 	<!-- Cabeçalho -->
-	<div class="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white px-4 py-3">
+	<div
+		class="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white px-4 py-3"
+	>
 		<div class="flex items-center gap-3">
 			<div
 				class="flex h-12 w-12 shrink-0 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-base font-bold text-white"
@@ -57,7 +59,9 @@
 					{perfil?.nome ?? auth.me?.nome ?? 'Carregando...'}
 				</div>
 				<div class="font-mono text-[11px] text-slate-600">
-					{perfil?.cargo ?? auth.me?.cargo ?? ''} · Matrícula {perfil?.matricula ?? auth.me?.matricula ?? ''}
+					{perfil?.cargo ?? auth.me?.cargo ?? ''} · Matrícula {perfil?.matricula ??
+						auth.me?.matricula ??
+						''}
 				</div>
 			</div>
 		</div>

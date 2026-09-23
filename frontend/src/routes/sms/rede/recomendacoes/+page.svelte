@@ -23,6 +23,8 @@
 	let formAtivo = $state(true);
 	let salvando = $state(false);
 	let formErro = $state('');
+	const recomendacoesPlaceholder =
+		'Levar ECG recente (≤ 6 meses)\nLista de medicações em uso\nNão suspender medicação habitual\nChegar com 30 minutos de antecedência';
 
 	async function carregar() {
 		erro = '';
@@ -128,18 +130,15 @@
 			Recomendações por especialidade
 		</h2>
 		<p class="mt-1 text-sm text-slate-600">
-			Mensagens "o que levar no dia" que o paciente vê no detalhe do encaminhamento.
-			Cadastre uma vez por especialidade; todo paciente com encaminhamento naquela
-			especialidade vê automaticamente.
+			Mensagens "o que levar no dia" que o paciente vê no detalhe do encaminhamento. Cadastre uma
+			vez por especialidade; todo paciente com encaminhamento naquela especialidade vê
+			automaticamente.
 		</p>
 	</section>
 
 	<!-- Form de criar/editar -->
 	<section class="border border-slate-200 bg-white">
-		<PanelHeader
-			title={editandoId ? 'Editar recomendação' : 'Nova recomendação'}
-			index="01"
-		/>
+		<PanelHeader title={editandoId ? 'Editar recomendação' : 'Nova recomendação'} index="01" />
 		<div class="flex flex-col gap-4 p-4">
 			<div class="flex flex-col">
 				<label
@@ -172,7 +171,7 @@
 					id="recs"
 					rows="6"
 					bind:value={formItens}
-					placeholder={`Levar ECG recente (≤ 6 meses)\nLista de medicações em uso\nNão suspender medicação habitual\nChegar com 30 minutos de antecedência`}
+					placeholder={recomendacoesPlaceholder}
 					class="w-full resize-none border border-slate-300 bg-white px-3 py-2 font-sans text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 				></textarea>
 				<div class="mt-1 text-[10px] tracking-wider text-slate-500 uppercase">
@@ -182,12 +181,7 @@
 
 			{#if editandoId}
 				<div class="flex items-center gap-2">
-					<input
-						id="ativo"
-						type="checkbox"
-						bind:checked={formAtivo}
-						class="h-4 w-4"
-					/>
+					<input id="ativo" type="checkbox" bind:checked={formAtivo} class="h-4 w-4" />
 					<label for="ativo" class="font-mono text-xs tracking-wider text-slate-700 uppercase">
 						Ativo (paciente vê)
 					</label>
@@ -225,7 +219,9 @@
 				Carregando...
 			</div>
 		{:else if erro}
-			<div class="m-4 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+			<div
+				class="m-4 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+			>
 				⚠ {erro}
 			</div>
 		{:else if lista.length === 0}
@@ -237,13 +233,15 @@
 				{#each lista as r (r.id)}
 					<div class="p-4">
 						<div class="flex items-start justify-between gap-3">
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
 									<h3 class="font-mono text-sm font-bold text-slate-900">
 										{r.especialidade}
 									</h3>
 									{#if !r.ativo}
-										<span class="border border-slate-400 bg-slate-100 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest text-slate-600 uppercase">
+										<span
+											class="border border-slate-400 bg-slate-100 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest text-slate-600 uppercase"
+										>
 											Inativo
 										</span>
 									{/if}
@@ -256,7 +254,8 @@
 									{/each}
 								</ul>
 								<div class="mt-2 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-									{r.recomendacoes.length} {r.recomendacoes.length === 1 ? 'item' : 'itens'}
+									{r.recomendacoes.length}
+									{r.recomendacoes.length === 1 ? 'item' : 'itens'}
 								</div>
 							</div>
 							<div class="flex flex-col gap-1">

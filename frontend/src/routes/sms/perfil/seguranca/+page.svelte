@@ -89,10 +89,7 @@
 	<div class="col-span-12 border border-slate-200 bg-white xl:col-span-8">
 		<PanelHeader title="Senha de Acesso" subtitle="Política institucional" index="01">
 			{#if !showPasswordChange && !changedPassword}
-				<PrimaryButton
-					label="Alterar Senha"
-					onclick={() => (showPasswordChange = true)}
-				/>
+				<PrimaryButton label="Alterar Senha" onclick={() => (showPasswordChange = true)} />
 			{/if}
 		</PanelHeader>
 		{#if changedPassword}
@@ -127,7 +124,9 @@
 					/>
 				</div>
 				{#if errorMsg}
-					<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+					<div
+						class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+					>
 						⚠ {errorMsg}
 					</div>
 				{/if}
@@ -141,7 +140,9 @@
 				<div class="flex items-center justify-between px-4 py-2.5">
 					<dt class="tracking-widest text-slate-500 uppercase">Última Alteração</dt>
 					<dd class="font-bold text-slate-900">
-						{new Date(p.seguranca.senhaAlteradaEm).toLocaleDateString('pt-BR')} · há {diasDesde(p.seguranca.senhaAlteradaEm)} dias
+						{new Date(p.seguranca.senhaAlteradaEm).toLocaleDateString('pt-BR')} · há {diasDesde(
+							p.seguranca.senhaAlteradaEm
+						)} dias
 					</dd>
 				</div>
 				<div class="flex items-center justify-between px-4 py-2.5">
@@ -176,7 +177,9 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Data / Hora
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm font-bold text-slate-900">{p.seguranca.ultimoAcesso}</dd>
+				<dd class="mt-0.5 font-mono text-sm font-bold text-slate-900">
+					{p.seguranca.ultimoAcesso}
+				</dd>
 			</div>
 			<div class="col-span-6">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">IP</dt>
@@ -218,7 +221,10 @@
 				<div
 					class="border-2 border-emerald-700 bg-emerald-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-emerald-800 uppercase"
 				>
-					✓ {sessoesEncerradas} sessão{sessoesEncerradas === 1 ? '' : 'ões'} encerrada{sessoesEncerradas === 1 ? '' : 's'}
+					✓ {sessoesEncerradas} sessão{sessoesEncerradas === 1 ? '' : 'ões'} encerrada{sessoesEncerradas ===
+					1
+						? ''
+						: 's'}
 				</div>
 			{/if}
 			<PrimaryButton

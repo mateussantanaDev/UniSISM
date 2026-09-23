@@ -243,12 +243,14 @@
 		class="group flex w-full items-center gap-2.5 border-t-2 border-l-2 bg-gradient-to-b from-white to-slate-50 px-4 py-3 text-left transition-colors
 			{perfilAtivo
 			? 'border-t-slate-200 border-l-blue-900 bg-slate-100'
-			: 'border-t-slate-200 border-l-transparent hover:bg-slate-100 hover:border-l-slate-300'}"
+			: 'border-t-slate-200 border-l-transparent hover:border-l-slate-300 hover:bg-slate-100'}"
 		aria-label="Abrir perfil do gestor TFD"
 	>
 		<div
 			class="flex h-9 w-9 shrink-0 items-center justify-center border font-mono text-[11px] font-bold text-white
-				{perfilAtivo ? 'border-blue-900 bg-blue-900' : 'border-slate-300 bg-blue-900 group-hover:border-blue-900'}"
+				{perfilAtivo
+				? 'border-blue-900 bg-blue-900'
+				: 'border-slate-300 bg-blue-900 group-hover:border-blue-900'}"
 		>
 			{auth.me?.iniciais ?? '··'}
 		</div>
@@ -262,7 +264,9 @@
 			</div>
 			<div class="flex items-center gap-1.5 text-[11px] text-emerald-700">
 				<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
-				<span class="font-semibold truncate" title={formatarCargoPerfil(auth.me)}>{formatarCargoPerfil(auth.me)}</span>
+				<span class="truncate font-semibold" title={formatarCargoPerfil(auth.me)}
+					>{formatarCargoPerfil(auth.me)}</span
+				>
 			</div>
 		</div>
 		<svg

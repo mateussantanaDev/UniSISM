@@ -8,6 +8,7 @@
 import type { Request } from 'express';
 import { BadRequest, Forbidden } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
+import type { Prisma } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import { resolverPrefeituraIdEfetiva } from './_helpers';
 
@@ -143,13 +144,13 @@ export class RelatoriosTfdUseCases {
             where: { prefeituraId, viagemId: { in: viagemIds }, status: 'REALIZADO' },
             select: { viagemId: true, valorTotal: true },
           })
-        : Promise.resolve([] as Array<{ viagemId: string | null; valorTotal: any }>),
+        : Promise.resolve([] as Array<{ viagemId: string | null; valorTotal: Prisma.Decimal | number }>),
       viagemIds.length
         ? prisma.ajudaCusto.findMany({
             where: { prefeituraId, viagemId: { in: viagemIds }, status: 'PAGA' },
             select: { viagemId: true, valorTotal: true },
           })
-        : Promise.resolve([] as Array<{ viagemId: string; valorTotal: any }>),
+        : Promise.resolve([] as Array<{ viagemId: string; valorTotal: Prisma.Decimal | number }>),
     ]);
 
     // Custo bruto agregado por viagem

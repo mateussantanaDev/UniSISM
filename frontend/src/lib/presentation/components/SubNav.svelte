@@ -50,9 +50,7 @@
 			{#if tab.shortcut}
 				<kbd
 					class="border px-1 py-px text-[9px] font-normal
-						{active
-						? 'border-blue-900 bg-blue-50 text-blue-900'
-						: 'border-slate-300 bg-white text-slate-500'}"
+						{active ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-slate-300 bg-white text-slate-500'}"
 				>
 					{tab.shortcut}
 				</kbd>

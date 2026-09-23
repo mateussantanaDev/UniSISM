@@ -7,12 +7,7 @@
 	import { api, ApiError } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarData, mesAtual } from '$lib/presentation/utils/tfdFormat';
-	import type {
-		Abastecimento,
-		SaldoVeiculo,
-		Veiculo,
-		ViagemFrota
-	} from '$lib/api/tfd-types';
+	import type { Abastecimento, SaldoVeiculo, Veiculo, ViagemFrota } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -61,9 +56,7 @@
 	}
 
 	const totalGastoBRL = $derived(
-		abastecimentos
-			.filter((a) => a.status === 'REALIZADO')
-			.reduce((acc, a) => acc + a.valorTotal, 0)
+		abastecimentos.filter((a) => a.status === 'REALIZADO').reduce((acc, a) => acc + a.valorTotal, 0)
 	);
 	const totalLitros = $derived(
 		abastecimentos.filter((a) => a.status === 'REALIZADO').reduce((acc, a) => acc + a.litros, 0)
@@ -134,7 +127,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -169,11 +163,7 @@
 			</div>
 			{#if podeOperar}
 				<div class="flex flex-wrap gap-2">
-					<PrimaryButton
-						label="Editar"
-						variant="secondary"
-						onclick={() => (editarAberto = true)}
-					/>
+					<PrimaryButton label="Editar" variant="secondary" onclick={() => (editarAberto = true)} />
 					{#if v.status !== 'INATIVO'}
 						<PrimaryButton
 							label={v.status === 'ATIVO' ? 'Marcar Manutenção' : 'Reativar'}
@@ -250,11 +240,10 @@
 					</dd>
 				</div>
 				{#if v.proximaRevisaoKm || v.proximaRevisaoEm}
-					<div
-						class="col-span-12 border-l-4 border-amber-600 bg-amber-50 px-3 py-2 text-amber-900"
-					>
+					<div class="col-span-12 border-l-4 border-amber-600 bg-amber-50 px-3 py-2 text-amber-900">
 						<strong class="font-mono tracking-wider uppercase">Próxima revisão:</strong>
-						{#if v.proximaRevisaoKm}<span> @{v.proximaRevisaoKm.toLocaleString('pt-BR')} km</span
+						{#if v.proximaRevisaoKm}<span>
+								@{v.proximaRevisaoKm.toLocaleString('pt-BR')} km</span
 							>{/if}
 						{#if v.proximaRevisaoEm}<span> · {formatarData(v.proximaRevisaoEm)}</span>{/if}
 					</div>
@@ -415,8 +404,8 @@
 				Confirma a exclusão de <strong>{v.placa}</strong> ({v.modelo})?
 			</p>
 			<p class="text-xs text-slate-500">
-				Se houver viagens registradas, o backend impede a exclusão e sugere desativação.
-				Auditoria do veículo é preservada.
+				Se houver viagens registradas, o backend impede a exclusão e sugere desativação. Auditoria
+				do veículo é preservada.
 			</p>
 			<div class="mt-3 flex justify-end gap-2">
 				<PrimaryButton

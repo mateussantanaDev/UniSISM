@@ -109,21 +109,26 @@
 	maxWidth="lg"
 >
 	{#if protocoloGerado}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-6 text-center flex flex-col items-center gap-3">
-			<div class="text-xl font-black text-emerald-900 font-mono">
+		<div
+			class="flex flex-col items-center gap-3 border-2 border-emerald-700 bg-emerald-50 p-6 text-center"
+		>
+			<div class="font-mono text-xl font-black text-emerald-900">
 				✓ ENCAMINHAMENTO INTERMUNICIPAL REGISTRADO
 			</div>
-			<div class="text-sm font-mono text-slate-800">
-				Protocolo Gerado: <strong class="bg-emerald-200 px-2 py-1 text-base">{protocoloGerado}</strong>
+			<div class="font-mono text-sm text-slate-800">
+				Protocolo Gerado: <strong class="bg-emerald-200 px-2 py-1 text-base"
+					>{protocoloGerado}</strong
+				>
 			</div>
-			<div class="text-xs font-sans text-slate-700 max-w-md">
-				O pedido foi enviado diretamente para a fila da Regulação da Secretaria Municipal de Saúde. O paciente poderá acompanhar a regulação e o agendamento logístico no centro de comando.
+			<div class="max-w-md font-sans text-xs text-slate-700">
+				O pedido foi enviado diretamente para a fila da Regulação da Secretaria Municipal de Saúde.
+				O paciente poderá acompanhar a regulação e o agendamento logístico no centro de comando.
 			</div>
 			<div class="pt-3">
 				<button
 					type="button"
 					onclick={onClose}
-					class="border border-emerald-800 bg-emerald-800 text-white px-5 py-2 font-mono text-xs font-bold uppercase hover:bg-emerald-900"
+					class="border border-emerald-800 bg-emerald-800 px-5 py-2 font-mono text-xs font-bold text-white uppercase hover:bg-emerald-900"
 				>
 					Fechar Janela
 				</button>
@@ -137,15 +142,23 @@
 				</div>
 			{/if}
 
-			<div class="border border-blue-200 bg-blue-50 p-3 text-blue-900 font-mono text-[11px]">
-				ℹ Utilize este formulário quando o tratamento ou procedimento do paciente não estiver disponível na rede municipal, necessitando de encaminhamento para centro de referência em outra cidade.
+			<div class="border border-blue-200 bg-blue-50 p-3 font-mono text-[11px] text-blue-900">
+				ℹ Utilize este formulário quando o tratamento ou procedimento do paciente não estiver
+				disponível na rede municipal, necessitando de encaminhamento para centro de referência em
+				outra cidade.
 			</div>
 
 			<div class="grid grid-cols-2 gap-3 font-mono">
 				<!-- Município de Destino -->
 				<div class="flex flex-col gap-1">
-					<label for="ref-mun" class="text-[10px] font-bold text-slate-600 uppercase">Município de Referência <span class="text-red-700">*</span></label>
-					<select id="ref-mun" bind:value={refMunicipioDestino} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans bg-white">
+					<label for="ref-mun" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Município de Referência <span class="text-red-700">*</span></label
+					>
+					<select
+						id="ref-mun"
+						bind:value={refMunicipioDestino}
+						class="border border-slate-300 bg-white p-2 font-sans text-xs outline-none focus:border-blue-900"
+					>
 						{#each municipiosReferencia as m}
 							<option value={m}>{m}</option>
 						{/each}
@@ -154,8 +167,14 @@
 
 				<!-- Especialidade / Procedimento de Alta Complexidade -->
 				<div class="flex flex-col gap-1">
-					<label for="ref-esp" class="text-[10px] font-bold text-slate-600 uppercase">Especialidade / Alta Complexidade <span class="text-red-700">*</span></label>
-					<select id="ref-esp" bind:value={refEspecialidade} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans bg-white">
+					<label for="ref-esp" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Especialidade / Alta Complexidade <span class="text-red-700">*</span></label
+					>
+					<select
+						id="ref-esp"
+						bind:value={refEspecialidade}
+						class="border border-slate-300 bg-white p-2 font-sans text-xs outline-none focus:border-blue-900"
+					>
 						{#each especialidadesReferencia as e}
 							<option value={e}>{e}</option>
 						{/each}
@@ -165,34 +184,56 @@
 
 			<div class="grid grid-cols-12 gap-3 font-mono">
 				<div class="col-span-4 flex flex-col gap-1">
-					<label for="ref-cid" class="text-[10px] font-bold text-slate-600 uppercase">CID-10 <span class="text-red-700">*</span></label>
-					<input id="ref-cid" type="text" bind:value={refCid10} class="border border-slate-300 p-2 text-xs font-bold outline-none focus:border-blue-900 uppercase bg-white" />
+					<label for="ref-cid" class="text-[10px] font-bold text-slate-600 uppercase"
+						>CID-10 <span class="text-red-700">*</span></label
+					>
+					<input
+						id="ref-cid"
+						type="text"
+						bind:value={refCid10}
+						class="border border-slate-300 bg-white p-2 text-xs font-bold uppercase outline-none focus:border-blue-900"
+					/>
 				</div>
 				<div class="col-span-8 flex flex-col gap-1">
-					<label for="ref-diag" class="text-[10px] font-bold text-slate-600 uppercase">Diagnóstico Clínico</label>
-					<input id="ref-diag" type="text" bind:value={refDiagnostico} class="border border-slate-300 p-2 text-xs outline-none focus:border-blue-900 font-sans bg-white" />
+					<label for="ref-diag" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Diagnóstico Clínico</label
+					>
+					<input
+						id="ref-diag"
+						type="text"
+						bind:value={refDiagnostico}
+						class="border border-slate-300 bg-white p-2 font-sans text-xs outline-none focus:border-blue-900"
+					/>
 				</div>
 			</div>
 
 			<!-- Justificativa / Laudo Médico -->
 			<div class="flex flex-col gap-1">
 				<label for="ref-just" class="font-mono text-[10px] font-bold text-slate-600 uppercase">
-					Laudo Médico e Justificativa da Necessidade Intermunicipal <span class="text-red-700">*</span>
+					Laudo Médico e Justificativa da Necessidade Intermunicipal <span class="text-red-700"
+						>*</span
+					>
 				</label>
 				<textarea
 					id="ref-just"
 					rows="4"
 					bind:value={refJustificativa}
 					placeholder="Descreva a fundamentação clínica para o tratamento fora do município..."
-					class="border border-slate-300 p-2.5 text-xs outline-none focus:border-blue-900 resize-none font-sans bg-white"
+					class="resize-none border border-slate-300 bg-white p-2.5 font-sans text-xs outline-none focus:border-blue-900"
 				></textarea>
 			</div>
 
 			<!-- Prioridade e Logística -->
-			<div class="grid grid-cols-3 gap-3 font-mono border-t border-slate-200 pt-3">
+			<div class="grid grid-cols-3 gap-3 border-t border-slate-200 pt-3 font-mono">
 				<div class="flex flex-col gap-1">
-					<label for="ref-prio" class="text-[9px] font-bold text-slate-600 uppercase">Prioridade Clínica</label>
-					<select id="ref-prio" bind:value={refPrioridade} class="border border-slate-300 p-1.5 text-xs outline-none bg-white">
+					<label for="ref-prio" class="text-[9px] font-bold text-slate-600 uppercase"
+						>Prioridade Clínica</label
+					>
+					<select
+						id="ref-prio"
+						bind:value={refPrioridade}
+						class="border border-slate-300 bg-white p-1.5 text-xs outline-none"
+					>
 						<option value="ELETIVA">ELETIVA</option>
 						<option value="PRIORITARIA">PRIORITÁRIA</option>
 						<option value="URGENTE">URGENTE</option>
@@ -200,24 +241,30 @@
 					</select>
 				</div>
 				<div class="flex flex-col gap-1">
-					<label for="ref-transp" class="text-[9px] font-bold text-slate-600 uppercase">Transporte Solicitado</label>
-					<select id="ref-transp" bind:value={refTransporte} class="border border-slate-300 p-1.5 text-xs outline-none bg-white">
+					<label for="ref-transp" class="text-[9px] font-bold text-slate-600 uppercase"
+						>Transporte Solicitado</label
+					>
+					<select
+						id="ref-transp"
+						bind:value={refTransporte}
+						class="border border-slate-300 bg-white p-1.5 text-xs outline-none"
+					>
 						<option value="VAN_SMS">Van da SMS</option>
 						<option value="AMBULANCIA">Ambulância Simples</option>
 						<option value="UTI_MOVEL">Ambulância UTI Móvel</option>
 						<option value="PASSAGEM_RODOVIARIA">Passagem Rodoviária</option>
 					</select>
 				</div>
-				<div class="flex flex-col gap-1 justify-center">
+				<div class="flex flex-col justify-center gap-1">
 					<span class="text-[9px] font-bold text-slate-600 uppercase">Acompanhante</span>
-					<label for="ref-acomp" class="flex items-center gap-1.5 cursor-pointer font-sans">
+					<label for="ref-acomp" class="flex cursor-pointer items-center gap-1.5 font-sans">
 						<input id="ref-acomp" type="checkbox" bind:checked={refAcompanhante} class="h-4 w-4" />
 						<span>Exige Acompanhante</span>
 					</label>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 font-mono">
+			<div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-3 font-mono">
 				<button
 					type="button"
 					onclick={onClose}
@@ -230,7 +277,7 @@
 					type="button"
 					onclick={handleSubmit}
 					disabled={enviando}
-					class="border border-blue-900 bg-blue-900 text-white px-5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-blue-950 disabled:opacity-50"
+					class="border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 				>
 					{enviando ? 'Enviando à Regulação...' : 'Enviar para Regulação SMS'}
 				</button>

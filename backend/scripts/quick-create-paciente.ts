@@ -1,18 +1,18 @@
 /**
  * Cria rapidinho um paciente de teste pro app.
  *
- * CPF      : 53474131826
- * Nome     : Mateus Santana
- * Senha    : = CPF dígitos (53474131826) — senhaProvisoria=true (app força troca)
+ * CPF      : 12345678909
+ * Nome     : João da Silva Sauro
+ * Senha    : = CPF dígitos (12345678909) — senhaProvisoria=true (app força troca)
  *
  * Idempotente: roda múltiplas vezes sem duplicar.
  */
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/infrastructure/database/prisma';
 
-const CPF = '53474131826';
-const CPF_FMT = '534.741.318-26';
-const NOME = 'Mateus Santana';
+const CPF = '12345678909';
+const CPF_FMT = '123.456.789-09';
+const NOME = 'João da Silva Sauro';
 
 async function main() {
   console.log('→ criando paciente de teste…\n');

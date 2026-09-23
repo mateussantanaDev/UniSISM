@@ -35,7 +35,9 @@
 		EMERGENCIA: { label: 'EMERGÊNCIA', classes: 'border-red-900 text-white bg-red-900' }
 	};
 
-	const config = $derived(status ? statusMap[status] : prioridade ? prioridadeMap[prioridade] : null);
+	const config = $derived(
+		status ? statusMap[status] : prioridade ? prioridadeMap[prioridade] : null
+	);
 </script>
 
 {#if config}

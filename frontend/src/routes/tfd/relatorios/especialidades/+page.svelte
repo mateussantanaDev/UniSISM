@@ -95,9 +95,7 @@
 		<div class="font-mono text-sm font-bold tracking-widest text-red-900 uppercase">
 			Permissão insuficiente
 		</div>
-		<p class="mt-2 text-xs text-red-800">
-			Apenas a gestão TFD pode acessar relatórios analíticos.
-		</p>
+		<p class="mt-2 text-xs text-red-800">Apenas a gestão TFD pode acessar relatórios analíticos.</p>
 	</div>
 {:else}
 	<div class="flex flex-col gap-4">
@@ -121,7 +119,9 @@
 
 			<div class="flex flex-wrap items-center gap-3 px-4 py-3">
 				<label class="flex flex-col gap-1">
-					<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+					<span
+						class="font-mono text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
 						Desde
 					</span>
 					<input
@@ -131,7 +131,9 @@
 					/>
 				</label>
 				<label class="flex flex-col gap-1">
-					<span class="font-mono text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+					<span
+						class="font-mono text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
 						Até
 					</span>
 					<input
@@ -212,7 +214,8 @@
 							</tr>
 						{:else}
 							{#each dados.itens as it, idx (it.especialidade)}
-								{@const pct = maxSolicitacoes > 0 ? (it.totalSolicitacoes / maxSolicitacoes) * 100 : 0}
+								{@const pct =
+									maxSolicitacoes > 0 ? (it.totalSolicitacoes / maxSolicitacoes) * 100 : 0}
 								<tr class="border-b border-slate-100 hover:bg-slate-50">
 									<td class="border-r border-slate-100 px-3 py-2 text-slate-500">
 										{String(idx + 1).padStart(2, '0')}
@@ -251,7 +254,9 @@
 									<td class="border-r border-slate-100 px-3 py-2 text-right text-slate-700">
 										{it.pacientesUnicos}
 									</td>
-									<td class="border-r border-slate-100 px-3 py-2 text-right font-bold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 text-right font-bold text-slate-900"
+									>
 										{formatarBRL(it.custoEstimadoBRL)}
 									</td>
 									<td class="px-3 py-2 text-right text-slate-700">
@@ -265,11 +270,12 @@
 			</div>
 		</div>
 
-		<div class="border-l-4 border-emerald-700 bg-emerald-50 px-4 py-3 font-sans text-[12px] text-emerald-900">
+		<div
+			class="border-l-4 border-emerald-700 bg-emerald-50 px-4 py-3 font-sans text-[12px] text-emerald-900"
+		>
 			<strong class="font-mono tracking-widest uppercase">Decisão estratégica:</strong>
-			especialidades no topo da tabela, com alto volume e custo elevado, podem ser candidatas a
-			contratação de especialista local — economizando o transporte recorrente e melhorando o
-			acesso para o paciente.
+			especialidades no topo da tabela, com alto volume e custo elevado, podem ser candidatas a contratação
+			de especialista local — economizando o transporte recorrente e melhorando o acesso para o paciente.
 		</div>
 	</div>
 {/if}

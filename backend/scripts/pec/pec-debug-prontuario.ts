@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
-import { PEC, sleep, log, getLaunchOptions } from './pec-common';
+import { PEC, sleep, log } from './pec-common';
 
 const OUT = '/tmp/pec-prontuario-graphql.json';
 
@@ -43,7 +43,10 @@ async function loginAndContext(page: Page) {
 async function main() {
   const records: any[] = [];
 
-  const browser = await chromium.launch(getLaunchOptions());
+  const browser = await chromium.launch({
+    headless: process.env.PEC_HEADLESS !== 'false',
+    channel: 'chrome',
+  });
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await ctx.newPage();
 

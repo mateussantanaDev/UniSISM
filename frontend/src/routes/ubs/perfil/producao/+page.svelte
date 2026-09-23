@@ -7,14 +7,9 @@
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil as AtendentePerfil);
 
-	let maxDia = $derived(
-		Math.max(...p.producao.porDia.map((d: { volume: number }) => d.volume), 1)
-	);
+	let maxDia = $derived(Math.max(...p.producao.porDia.map((d: { volume: number }) => d.volume), 1));
 	let maxEsp = $derived(
-		Math.max(
-			...p.producao.porEspecialidade.map((e: { volume: number }) => e.volume),
-			1
-		)
+		Math.max(...p.producao.porEspecialidade.map((e: { volume: number }) => e.volume), 1)
 	);
 	let progressoMeta = $derived(
 		Math.min(100, Math.round((p.producao.mes / p.producao.metaMes) * 100))
@@ -32,7 +27,12 @@
 			trendDirection="up"
 		/>
 		<MetricCard label="Esta Semana" value={p.producao.semana} sublabel="últimos 7 dias" />
-		<MetricCard label="Este Mês" value={p.producao.mes} sublabel="{progressoMeta}% da meta" accent="success" />
+		<MetricCard
+			label="Este Mês"
+			value={p.producao.mes}
+			sublabel="{progressoMeta}% da meta"
+			accent="success"
+		/>
 		<MetricCard
 			label="Este Ano"
 			value={p.producao.ano}
@@ -56,9 +56,7 @@
 						<div class="flex flex-1 flex-col items-center gap-1.5">
 							<div class="font-mono text-[10px] font-bold text-slate-700">{d.volume}</div>
 							<div class="w-full bg-blue-900 transition-all" style="height: {pct}%"></div>
-							<div
-								class="font-mono text-[10px] tracking-widest text-slate-500 uppercase"
-							>
+							<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
 								{d.dia}
 							</div>
 						</div>

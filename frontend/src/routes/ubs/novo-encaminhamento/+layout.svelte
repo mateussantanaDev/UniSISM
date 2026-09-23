@@ -293,7 +293,11 @@
 								class="h-4 w-4 shrink-0
 									{s === 'done' ? 'text-emerald-700' : s === 'active' ? 'text-blue-900' : 'text-slate-300'}"
 							>
-								<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="m8.25 4.5 7.5 7.5-7.5 7.5"
+								/>
 							</svg>
 						{/if}
 					</button>

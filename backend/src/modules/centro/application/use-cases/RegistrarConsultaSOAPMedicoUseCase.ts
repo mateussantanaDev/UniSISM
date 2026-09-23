@@ -42,7 +42,7 @@ export class RegistrarConsultaSOAPMedicoUseCase {
       throw Unprocessable('PACIENTE_NAO_VINCULADO', 'O encaminhamento deve possuir um paciente vinculado no PEC');
     }
 
-    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
+    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
     const now = new Date();
     const unidadeNome = input.soap.unidade || (row.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'Centro de Especialidades Odontológicas' : 'Centro Municipal de Especialidades');

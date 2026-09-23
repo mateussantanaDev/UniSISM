@@ -7,9 +7,7 @@
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil as AtendentePerfil);
 
-	let maxDia = $derived(
-		Math.max(...p.producao.porDia.map((d: { volume: number }) => d.volume), 1)
-	);
+	let maxDia = $derived(Math.max(...p.producao.porDia.map((d: { volume: number }) => d.volume), 1));
 	let maxEsp = $derived(
 		Math.max(...p.producao.porEspecialidade.map((e: { volume: number }) => e.volume), 1)
 	);
@@ -20,7 +18,13 @@
 
 <section class="flex flex-col gap-4">
 	<div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard label="Hoje" value={p.producao.hoje} sublabel="Decisões" trend="+0%" trendDirection="neutral" />
+		<MetricCard
+			label="Hoje"
+			value={p.producao.hoje}
+			sublabel="Decisões"
+			trend="+0%"
+			trendDirection="neutral"
+		/>
 		<MetricCard label="Esta Semana" value={p.producao.semana} sublabel="Últimos 7 dias" />
 		<MetricCard
 			label="Este Mês"

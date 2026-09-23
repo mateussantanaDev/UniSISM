@@ -68,7 +68,8 @@
 		if (novaSenha.length < 8) return 'Senha muito curta — mínimo 8 caracteres.';
 		if (novaSenha.length > 128) return 'Senha muito longa.';
 		if (/^\d+$/.test(novaSenha)) return 'Senha não pode ser apenas números.';
-		if (/^(.)\1{7,}$/.test(novaSenha)) return 'Senha muito fraca — evite repetir o mesmo caractere.';
+		if (/^(.)\1{7,}$/.test(novaSenha))
+			return 'Senha muito fraca — evite repetir o mesmo caractere.';
 		const comuns = ['12345678', '87654321', '01234567', 'password', 'senha123', '11111111'];
 		if (comuns.includes(novaSenha.toLowerCase())) {
 			return 'Senha muito comum — escolha uma diferente.';
@@ -157,8 +158,8 @@
 						✓ Pronto
 					</div>
 					<p class="mt-1 text-emerald-900">
-						Sua senha foi atualizada com sucesso. Todas as sessões ativas em outros
-						dispositivos foram encerradas por segurança.
+						Sua senha foi atualizada com sucesso. Todas as sessões ativas em outros dispositivos
+						foram encerradas por segurança.
 					</p>
 				</div>
 				<p class="text-slate-600">
@@ -174,8 +175,8 @@
 				}}
 			>
 				<p class="text-sm text-slate-600">
-					Crie uma nova senha para sua conta UNISISM. Use ao menos 8 caracteres,
-					misturando letras e números.
+					Crie uma nova senha para sua conta UNISISM. Use ao menos 8 caracteres, misturando letras e
+					números.
 				</p>
 
 				<div class="flex flex-col">

@@ -7,6 +7,7 @@
 import type { Request } from 'express';
 import { Forbidden, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
+import type { SaldoVeiculo, VeiculoTFD } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
@@ -25,7 +26,21 @@ export interface AjustarSaldoInput {
   justificativa: string;
 }
 
-function rowParaSaldo(s: any, veiculo?: any) {
+type SaldoVeiculoLike =
+  | Pick<SaldoVeiculo, 'veiculoId' | 'prefeituraId' | 'mes' | 'saldoMensal' | 'saldoConsumido' | 'saldoReservado'>
+  | {
+      veiculoId: string;
+      prefeituraId: string;
+      mes: string;
+      saldoMensal: number;
+      saldoConsumido: number;
+      saldoReservado: number;
+    };
+
+function rowParaSaldo(
+  s: SaldoVeiculoLike,
+  veiculo?: Pick<VeiculoTFD, 'placa' | 'modelo'>,
+) {
   const mensal = Number(s.saldoMensal);
   const consumido = Number(s.saldoConsumido);
   const reservado = Number(s.saldoReservado);

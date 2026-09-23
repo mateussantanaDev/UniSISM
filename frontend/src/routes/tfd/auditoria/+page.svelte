@@ -125,7 +125,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -159,18 +160,16 @@
 			label="Decisões Operacionais"
 			value={carregando
 				? '—'
-				: registros.filter(
-						(r) => r.acao.includes('SOLICITACAO') || r.acao.includes('VIAGEM')
-					).length}
+				: registros.filter((r) => r.acao.includes('SOLICITACAO') || r.acao.includes('VIAGEM'))
+						.length}
 			sublabel="Aprovações + agendamentos"
 		/>
 		<MetricCard
 			label="Cadastros"
 			value={carregando
 				? '—'
-				: registros.filter(
-						(r) => r.recursoTipo === 'VEICULO' || r.recursoTipo === 'MOTORISTA'
-					).length}
+				: registros.filter((r) => r.recursoTipo === 'VEICULO' || r.recursoTipo === 'MOTORISTA')
+						.length}
 			sublabel="Frota + quadro"
 		/>
 	</div>
@@ -180,9 +179,9 @@
 			Trilha de Auditoria · Tribunal de Justiça (Lei 14.133/2021 · LC 101/2000 · LGPD)
 		</div>
 		<p class="mt-1">
-			Cada evento abaixo tem hash <strong>encadeado</strong> com o anterior (blockchain-like). Qualquer
-			adulteração de um registro quebra todos os hashes seguintes — prova matemática de imutabilidade.
-			Retenção: <strong>20 anos</strong>.
+			Cada evento abaixo tem hash <strong>encadeado</strong> com o anterior (blockchain-like).
+			Qualquer adulteração de um registro quebra todos os hashes seguintes — prova matemática de
+			imutabilidade. Retenção: <strong>20 anos</strong>.
 		</p>
 	</div>
 
@@ -327,7 +326,9 @@
 		<div
 			class="flex max-h-[calc(100vh-4rem)] w-full max-w-3xl flex-col border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4"
+			>
 				<div class="leading-tight">
 					<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
 						REGISTRO DE AUDITORIA
@@ -348,24 +349,18 @@
 			<div class="overflow-y-auto p-6">
 				<dl class="grid grid-cols-12 gap-x-4 gap-y-3 font-mono text-[11px]">
 					<div class="col-span-6">
-						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-							Recurso
-						</dt>
+						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Recurso</dt>
 						<dd class="mt-0.5 text-slate-900">
 							{detalheAberto.recursoTipo} · {detalheAberto.recursoProtocolo ??
 								detalheAberto.recursoId}
 						</dd>
 					</div>
 					<div class="col-span-6">
-						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-							Quando
-						</dt>
+						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Quando</dt>
 						<dd class="mt-0.5 text-slate-900">{formatarDataHora(detalheAberto.em)}</dd>
 					</div>
 					<div class="col-span-6">
-						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-							Operador
-						</dt>
+						<dt class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Operador</dt>
 						<dd class="mt-0.5 font-sans text-slate-900">
 							{detalheAberto.operadorNome} · {detalheAberto.operadorMatricula} ({detalheAberto.operadorRole})
 						</dd>

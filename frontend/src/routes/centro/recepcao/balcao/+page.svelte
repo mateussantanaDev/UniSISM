@@ -51,15 +51,28 @@
 		if (page.url.pathname.includes('/cem')) return 'CEM';
 		if (centroManual) return centroManual;
 		if (especialidade && isEspecialidadeOdonto(especialidade)) return 'CEO';
-		if (medicoSelecionado && isEspecialidadeOdonto({ especialidade: medicoSelecionado.especialidade, crm: medicoSelecionado.registro, nome: medicoSelecionado.nome })) {
+		if (
+			medicoSelecionado &&
+			isEspecialidadeOdonto({
+				especialidade: medicoSelecionado.especialidade,
+				crm: medicoSelecionado.registro,
+				nome: medicoSelecionado.nome
+			})
+		) {
 			return 'CEO';
 		}
 		return 'CEM';
 	});
 	let ehCeo = $derived(centroSelecionado === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro Municipal de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived<'CEM' | 'CEO'>(ehCeo ? 'CEO' : 'CEM');
-	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloProfissional = $derived(
+		ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista'
+	);
 	let rotuloConsulta = $derived(ehCeo ? 'CONSULTA ODONTOLÓGICA' : 'CONSULTA MÉDICA');
 
 	// Dados do Paciente (sem valores mockados)
@@ -213,8 +226,8 @@
 		const n2 = normalizarTexto(esp2);
 		if (n1 === n2) return true;
 		if (n1.includes(n2) || n2.includes(n1)) return true;
-		const p1 = n1.split(' ').filter(x => x.length >= 4);
-		const p2 = n2.split(' ').filter(x => x.length >= 4);
+		const p1 = n1.split(' ').filter((x) => x.length >= 4);
+		const p2 = n2.split(' ').filter((x) => x.length >= 4);
 		for (const a of p1) {
 			for (const b of p2) {
 				if (a === b || (a.length >= 5 && b.startsWith(a)) || (b.length >= 5 && a.startsWith(b))) {
@@ -252,7 +265,7 @@
 				});
 			} else {
 				const existente = mapa.get(chave)!;
-				if (esp && !existente.especialidades.some(x => especialidadeMatch(x, esp))) {
+				if (esp && !existente.especialidades.some((x) => especialidadeMatch(x, esp))) {
 					existente.especialidades.push(esp);
 				}
 				for (const d of dias) {
@@ -276,8 +289,8 @@
 	let medicosFiltrados = $derived.by<MedicoEspecialistaItem[]>(() => {
 		let lista = medicosEspecialistas;
 		if (especialidade) {
-			const comEspecialidade = lista.filter(m => {
-				return m.especialidades.some(esp => especialidadeMatch(esp, especialidade));
+			const comEspecialidade = lista.filter((m) => {
+				return m.especialidades.some((esp) => especialidadeMatch(esp, especialidade));
 			});
 			if (comEspecialidade.length > 0) {
 				lista = comEspecialidade;
@@ -285,7 +298,7 @@
 		}
 		if (buscaMedico.trim()) {
 			const b = normalizarTexto(buscaMedico);
-			lista = lista.filter(m => {
+			lista = lista.filter((m) => {
 				const nomeNorm = normalizarTexto(m.nome);
 				const regNorm = normalizarTexto(m.registro);
 				const espNorm = m.especialidades.map(normalizarTexto).join(' ');
@@ -301,7 +314,9 @@
 		especialidade = target.value;
 
 		if (medicoSelecionado) {
-			const atendeNovaEspecialidade = medicoSelecionado.especialidades?.some(esp => especialidadeMatch(esp, especialidade));
+			const atendeNovaEspecialidade = medicoSelecionado.especialidades?.some((esp) =>
+				especialidadeMatch(esp, especialidade)
+			);
 			if (!atendeNovaEspecialidade) {
 				medicoSelecionado = null;
 				buscaMedico = '';
@@ -310,8 +325,13 @@
 
 		// Se houver apenas 1 médico especialista cadastrado para essa especialidade, auto-seleciona para agilizar
 		if (especialidade) {
-			const habilitados = medicosEspecialistas.filter(m => m.especialidades.some(esp => especialidadeMatch(esp, especialidade)));
-			if (habilitados.length === 1 && (!medicoSelecionado || medicoSelecionado.nome !== habilitados[0].nome)) {
+			const habilitados = medicosEspecialistas.filter((m) =>
+				m.especialidades.some((esp) => especialidadeMatch(esp, especialidade))
+			);
+			if (
+				habilitados.length === 1 &&
+				(!medicoSelecionado || medicoSelecionado.nome !== habilitados[0].nome)
+			) {
 				selecionarMedico(habilitados[0]);
 			}
 		}
@@ -338,17 +358,18 @@
 	let ubsFiltradas = $derived.by(() => {
 		const q = normalizarTexto(buscaUbs);
 		if (!q) return listaUbs;
-		return listaUbs.filter(u => 
-			normalizarTexto(u.nome).includes(q) || 
-			normalizarTexto(u.cnes || '').includes(q) || 
-			normalizarTexto(u.bairro || '').includes(q)
+		return listaUbs.filter(
+			(u) =>
+				normalizarTexto(u.nome).includes(q) ||
+				normalizarTexto(u.cnes || '').includes(q) ||
+				normalizarTexto(u.bairro || '').includes(q)
 		);
 	});
 
 	let buscaUbsExisteExata = $derived.by(() => {
 		const q = normalizarTexto(buscaUbs);
 		if (!q) return false;
-		return listaUbs.some(u => normalizarTexto(u.nome) === q);
+		return listaUbs.some((u) => normalizarTexto(u.nome) === q);
 	});
 
 	function selecionarUbs(u: Ubs) {
@@ -410,7 +431,9 @@
 			setTimeout(() => (sucessoAgendamento = ''), 6000);
 		} catch (err: any) {
 			console.error('Erro ao cadastrar UBS on-the-fly:', err);
-			erroModalUbs = err?.message || 'Falha ao cadastrar a nova UBS. Verifique se o nome ou CNES já existem no município.';
+			erroModalUbs =
+				err?.message ||
+				'Falha ao cadastrar a nova UBS. Verifique se o nome ou CNES já existem no município.';
 		} finally {
 			salvandoNovaUbs = false;
 		}
@@ -463,14 +486,16 @@
 				gradeDisponibilidade = [];
 				slotEscolhido = null;
 				diaSelecionadoGrade = null;
-				mensagemSlotBackend = res?.mensagem || 'Nenhum slot disponível com os critérios selecionados.';
+				mensagemSlotBackend =
+					res?.mensagem || 'Nenhum slot disponível com os critérios selecionados.';
 			}
 		} catch (err: any) {
 			alocacaoOtimizadaBalcao = null;
 			gradeDisponibilidade = [];
 			slotEscolhido = null;
 			diaSelecionadoGrade = null;
-			mensagemSlotBackend = err?.message || 'Falha ao consultar grade de disponibilidade do especialista no servidor.';
+			mensagemSlotBackend =
+				err?.message || 'Falha ao consultar grade de disponibilidade do especialista no servidor.';
 		} finally {
 			calculandoSlotBackend = false;
 		}
@@ -487,7 +512,8 @@
 
 	// Dia selecionado atualmente na grade
 	let diaGradeAtual = $derived(
-		gradeDisponibilidade.find(d => d.data === diaSelecionadoGrade) || (gradeDisponibilidade.length > 0 ? gradeDisponibilidade[0] : null)
+		gradeDisponibilidade.find((d) => d.data === diaSelecionadoGrade) ||
+			(gradeDisponibilidade.length > 0 ? gradeDisponibilidade[0] : null)
 	);
 
 	function selecionarSlotGrade(dia: DiaDisponibilidadeSlot, slot: SlotHorarioItem) {
@@ -497,7 +523,9 @@
 			data: dia.data,
 			dataFormatada: dia.dataFormatada,
 			hora: slot.hora,
-			consultorio: alocacaoOtimizadaBalcao?.consultorio || (ehCeo ? 'CADEIRA ODONTOLÓGICA 01' : 'CONSULTÓRIO 01'),
+			consultorio:
+				alocacaoOtimizadaBalcao?.consultorio ||
+				(ehCeo ? 'CADEIRA ODONTOLÓGICA 01' : 'CONSULTÓRIO 01'),
 			diaSemana: dia.diaSemana,
 			medicoNome: medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome,
 			isRecomendado: false
@@ -622,7 +650,8 @@
 		erroAgendamento = '';
 
 		try {
-			const res = await api.centroRecepcao.buscarPacientePorCpf(sanitizado)
+			const res = await api.centroRecepcao
+				.buscarPacientePorCpf(sanitizado)
 				.catch(() => api.pacientes.porCpf(sanitizado).catch(() => null));
 
 			if (res && res.existe && res.paciente) {
@@ -650,7 +679,11 @@
 						const resto = partes.slice(1).join(',').trim();
 						const restoPartes = resto.split('-');
 						const numPart = restoPartes[0]?.trim() || '';
-						if (numPart.toLowerCase() === 's/n' || numPart.toLowerCase() === 'sn' || numPart.toLowerCase() === 'sem número') {
+						if (
+							numPart.toLowerCase() === 's/n' ||
+							numPart.toLowerCase() === 'sn' ||
+							numPart.toLowerCase() === 'sem número'
+						) {
 							semNumero = true;
 							pacienteNumero = 'S/N';
 						} else {
@@ -677,7 +710,7 @@
 					pacienteUbsNome = ubsNomeRetornada;
 					buscaUbs = ubsNomeRetornada;
 				} else if (pacienteUbsId) {
-					const ubsObj = listaUbs.find(u => u.id === pacienteUbsId);
+					const ubsObj = listaUbs.find((u) => u.id === pacienteUbsId);
 					if (ubsObj) {
 						pacienteUbsNome = ubsObj.nome;
 						buscaUbs = ubsObj.nome;
@@ -701,7 +734,8 @@
 				pacienteMunicipio = 'Águas Belas';
 				pacienteUf = 'PE';
 				erroCep = '';
-				erroBusca = 'CPF não localizado. Preencha os campos abaixo para cadastrar e agendar o paciente.';
+				erroBusca =
+					'CPF não localizado. Preencha os campos abaixo para cadastrar e agendar o paciente.';
 			}
 		} catch (e) {
 			console.error(e);
@@ -716,7 +750,15 @@
 			carregandoEscalas = true;
 			carregandoCatalogo = true;
 			carregandoUbs = true;
-			const [escalasRecepcao, escalasGestao, servicos, salas, ubsList, prefeiturasList, profissionaisList] = await Promise.all([
+			const [
+				escalasRecepcao,
+				escalasGestao,
+				servicos,
+				salas,
+				ubsList,
+				prefeiturasList,
+				profissionaisList
+			] = await Promise.all([
 				api.centroRecepcao.listEscalas({ centro: centroSelecionado }).catch(() => []),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
 				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(() => []),
@@ -731,7 +773,10 @@
 			carregandoUbs = false;
 
 			const mapaEscalas = new Map<string, EscalaMedicoCentro>();
-			for (const esc of [...(Array.isArray(escalasRecepcao) ? escalasRecepcao : []), ...(Array.isArray(escalasGestao) ? escalasGestao : [])]) {
+			for (const esc of [
+				...(Array.isArray(escalasRecepcao) ? escalasRecepcao : []),
+				...(Array.isArray(escalasGestao) ? escalasGestao : [])
+			]) {
 				const chave = `${esc.medicoNome}_${esc.especialidade}`.toLowerCase();
 				if (!mapaEscalas.has(chave)) {
 					mapaEscalas.set(chave, esc);
@@ -770,13 +815,18 @@
 			if (Array.isArray(profissionaisList)) {
 				for (const p of profissionaisList) {
 					if (p.nome) {
-						const esp = p.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada');
+						const esp =
+							p.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada');
 						const chave = `${p.nome}_${esp}`.toLowerCase();
 						if (!mapaEscalas.has(chave)) {
 							mapaEscalas.set(chave, {
 								medicoId: p.id,
 								medicoNome: p.nome,
-								crm: p.registroProfissional ? `${p.conselho} ${p.registroProfissional}` : (ehCeo ? 'CRO' : 'CRM'),
+								crm: p.registroProfissional
+									? `${p.conselho} ${p.registroProfissional}`
+									: ehCeo
+										? 'CRO'
+										: 'CRM',
 								especialidade: esp,
 								diasSemana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
 								horarioInicio: '08:00',
@@ -834,8 +884,14 @@
 
 		const efetuarAgendamentoDireto = agendarDireto || habilitarRetroativo;
 
-		if (efetuarAgendamentoDireto && !habilitarRetroativo && !slotEscolhido && !alocacaoOtimizadaBalcao) {
-			erroAgendamento = 'Nenhum dia/horário da escala do especialista foi selecionado para o agendamento direto.';
+		if (
+			efetuarAgendamentoDireto &&
+			!habilitarRetroativo &&
+			!slotEscolhido &&
+			!alocacaoOtimizadaBalcao
+		) {
+			erroAgendamento =
+				'Nenhum dia/horário da escala do especialista foi selecionado para o agendamento direto.';
 			return;
 		}
 
@@ -866,19 +922,26 @@
 			consultorioCalculado = alocacaoOtimizadaBalcao.consultorio;
 		}
 
-		const nomeProfissionalFinal = medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || (efetuarAgendamentoDireto ? 'Especialista da Escala' : 'A definir pela Regulação');
-		const crmProfissionalFinal = medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm || (ehCeo ? 'CRO 0000' : 'CRM 0000');
+		const nomeProfissionalFinal =
+			medicoSelecionado?.nome ||
+			alocacaoOtimizadaBalcao?.medicoNome ||
+			(efetuarAgendamentoDireto ? 'Especialista da Escala' : 'A definir pela Regulação');
+		const crmProfissionalFinal =
+			medicoSelecionado?.registro ||
+			alocacaoOtimizadaBalcao?.crm ||
+			(ehCeo ? 'CRO 0000' : 'CRM 0000');
 
 		const notaAgendamento = efetuarAgendamentoDireto
-			? (`Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` + (habilitarRetroativo ? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]` : ''))
-			: (`Acolhimento Presencial de Balcão [${nomeOrgao}] | Especialidade: ${especialidade} | Prioridade: ${prioridade} | Demanda inserida na fila da Regulação Municipal | Obs: ${recomendacoes.trim() || 'Sem observações'}`);
+			? `Agendamento Presencial de Balcão [${nomeOrgao}] | Profissional: ${nomeProfissionalFinal} (${crmProfissionalFinal}) em ${dataCalculada} às ${horaCalculada} | Consultório: ${consultorioCalculado} | Prioridade: ${prioridade} | Obs: ${recomendacoes.trim() || 'Sem observações'}` +
+				(habilitarRetroativo
+					? ` | [MIGRAÇÃO PAPEL RETROATIVO: ${dataCalculada} às ${horaCalculada} - Status: ${statusRetroativo}]`
+					: '')
+			: `Acolhimento Presencial de Balcão [${nomeOrgao}] | Especialidade: ${especialidade} | Prioridade: ${prioridade} | Demanda inserida na fila da Regulação Municipal | Obs: ${recomendacoes.trim() || 'Sem observações'}`;
 
 		const numFinal = semNumero || !pacienteNumero.trim() ? 'S/N' : pacienteNumero.trim();
-		const endCompleto = [
-			pacienteRua.trim(),
-			numFinal,
-			pacienteComplemento.trim()
-		].filter(Boolean).join(', ');
+		const endCompleto = [pacienteRua.trim(), numFinal, pacienteComplemento.trim()]
+			.filter(Boolean)
+			.join(', ');
 
 		try {
 			// 1. Prepara dados do Paciente
@@ -925,10 +988,14 @@
 				crm: crmProfissionalFinal,
 				especialidadeSolicitada: especialidade.trim(),
 				cid10: ehCeo ? 'K04' : 'Z00',
-				cidDescricao: ehCeo ? 'Avaliação Odontológica Especializada' : 'Consulta Especializada Direta',
+				cidDescricao: ehCeo
+					? 'Avaliação Odontológica Especializada'
+					: 'Consulta Especializada Direta',
 				justificativaClinica: `Atendimento presencial no balcão do ${nomeOrgao}`,
 				prioridade,
-				dataSolicitacao: habilitarRetroativo ? dataCalculada : new Date().toISOString().substring(0, 10),
+				dataSolicitacao: habilitarRetroativo
+					? dataCalculada
+					: new Date().toISOString().substring(0, 10),
 				tipoServico,
 				procedimentoSolicitado: tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined
 			};
@@ -943,7 +1010,8 @@
 						pacienteId,
 						especialidade: especialidade.trim(),
 						tipoServico: tipoServico as any,
-						procedimentoSolicitado: tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined,
+						procedimentoSolicitado:
+							tipoServico === 'PROCEDIMENTO' ? procedimentoSolicitado : undefined,
 						modoData: 'RETROATIVO',
 						dataRetroativa: dataCalculada,
 						horaRetroativa: horaCalculada,
@@ -956,7 +1024,8 @@
 						paciente: pacientePayload,
 						solicitacao: solicitacaoPayload,
 						nota: notaAgendamento,
-						medicoDesejado: (medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome) || undefined,
+						medicoDesejado:
+							medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome || undefined,
 						dataAgendada: efetuarAgendamentoDireto ? dataCalculada : undefined,
 						horaAgendada: efetuarAgendamentoDireto ? horaCalculada : undefined,
 						consultorio: efetuarAgendamentoDireto ? consultorioCalculado : undefined,
@@ -964,7 +1033,10 @@
 						status: habilitarRetroativo ? statusRetroativo : undefined,
 						centro: siglaOrgao,
 						confirmarPresenca: efetuarAgendamentoDireto ? confirmarPresencaImediata : false,
-						statusAtendimento: (efetuarAgendamentoDireto && confirmarPresencaImediata) ? 'AGUARDANDO_ATENDIMENTO' : undefined,
+						statusAtendimento:
+							efetuarAgendamentoDireto && confirmarPresencaImediata
+								? 'AGUARDANDO_ATENDIMENTO'
+								: undefined,
 						agendarDireto: efetuarAgendamentoDireto
 					});
 
@@ -1058,18 +1130,20 @@
 
 <div class="flex flex-col gap-4 font-sans text-xs">
 	<!-- Topo com Identificação do Centro e Acesso Rápido -->
-	<div class="border border-slate-200 bg-white p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+	<div
+		class="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white p-3.5 shadow-xs"
+	>
 		<div class="flex items-center gap-3">
 			{#if ehCeo}
-				<IconDental size={28} class="text-emerald-800 shrink-0" />
+				<IconDental size={28} class="shrink-0 text-emerald-800" />
 			{:else}
-				<IconStethoscope size={28} class="text-blue-900 shrink-0" />
+				<IconStethoscope size={28} class="shrink-0 text-blue-900" />
 			{/if}
 			<div>
-				<h1 class="text-base font-bold font-mono text-slate-900 tracking-tight uppercase">
+				<h1 class="font-mono text-base font-bold tracking-tight text-slate-900 uppercase">
 					Acolhimento no Balcão · Entrada na Fila de Regulação ({centroSelecionado})
 				</h1>
-				<p class="text-slate-500 text-xs">
+				<p class="text-xs text-slate-500">
 					{nomeOrgao} — Acolhimento presencial da demanda para avaliação e liberação de data pela Regulação
 				</p>
 			</div>
@@ -1081,14 +1155,18 @@
 					<button
 						type="button"
 						onclick={() => (centroManual = 'CEM')}
-						class="px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors {!ehCeo ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
+						class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-colors {!ehCeo
+							? 'bg-blue-900 text-white shadow-xs'
+							: 'text-slate-600 hover:text-slate-900'}"
 					>
 						🏥 CEM (Médicas)
 					</button>
 					<button
 						type="button"
 						onclick={() => (centroManual = 'CEO')}
-						class="px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors {ehCeo ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
+						class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-colors {ehCeo
+							? 'bg-emerald-800 text-white shadow-xs'
+							: 'text-slate-600 hover:text-slate-900'}"
 					>
 						🦷 CEO (Odonto)
 					</button>
@@ -1096,13 +1174,13 @@
 			{/if}
 			<a
 				href="/{centroSelecionado.toLowerCase()}/recepcao/agenda"
-				class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-semibold px-3 py-1.5 uppercase transition-colors"
+				class="border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-semibold text-slate-700 uppercase transition-colors hover:bg-slate-50"
 			>
 				Agenda do Dia →
 			</a>
 			<a
 				href="/{centroSelecionado.toLowerCase()}/recepcao/fila"
-				class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-mono text-xs font-semibold px-3 py-1.5 uppercase transition-colors"
+				class="border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-semibold text-slate-700 uppercase transition-colors hover:bg-slate-50"
 			>
 				Fila de Espera →
 			</a>
@@ -1111,21 +1189,24 @@
 
 	<!-- Aviso quando não há escalas cadastradas -->
 	{#if !carregandoEscalas && escalasDoBanco.length === 0}
-		<div class="border-2 border-amber-600 bg-amber-50 p-4 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+		<div
+			class="flex flex-col items-start justify-between gap-3 border-2 border-amber-600 bg-amber-50 p-4 text-amber-950 shadow-xs sm:flex-row sm:items-center"
+		>
 			<div class="flex items-center gap-2.5">
-				<IconAlertTriangle size={20} class="text-amber-700 shrink-0" />
+				<IconAlertTriangle size={20} class="shrink-0 text-amber-700" />
 				<div>
-					<div class="font-mono font-bold text-xs uppercase tracking-wide text-amber-900">
+					<div class="font-mono text-xs font-bold tracking-wide text-amber-900 uppercase">
 						Nenhuma Escala de Atendimento Ativa no {siglaOrgao}
 					</div>
-					<div class="text-xs text-amber-800 font-sans mt-0.5">
-						Cadastre profissionais e suas escalas na Matriz de Vagas para habilitar o agendamento de balcão.
+					<div class="mt-0.5 font-sans text-xs text-amber-800">
+						Cadastre profissionais e suas escalas na Matriz de Vagas para habilitar o agendamento de
+						balcão.
 					</div>
 				</div>
 			</div>
 			<a
 				href="/{centroSelecionado.toLowerCase()}/gestao/escalas"
-				class="bg-amber-800 hover:bg-amber-900 text-white font-mono text-[10px] font-bold px-3 py-1.5 uppercase transition-colors whitespace-nowrap"
+				class="bg-amber-800 px-3 py-1.5 font-mono text-[10px] font-bold whitespace-nowrap text-white uppercase transition-colors hover:bg-amber-900"
 			>
 				Cadastrar Escalas →
 			</a>
@@ -1134,25 +1215,27 @@
 
 	<!-- Alerta de Sucesso -->
 	{#if sucessoAgendamento}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 text-emerald-900 font-bold flex flex-col gap-2 items-start whitespace-pre-wrap shadow-xs">
-			<div class="flex items-center gap-2 text-sm uppercase tracking-wide text-emerald-800">
+		<div
+			class="flex flex-col items-start gap-2 border-2 border-emerald-700 bg-emerald-50 p-4 font-bold whitespace-pre-wrap text-emerald-900 shadow-xs"
+		>
+			<div class="flex items-center gap-2 text-sm tracking-wide text-emerald-800 uppercase">
 				<IconCheck size={18} class="text-emerald-700" />
 				<span>AGENDAMENTO CONCLUÍDO COM SUCESSO</span>
 			</div>
-			<div class="font-mono text-xs font-normal bg-white/90 p-3 border border-emerald-300 w-full">
+			<div class="w-full border border-emerald-300 bg-white/90 p-3 font-mono text-xs font-normal">
 				{sucessoAgendamento}
 			</div>
 			<div class="flex flex-wrap gap-2 pt-1">
 				<a
 					href="/{centroSelecionado.toLowerCase()}/recepcao/agenda"
-					class="bg-emerald-800 hover:bg-emerald-900 text-white font-mono text-[11px] font-bold px-3 py-1.5 uppercase transition-colors inline-flex items-center gap-1"
+					class="inline-flex items-center gap-1 bg-emerald-800 px-3 py-1.5 font-mono text-[11px] font-bold text-white uppercase transition-colors hover:bg-emerald-900"
 				>
 					<IconCalendar size={14} />
 					<span>Ver na Agenda / Calendário ({siglaOrgao})</span>
 				</a>
 				<a
 					href="/{centroSelecionado.toLowerCase()}/recepcao/fila"
-					class="border border-emerald-700 bg-white hover:bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-3 py-1.5 uppercase transition-colors inline-flex items-center gap-1"
+					class="inline-flex items-center gap-1 border border-emerald-700 bg-white px-3 py-1.5 font-mono text-[11px] font-bold text-emerald-900 uppercase transition-colors hover:bg-emerald-100"
 				>
 					<IconUser size={14} />
 					<span>Ver na Fila de Pacientes ({siglaOrgao})</span>
@@ -1161,15 +1244,18 @@
 		</div>
 	{/if}
 
-	<div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
 		<!-- Painel 01: Dados do Paciente -->
 		<div class="border border-slate-200 bg-white md:col-span-5">
 			<PanelHeader title="Dados do Paciente (Identificação e Cadastro)" index="01" />
-			
-			<div class="p-4 flex flex-col gap-3 font-sans text-xs">
+
+			<div class="flex flex-col gap-3 p-4 font-sans text-xs">
 				<!-- CPF Busca/Digitação -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-cpf" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-cpf"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						CPF do Paciente <span class="text-red-700">*</span>
 					</label>
 					<div class="relative">
@@ -1179,26 +1265,33 @@
 							bind:value={pacienteCpf}
 							oninput={handleCpfInput}
 							placeholder="Digite o CPF (apenas números ou formatado)"
-							class="w-full border border-slate-300 bg-white px-2.5 py-2 outline-none focus:border-blue-900 font-mono text-sm"
+							class="w-full border border-slate-300 bg-white px-2.5 py-2 font-mono text-sm outline-none focus:border-blue-900"
 						/>
 						{#if buscandoCpf}
-							<span class="absolute right-2.5 top-2.5 text-[10px] font-mono text-blue-900 font-semibold animate-pulse">
+							<span
+								class="absolute top-2.5 right-2.5 animate-pulse font-mono text-[10px] font-semibold text-blue-900"
+							>
 								[BUSCANDO...]
 							</span>
 						{:else if pacienteExiste}
-							<span class="absolute right-2.5 top-2.5 text-[10px] font-mono text-emerald-700 font-bold">
+							<span
+								class="absolute top-2.5 right-2.5 font-mono text-[10px] font-bold text-emerald-700"
+							>
 								[CADASTRADO]
 							</span>
 						{/if}
 					</div>
 					{#if erroBusca}
-						<div class="text-amber-800 font-mono text-[10px] font-semibold mt-0.5">{erroBusca}</div>
+						<div class="mt-0.5 font-mono text-[10px] font-semibold text-amber-800">{erroBusca}</div>
 					{/if}
 				</div>
 
 				<!-- Nome Completo -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-nome" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-nome"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						Nome Completo do Paciente <span class="text-red-700">*</span>
 					</label>
 					<input
@@ -1206,13 +1299,16 @@
 						type="text"
 						bind:value={pacienteNome}
 						placeholder="Digite o nome completo"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 font-sans text-xs"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-xs outline-none focus:border-blue-900"
 					/>
 				</div>
 
 				<!-- Nome da Mãe -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-mae" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-mae"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						Nome da Mãe
 					</label>
 					<input
@@ -1220,13 +1316,16 @@
 						type="text"
 						bind:value={pacienteNomeMae}
 						placeholder="Digite o nome completo da mãe (opcional)"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 font-sans text-xs"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-xs outline-none focus:border-blue-900"
 					/>
 				</div>
 
 				<!-- Cartão SUS -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-sus" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-sus"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						Cartão Nacional de Saúde (CNS)
 					</label>
 					<input
@@ -1234,31 +1333,37 @@
 						type="text"
 						bind:value={pacienteSus}
 						placeholder="Digite o número do cartão SUS (opcional)"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono text-xs"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs outline-none"
 					/>
 				</div>
 
 				<!-- Nascimento e Sexo -->
 				<div class="grid grid-cols-2 gap-2">
 					<div class="flex flex-col gap-1">
-						<label for="pac-nasc" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						<label
+							for="pac-nasc"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							Data de Nascimento <span class="text-red-700">*</span>
 						</label>
 						<input
 							id="pac-nasc"
 							type="date"
 							bind:value={pacienteNasc}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono text-xs"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs outline-none"
 						/>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="pac-sexo" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						<label
+							for="pac-sexo"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							Sexo Biológico <span class="text-red-700">*</span>
 						</label>
 						<select
 							id="pac-sexo"
 							bind:value={pacienteSexo}
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none text-xs"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none"
 						>
 							<option value="M">Masculino</option>
 							<option value="F">Feminino</option>
@@ -1269,13 +1374,16 @@
 
 				<!-- Etnia / Raça-Cor -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-raca" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-raca"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						Etnia / Raça-Cor (IBGE)
 					</label>
 					<select
 						id="pac-raca"
 						bind:value={pacienteRacaCor}
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none text-xs"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none"
 					>
 						<option value="">Selecione a etnia / raça-cor (Opcional)</option>
 						{#each racaOpcoes as o (o.v)}
@@ -1286,7 +1394,10 @@
 
 				<!-- Telefone -->
 				<div class="flex flex-col gap-1">
-					<label for="pac-tel" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+					<label
+						for="pac-tel"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+					>
 						Telefone de Contato
 					</label>
 					<input
@@ -1294,28 +1405,34 @@
 						type="text"
 						bind:value={pacienteTel}
 						placeholder="DDD + Telefone (Ex: 87 99999-9999)"
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none font-mono text-xs"
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs outline-none"
 					/>
 				</div>
 
 				<!-- Endereço Residencial Desmembrado (Etapa 5) -->
-				<div class="border-t border-slate-200 pt-2.5 flex flex-col gap-2">
+				<div class="flex flex-col gap-2 border-t border-slate-200 pt-2.5">
 					<div class="flex items-center justify-between">
-						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center gap-1">
+						<span
+							class="flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase"
+						>
 							<IconMapPin size={12} class="text-blue-900" />
 							<span>Endereço Residencial do Paciente</span>
 						</span>
-						<span class="text-[9px] font-mono text-slate-400">Águas Belas / PE</span>
+						<span class="font-mono text-[9px] text-slate-400">Águas Belas / PE</span>
 					</div>
 
 					<!-- Linha 1: CEP e Bairro -->
 					<div class="grid grid-cols-12 gap-2">
 						<!-- CEP -->
 						<div class="col-span-5 flex flex-col gap-1">
-							<label for="pac-cep" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase flex items-center justify-between">
+							<label
+								for="pac-cep"
+								class="flex items-center justify-between font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								<span>CEP</span>
 								{#if buscandoCep}
-									<span class="text-blue-900 text-[8px] font-bold animate-pulse">[BUSCANDO...]</span>
+									<span class="animate-pulse text-[8px] font-bold text-blue-900">[BUSCANDO...]</span
+									>
 								{/if}
 							</label>
 							<div class="relative">
@@ -1326,17 +1443,20 @@
 									oninput={handleCepInput}
 									placeholder="55340-000"
 									maxlength="9"
-									class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 font-mono text-xs"
+									class="w-full border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs outline-none focus:border-blue-900"
 								/>
 							</div>
 							{#if erroCep}
-								<span class="text-[9px] text-amber-700 font-mono">{erroCep}</span>
+								<span class="font-mono text-[9px] text-amber-700">{erroCep}</span>
 							{/if}
 						</div>
 
 						<!-- Bairro -->
 						<div class="col-span-7 flex flex-col gap-1">
-							<label for="pac-bairro" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+							<label
+								for="pac-bairro"
+								class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Bairro / Localidade <span class="text-red-700">*</span>
 							</label>
 							<input
@@ -1344,7 +1464,7 @@
 								type="text"
 								bind:value={pacienteBairro}
 								placeholder="Ex: Centro, Garcia, Fulni-ô..."
-								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs font-medium"
+								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium outline-none focus:border-blue-900"
 							/>
 						</div>
 					</div>
@@ -1353,7 +1473,10 @@
 					<div class="grid grid-cols-12 gap-2">
 						<!-- Rua / Logradouro -->
 						<div class="col-span-8 flex flex-col gap-1">
-							<label for="pac-rua" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+							<label
+								for="pac-rua"
+								class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Logradouro / Rua / Sítio <span class="text-red-700">*</span>
 							</label>
 							<input
@@ -1361,20 +1484,25 @@
 								type="text"
 								bind:value={pacienteRua}
 								placeholder="Ex: Rua São Sebastião, Travessa, Sítio..."
-								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs font-medium"
+								class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium outline-none focus:border-blue-900"
 							/>
 						</div>
 
 						<!-- Número -->
 						<div class="col-span-4 flex flex-col gap-1">
 							<div class="flex items-center justify-between">
-								<label for="pac-num" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+								<label
+									for="pac-num"
+									class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+								>
 									Número
 								</label>
 								<button
 									type="button"
 									onclick={toggleSemNumero}
-									class="text-[9px] font-mono font-bold uppercase transition-colors {semNumero ? 'text-blue-900 font-black underline' : 'text-slate-400 hover:text-slate-700'}"
+									class="font-mono text-[9px] font-bold uppercase transition-colors {semNumero
+										? 'font-black text-blue-900 underline'
+										: 'text-slate-400 hover:text-slate-700'}"
 									title="Marcar como sem número predial"
 								>
 									[{semNumero ? '✓ S/N' : 'S/N'}]
@@ -1386,14 +1514,17 @@
 								bind:value={pacienteNumero}
 								disabled={semNumero}
 								placeholder="Ex: 120"
-								class="w-full border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-900 font-mono text-xs disabled:bg-slate-100 disabled:text-slate-500"
+								class="w-full border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs outline-none focus:border-blue-900 disabled:bg-slate-100 disabled:text-slate-500"
 							/>
 						</div>
 					</div>
 
 					<!-- Linha 3: Complemento -->
 					<div class="flex flex-col gap-1">
-						<label for="pac-comp" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						<label
+							for="pac-comp"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							Complemento / Ponto de Referência
 						</label>
 						<input
@@ -1401,15 +1532,18 @@
 							type="text"
 							bind:value={pacienteComplemento}
 							placeholder="Ex: Casa B, Apto 101, Próximo à Escola (opcional)"
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none focus:border-blue-900 text-xs"
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-blue-900"
 						/>
 					</div>
 				</div>
 
 				<!-- Unidade Básica de Saúde (UBS de Origem do Paciente) -->
-				<div class="flex flex-col gap-1 relative">
+				<div class="relative flex flex-col gap-1">
 					<div class="flex items-center justify-between">
-						<label for="pac-ubs" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase flex items-center gap-1">
+						<label
+							for="pac-ubs"
+							class="flex items-center gap-1 font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							<IconBuildingCommunity size={12} class="text-blue-900" />
 							<span>UBS de Origem do Paciente</span>
 							<span class="text-red-700">*</span>
@@ -1417,7 +1551,7 @@
 						<button
 							type="button"
 							onclick={() => abrirModalNovaUbs()}
-							class="text-[10px] font-mono font-bold text-blue-900 hover:text-blue-950 underline flex items-center gap-0.5"
+							class="flex items-center gap-0.5 font-mono text-[10px] font-bold text-blue-900 underline hover:text-blue-950"
 							title="Cadastrar nova UBS de Águas Belas que ainda não conste na lista"
 						>
 							<IconPlus size={11} />
@@ -1430,16 +1564,16 @@
 							id="pac-ubs"
 							type="text"
 							bind:value={buscaUbs}
-							onfocus={() => dropdownUbsAberto = true}
-							oninput={() => dropdownUbsAberto = true}
+							onfocus={() => (dropdownUbsAberto = true)}
+							oninput={() => (dropdownUbsAberto = true)}
 							placeholder="Buscar ou selecionar UBS de Águas Belas..."
-							class="w-full border border-slate-300 bg-white pl-2.5 pr-8 py-1.5 outline-none focus:border-blue-900 font-sans text-xs"
+							class="w-full border border-slate-300 bg-white py-1.5 pr-8 pl-2.5 font-sans text-xs outline-none focus:border-blue-900"
 						/>
 						{#if buscaUbs}
 							<button
 								type="button"
 								onclick={limparUbs}
-								class="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+								class="absolute top-2 right-2 text-slate-400 hover:text-slate-600"
 								title="Limpar seleção de UBS"
 							>
 								<IconX size={13} />
@@ -1448,15 +1582,19 @@
 					</div>
 
 					{#if pacienteUbsId}
-						<div class="flex items-center justify-between bg-blue-50 border border-blue-200 px-2.5 py-1 text-[11px] text-blue-900 font-medium">
-							<span class="truncate flex items-center gap-1">
-								<span class="font-mono text-[9px] uppercase font-bold text-blue-800">[UBS VINCULADA]:</span>
+						<div
+							class="flex items-center justify-between border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-900"
+						>
+							<span class="flex items-center gap-1 truncate">
+								<span class="font-mono text-[9px] font-bold text-blue-800 uppercase"
+									>[UBS VINCULADA]:</span
+								>
 								<strong>{pacienteUbsNome || buscaUbs}</strong>
 							</span>
 							<button
 								type="button"
 								onclick={limparUbs}
-								class="text-blue-700 hover:text-red-700 ml-2 text-[10px] font-mono font-bold uppercase"
+								class="ml-2 font-mono text-[10px] font-bold text-blue-700 uppercase hover:text-red-700"
 							>
 								[Alterar]
 							</button>
@@ -1465,22 +1603,24 @@
 
 					<!-- Dropdown de Sugestões de UBS -->
 					{#if dropdownUbsAberto}
-						<div 
-							class="absolute top-full left-0 right-0 z-30 bg-white border-2 border-blue-900 shadow-xl max-h-60 overflow-y-auto mt-1"
+						<div
+							class="absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto border-2 border-blue-900 bg-white shadow-xl"
 						>
-							<div class="bg-slate-100 px-2 py-1 border-b border-slate-200 text-[10px] font-mono text-slate-600 flex justify-between items-center">
+							<div
+								class="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-2 py-1 font-mono text-[10px] text-slate-600"
+							>
 								<span>REDE DE ATENÇÃO BÁSICA (ÁGUAS BELAS - PE)</span>
-								<button 
-									type="button" 
-									onclick={() => dropdownUbsAberto = false}
-									class="text-slate-500 hover:text-slate-800 font-bold"
+								<button
+									type="button"
+									onclick={() => (dropdownUbsAberto = false)}
+									class="font-bold text-slate-500 hover:text-slate-800"
 								>
 									✕
 								</button>
 							</div>
 
 							{#if carregandoUbs}
-								<div class="p-3 text-center text-xs font-mono text-slate-500">
+								<div class="p-3 text-center font-mono text-xs text-slate-500">
 									Carregando Unidades Básicas de Saúde...
 								</div>
 							{:else if ubsFiltradas.length > 0}
@@ -1488,19 +1628,21 @@
 									<button
 										type="button"
 										onclick={() => selecionarUbs(u)}
-										class="w-full text-left px-3 py-2 border-b border-slate-100 hover:bg-blue-50 flex flex-col gap-0.5 transition-colors group"
+										class="group flex w-full flex-col gap-0.5 border-b border-slate-100 px-3 py-2 text-left transition-colors hover:bg-blue-50"
 									>
 										<div class="flex items-center justify-between">
-											<span class="font-bold text-slate-900 text-xs group-hover:text-blue-900">
+											<span class="text-xs font-bold text-slate-900 group-hover:text-blue-900">
 												{u.nome}
 											</span>
 											{#if u.cnes}
-												<span class="font-mono text-[10px] text-slate-500 bg-slate-100 px-1 py-0.5 border border-slate-200">
+												<span
+													class="border border-slate-200 bg-slate-100 px-1 py-0.5 font-mono text-[10px] text-slate-500"
+												>
 													CNES: {u.cnes}
 												</span>
 											{/if}
 										</div>
-										<div class="text-[11px] text-slate-500 flex items-center gap-2">
+										<div class="flex items-center gap-2 text-[11px] text-slate-500">
 											{#if u.bairro}
 												<span class="flex items-center gap-0.5">
 													<IconMapPin size={10} class="text-slate-400" />
@@ -1521,13 +1663,15 @@
 							<button
 								type="button"
 								onclick={() => abrirModalNovaUbs(buscaUbs)}
-								class="w-full text-left p-2.5 bg-blue-50 hover:bg-blue-100 border-t-2 border-blue-900 text-blue-950 font-bold flex items-center gap-2 text-xs transition-colors"
+								class="flex w-full items-center gap-2 border-t-2 border-blue-900 bg-blue-50 p-2.5 text-left text-xs font-bold text-blue-950 transition-colors hover:bg-blue-100"
 							>
-								<div class="bg-blue-900 text-white p-1">
+								<div class="bg-blue-900 p-1 text-white">
 									<IconPlus size={14} />
 								</div>
 								<div class="flex flex-col">
-									<span class="uppercase tracking-wider text-[11px] text-blue-900">Cadastrar Nova UBS em Águas Belas</span>
+									<span class="text-[11px] tracking-wider text-blue-900 uppercase"
+										>Cadastrar Nova UBS em Águas Belas</span
+									>
 									{#if buscaUbs && !buscaUbsExisteExata}
 										<span class="text-[10px] font-normal text-slate-600">
 											Cadastrar "<strong>{buscaUbs}</strong>" no catálogo municipal
@@ -1546,14 +1690,16 @@
 		</div>
 
 		<!-- Painel 02: Dados do Atendimento & Busca na Escala do Especialista -->
-		<div class="border border-slate-200 bg-white md:col-span-7 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-white md:col-span-7">
 			<div>
 				<PanelHeader title="Atendimento Especializado & Escala do Especialista" index="02" />
-				
-				<div class="p-4 flex flex-col gap-3.5 font-sans text-xs">
+
+				<div class="flex flex-col gap-3.5 p-4 font-sans text-xs">
 					<!-- Identificação da Unidade -->
-					<div class="border border-slate-300 bg-slate-100 p-2 font-mono text-xs flex items-center justify-between">
-						<span class="font-bold text-slate-700 uppercase text-[10px] flex items-center gap-1">
+					<div
+						class="flex items-center justify-between border border-slate-300 bg-slate-100 p-2 font-mono text-xs"
+					>
+						<span class="flex items-center gap-1 text-[10px] font-bold text-slate-700 uppercase">
 							<IconBuildingHospital size={12} class="text-blue-900" />
 							<span>UNIDADE:</span>
 						</span>
@@ -1565,11 +1711,14 @@
 						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase">
 							Tipo de Atendimento *
 						</span>
-						<div class="grid grid-cols-2 gap-2 mt-0.5">
+						<div class="mt-0.5 grid grid-cols-2 gap-2">
 							<button
 								type="button"
-								onclick={() => tipoServico = 'CONSULTA'}
-								class="px-3 py-2 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'CONSULTA' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (tipoServico = 'CONSULTA')}
+								class="flex items-center justify-center gap-1.5 border px-3 py-2 font-mono text-xs font-bold uppercase transition-colors {tipoServico ===
+								'CONSULTA'
+									? 'border-blue-900 bg-blue-900 text-white'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								{#if ehCeo}
 									<IconDental size={14} />
@@ -1580,8 +1729,11 @@
 							</button>
 							<button
 								type="button"
-								onclick={() => tipoServico = 'PROCEDIMENTO'}
-								class="px-3 py-2 font-mono text-xs font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {tipoServico === 'PROCEDIMENTO' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (tipoServico = 'PROCEDIMENTO')}
+								class="flex items-center justify-center gap-1.5 border px-3 py-2 font-mono text-xs font-bold uppercase transition-colors {tipoServico ===
+								'PROCEDIMENTO'
+									? 'border-purple-900 bg-purple-900 text-white'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<IconFlask size={14} />
 								<span>PROCEDIMENTO SIGTAP</span>
@@ -1591,17 +1743,22 @@
 
 					<!-- Especialidade Solicitada -->
 					<div class="flex flex-col gap-1">
-						<label for="cons-esp" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						<label
+							for="cons-esp"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							Especialidade Solicitada <span class="text-red-700">*</span>
 						</label>
 						<select
 							id="cons-esp"
 							bind:value={especialidade}
 							onchange={handleEspecialidadeChange}
-							class="w-full border border-slate-300 bg-white px-2.5 py-2 outline-none focus:border-blue-900 font-sans text-xs"
+							class="w-full border border-slate-300 bg-white px-2.5 py-2 font-sans text-xs outline-none focus:border-blue-900"
 						>
 							{#if especialidadesCadastradas.length === 0}
-								<option value="">Nenhum serviço/especialidade cadastrado no catálogo do {siglaOrgao}</option>
+								<option value=""
+									>Nenhum serviço/especialidade cadastrado no catálogo do {siglaOrgao}</option
+								>
 							{:else}
 								<option value="">Selecione uma especialidade habilitada...</option>
 								{#each especialidadesCadastradas as esp}
@@ -1613,17 +1770,22 @@
 
 					<!-- Procedimento Específico (se tipoServico === 'PROCEDIMENTO') -->
 					{#if tipoServico === 'PROCEDIMENTO'}
-						<div class="flex flex-col gap-1 border-l-2 border-purple-800 pl-2.5 py-1">
-							<label for="cons-proc" class="font-mono text-[9px] font-bold tracking-widest text-purple-900 uppercase">
+						<div class="flex flex-col gap-1 border-l-2 border-purple-800 py-1 pl-2.5">
+							<label
+								for="cons-proc"
+								class="font-mono text-[9px] font-bold tracking-widest text-purple-900 uppercase"
+							>
 								Procedimento Diagnóstico / Terapêutico SIGTAP <span class="text-red-700">*</span>
 							</label>
 							<select
 								id="cons-proc"
 								bind:value={procedimentoSolicitado}
-								class="w-full border border-purple-300 bg-purple-50/50 px-2.5 py-2 outline-none focus:border-purple-900 font-mono text-xs text-purple-950 font-bold"
+								class="w-full border border-purple-300 bg-purple-50/50 px-2.5 py-2 font-mono text-xs font-bold text-purple-950 outline-none focus:border-purple-900"
 							>
 								{#if procedimentosCadastrados.length === 0}
-									<option value="">Nenhum procedimento SIGTAP cadastrado no catálogo do {siglaOrgao}</option>
+									<option value=""
+										>Nenhum procedimento SIGTAP cadastrado no catálogo do {siglaOrgao}</option
+									>
 								{:else}
 									<option value="">Selecione o procedimento da tabela SIGTAP...</option>
 									{#each procedimentosCadastrados as proc}
@@ -1635,11 +1797,18 @@
 					{/if}
 
 					<!-- Profissional / Especialista da Escala -->
-					<div class="flex flex-col gap-1 relative">
-						<label for="medico-search-btn" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase flex items-center justify-between">
+					<div class="relative flex flex-col gap-1">
+						<label
+							for="medico-search-btn"
+							class="flex items-center justify-between font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							<span>{rotuloProfissional} <span class="text-red-700">*</span></span>
 							{#if medicoSelecionado}
-								<button type="button" onclick={limparMedico} class="text-[9px] text-red-700 hover:underline">
+								<button
+									type="button"
+									onclick={limparMedico}
+									class="text-[9px] text-red-700 hover:underline"
+								>
 									[Limpar Seleção]
 								</button>
 							{/if}
@@ -1647,46 +1816,62 @@
 
 						<!-- Indicador de Filtro Ativo por Especialidade -->
 						{#if especialidade}
-							<div class="bg-blue-50 border border-blue-200 text-blue-950 px-2.5 py-1 text-[10px] font-mono flex items-center justify-between">
+							<div
+								class="flex items-center justify-between border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono text-[10px] text-blue-950"
+							>
 								<span class="flex items-center gap-1.5">
-									<span class="bg-blue-900 text-white px-1.5 py-0.2 text-[8px] font-bold">FILTRO ATIVO</span>
-									<span>Apenas especialistas habilitados para: <strong>{especialidade.toUpperCase()}</strong></span>
+									<span class="py-0.2 bg-blue-900 px-1.5 text-[8px] font-bold text-white"
+										>FILTRO ATIVO</span
+									>
+									<span
+										>Apenas especialistas habilitados para: <strong
+											>{especialidade.toUpperCase()}</strong
+										></span
+									>
 								</span>
 								<span class="font-bold text-blue-900">
 									{medicosFiltrados.length} médico(s)
 								</span>
 							</div>
 						{/if}
-						
+
 						<button
 							id="medico-search-btn"
 							type="button"
-							onclick={() => dropdownAberto = !dropdownAberto}
-							class="w-full border border-slate-300 bg-white px-2.5 py-2 text-left font-sans text-xs text-slate-900 outline-none flex justify-between items-center focus:border-blue-900"
+							onclick={() => (dropdownAberto = !dropdownAberto)}
+							class="flex w-full items-center justify-between border border-slate-300 bg-white px-2.5 py-2 text-left font-sans text-xs text-slate-900 outline-none focus:border-blue-900"
 						>
 							<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
 								{#if medicoSelecionado}
 									{medicoSelecionado.nome} — {especialidade || medicoSelecionado.especialidade} ({medicoSelecionado.registro})
 								{:else if medicosFiltrados.length === 0}
-									Nenhum {rotuloProfissional.toLowerCase()} cadastrado para {especialidade || 'o centro'} no {siglaOrgao}
+									Nenhum {rotuloProfissional.toLowerCase()} cadastrado para {especialidade ||
+										'o centro'} no {siglaOrgao}
 								{:else if especialidade}
-									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is) para {especialidade})...
+									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is)
+									para {especialidade})...
 								{:else}
 									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is))...
 								{/if}
 							</span>
-							<span class="text-slate-400 font-bold text-[9px]">{dropdownAberto ? '▲' : '▼'}</span>
+							<span class="text-[9px] font-bold text-slate-400">{dropdownAberto ? '▲' : '▼'}</span>
 						</button>
 
 						{#if dropdownAberto}
-							<div class="absolute z-20 left-0 right-0 top-full mt-1 border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)] max-h-56 overflow-y-auto">
-								<div class="p-2 border-b border-slate-200 bg-slate-50 sticky top-0 flex items-center gap-1.5">
-									<IconSearch size={14} class="text-slate-400 shrink-0" />
+							<div
+								class="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)]"
+							>
+								<div
+									class="sticky top-0 flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 p-2"
+								>
+									<IconSearch size={14} class="shrink-0 text-slate-400" />
 									<input
 										type="text"
 										bind:value={buscaMedico}
-										placeholder={especialidade ? `Filtrar médico que faz ${especialidade}...` : 'Filtrar por nome ou registro...'}
-										class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs"
+										placeholder={especialidade
+											? `Filtrar médico que faz ${especialidade}...`
+											: 'Filtrar por nome ou registro...'}
+										class="w-full border border-slate-300 bg-white px-2 py-1 text-xs outline-none"
 										onclick={(e) => e.stopPropagation()}
 									/>
 								</div>
@@ -1695,39 +1880,55 @@
 										<button
 											type="button"
 											onclick={() => selecionarMedico(med)}
-											class="w-full text-left px-3 py-2.5 hover:bg-blue-50 hover:text-blue-900 border-b border-slate-100 last:border-b-0 text-xs font-mono flex justify-between items-center gap-2"
+											class="flex w-full items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5 text-left font-mono text-xs last:border-b-0 hover:bg-blue-50 hover:text-blue-900"
 										>
 											<div class="flex flex-col gap-0.5">
-												<span class="font-bold text-slate-900 flex items-center gap-1.5">
+												<span class="flex items-center gap-1.5 font-bold text-slate-900">
 													<span>{med.nome}</span>
-													<span class="text-[10px] text-slate-500 font-normal">({med.registro})</span>
+													<span class="text-[10px] font-normal text-slate-500"
+														>({med.registro})</span
+													>
 												</span>
 												<div class="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
 													<span>Atende:</span>
-													{#each (med.diasSemana || []) as dia}
-														<span class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-1 py-0.2 text-[9px] font-bold">
+													{#each med.diasSemana || [] as dia}
+														<span
+															class="py-0.2 border border-indigo-200 bg-indigo-50 px-1 text-[9px] font-bold text-indigo-900"
+														>
 															{dia}
 														</span>
 													{/each}
-													<span class="text-slate-400">({med.horarioInicio} - {med.horarioFim})</span>
+													<span class="text-slate-400"
+														>({med.horarioInicio} - {med.horarioFim})</span
+													>
 												</div>
 											</div>
-											<div class="flex flex-col items-end gap-1 shrink-0">
+											<div class="flex shrink-0 flex-col items-end gap-1">
 												{#each med.especialidades as espItem}
-													<span class="text-[9px] px-1.5 py-0.5 uppercase font-semibold border {especialidadeMatch(espItem, especialidade) ? 'bg-blue-900 text-white border-blue-900 font-bold' : 'bg-slate-100 text-slate-700 border-slate-200'}">
+													<span
+														class="border px-1.5 py-0.5 text-[9px] font-semibold uppercase {especialidadeMatch(
+															espItem,
+															especialidade
+														)
+															? 'border-blue-900 bg-blue-900 font-bold text-white'
+															: 'border-slate-200 bg-slate-100 text-slate-700'}"
+													>
 														{espItem}
 													</span>
 												{/each}
 											</div>
 										</button>
 									{:else}
-										<div class="p-4 text-center text-slate-500 text-xs font-sans flex flex-col gap-2">
+										<div
+											class="p-4 text-center text-slate-500 text-xs font-sans flex flex-col gap-2"
+										>
 											{#if especialidade}
 												<div class="text-amber-800 font-bold">
 													Nenhum médico com atendimento cadastrado para "{especialidade}".
 												</div>
 												<div class="text-[11px] text-slate-600">
-													Cadastre o profissional e atribua esta especialidade na tela de Gestão de Usuários ou Matriz de Vagas.
+													Cadastre o profissional e atribua esta especialidade na tela de Gestão de
+													Usuários ou Matriz de Vagas.
 												</div>
 												<a
 													href="/{siglaOrgao.toLowerCase()}/gestao/usuarios"
@@ -1736,7 +1937,10 @@
 													Atribuir Médico no {siglaOrgao} →
 												</a>
 											{:else}
-												<div>Selecione a especialidade solicitada acima para listar os médicos especialistas.</div>
+												<div>
+													Selecione a especialidade solicitada acima para listar os médicos
+													especialistas.
+												</div>
 											{/if}
 										</div>
 									{/each}
@@ -1747,84 +1951,132 @@
 
 					<!-- Prioridade Clínica SUS (Diretriz de Alocação de Vagas) -->
 					<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
-						<span class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase flex items-center justify-between">
+						<span
+							class="flex items-center justify-between font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase"
+						>
 							<span>Prioridade Clínica (Diretriz de Alocação de Vagas) *</span>
-							<span class="text-[9px] text-blue-900 font-normal">Janela de Atendimento</span>
+							<span class="text-[9px] font-normal text-blue-900">Janela de Atendimento</span>
 						</span>
 
-						<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono text-[10px]">
+						<div class="grid grid-cols-2 gap-1.5 font-mono text-[10px] sm:grid-cols-4">
 							<button
 								type="button"
-								onclick={() => prioridade = 'ELETIVA'}
-								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'ELETIVA' ? 'border-emerald-800 bg-emerald-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (prioridade = 'ELETIVA')}
+								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								'ELETIVA'
+									? 'border-emerald-800 bg-emerald-800 text-white shadow-xs'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>ELETIVA</span>
-								<span class="text-[8px] font-normal {prioridade === 'ELETIVA' ? 'text-emerald-100' : 'text-slate-500'}">15 a 30 dias</span>
+								<span
+									class="text-[8px] font-normal {prioridade === 'ELETIVA'
+										? 'text-emerald-100'
+										: 'text-slate-500'}">15 a 30 dias</span
+								>
 							</button>
 							<button
 								type="button"
-								onclick={() => prioridade = 'PRIORITARIA'}
-								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'PRIORITARIA' ? 'border-amber-800 bg-amber-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (prioridade = 'PRIORITARIA')}
+								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								'PRIORITARIA'
+									? 'border-amber-800 bg-amber-800 text-white shadow-xs'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>PRIORITÁRIA</span>
-								<span class="text-[8px] font-normal {prioridade === 'PRIORITARIA' ? 'text-amber-100' : 'text-slate-500'}">7 a 10 dias (60+, PCD, TEA)</span>
+								<span
+									class="text-[8px] font-normal {prioridade === 'PRIORITARIA'
+										? 'text-amber-100'
+										: 'text-slate-500'}">7 a 10 dias (60+, PCD, TEA)</span
+								>
 							</button>
 							<button
 								type="button"
-								onclick={() => prioridade = 'URGENTE'}
-								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'URGENTE' ? 'border-orange-800 bg-orange-800 text-white shadow-xs' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (prioridade = 'URGENTE')}
+								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								'URGENTE'
+									? 'border-orange-800 bg-orange-800 text-white shadow-xs'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>URGENTE</span>
-								<span class="text-[8px] font-normal {prioridade === 'URGENTE' ? 'text-orange-100' : 'text-slate-500'}">Até 72 horas</span>
+								<span
+									class="text-[8px] font-normal {prioridade === 'URGENTE'
+										? 'text-orange-100'
+										: 'text-slate-500'}">Até 72 horas</span
+								>
 							</button>
 							<button
 								type="button"
-								onclick={() => prioridade = 'EMERGENCIA'}
-								class="px-2 py-2 font-bold uppercase border transition-colors flex flex-col items-center justify-center text-center gap-0.5 {prioridade === 'EMERGENCIA' ? 'border-red-900 bg-red-900 text-white shadow-xs animate-pulse' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+								onclick={() => (prioridade = 'EMERGENCIA')}
+								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								'EMERGENCIA'
+									? 'animate-pulse border-red-900 bg-red-900 text-white shadow-xs'
+									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>EMERGÊNCIA</span>
-								<span class="text-[8px] font-normal {prioridade === 'EMERGENCIA' ? 'text-red-100' : 'text-slate-500'}">Mesmo Dia / Encaixe</span>
+								<span
+									class="text-[8px] font-normal {prioridade === 'EMERGENCIA'
+										? 'text-red-100'
+										: 'text-slate-500'}">Mesmo Dia / Encaixe</span
+								>
 							</button>
 						</div>
 					</div>
 
 					<!-- Card do Slot Escolhido para Agendamento -->
 					{#if calculandoSlotBackend}
-						<div class="border border-blue-300 bg-blue-50 p-4 text-center text-blue-900 font-mono text-xs flex items-center justify-center gap-2 animate-pulse">
+						<div
+							class="flex animate-pulse items-center justify-center gap-2 border border-blue-300 bg-blue-50 p-4 text-center font-mono text-xs text-blue-900"
+						>
 							<IconBolt size={16} class="text-blue-900" />
 							<span>[BUSCANDO DISPONIBILIDADE NA ESCALA DO ESPECIALISTA...]</span>
 						</div>
 					{:else if slotEscolhido}
-						<div class="border-2 {prioridade === 'EMERGENCIA' ? 'border-red-800 bg-red-50/90 text-red-950' : prioridade === 'URGENTE' ? 'border-orange-700 bg-orange-50/90 text-orange-950' : 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} p-3.5 flex flex-col gap-2 font-mono text-xs shadow-xs">
+						<div
+							class="border-2 {prioridade === 'EMERGENCIA'
+								? 'border-red-800 bg-red-50/90 text-red-950'
+								: prioridade === 'URGENTE'
+									? 'border-orange-700 bg-orange-50/90 text-orange-950'
+									: 'border-emerald-700 bg-emerald-50/90 text-emerald-950'} flex flex-col gap-2 p-3.5 font-mono text-xs shadow-xs"
+						>
 							<div class="flex items-center justify-between">
-								<span class="font-bold uppercase text-[10px] flex items-center gap-1.5">
+								<span class="flex items-center gap-1.5 text-[10px] font-bold uppercase">
 									<IconCheck size={14} class="text-emerald-800" />
 									<span>HORÁRIO SELECIONADO NA ESCALA</span>
 								</span>
-								<span class="{slotEscolhido.isRecomendado ? 'bg-blue-900 text-white' : 'bg-emerald-800 text-white'} font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider">
+								<span
+									class="{slotEscolhido.isRecomendado
+										? 'bg-blue-900 text-white'
+										: 'bg-emerald-800 text-white'} px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
+								>
 									{slotEscolhido.isRecomendado ? 'SUGESTÃO AUTOMÁTICA' : 'ESCOLHIDO NA GRADE'}
 								</span>
 							</div>
 
-							<div class="text-base font-black font-sans flex items-center gap-2 text-slate-900">
+							<div class="flex items-center gap-2 font-sans text-base font-black text-slate-900">
 								<span class="flex items-center gap-1">
 									<IconCalendar size={16} class="text-slate-700" />
 									<span>{slotEscolhido.dataFormatada}</span>
 								</span>
 								<span>·</span>
-								<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono font-bold flex items-center gap-1">
+								<span
+									class="flex items-center gap-1 bg-emerald-700 px-2 py-0.5 font-mono text-xs font-bold text-white"
+								>
 									<IconClock size={13} />
 									<span>{slotEscolhido.hora} (SLOT CONFIRMADO)</span>
 								</span>
 							</div>
 
-							<div class="text-[11px] font-bold text-slate-800 flex items-center justify-between">
-								<span>{slotEscolhido.consultorio} · {medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome} ({medicoSelecionado?.registro || alocacaoOtimizadaBalcao?.crm})</span>
+							<div class="flex items-center justify-between text-[11px] font-bold text-slate-800">
+								<span
+									>{slotEscolhido.consultorio} · {medicoSelecionado?.nome ||
+										alocacaoOtimizadaBalcao?.medicoNome} ({medicoSelecionado?.registro ||
+										alocacaoOtimizadaBalcao?.crm})</span
+								>
 								{#if !slotEscolhido.isRecomendado && alocacaoOtimizadaBalcao}
 									<button
 										type="button"
 										onclick={selecionarSlotRecomendado}
-										class="text-[9px] text-blue-900 underline hover:font-black uppercase"
+										class="text-[9px] text-blue-900 uppercase underline hover:font-black"
 									>
 										[Voltar à sugestão inicial]
 									</button>
@@ -1832,57 +2084,87 @@
 							</div>
 						</div>
 					{:else if mensagemSlotBackend}
-						<div class="border border-amber-600 bg-amber-50 p-3 text-amber-900 font-mono text-xs flex flex-col gap-1">
-							<span class="font-bold flex items-center gap-1.5">
+						<div
+							class="flex flex-col gap-1 border border-amber-600 bg-amber-50 p-3 font-mono text-xs text-amber-900"
+						>
+							<span class="flex items-center gap-1.5 font-bold">
 								<IconAlertTriangle size={14} class="text-amber-700" />
 								<span>RETORNO DO SERVIDOR:</span>
 							</span>
 							<span class="font-sans text-[11px]">{mensagemSlotBackend}</span>
 						</div>
 					{:else}
-						<div class="border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-slate-500 font-mono text-[11px] flex items-center justify-center gap-1.5">
+						<div
+							class="flex items-center justify-center gap-1.5 border border-dashed border-slate-300 bg-slate-50 p-3 text-center font-mono text-[11px] text-slate-500"
+						>
 							<IconBolt size={14} class="text-slate-400" />
-							<span>Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para visualizar os dias e horários livres na escala.</span>
+							<span
+								>Selecione a <strong>Especialidade</strong> e o <strong>Profissional</strong> para visualizar
+								os dias e horários livres na escala.</span
+							>
 						</div>
 					{/if}
 
 					<!-- SELETOR VISUAL DA ESCALA DO ESPECIALISTA (DIAS E HORÁRIOS LIVRES) -->
 					{#if gradeDisponibilidade.length > 0}
-						<div class="border border-slate-300 bg-slate-50 p-3 flex flex-col gap-3 font-mono text-xs">
+						<div
+							class="flex flex-col gap-3 border border-slate-300 bg-slate-50 p-3 font-mono text-xs"
+						>
 							<div class="flex items-center justify-between border-b border-slate-200 pb-2">
 								<div class="flex flex-col">
-									<span class="font-bold text-slate-900 uppercase text-[10px] flex items-center gap-1.5">
+									<span
+										class="flex items-center gap-1.5 text-[10px] font-bold text-slate-900 uppercase"
+									>
 										<IconCalendar size={13} class="text-blue-900" />
 										<span>GRADE DA ESCALA: DIAS E HORÁRIOS DISPONÍVEIS</span>
 									</span>
-									<span class="text-[10px] text-slate-500 font-sans">
-										Especialista: <strong>{medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome}</strong> ({medicoSelecionado?.especialidade || alocacaoOtimizadaBalcao?.especialidade})
+									<span class="font-sans text-[10px] text-slate-500">
+										Especialista: <strong
+											>{medicoSelecionado?.nome || alocacaoOtimizadaBalcao?.medicoNome}</strong
+										>
+										({medicoSelecionado?.especialidade || alocacaoOtimizadaBalcao?.especialidade})
 									</span>
 								</div>
-								<span class="text-[9px] font-bold text-slate-600 uppercase bg-white border border-slate-200 px-2 py-0.5">
+								<span
+									class="border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-bold text-slate-600 uppercase"
+								>
 									Próximos {gradeDisponibilidade.length} dias de escala
 								</span>
 							</div>
 
 							<!-- Barra de Dias de Atendimento -->
 							<div class="flex flex-col gap-1">
-								<span class="text-[9px] font-bold uppercase text-slate-600">
+								<span class="text-[9px] font-bold text-slate-600 uppercase">
 									1. Selecione a data de atendimento do especialista:
 								</span>
-								<div class="flex gap-1.5 overflow-x-auto pb-1 pt-0.5">
+								<div class="flex gap-1.5 overflow-x-auto pt-0.5 pb-1">
 									{#each gradeDisponibilidade as dia (dia.data)}
 										<button
 											type="button"
-											onclick={() => diaSelecionadoGrade = dia.data}
-											class="flex flex-col items-center justify-center p-2 border text-center transition-all min-w-[85px] {diaSelecionadoGrade === dia.data ? 'border-blue-900 bg-blue-900 text-white shadow-xs font-bold scale-[1.02]' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+											onclick={() => (diaSelecionadoGrade = dia.data)}
+											class="flex min-w-[85px] flex-col items-center justify-center border p-2 text-center transition-all {diaSelecionadoGrade ===
+											dia.data
+												? 'scale-[1.02] border-blue-900 bg-blue-900 font-bold text-white shadow-xs'
+												: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 										>
-											<span class="text-[10px] font-mono uppercase {diaSelecionadoGrade === dia.data ? 'text-blue-200' : 'text-slate-500'}">
+											<span
+												class="font-mono text-[10px] uppercase {diaSelecionadoGrade === dia.data
+													? 'text-blue-200'
+													: 'text-slate-500'}"
+											>
 												{dia.diaSemana.substring(0, 3)}
 											</span>
-											<span class="text-xs font-bold font-mono">
+											<span class="font-mono text-xs font-bold">
 												{dia.dataFormatada.substring(0, 5)}
 											</span>
-											<span class="mt-1 text-[8px] px-1 py-0.2 uppercase font-bold {diaSelecionadoGrade === dia.data ? 'bg-blue-800 text-white' : dia.slotsLivres > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+											<span
+												class="py-0.2 mt-1 px-1 text-[8px] font-bold uppercase {diaSelecionadoGrade ===
+												dia.data
+													? 'bg-blue-800 text-white'
+													: dia.slotsLivres > 0
+														? 'bg-emerald-100 text-emerald-800'
+														: 'bg-red-100 text-red-800'}"
+											>
 												{dia.slotsLivres > 0 ? `${dia.slotsLivres} livres` : 'Lotado'}
 											</span>
 										</button>
@@ -1892,38 +2174,50 @@
 
 							<!-- Grade de Horários Livres do Dia Selecionado -->
 							{#if diaGradeAtual}
-								<div class="border border-slate-200 bg-white p-3 flex flex-col gap-2">
-									<div class="flex items-center justify-between text-[10px] border-b border-slate-100 pb-1.5">
+								<div class="flex flex-col gap-2 border border-slate-200 bg-white p-3">
+									<div
+										class="flex items-center justify-between border-b border-slate-100 pb-1.5 text-[10px]"
+									>
 										<span class="font-bold text-slate-800 uppercase">
 											2. Horários em {diaGradeAtual.diaSemana}, {diaGradeAtual.dataFormatada}:
 										</span>
 										<div class="flex items-center gap-2 text-[9px]">
-											<span class="flex items-center gap-1 text-emerald-800 font-bold">
-												<span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span> Livre
+											<span class="flex items-center gap-1 font-bold text-emerald-800">
+												<span class="inline-block h-2 w-2 rounded-full bg-emerald-600"></span> Livre
 											</span>
 											<span class="flex items-center gap-1 text-slate-400">
-												<span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span> Ocupado
+												<span class="inline-block h-2 w-2 rounded-full bg-slate-300"></span> Ocupado
 											</span>
 										</div>
 									</div>
 
-									<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 pt-1">
+									<div class="grid grid-cols-3 gap-1.5 pt-1 sm:grid-cols-4 md:grid-cols-6">
 										{#each diaGradeAtual.slots as slot}
-											{@const isSelecionado = slotEscolhido?.data === diaGradeAtual.data && slotEscolhido?.hora === slot.hora}
+											{@const isSelecionado =
+												slotEscolhido?.data === diaGradeAtual.data &&
+												slotEscolhido?.hora === slot.hora}
 											<button
 												type="button"
 												disabled={!slot.disponivel}
 												onclick={() => selecionarSlotGrade(diaGradeAtual!, slot)}
-												class="py-1.5 px-2 text-center text-xs font-mono font-bold border transition-all flex flex-col items-center justify-center gap-0.5
+												class="flex flex-col items-center justify-center gap-0.5 border px-2 py-1.5 text-center font-mono text-xs font-bold transition-all
 													{isSelecionado
-													? 'border-emerald-800 bg-emerald-700 text-white ring-2 ring-emerald-500 shadow-xs'
+													? 'border-emerald-800 bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-500'
 													: slot.disponivel
-													? 'border-emerald-300 bg-emerald-50/60 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-500 cursor-pointer'
-													: 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'}"
-												title={slot.disponivel ? `Selecionar horário ${slot.hora}` : slot.motivo || 'Horário ocupado'}
+														? 'cursor-pointer border-emerald-300 bg-emerald-50/60 text-emerald-950 hover:border-emerald-500 hover:bg-emerald-100'
+														: 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60'}"
+												title={slot.disponivel
+													? `Selecionar horário ${slot.hora}`
+													: slot.motivo || 'Horário ocupado'}
 											>
 												<span>{slot.hora}</span>
-												<span class="text-[8px] uppercase tracking-tighter {isSelecionado ? 'text-emerald-100 font-black' : slot.disponivel ? 'text-emerald-700' : 'text-slate-400'}">
+												<span
+													class="text-[8px] tracking-tighter uppercase {isSelecionado
+														? 'font-black text-emerald-100'
+														: slot.disponivel
+															? 'text-emerald-700'
+															: 'text-slate-400'}"
+												>
 													{isSelecionado ? '✓ ATUAL' : slot.disponivel ? 'Livre' : 'Ocupado'}
 												</span>
 											</button>
@@ -1936,45 +2230,57 @@
 
 					<!-- Checkbox Discreto: Lançamento de Ficha Antiga (Retroativo) -->
 					<div class="flex flex-col gap-2 border-t border-slate-200 pt-2.5">
-						<label class="flex items-center gap-2 cursor-pointer select-none font-mono text-xs text-slate-700 hover:text-slate-900">
+						<label
+							class="flex cursor-pointer items-center gap-2 font-mono text-xs text-slate-700 select-none hover:text-slate-900"
+						>
 							<input
 								type="checkbox"
 								bind:checked={habilitarRetroativo}
-								class="w-4 h-4 text-blue-900 border-slate-300 focus:ring-0"
+								class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-0"
 							/>
-							<span class="font-bold">Lançar Ficha Antiga de Papel (Registro Histórico Retroativo)</span>
+							<span class="font-bold"
+								>Lançar Ficha Antiga de Papel (Registro Histórico Retroativo)</span
+							>
 						</label>
 
 						{#if habilitarRetroativo}
-							<div class="flex flex-col gap-2.5 bg-amber-50/60 border border-amber-300 p-3 font-mono text-xs mt-1">
+							<div
+								class="mt-1 flex flex-col gap-2.5 border border-amber-300 bg-amber-50/60 p-3 font-mono text-xs"
+							>
 								<div class="text-[10px] font-bold text-amber-900 uppercase">
 									🔙 Digitalização de Ficha Antiga de Papel (Data Histórica)
 								</div>
 								<div class="grid grid-cols-3 gap-2 pt-1 font-mono">
 									<div class="flex flex-col gap-1">
-										<label for="ret-dt" class="text-[9px] font-bold text-slate-700 uppercase">Data do Atendimento *</label>
+										<label for="ret-dt" class="text-[9px] font-bold text-slate-700 uppercase"
+											>Data do Atendimento *</label
+										>
 										<input
 											id="ret-dt"
 											type="date"
 											bind:value={dataRetroativa}
-											class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
+											class="border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold outline-none"
 										/>
 									</div>
 									<div class="flex flex-col gap-1">
-										<label for="ret-hr" class="text-[9px] font-bold text-slate-700 uppercase">Horário</label>
+										<label for="ret-hr" class="text-[9px] font-bold text-slate-700 uppercase"
+											>Horário</label
+										>
 										<input
 											id="ret-hr"
 											type="time"
 											bind:value={horaRetroativa}
-											class="border border-slate-300 bg-white px-2 py-1.5 outline-none text-xs font-mono font-bold"
+											class="border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold outline-none"
 										/>
 									</div>
 									<div class="flex flex-col gap-1">
-										<label for="ret-st" class="text-[9px] font-bold text-slate-700 uppercase">Status do Registro</label>
+										<label for="ret-st" class="text-[9px] font-bold text-slate-700 uppercase"
+											>Status do Registro</label
+										>
 										<select
 											id="ret-st"
 											bind:value={statusRetroativo}
-											class="border border-slate-300 bg-white px-1.5 py-1.5 outline-none text-xs font-mono font-bold"
+											class="border border-slate-300 bg-white px-1.5 py-1.5 font-mono text-xs font-bold outline-none"
 										>
 											<option value="CONCLUIDO">✓ Concluído</option>
 											<option value="AGUARDANDO">⏳ Aguardando</option>
@@ -1988,7 +2294,10 @@
 
 					<!-- Recomendações ao Paciente -->
 					<div class="flex flex-col gap-1">
-						<label for="cons-rec" class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase">
+						<label
+							for="cons-rec"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
+						>
 							Recomendações ao Paciente / Observações
 						</label>
 						<textarea
@@ -1996,25 +2305,31 @@
 							rows="2"
 							bind:value={recomendacoes}
 							placeholder="Instruções de preparo, exames a trazer ou recomendações da recepção (opcional)..."
-							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 outline-none resize-none focus:border-blue-900 font-sans text-xs"
+							class="w-full resize-none border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-xs outline-none focus:border-blue-900"
 						></textarea>
 					</div>
 
 					<!-- Confirmação Imediata de Presença (Paciente no Balcão) -->
-					<div class="border border-emerald-300 bg-emerald-50/70 p-3 flex items-start gap-3 transition-colors">
+					<div
+						class="flex items-start gap-3 border border-emerald-300 bg-emerald-50/70 p-3 transition-colors"
+					>
 						<input
 							type="checkbox"
 							id="chk-presenca"
 							bind:checked={confirmarPresencaImediata}
-							class="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-800 focus:ring-emerald-700 cursor-pointer"
+							class="mt-0.5 h-4 w-4 cursor-pointer rounded border-emerald-400 text-emerald-800 focus:ring-emerald-700"
 						/>
 						<label for="chk-presenca" class="cursor-pointer select-none">
-							<div class="font-mono text-xs font-bold text-emerald-950 uppercase tracking-tight flex items-center gap-1.5">
-								<span class="inline-block w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+							<div
+								class="flex items-center gap-1.5 font-mono text-xs font-bold tracking-tight text-emerald-950 uppercase"
+							>
+								<span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-600"></span>
 								Confirmar presença imediata (Paciente já está na recepção / sala de espera)
 							</div>
-							<p class="font-sans text-[11px] text-emerald-800 leading-snug mt-0.5">
-								Ao marcar esta opção, o paciente será encaminhado com status <strong>AGUARDANDO ATENDIMENTO</strong> para a fila da recepção e lista de chamada do especialista / Painel TV.
+							<p class="mt-0.5 font-sans text-[11px] leading-snug text-emerald-800">
+								Ao marcar esta opção, o paciente será encaminhado com status <strong
+									>AGUARDANDO ATENDIMENTO</strong
+								> para a fila da recepção e lista de chamada do especialista / Painel TV.
 							</p>
 						</label>
 					</div>
@@ -2022,33 +2337,42 @@
 			</div>
 
 			<!-- Rodapé de Ação -->
-			<div class="bg-slate-50 p-4 border-t border-slate-200 flex flex-col gap-3 font-mono text-xs">
+			<div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 p-4 font-mono text-xs">
 				{#if !agendarDireto && !habilitarRetroativo}
-					<div class="border border-blue-200 bg-blue-50/70 p-3 flex items-start gap-2.5 text-blue-950 font-sans text-xs">
-						<IconCheck size={18} class="text-blue-700 shrink-0 mt-0.5" />
+					<div
+						class="flex items-start gap-2.5 border border-blue-200 bg-blue-50/70 p-3 font-sans text-xs text-blue-950"
+					>
+						<IconCheck size={18} class="mt-0.5 shrink-0 text-blue-700" />
 						<div>
-							<div class="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-900">
+							<div class="font-mono text-[10px] font-bold tracking-wider text-blue-900 uppercase">
 								Fluxo Municipal: Inclusão na Fila de Regulação
 							</div>
-							<p class="mt-0.5 text-blue-800 leading-relaxed text-[11px]">
-								O paciente será acolhido e cadastrado na fila de espera com status <strong>AGUARDANDO REGULAÇÃO</strong>. A equipe de Regulação avaliará e liberará a data e o horário da consulta diretamente na tela da Fila de Espera.
+							<p class="mt-0.5 text-[11px] leading-relaxed text-blue-800">
+								O paciente será acolhido e cadastrado na fila de espera com status <strong
+									>AGUARDANDO REGULAÇÃO</strong
+								>. A equipe de Regulação avaliará e liberará a data e o horário da consulta
+								diretamente na tela da Fila de Espera.
 							</p>
 						</div>
 					</div>
 				{/if}
 
 				{#if erroAgendamento}
-					<div class="border border-red-700 bg-red-50 px-3 py-2 text-red-800 font-bold">
+					<div class="border border-red-700 bg-red-50 px-3 py-2 font-bold text-red-800">
 						{erroAgendamento}
 					</div>
 				{/if}
 
-				<div class="flex items-center justify-between flex-wrap gap-3 pt-1 border-t border-slate-200">
-					<label class="flex items-center gap-2 cursor-pointer select-none font-mono text-xs text-slate-700 hover:text-slate-900">
+				<div
+					class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-1"
+				>
+					<label
+						class="flex cursor-pointer items-center gap-2 font-mono text-xs text-slate-700 select-none hover:text-slate-900"
+					>
 						<input
 							type="checkbox"
 							bind:checked={agendarDireto}
-							class="w-4 h-4 text-blue-900 border-slate-300 focus:ring-0"
+							class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-0"
 						/>
 						<span>Autorizar Agendamento Direto Imediato (Exceção / Encaixe de Urgência)</span>
 					</label>
@@ -2056,16 +2380,18 @@
 					<button
 						type="button"
 						onclick={agendarBalcao}
-						disabled={processandoAgendamento || (agendarDireto && !slotEscolhido && !alocacaoOtimizadaBalcao) || (habilitarRetroativo && !dataRetroativa)}
-						class="bg-blue-900 hover:bg-blue-950 text-white border border-blue-900 px-6 py-2.5 font-bold uppercase tracking-wider disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+						disabled={processandoAgendamento ||
+							(agendarDireto && !slotEscolhido && !alocacaoOtimizadaBalcao) ||
+							(habilitarRetroativo && !dataRetroativa)}
+						class="cursor-pointer border border-blue-900 bg-blue-900 px-6 py-2.5 font-bold tracking-wider text-white uppercase shadow-sm transition-colors hover:bg-blue-950 disabled:opacity-50"
 					>
 						{processandoAgendamento
 							? 'PROCESSANDO...'
 							: habilitarRetroativo
-							? 'SALVAR REGISTRO HISTÓRICO RETROATIVO ↵'
-							: agendarDireto
-							? 'CONFIRMAR AGENDAMENTO DIRETO NO BALCÃO ↵'
-							: 'CADASTRAR PACIENTE NA FILA DE REGULAÇÃO ↵'}
+								? 'SALVAR REGISTRO HISTÓRICO RETROATIVO ↵'
+								: agendarDireto
+									? 'CONFIRMAR AGENDAMENTO DIRETO NO BALCÃO ↵'
+									: 'CADASTRAR PACIENTE NA FILA DE REGULAÇÃO ↵'}
 					</button>
 				</div>
 			</div>
@@ -2075,20 +2401,24 @@
 
 <!-- Modal de Confirmação para Cadastro de Nova UBS On-the-Fly -->
 {#if modalNovaUbsAberto}
-	<div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-		<div class="bg-white border-2 border-blue-900 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+	>
+		<div
+			class="animate-in fade-in zoom-in-95 w-full max-w-lg border-2 border-blue-900 bg-white shadow-2xl duration-150"
+		>
 			<!-- Header do Modal -->
-			<div class="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+			<div class="flex items-center justify-between bg-blue-900 px-4 py-3 text-white">
 				<div class="flex items-center gap-2">
 					<IconBuildingCommunity size={18} class="text-blue-200" />
-					<h3 class="font-mono text-xs font-bold uppercase tracking-wider">
+					<h3 class="font-mono text-xs font-bold tracking-wider uppercase">
 						Nova Unidade Básica de Saúde (UBS)
 					</h3>
 				</div>
 				<button
 					type="button"
 					onclick={() => (modalNovaUbsAberto = false)}
-					class="text-white hover:text-red-300 font-bold p-1"
+					class="p-1 font-bold text-white hover:text-red-300"
 					title="Fechar"
 				>
 					<IconX size={18} />
@@ -2096,23 +2426,30 @@
 			</div>
 
 			<!-- Corpo do Modal -->
-			<div class="p-5 flex flex-col gap-3 font-sans text-xs">
-				<div class="border-l-4 border-blue-900 bg-blue-50 p-3 text-slate-700 text-[11px]">
-					<p class="font-bold text-blue-950 mb-1">Confirmação de Cadastro Municipal:</p>
+			<div class="flex flex-col gap-3 p-5 font-sans text-xs">
+				<div class="border-l-4 border-blue-900 bg-blue-50 p-3 text-[11px] text-slate-700">
+					<p class="mb-1 font-bold text-blue-950">Confirmação de Cadastro Municipal:</p>
 					<p>
-						Esta UBS será cadastrada permanentemente na rede municipal de <strong>Águas Belas / PE</strong> e automaticamente vinculada como a unidade de referência deste paciente.
+						Esta UBS será cadastrada permanentemente na rede municipal de <strong
+							>Águas Belas / PE</strong
+						> e automaticamente vinculada como a unidade de referência deste paciente.
 					</p>
 				</div>
 
 				{#if erroModalUbs}
-					<div class="border border-red-700 bg-red-50 p-2 text-red-800 font-mono text-[11px] font-bold">
+					<div
+						class="border border-red-700 bg-red-50 p-2 font-mono text-[11px] font-bold text-red-800"
+					>
 						{erroModalUbs}
 					</div>
 				{/if}
 
 				<!-- Nome da UBS -->
 				<div class="flex flex-col gap-1">
-					<label for="modal-ubs-nome" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+					<label
+						for="modal-ubs-nome"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
 						Nome Oficial da Unidade Básica <span class="text-red-700">*</span>
 					</label>
 					<input
@@ -2120,33 +2457,39 @@
 						type="text"
 						bind:value={formNovaUbsNome}
 						placeholder="Ex: UBS DR. JOSÉ CARDOSO ou UBS SÍTIO CURRAL NOVO"
-						class="w-full border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-900 text-xs font-semibold"
+						class="w-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-900"
 					/>
 				</div>
 
 				<!-- Município e UF -->
 				<div class="grid grid-cols-3 gap-2">
 					<div class="col-span-2 flex flex-col gap-1">
-						<label for="modal-ubs-mun" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						<label
+							for="modal-ubs-mun"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+						>
 							Município
 						</label>
 						<input
 							id="modal-ubs-mun"
 							type="text"
 							bind:value={formNovaUbsMunicipio}
-							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 outline-none text-xs font-bold text-slate-800"
+							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-800 outline-none"
 							readonly
 						/>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="modal-ubs-uf" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						<label
+							for="modal-ubs-uf"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+						>
 							UF
 						</label>
 						<input
 							id="modal-ubs-uf"
 							type="text"
 							bind:value={formNovaUbsUf}
-							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 outline-none text-xs font-bold text-slate-800"
+							class="w-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-800 outline-none"
 							readonly
 						/>
 					</div>
@@ -2155,7 +2498,10 @@
 				<!-- CNES e Bairro -->
 				<div class="grid grid-cols-2 gap-2">
 					<div class="flex flex-col gap-1">
-						<label for="modal-ubs-cnes" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						<label
+							for="modal-ubs-cnes"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+						>
 							Código CNES (Opcional)
 						</label>
 						<input
@@ -2164,11 +2510,14 @@
 							bind:value={formNovaUbsCnes}
 							placeholder="Ex: 2345678"
 							maxlength="7"
-							class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 font-mono text-xs"
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs outline-none focus:border-blue-900"
 						/>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="modal-ubs-bairro" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+						<label
+							for="modal-ubs-bairro"
+							class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+						>
 							Bairro / Comunidade
 						</label>
 						<input
@@ -2176,14 +2525,17 @@
 							type="text"
 							bind:value={formNovaUbsBairro}
 							placeholder="Ex: Comunidade Garcia, Centro..."
-							class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 text-xs"
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-blue-900"
 						/>
 					</div>
 				</div>
 
 				<!-- Endereço / Localidade -->
 				<div class="flex flex-col gap-1">
-					<label for="modal-ubs-end" class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase">
+					<label
+						for="modal-ubs-end"
+						class="font-mono text-[9px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
 						Endereço / Referência
 					</label>
 					<input
@@ -2191,18 +2543,18 @@
 						type="text"
 						bind:value={formNovaUbsEndereco}
 						placeholder="Ex: Rua Projetada, s/n, Povoado..."
-						class="w-full border border-slate-300 bg-white px-3 py-1.5 outline-none focus:border-blue-900 text-xs"
+						class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-blue-900"
 					/>
 				</div>
 			</div>
 
 			<!-- Rodapé do Modal -->
-			<div class="bg-slate-100 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+			<div class="flex justify-end gap-2 border-t border-slate-200 bg-slate-100 px-5 py-3">
 				<button
 					type="button"
 					onclick={() => (modalNovaUbsAberto = false)}
 					disabled={salvandoNovaUbs}
-					class="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold uppercase text-xs transition-colors"
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 uppercase transition-colors hover:bg-slate-50"
 				>
 					Cancelar
 				</button>
@@ -2210,7 +2562,7 @@
 					type="button"
 					onclick={salvarNovaUbs}
 					disabled={salvandoNovaUbs || !formNovaUbsNome.trim()}
-					class="px-5 py-2 border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase text-xs transition-colors disabled:opacity-50 flex items-center gap-1.5"
+					class="flex items-center gap-1.5 border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold text-white uppercase transition-colors hover:bg-blue-950 disabled:opacity-50"
 				>
 					{#if salvandoNovaUbs}
 						<IconRefresh size={14} class="animate-spin" />
@@ -2226,7 +2578,10 @@
 {/if}
 
 <style>
-	select, input, textarea, button {
+	select,
+	input,
+	textarea,
+	button {
 		border-radius: 0 !important;
 	}
 </style>

@@ -152,9 +152,7 @@
 		{#if novosArquivos.length > 0}
 			<ul class="mt-3 divide-y divide-slate-100 border border-slate-200 bg-white">
 				{#each novosArquivos as f, i (f.name + i)}
-					<li
-						class="flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px]"
-					>
+					<li class="flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px]">
 						<div class="flex items-center gap-2">
 							<span
 								class="border border-slate-300 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-slate-700 uppercase"
@@ -203,14 +201,20 @@
 			<li class="flex gap-2">
 				<span class="font-bold text-emerald-700">✓</span>
 				<span>
-					{novosArquivos.length} novo{novosArquivos.length === 1 ? '' : 's'} documento{novosArquivos.length === 1 ? '' : 's'}
+					{novosArquivos.length} novo{novosArquivos.length === 1 ? '' : 's'} documento{novosArquivos.length ===
+					1
+						? ''
+						: 's'}
 					{novosArquivos.length === 1 ? 'será vinculado' : 'serão vinculados'} ao protocolo
 					{encaminhamento.protocolo}
 				</span>
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-emerald-700">✓</span>
-				<span>Status será atualizado de <strong>PENDÊNCIA</strong> para <strong>AGUARDANDO REGULAÇÃO</strong></span>
+				<span
+					>Status será atualizado de <strong>PENDÊNCIA</strong> para
+					<strong>AGUARDANDO REGULAÇÃO</strong></span
+				>
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-emerald-700">✓</span>

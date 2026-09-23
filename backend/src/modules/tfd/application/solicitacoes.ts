@@ -8,6 +8,13 @@ import type { Request } from 'express';
 import { BadRequest, Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
+import {
+  Prisma,
+  PrioridadeSolicTFD,
+  StatusSolicitacaoTFD,
+  TipoAnexoSolicTFD,
+  TipoAnexoTFD,
+} from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { IFileStorage } from '../../../domain/services/IFileStorage';
@@ -15,6 +22,7 @@ import type { IAnexoScanner } from '../../../infrastructure/scan/ClamavScanner';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
 import bcrypt from 'bcryptjs';
 import { env } from '../../../shared/env';
+import { enumValue } from '../../../shared/prismaHelpers';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
@@ -73,9 +81,38 @@ export interface AnexoUploadInput {
   tipo: 'ENCAMINHAMENTO' | 'COMPROVANTE_CONSULTA' | 'LAUDO_MEDICO' | 'DOCUMENTO_IDENTIDADE' | 'OUTRO' | 'COMPROVANTE_ENCAMINHAMENTO' | 'EXAME' | 'LAUDO';
 }
 
-function safeIsoDate(d: any): string | null {
+const INCLUDE_FULL = {
+  paciente: {
+    select: {
+      id: true,
+      nome: true,
+      cpf: true,
+      dataNascimento: true,
+      telefone: true,
+      endereco: true,
+      cartaoSus: true,
+      nomeMae: true,
+      bairro: true,
+      municipio: true,
+      uf: true,
+      cep: true,
+    },
+  },
+  ubs: { select: { id: true, nome: true } },
+  anexos: true,
+} satisfies Prisma.SolicitacaoTFDInclude;
+
+const INCLUDE_VIAGEM_ALOCACAO = {
+  passageiros: { select: { numeroAssento: true } },
+} satisfies Prisma.ViagemFrotaInclude;
+
+type SolicitacaoTfdRow = Prisma.SolicitacaoTFDGetPayload<{ include: typeof INCLUDE_FULL }>;
+type ViagemAlocacaoRow = Prisma.ViagemFrotaGetPayload<{ include: typeof INCLUDE_VIAGEM_ALOCACAO }>;
+
+function safeIsoDate(d: unknown): string | null {
   if (!d) return null;
   if (d instanceof Date) return isNaN(d.getTime()) ? null : d.toISOString();
+  if (typeof d !== 'string' && typeof d !== 'number') return null;
   try {
     const parsed = new Date(d);
     return isNaN(parsed.getTime()) ? null : parsed.toISOString();
@@ -84,12 +121,12 @@ function safeIsoDate(d: any): string | null {
   }
 }
 
-function safeDateSlice10(d: any): string | null {
+function safeDateSlice10(d: unknown): string | null {
   const iso = safeIsoDate(d);
   return iso ? iso.slice(0, 10) : null;
 }
 
-function rowParaSolicitacao(r: any) {
+function rowParaSolicitacao(r: SolicitacaoTfdRow) {
   return {
     id: r.id,
     protocolo: r.protocolo,
@@ -101,7 +138,7 @@ function rowParaSolicitacao(r: any) {
     pacienteEndereco: r.pacienteEndereco ?? r.paciente?.endereco ?? null,
     pacienteCartaoSus: r.pacienteCartaoSus ?? r.paciente?.cartaoSus ?? null,
     pacienteNomeMae: r.pacienteNomeMae ?? r.paciente?.nomeMae ?? null,
-    pacienteRg: r.pacienteRg ?? r.paciente?.rg ?? null,
+    pacienteRg: r.pacienteRg ?? null,
     pacienteBairro: r.pacienteBairro ?? r.paciente?.bairro ?? null,
     pacienteMunicipio: r.pacienteMunicipio ?? r.paciente?.municipio ?? null,
     pacienteUf: r.pacienteUf ?? r.paciente?.uf ?? null,
@@ -133,7 +170,7 @@ function rowParaSolicitacao(r: any) {
     criadaEm: safeIsoDate(r.criadaEm) ?? new Date().toISOString(),
     decididaEm: safeIsoDate(r.decididaEm),
     decididaPorId: r.decididaPorId,
-    anexos: (r.anexos ?? []).map((a: any) => ({
+    anexos: (r.anexos ?? []).map((a) => ({
       id: a.id,
       nome: a.nomeArquivo ?? a.nome,
       nomeArquivo: a.nomeArquivo ?? a.nome,
@@ -148,14 +185,16 @@ function rowParaSolicitacao(r: any) {
   };
 }
 
-const INCLUDE_FULL = {
-  paciente: { select: { id: true, nome: true, cpf: true } },
-  ubs: { select: { id: true, nome: true } },
-  anexos: true,
-};
-
 const MIMES_ANEXO = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const MAX_BYTES = 10 * 1024 * 1024;
+
+function tipoAnexoTfd(tipo: AnexoUploadInput['tipo']): TipoAnexoTFD {
+  return enumValue(Object.values(TipoAnexoTFD), tipo) ?? TipoAnexoTFD.OUTRO;
+}
+
+function tipoAnexoSolicTfd(tipo: AnexoUploadInput['tipo']): TipoAnexoSolicTFD {
+  return enumValue(Object.values(TipoAnexoSolicTFD), tipo) ?? TipoAnexoSolicTFD.OUTRO;
+}
 
 export class SolicitacoesTfdUseCases {
   constructor(
@@ -171,7 +210,7 @@ export class SolicitacoesTfdUseCases {
     filtros: { status?: string; prioridade?: string; q?: string; criadaPorMim?: boolean },
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
-    const where: any = { prefeituraId, deletadaEm: null };
+    const where: Prisma.SolicitacaoTFDWhereInput = { prefeituraId, deletadaEm: null };
 
     if (scope.kind === 'UBS') {
       where.ubsId = scope.ubsId;
@@ -179,8 +218,16 @@ export class SolicitacoesTfdUseCases {
       where.ubsId = req.auth.ubsId;
     }
 
-    if (filtros.status) where.status = filtros.status;
-    if (filtros.prioridade) where.prioridade = filtros.prioridade;
+    if (filtros.status) {
+      const status = enumValue(Object.values(StatusSolicitacaoTFD), filtros.status);
+      if (!status) throw Unprocessable('STATUS_INVALIDO', 'Status de solicitação TFD inválido');
+      where.status = status;
+    }
+    if (filtros.prioridade) {
+      const prioridade = enumValue(Object.values(PrioridadeSolicTFD), filtros.prioridade);
+      if (!prioridade) throw Unprocessable('PRIORIDADE_INVALIDA', 'Prioridade de solicitação TFD inválida');
+      where.prioridade = prioridade;
+    }
     if (filtros.q && filtros.q.trim()) {
       const q = filtros.q.trim();
       where.OR = [
@@ -403,7 +450,7 @@ export class SolicitacoesTfdUseCases {
     id: string,
     observacoes: string | undefined,
     alocacao?: { viagemId: string; numeroAssento?: number },
-    modoAlocacao?: 'AUTOMATICA' | 'MANUAL',
+    _modoAlocacao?: 'AUTOMATICA' | 'MANUAL',
     dataManual?: string,
   ) {
     const atual = await prisma.solicitacaoTFD.findUnique({ where: { id } });
@@ -415,13 +462,13 @@ export class SolicitacoesTfdUseCases {
     const op = await resolverOperador(this.atendentes, autorId, atual.prefeituraId);
 
     // Se vier `alocacao`, valida viagem + assento ANTES de fazer qualquer escrita
-    let viagemDaAlocacao: Awaited<ReturnType<typeof prisma.viagemFrota.findUnique>> = null;
+    let viagemDaAlocacao: ViagemAlocacaoRow | null = null;
     if (alocacao) {
       viagemDaAlocacao = await prisma.viagemFrota.findUnique({
         where: { id: alocacao.viagemId },
-        include: { passageiros: { select: { numeroAssento: true } } } as any,
+        include: INCLUDE_VIAGEM_ALOCACAO,
       });
-      const v = viagemDaAlocacao as any;
+      const v = viagemDaAlocacao;
       if (!v) throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
       if (v.prefeituraId !== atual.prefeituraId) {
         throw NotFound('VIAGEM_NAO_ENCONTRADA', 'Viagem não encontrada');
@@ -567,12 +614,8 @@ export class SolicitacoesTfdUseCases {
         solicitacaoId,
         nome: upload.nomeOriginal,
         nomeArquivo: upload.nomeOriginal,
-        tipo: (['ENCAMINHAMENTO', 'COMPROVANTE_CONSULTA', 'LAUDO_MEDICO', 'DOCUMENTO_IDENTIDADE', 'OUTRO'].includes(upload.tipo)
-          ? upload.tipo
-          : 'OUTRO') as any,
-        tipoLegado: (['COMPROVANTE_ENCAMINHAMENTO', 'EXAME', 'LAUDO', 'OUTRO'].includes(upload.tipo)
-          ? upload.tipo
-          : 'OUTRO') as any,
+        tipo: tipoAnexoTfd(upload.tipo),
+        tipoLegado: tipoAnexoSolicTfd(upload.tipo),
         mimeType: upload.mimeType,
         tamanhoBytes: upload.buffer.length,
         tamanhoKb: arq.tamanhoKb,

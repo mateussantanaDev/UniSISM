@@ -292,7 +292,9 @@ export class CalcularAlocacaoVagaCentroUseCase {
           if (y && m && dia && h && min) {
             slotsOcupados.add(`${y}-${m}-${dia}_${h}:${min}`);
           }
-        } catch {}
+        } catch {
+          // Ignora datas legadas impossiveis de normalizar para slots ocupados.
+        }
 
         if (ag.observacoesRegulacao) {
           const match = ag.observacoesRegulacao.match(/(\d{2}:\d{2})/);
@@ -305,7 +307,6 @@ export class CalcularAlocacaoVagaCentroUseCase {
 
     // 5. Calcula a data inicial com base na Prioridade SUS
     const baseDate = input.dataBase ? new Date(input.dataBase) : new Date();
-    const diasAtendimento = parseDiasSemana(escalaSelecionada.diasSemana);
     const slotsPadrao = gerarSlotsTurno(
       escalaSelecionada.horarioInicio,
       escalaSelecionada.horarioFim,

@@ -8,12 +8,7 @@
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { goto } from '$app/navigation';
-	import type {
-		Combustivel,
-		StatusVeiculo,
-		TipoVeiculo,
-		Veiculo
-	} from '$lib/api/tfd-types';
+	import type { Combustivel, StatusVeiculo, TipoVeiculo, Veiculo } from '$lib/api/tfd-types';
 	import { onMount } from 'svelte';
 
 	const auth = useAuth();
@@ -139,7 +134,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -331,14 +327,7 @@
 				mono
 				bind:value={capacidade}
 			/>
-			<FormField
-				label="Ano"
-				name="ano"
-				type="number"
-				span={2}
-				mono
-				bind:value={ano}
-			/>
+			<FormField label="Ano" name="ano" type="number" span={2} mono bind:value={ano} />
 			<div class="col-span-3 flex flex-col">
 				<label
 					for="comb"

@@ -12,6 +12,7 @@ destinado ao usuário **REGULADOR_SMS** que **não é** `ADMIN`/`DESENVOLVEDOR`.
 contrato, headers, regras de erro e fluxos. Tudo já alinhado com a v0.9.1.
 
 > Convenções globais herdadas do projeto:
+>
 > - Datas/horas em ISO 8601. Mês em `YYYY-MM`. Data isolada `YYYY-MM-DD`.
 > - Erros: `{ "error": { "code": "...", "message": "...", "details": {...} } }`.
 > - Multi-tenancy estrito: `prefeituraId` injetado pelo JWT; recursos de
@@ -51,7 +52,6 @@ Esse atendente:
 - **Não administra** a rede de UBSs nem usuários (isso é do `ADMIN`/`DEV`).
 - **Não precisa** de KPIs analíticos, gráficos ou auditoria detalhada.
 - **Precisa**, todo dia, de quatro respostas:
-
   1. Quantos encaminhamentos chegaram hoje?
   2. Quantos estão pendentes (aguardando análise)?
   3. Quantos foram enviados (aprovados, aguardando retorno do SUS)?
@@ -69,14 +69,14 @@ A UI decide o "modo simples" exclusivamente pela role do JWT:
 
 ```ts
 // frontend/src/lib/presentation/contexts/authContext.ts
-rbac.ehReguladorSimples(role) === (role === 'REGULADOR_SMS')
+rbac.ehReguladorSimples(role) === (role === 'REGULADOR_SMS');
 ```
 
-| Role               | Vê modo  | Onde cai por padrão        |
-|--------------------|:--------:|----------------------------|
-| `REGULADOR_SMS`    | Simples  | `/sms/dashboard` (simples) |
-| `ADMIN`            | Completo | `/sms/dashboard` (completo)|
-| `DESENVOLVEDOR`    | Completo | `/sms/dashboard` (completo)|
+| Role            | Vê modo  | Onde cai por padrão         |
+| --------------- | :------: | --------------------------- |
+| `REGULADOR_SMS` | Simples  | `/sms/dashboard` (simples)  |
+| `ADMIN`         | Completo | `/sms/dashboard` (completo) |
+| `DESENVOLVEDOR` | Completo | `/sms/dashboard` (completo) |
 
 A diferença é **somente UI** — o backend continua aplicando o RBAC habitual:
 
@@ -115,12 +115,12 @@ Sidebar (frontend `SidebarSMS.svelte`):
 
 `GET /sms/dashboard` (página) renderiza 4 cards clicáveis:
 
-| Card                   | Valor (v0.9.1)                                          | Clica vai para     |
-|------------------------|--------------------------------------------------------|--------------------|
-| **Chegaram Hoje**      | `MetricasDashboard.encaminhamentosHoje`                | `/sms/solicitacoes`|
-| **Pendentes**          | `MetricasDashboard.aguardandoRegulacao`                | `/sms/solicitacoes`|
-| **Enviados**           | `MetricasDashboard.enviadosAguardandoResposta`         | `/sms/solicitacoes`|
-| **Respondidos**        | `MetricasDashboard.respondidosTotal`                   | `/sms/respostas`   |
+| Card              | Valor (v0.9.1)                                 | Clica vai para      |
+| ----------------- | ---------------------------------------------- | ------------------- |
+| **Chegaram Hoje** | `MetricasDashboard.encaminhamentosHoje`        | `/sms/solicitacoes` |
+| **Pendentes**     | `MetricasDashboard.aguardandoRegulacao`        | `/sms/solicitacoes` |
+| **Enviados**      | `MetricasDashboard.enviadosAguardandoResposta` | `/sms/solicitacoes` |
+| **Respondidos**   | `MetricasDashboard.respondidosTotal`           | `/sms/respostas`    |
 
 ### Chamada efetiva
 
@@ -133,14 +133,14 @@ Resposta esperada (campos novos em **v0.9.1**):
 
 ```json
 {
-  "encaminhamentosHoje": 12,
-  "aguardandoRegulacao": 47,
-  "pendenciasDocumento": 3,
-  "aprovadosHoje": 8,
-  "tempoMedioConsolidacaoSegundos": 342,
-  "encaminhamentosSemana": 91,
-  "enviadosAguardandoResposta": 28,
-  "respondidosTotal": 156
+	"encaminhamentosHoje": 12,
+	"aguardandoRegulacao": 47,
+	"pendenciasDocumento": 3,
+	"aprovadosHoje": 8,
+	"tempoMedioConsolidacaoSegundos": 342,
+	"encaminhamentosSemana": 91,
+	"enviadosAguardandoResposta": 28,
+	"respondidosTotal": 156
 }
 ```
 
@@ -319,44 +319,44 @@ compartilhamento é **do arquivo** (binário), não de uma URL — por LGPD.
 
 ### 8.4. Requisitos do backend para `/anexos/:id/download`
 
-| Item                          | Comportamento esperado                                  |
-|-------------------------------|----------------------------------------------------------|
-| Auth                          | `Authorization: Bearer <jwt>` obrigatório.               |
-| RBAC                          | Servir apenas se o anexo pertence à prefeitura do JWT.   |
-| Scan                          | Servir somente se `scanStatus = LIMPO`. Senão 409 com code `ANEXO_NAO_LIBERADO`. |
-| Content-Type                  | Real do arquivo. PDF → `application/pdf`. Não `octet-stream` indevido. |
-| Content-Disposition           | `inline; filename="..."` preferido — habilita visualização sem download forçado. |
-| Cache-Control                 | `private, max-age=0, must-revalidate`. Não cachear em proxies. |
-| Tamanho máximo                | 10 MB por anexo (definido pelo PDF do encaminhamento).   |
-| Pre-signed URL (opcional)     | Aceita; backend pode redirecionar 302 para S3 com TTL ≤ 60s. |
+| Item                      | Comportamento esperado                                                           |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| Auth                      | `Authorization: Bearer <jwt>` obrigatório.                                       |
+| RBAC                      | Servir apenas se o anexo pertence à prefeitura do JWT.                           |
+| Scan                      | Servir somente se `scanStatus = LIMPO`. Senão 409 com code `ANEXO_NAO_LIBERADO`. |
+| Content-Type              | Real do arquivo. PDF → `application/pdf`. Não `octet-stream` indevido.           |
+| Content-Disposition       | `inline; filename="..."` preferido — habilita visualização sem download forçado. |
+| Cache-Control             | `private, max-age=0, must-revalidate`. Não cachear em proxies.                   |
+| Tamanho máximo            | 10 MB por anexo (definido pelo PDF do encaminhamento).                           |
+| Pre-signed URL (opcional) | Aceita; backend pode redirecionar 302 para S3 com TTL ≤ 60s.                     |
 
 ---
 
 ## 9. Endpoints consumidos (v0.9.1)
 
-| Tela                                  | Método | Rota                                                            |
-|---------------------------------------|:------:|------------------------------------------------------------------|
-| Dashboard simples                     | GET    | `/v1/dashboard/metrics`                                          |
-| Solicitações Recebidas — níveis 1–4   | GET    | `/v1/encaminhamentos/arvore?excluirRascunho=true&[ubsId&ano&mes]`|
-| Solicitações Recebidas — nível 5      | GET    | `/v1/encaminhamentos?desde=&ate=&limit=500`                      |
-| Respostas do SUS — níveis 1–4         | GET    | `/v1/encaminhamentos/arvore?respostaSUS=true&excluirRascunho=true&[…]`|
-| Respostas do SUS — nível 5            | GET    | `/v1/encaminhamentos?desde=&ate=&respostaSUS=true&limit=500`     |
-| Detalhe simplificado                  | GET    | `/v1/encaminhamentos/:id`                                        |
-| Download/Visualizar/Compartilhar anexo| GET    | `/v1/anexos/:id/download`                                        |
+| Tela                                   | Método | Rota                                                                   |
+| -------------------------------------- | :----: | ---------------------------------------------------------------------- |
+| Dashboard simples                      |  GET   | `/v1/dashboard/metrics`                                                |
+| Solicitações Recebidas — níveis 1–4    |  GET   | `/v1/encaminhamentos/arvore?excluirRascunho=true&[ubsId&ano&mes]`      |
+| Solicitações Recebidas — nível 5       |  GET   | `/v1/encaminhamentos?desde=&ate=&limit=500`                            |
+| Respostas do SUS — níveis 1–4          |  GET   | `/v1/encaminhamentos/arvore?respostaSUS=true&excluirRascunho=true&[…]` |
+| Respostas do SUS — nível 5             |  GET   | `/v1/encaminhamentos?desde=&ate=&respostaSUS=true&limit=500`           |
+| Detalhe simplificado                   |  GET   | `/v1/encaminhamentos/:id`                                              |
+| Download/Visualizar/Compartilhar anexo |  GET   | `/v1/anexos/:id/download`                                              |
 
 ### `MetricasDashboard` (referência de tipo · v0.9.1)
 
 ```ts
 interface MetricasDashboard {
-  encaminhamentosHoje: number;
-  aguardandoRegulacao: number;
-  pendenciasDocumento: number;
-  aprovadosHoje: number;
-  tempoMedioConsolidacaoSegundos: number;
-  encaminhamentosSemana: number;
-  // ▼ adicionados na v0.9.1
-  enviadosAguardandoResposta: number; // APROVADO sem respostaSUS
-  respondidosTotal: number;           // APROVADO com respostaSUS
+	encaminhamentosHoje: number;
+	aguardandoRegulacao: number;
+	pendenciasDocumento: number;
+	aprovadosHoje: number;
+	tempoMedioConsolidacaoSegundos: number;
+	encaminhamentosSemana: number;
+	// ▼ adicionados na v0.9.1
+	enviadosAguardandoResposta: number; // APROVADO sem respostaSUS
+	respondidosTotal: number; // APROVADO com respostaSUS
 }
 ```
 
@@ -364,11 +364,11 @@ interface MetricasDashboard {
 
 ```ts
 interface ArvoreQuery {
-  ubsId?: string;        // desce um nível
-  ano?: number;          // exige ubsId
-  mes?: number;          // exige ubsId + ano
-  respostaSUS?: boolean; // v0.9.1 — filtra pelo flag
-  excluirRascunho?: boolean; // v0.9.1 — exclui RASCUNHO
+	ubsId?: string; // desce um nível
+	ano?: number; // exige ubsId
+	mes?: number; // exige ubsId + ano
+	respostaSUS?: boolean; // v0.9.1 — filtra pelo flag
+	excluirRascunho?: boolean; // v0.9.1 — exclui RASCUNHO
 }
 ```
 
@@ -376,12 +376,12 @@ interface ArvoreQuery {
 
 ```ts
 interface ListEncaminhamentosQuery {
-  status?: StatusEncaminhamento;
-  pacienteId?: string;
-  desde?: string;
-  ate?: string;
-  limit?: number;
-  respostaSUS?: boolean; // v0.9.1
+	status?: StatusEncaminhamento;
+	pacienteId?: string;
+	desde?: string;
+	ate?: string;
+	limit?: number;
+	respostaSUS?: boolean; // v0.9.1
 }
 ```
 
@@ -392,8 +392,8 @@ interface ListEncaminhamentosQuery {
 Tudo que estava listado como **opcional** na primeira versão deste doc
 foi entregue pelo backend na **v0.9.1** e já é consumido pelo frontend.
 
-| Item                                                              | Status |
-|-------------------------------------------------------------------|:------:|
+| Item                                                                             |  Status   |
+| -------------------------------------------------------------------------------- | :-------: |
 | Campos `enviadosAguardandoResposta` e `respondidosTotal` em `/dashboard/metrics` | ✅ v0.9.1 |
 | Filtros `respostaSUS` e `excluirRascunho` em `/encaminhamentos/arvore`           | ✅ v0.9.1 |
 | Filtro `respostaSUS` em `/encaminhamentos`                                       | ✅ v0.9.1 |
@@ -410,24 +410,24 @@ usa o mesmo endpoint do completo (zero custo extra).
 Todos já traduzidos em `frontend/src/lib/api/erros-sms.ts`
 (função `mensagemErroSms()`):
 
-| Code                          | HTTP | Quando                                                       |
-|-------------------------------|:----:|---------------------------------------------------------------|
-| `TOKEN_AUSENTE`               | 401  | Sem header `Authorization`.                                  |
-| `TOKEN_EXPIRADO`              | 401  | JWT fora da validade.                                        |
-| `NAO_AUTENTICADO`             | 401  | Token inválido / assinatura quebrada.                        |
-| `PERMISSAO_INSUFICIENTE`      | 403  | Role autenticada não pode chamar este endpoint.              |
-| `ENCAMINHAMENTO_NAO_ENCONTRADO`| 404 | ID inválido ou outra prefeitura.                             |
-| `ANEXO_NAO_ENCONTRADO`        | 404  | Idem para anexos.                                            |
-| `UBS_NAO_ENCONTRADA`          | 404  | `ubsId` inválido na árvore.                                  |
-| `PARAMS_INCOMPATIVEIS`        | 400  | Query da árvore com combinação inválida (mês sem ano etc.).  |
-| `PAYLOAD_INVALIDO`            | 400  | Schema rejeita query/body.                                   |
-| `ANEXO_NAO_LIBERADO`          | 409  | Scan ≠ `LIMPO`. `details.scanStatus`.                        |
-| `ERRO_INTERNO`                | 500  | Genérico.                                                    |
+| Code                            | HTTP | Quando                                                      |
+| ------------------------------- | :--: | ----------------------------------------------------------- |
+| `TOKEN_AUSENTE`                 | 401  | Sem header `Authorization`.                                 |
+| `TOKEN_EXPIRADO`                | 401  | JWT fora da validade.                                       |
+| `NAO_AUTENTICADO`               | 401  | Token inválido / assinatura quebrada.                       |
+| `PERMISSAO_INSUFICIENTE`        | 403  | Role autenticada não pode chamar este endpoint.             |
+| `ENCAMINHAMENTO_NAO_ENCONTRADO` | 404  | ID inválido ou outra prefeitura.                            |
+| `ANEXO_NAO_ENCONTRADO`          | 404  | Idem para anexos.                                           |
+| `UBS_NAO_ENCONTRADA`            | 404  | `ubsId` inválido na árvore.                                 |
+| `PARAMS_INCOMPATIVEIS`          | 400  | Query da árvore com combinação inválida (mês sem ano etc.). |
+| `PAYLOAD_INVALIDO`              | 400  | Schema rejeita query/body.                                  |
+| `ANEXO_NAO_LIBERADO`            | 409  | Scan ≠ `LIMPO`. `details.scanStatus`.                       |
+| `ERRO_INTERNO`                  | 500  | Genérico.                                                   |
 
 Formato canônico:
 
 ```json
-{ "error": { "code": "...", "message": "...", "details": { } } }
+{ "error": { "code": "...", "message": "...", "details": {} } }
 ```
 
 ---

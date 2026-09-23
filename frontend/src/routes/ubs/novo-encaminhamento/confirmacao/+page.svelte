@@ -31,9 +31,7 @@
 		<div class="border-2 border-emerald-700 bg-emerald-50 p-6">
 			<div class="flex flex-wrap items-center justify-between gap-4">
 				<div>
-					<div
-						class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase"
-					>
+					<div class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
 						✓ ENCAMINHAMENTO CONSOLIDADO COM SUCESSO
 					</div>
 					<div class="mt-1 font-mono text-3xl font-bold text-emerald-900">
@@ -44,11 +42,7 @@
 					</div>
 				</div>
 				<div class="flex gap-2">
-					<PrimaryButton
-						label="Ver no Histórico"
-						variant="secondary"
-						onclick={verNoHistorico}
-					/>
+					<PrimaryButton label="Ver no Histórico" variant="secondary" onclick={verNoHistorico} />
 					<PrimaryButton label="Novo Encaminhamento" onclick={novoEncaminhamento} />
 				</div>
 			</div>

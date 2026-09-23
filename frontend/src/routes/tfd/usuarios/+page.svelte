@@ -92,13 +92,12 @@
 				subtitle="Gestores e reguladores cadastrados na sua prefeitura"
 				index="01"
 			>
-				<PrimaryButton
-					label="+ Novo Usuário"
-					onclick={() => goto('/tfd/usuarios/novo')}
-				/>
+				<PrimaryButton label="+ Novo Usuário" onclick={() => goto('/tfd/usuarios/novo')} />
 			</PanelHeader>
 
-			<div class="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+			<div
+				class="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+			>
 				<input
 					type="text"
 					bind:value={busca}
@@ -149,7 +148,9 @@
 						{:else}
 							{#each filtrada as u (u.id)}
 								<tr class="border-b border-slate-100 hover:bg-slate-50">
-									<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+									>
 										{u.nome}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
@@ -160,7 +161,9 @@
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2">
 										<span
-											class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {roleTone[u.role]}"
+											class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {roleTone[
+												u.role
+											]}"
 										>
 											{u.role}
 										</span>
@@ -170,11 +173,15 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if u.ativo}
-											<span class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-800 uppercase">
+											<span
+												class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-800 uppercase"
+											>
 												ATIVO
 											</span>
 										{:else}
-											<span class="border border-slate-300 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-slate-600 uppercase">
+											<span
+												class="border border-slate-300 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-slate-600 uppercase"
+											>
 												INATIVO
 											</span>
 										{/if}
@@ -190,7 +197,9 @@
 		<div
 			class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900"
 		>
-			<strong class="font-mono tracking-widest uppercase">Equipe TFD:</strong> o GESTOR_TFD comanda a frota e a regulação financeira; o REGULADOR_TFD apenas cadastra solicitações de viagem (cadastro de passageiro).
+			<strong class="font-mono tracking-widest uppercase">Equipe TFD:</strong> o GESTOR_TFD comanda a
+			frota e a regulação financeira; o REGULADOR_TFD apenas cadastra solicitações de viagem (cadastro
+			de passageiro).
 		</div>
 	</div>
 {/if}

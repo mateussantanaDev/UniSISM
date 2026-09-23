@@ -76,6 +76,29 @@ async function ensurePaciente(ubsId: string) {
   return p;
 }
 
+async function ensureRecomendacaoCardiologia(atendenteId: string) {
+  await prisma.especialidadeRecomendacao.upsert({
+    where: { especialidade: 'Cardiologia' },
+    create: {
+      especialidade: 'Cardiologia',
+      recomendacoes: [
+        'Levar documento com foto e Cartão SUS.',
+        'Levar exames cardiológicos recentes, se houver.',
+        'Chegar com 30 minutos de antecedência.',
+      ],
+      criadoPorId: atendenteId,
+    },
+    update: {
+      ativo: true,
+      recomendacoes: [
+        'Levar documento com foto e Cartão SUS.',
+        'Levar exames cardiológicos recentes, se houver.',
+        'Chegar com 30 minutos de antecedência.',
+      ],
+    },
+  });
+}
+
 async function criarEncaminhamento(
   ubsId: string,
   atendenteId: string,
@@ -144,6 +167,7 @@ async function main(): Promise<void> {
   const ubs = await ensureUbs(pref.id);
   const atendente = await ensureAtendente(ubs);
   const paciente = await ensurePaciente(ubs.id);
+  await ensureRecomendacaoCardiologia(atendente.id);
   console.log(`✓ Pré-requisitos: prefeitura=${pref.id}, ubs=${ubs.id}, atendente=${atendente.id}, paciente=${paciente.id}`);
 
   // 2. Garantir PacienteConta

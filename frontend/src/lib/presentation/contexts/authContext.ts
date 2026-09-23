@@ -116,11 +116,7 @@ export const rbac = {
 	/** Visualizar a fila completa da regulação. */
 	podeVerFilaRegulacao(role: Role | undefined): boolean {
 		if (!role) return false;
-		return (
-			role === 'REGULADOR_SMS' ||
-			role === 'ADMIN' ||
-			role === 'DESENVOLVEDOR'
-		);
+		return role === 'REGULADOR_SMS' || role === 'ADMIN' || role === 'DESENVOLVEDOR';
 	},
 	/**
 	 * REGULADOR_SMS "puro" — atendente normal sem nível administrativo.
@@ -138,11 +134,7 @@ export const rbac = {
 	 */
 	podeGerenciarTFD(role: Role | undefined): boolean {
 		if (!role) return false;
-		return (
-			role === 'GESTOR_TFD' ||
-			role === 'ADMIN' ||
-			role === 'DESENVOLVEDOR'
-		);
+		return role === 'GESTOR_TFD' || role === 'ADMIN' || role === 'DESENVOLVEDOR';
 	},
 	/**
 	 * REGULADOR_TFD "puro" — atendente que apenas cadastra passageiros
@@ -158,11 +150,7 @@ export const rbac = {
 	 */
 	podeCadastrarUsuarioTFD(role: Role | undefined): boolean {
 		if (!role) return false;
-		return (
-			role === 'GESTOR_TFD' ||
-			role === 'ADMIN' ||
-			role === 'DESENVOLVEDOR'
-		);
+		return role === 'GESTOR_TFD' || role === 'ADMIN' || role === 'DESENVOLVEDOR';
 	},
 
 	// ────────── Administração ──────────
@@ -204,11 +192,7 @@ export const rbac = {
 	 */
 	podeAcessarFace2SMS(role: Role | undefined): boolean {
 		if (!role) return false;
-		return (
-			role === 'REGULADOR_SMS' ||
-			role === 'ADMIN' ||
-			role === 'DESENVOLVEDOR'
-		);
+		return role === 'REGULADOR_SMS' || role === 'ADMIN' || role === 'DESENVOLVEDOR';
 	},
 	/**
 	 * Face 4 · TFD → centro de comando logístico (frota, embarques, custos).
@@ -232,17 +216,22 @@ export const rbac = {
 	 * Gestor TFD → /tfd.
 	 * Regulador/Admin/DEV sem unidade específica → /sms.
 	 */
-	faceDestinoPadrao(
-		role: Role | undefined,
-		me?: MeResponse | null
-	): string {
+	faceDestinoPadrao(role: Role | undefined, me?: MeResponse | null): string {
 		if (!role) return '/login';
 
 		const tipoUnidade = me?.tipoUnidade?.toUpperCase();
 		const nomeUnidade = me?.unidade?.toUpperCase() || '';
 		const cargo = me?.cargo?.toUpperCase() || '';
-		const ehCeo = tipoUnidade === 'CEO' || nomeUnidade.includes('CEO') || nomeUnidade.includes('ODONTOL') || cargo.includes('CEO') || cargo.includes('DENTIST');
-		const ehCem = tipoUnidade === 'CEM' || (nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO')) || cargo.includes('CEM');
+		const ehCeo =
+			tipoUnidade === 'CEO' ||
+			nomeUnidade.includes('CEO') ||
+			nomeUnidade.includes('ODONTOL') ||
+			cargo.includes('CEO') ||
+			cargo.includes('DENTIST');
+		const ehCem =
+			tipoUnidade === 'CEM' ||
+			(nomeUnidade.includes('CEM') && !nomeUnidade.includes('CEO')) ||
+			cargo.includes('CEM');
 
 		if (ehCeo) {
 			if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA') return '/ceo/medico/agenda';
@@ -263,7 +252,8 @@ export const rbac = {
 		if (role === 'ATENDENTE_CENTRO') return '/centro/recepcao/fila';
 		if (role === 'MEDICO') return '/ubs/dashboard';
 		if (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') return '/ubs/dashboard';
-		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD') return '/tfd/dashboard';
+		if (role === 'GESTOR_TFD' || role === 'REGULADOR_TFD' || role === 'ATENDENTE_TFD')
+			return '/tfd/dashboard';
 		if (role === 'MOTORISTA_TFD') return '/tfd/viagens';
 		if (role === 'REGULADOR_SMS' || role === 'ADMIN') return '/sms/dashboard';
 		if (role === 'DESENVOLVEDOR') return '/sms/dashboard';

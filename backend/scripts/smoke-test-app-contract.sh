@@ -15,8 +15,39 @@
 set -u
 
 BASE="${BASE:-http://localhost:3333/v1}"
-CPF="${CPF:-53474131826}"
+CPF="${CPF:-12345678909}"
 SENHA="${SENHA:-$CPF}"
+
+if [ -f .env ]; then
+  if [ -z "${API_KEY:-}" ]; then
+    API_KEY="$(grep -E '^API_KEY=' .env | head -n1 | cut -d= -f2-)"
+    API_KEY="${API_KEY%\"}"
+    API_KEY="${API_KEY#\"}"
+    API_KEY="${API_KEY%\'}"
+    API_KEY="${API_KEY#\'}"
+  fi
+  if [ -z "${API_KEY_HEADER:-}" ]; then
+    API_KEY_HEADER="$(grep -E '^API_KEY_HEADER=' .env | head -n1 | cut -d= -f2-)"
+    API_KEY_HEADER="${API_KEY_HEADER%\"}"
+    API_KEY_HEADER="${API_KEY_HEADER#\"}"
+    API_KEY_HEADER="${API_KEY_HEADER%\'}"
+    API_KEY_HEADER="${API_KEY_HEADER#\'}"
+  fi
+fi
+
+API_KEY_HEADER="${API_KEY_HEADER:-x-api-key}"
+API_HEADERS=()
+if [ -n "${API_KEY:-}" ]; then
+  API_HEADERS=(-H "$API_KEY_HEADER: $API_KEY")
+fi
+
+if [ "${SMOKE_ENSURE_PACIENTE:-true}" != "false" ]; then
+  if ! npx ts-node --transpile-only scripts/quick-create-paciente.ts >/tmp/unisism-smoke-paciente.log 2>&1; then
+    echo "❌ Falha ao garantir paciente de teste antes do smoke:"
+    sed -n '1,120p' /tmp/unisism-smoke-paciente.log
+    exit 1
+  fi
+fi
 
 PASS=0
 FAIL=0
@@ -44,12 +75,19 @@ echo "════════════════════════�
 echo "  MANDATO_BACKEND.md §12 — Smoke contract test"
 echo "  Backend: $BASE"
 echo "  Paciente: CPF $CPF"
+if [ -n "${API_KEY:-}" ]; then
+  echo "  API key: usando header $API_KEY_HEADER"
+else
+  echo "  API key: não configurada"
+fi
+echo "  Fixture paciente: garantida"
 echo "═══════════════════════════════════════════════════════════════"
 
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.1] Login"
 RESP=$(curl -sX POST "$BASE/auth/paciente/login" \
+  "${API_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -d "{\"cpf\":\"$CPF\",\"senha\":\"$SENHA\"}")
 
@@ -67,7 +105,7 @@ REFRESH=$(echo "$RESP" | jq -r .refreshToken 2>/dev/null)
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.2] /me — shape idêntico ao paciente do login"
-ME=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/auth/paciente/me")
+ME=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/auth/paciente/me")
 assert "2.1 senhaProvisoria bool"       "$(check "$ME" '.senhaProvisoria | type == "boolean"')"
 assert "2.2 ubsVinculadaId string"      "$(check "$ME" '.ubsVinculadaId | type == "string"')"
 assert "2.3 dataNascimento string"      "$(check "$ME" '.dataNascimento | type == "string"')"
@@ -78,7 +116,7 @@ assert "2.6 fotoUrl chave existe"       "$(check "$ME" 'has("fotoUrl")')"
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.3] Encaminhamentos — shape FLAT (sem solicitacao aninhado)"
-ENCS=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos")
+ENCS=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos")
 COUNT_ENCS=$(echo "$ENCS" | jq 'length' 2>/dev/null)
 if [ "${COUNT_ENCS:-0}" = "0" ]; then
   echo "  ⚠️  Sem encaminhamentos cadastrados — pulando 3.x (mas array vazio é OK)"
@@ -101,7 +139,7 @@ fi
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.4] /encaminhamentos/ativo — null literal ou objeto"
-ATIVO=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/ativo")
+ATIVO=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/ativo")
 if [ "$ATIVO" = "null" ]; then
   assert "4.1 retorna null literal (sem encaminhamento)" "ok"
 elif echo "$ATIVO" | jq -e '.id' >/dev/null 2>&1; then
@@ -115,7 +153,7 @@ echo
 echo "[12.5] Anexos por encaminhamento"
 if [ "${COUNT_ENCS:-0}" -gt 0 ]; then
   ID=$(echo "$ENCS" | jq -r '.[0].id')
-  ANEXOS=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/$ID/anexos")
+  ANEXOS=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/$ID/anexos")
   COUNT_ANX=$(echo "$ANEXOS" | jq 'length' 2>/dev/null)
   if [ "${COUNT_ANX:-0}" -gt 0 ]; then
     assert "5.1 tipo PDF|IMG|DOC"        "$(check "$ANEXOS" '.[0].tipo | test("^(PDF|IMG|DOC)$")')"
@@ -132,7 +170,7 @@ fi
 echo
 echo "[12.6] Timeline"
 if [ "${COUNT_ENCS:-0}" -gt 0 ]; then
-  TL=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/$ID/timeline")
+  TL=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/encaminhamentos/$ID/timeline")
   COUNT_TL=$(echo "$TL" | jq 'length' 2>/dev/null)
   if [ "${COUNT_TL:-0}" -gt 0 ]; then
     assert "6.1 campo 'em' presente"     "$(check "$TL" '.[0] | has("em")')"
@@ -147,7 +185,7 @@ fi
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.7] Notificações"
-N=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/notificacoes")
+N=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/notificacoes")
 COUNT_N=$(echo "$N" | jq 'length' 2>/dev/null)
 if [ "${COUNT_N:-0}" -gt 0 ]; then
   assert "7.1 lida é boolean"             "$(check "$N" '.[0].lida | type == "boolean"')"
@@ -157,13 +195,13 @@ else
   assert "7.0 notificações array (vazio ok)" "$(check "$N" 'type == "array"')"
 fi
 
-COUNT_RESP=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/notificacoes/contagem-nao-lidas")
+COUNT_RESP=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/notificacoes/contagem-nao-lidas")
 assert "7.4 contagem retorna campo 'count'"  "$(check "$COUNT_RESP" '.count | type == "number"')"
 
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.8] Dossiê"
-DOSSIE=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/dossie/resumo")
+DOSSIE=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/dossie/resumo")
 assert "8.1 totalExames number"            "$(check "$DOSSIE" '.totalExames | type == "number"')"
 assert "8.2 alergias array"                "$(check "$DOSSIE" '.alergias | type == "array"')"
 assert "8.3 condicoesCronicas array"       "$(check "$DOSSIE" '.condicoesCronicas | type == "array"')"
@@ -171,15 +209,15 @@ assert "8.3 condicoesCronicas array"       "$(check "$DOSSIE" '.condicoesCronica
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.9] UBS"
-UBS=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/ubs/minha")
-HTTP_UBS=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$BASE/paciente/ubs/minha")
+UBS=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/ubs/minha")
+HTTP_UBS=$(curl -s -o /dev/null -w '%{http_code}' "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/ubs/minha")
 if [ "$HTTP_UBS" = "404" ]; then
   echo "  ⏭  paciente sem UBS — pulando UBS check (404 esperado)"
 else
   assert "9.1 cidade string"               "$(check "$UBS" '.cidade | type == "string"')"
   # whatsapp pode ser null se não cadastrado — só validar formato quando presente
   if echo "$UBS" | jq -e '.whatsapp' >/dev/null 2>&1; then
-    assert "9.2 whatsapp formato DDI dígitos" "$(check "$UBS" '.whatsapp | test("^55[0-9]{10,11}$")')"
+    assert "9.2 whatsapp formato DDI dígitos" "$(check "$UBS" '(.whatsapp | test("^55[0-9]+$")) and ((.whatsapp | length) >= 12 and (.whatsapp | length) <= 13)')"
   else
     assert "9.2 whatsapp pode ser null"    "ok"
   fi
@@ -188,7 +226,7 @@ fi
 # ────────────────────────────────────────────────────────────────
 echo
 echo "[12.10] TFD viagens"
-VIAGENS=$(curl -sH "Authorization: Bearer $TOKEN" "$BASE/paciente/tfd/viagens")
+VIAGENS=$(curl -s "${API_HEADERS[@]}" -H "Authorization: Bearer $TOKEN" "$BASE/paciente/tfd/viagens")
 COUNT_V=$(echo "$VIAGENS" | jq 'length' 2>/dev/null)
 if [ "${COUNT_V:-0}" -gt 0 ]; then
   assert "10.1 horaPartida HH:mm"          "$(check "$VIAGENS" '.[0].horaPartida | test("^[0-2][0-9]:[0-5][0-9]$")')"
@@ -200,10 +238,33 @@ fi
 echo
 echo "[BONUS] Refresh rotativo"
 REFRESH_RESP=$(curl -sX POST "$BASE/auth/paciente/refresh" \
+  "${API_HEADERS[@]}" \
   -H 'Content-Type: application/json' \
   -d "{\"refreshToken\":\"$REFRESH\"}")
 assert "B.1 refresh retorna accessToken NOVO"    "$(check "$REFRESH_RESP" '.accessToken | type == "string"')"
 assert "B.2 refresh retorna expiresAt"            "$(check "$REFRESH_RESP" '.expiresAt | test("^[0-9]{4}")')"
+
+# ────────────────────────────────────────────────────────────────
+echo
+echo "[INFRA] Segurança e erros padrão"
+HEALTH_HTTP=$(curl -s -o /tmp/unisism-smoke-health.json -w '%{http_code}' "$BASE/health")
+assert "I.1 health público sem API key" "$( [ "$HEALTH_HTTP" = "200" ] && echo ok || echo "FAIL (HTTP $HEALTH_HTTP)" )"
+
+if [ -n "${API_KEY:-}" ]; then
+  NO_KEY=$(curl -s "$BASE/dashboard/metrics")
+  assert "I.2 rota privada exige API key" "$(check "$NO_KEY" '.error.code == "API_KEY_INVALIDA"')"
+else
+  echo "  ⏭  API key não configurada — pulando I.2"
+fi
+
+INVALID_PAYLOAD=$(curl -sX POST "$BASE/auth/paciente/login" \
+  "${API_HEADERS[@]}" \
+  -H 'Content-Type: application/json' \
+  -d '{}')
+assert "I.3 payload inválido retorna 400 padrão" "$(check "$INVALID_PAYLOAD" '.error.code == "PAYLOAD_INVALIDO"')"
+
+NOT_FOUND=$(curl -s "${API_HEADERS[@]}" "$BASE/rota-inexistente")
+assert "I.4 rota inexistente retorna 404 padrão" "$(check "$NOT_FOUND" '.error.code == "ROTA_NAO_ENCONTRADA"')"
 
 # ────────────────────────────────────────────────────────────────
 echo

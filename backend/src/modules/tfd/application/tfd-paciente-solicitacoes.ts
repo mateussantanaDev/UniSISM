@@ -19,10 +19,7 @@ import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { ensurePrefeituraAcessivel, type AccessScope } from '../../../shared/scope';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
-import {
-  NotificacaoPacienteService,
-  MENSAGENS,
-} from '../../../infrastructure/services/NotificacaoPacienteService';
+import { NotificacaoPacienteService } from '../../../infrastructure/services/NotificacaoPacienteService';
 
 export type StatusTfdPaciente =
   | 'AGUARDANDO'

@@ -95,7 +95,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -106,7 +107,12 @@
 			sublabel="Tratamento Fora do Domicílio"
 		/>
 		<MetricCard label="Realizadas" value={realizadas} sublabel="Concluídas" accent="success" />
-		<MetricCard label="Agendadas" value={agendadas} sublabel="Em fila para viagem" accent="warning" />
+		<MetricCard
+			label="Agendadas"
+			value={agendadas}
+			sublabel="Em fila para viagem"
+			accent="warning"
+		/>
 		<MetricCard
 			label="Custo Acumulado"
 			value={formatarBRL(custoTotal)}

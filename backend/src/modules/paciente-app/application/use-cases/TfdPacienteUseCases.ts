@@ -52,6 +52,46 @@ export interface TfdSolicitacaoPacienteDto {
   aprovadaEm: string | null;
 }
 
+type TfdViagemPacienteRow = {
+  id: string;
+  destino: string;
+  unidadeDestino: string | null;
+  data: Date;
+  horaSaida: string;
+  rotaResumo: string | null;
+  vagasTotais: number;
+  observacoes: string | null;
+  veiculo: {
+    placa: string;
+    modelo: string;
+    capacidade: number;
+  } | null;
+  motorista: {
+    nome: string;
+  } | null;
+  passageiros?: unknown[];
+  _count?: {
+    passageiros?: number;
+    solicitacoesPaciente?: number;
+  };
+};
+
+type TfdSolicitacaoPacienteRow = {
+  id: string;
+  viagemId: string;
+  status: TfdSolicitacaoPacienteDto['status'];
+  prioridade: TfdSolicitacaoPacienteDto['prioridade'];
+  criadaEm: Date;
+  viagem: TfdViagemPacienteRow;
+  numeroAssento: string | null;
+  justificativaPaciente: string | null;
+  motivoRecusa: string | null;
+  encaminhamentoId: string | null;
+  encaminhamentoProtocolo: string | null;
+  acompanhante: string | null;
+  aprovadaEm: Date | null;
+};
+
 async function _prefeituraIdDoPaciente(contaId: string): Promise<string | null> {
   const conta = await prisma.pacienteConta.findUnique({
     where: { id: contaId },
@@ -60,7 +100,7 @@ async function _prefeituraIdDoPaciente(contaId: string): Promise<string | null> 
   return conta?.ubsVinculada?.prefeituraId ?? null;
 }
 
-function _viagemDto(v: any): TfdViagemPacienteDto {
+function _viagemDto(v: TfdViagemPacienteRow): TfdViagemPacienteDto {
   // Vagas ocupadas = UBS (ViagemPassageiro) + app paciente (TfdPacienteSolicitacao APROVADA/EMBARCADA)
   const ocupadasUbs = v.passageiros?.length ?? v._count?.passageiros ?? 0;
   const ocupadasApp = v._count?.solicitacoesPaciente ?? 0;
@@ -86,7 +126,7 @@ function _viagemDto(v: any): TfdViagemPacienteDto {
   };
 }
 
-function _solicitacaoDto(s: any): TfdSolicitacaoPacienteDto {
+function _solicitacaoDto(s: TfdSolicitacaoPacienteRow): TfdSolicitacaoPacienteDto {
   return {
     id: s.id,
     viagemId: s.viagemId,

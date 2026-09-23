@@ -535,6 +535,8 @@ export class WhatsAppCrmUseCase {
           conversaId,
           direcao: 'SAIDA',
           origem: 'SISTEMA_BOT',
+          atendenteId,
+          atendenteNome,
           corpo: `Atendimento finalizado por ${atendenteNome}${motivo ? `: ${motivo}` : '.'}`,
           tipo: 'TEXTO',
           statusEnvio: 'ENTREGUE',

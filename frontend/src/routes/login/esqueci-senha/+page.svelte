@@ -168,11 +168,9 @@
 				mono
 				bind:value={login}
 			/>
-			<div
-				class="border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-700"
-			>
-				Um código de 6 dígitos será enviado ao email cadastrado no RH da Secretaria. O código
-				expira em 10 minutos.
+			<div class="border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-700">
+				Um código de 6 dígitos será enviado ao email cadastrado no RH da Secretaria. O código expira
+				em 10 minutos.
 			</div>
 		{:else if passo === 2}
 			<FormField
@@ -220,9 +218,7 @@
 			</div>
 		{:else if passo === 4}
 			<div class="border-2 border-emerald-700 bg-emerald-50 px-4 py-5 text-center">
-				<div
-					class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase"
-				>
+				<div class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
 					✓ SENHA REDEFINIDA COM SUCESSO
 				</div>
 				<p class="mt-2 text-xs text-emerald-800">
@@ -245,11 +241,7 @@
 				<div></div>
 				<PrimaryButton label="Voltar ao Login" onclick={() => goto('/login')} fullWidth />
 			{:else}
-				<PrimaryButton
-					label="Cancelar"
-					variant="secondary"
-					onclick={() => goto('/login')}
-				/>
+				<PrimaryButton label="Cancelar" variant="secondary" onclick={() => goto('/login')} />
 				<PrimaryButton
 					type="submit"
 					label={passo === 1 ? 'Enviar Código' : passo === 2 ? 'Verificar' : 'Redefinir Senha'}

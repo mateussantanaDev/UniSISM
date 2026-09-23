@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import {
   BadRequest,
-  Forbidden,
   NotFound,
   PayloadTooLarge,
   UnsupportedMediaType,

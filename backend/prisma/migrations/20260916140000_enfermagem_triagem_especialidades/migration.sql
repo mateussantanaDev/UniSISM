@@ -13,7 +13,7 @@ ADD COLUMN IF NOT EXISTS "chamadaTriagemEm" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "consultorioTriagem" TEXT;
 
 -- AlterTable
-ALTER TABLE "escalas_especialistas" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE IF EXISTS "escalas_especialistas" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE "especialidades_catalogo" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE IF EXISTS "especialidades_catalogo" ADD COLUMN IF NOT EXISTS "necessitaTriagem" BOOLEAN NOT NULL DEFAULT false;

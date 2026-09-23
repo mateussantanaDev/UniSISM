@@ -27,9 +27,7 @@
 	let enviando = $state(false);
 	let erro = $state('');
 
-	let podeSalvar = $derived(
-		tipo.trim().length > 0 && solicitante.trim().length > 0 && !enviando
-	);
+	let podeSalvar = $derived(tipo.trim().length > 0 && solicitante.trim().length > 0 && !enviando);
 
 	async function salvar() {
 		erro = '';
@@ -58,22 +56,13 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-slate-900">
-	<div
-		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
-	>
+	<div class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900">
 		Registro de exame realizado. Upload do laudo (PDF) poderá ser adicionado depois via tela de
 		anexos do exame.
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">
-		<FormField
-			label="Data da Realização"
-			name="data"
-			type="date"
-			span={3}
-			mono
-			bind:value={data}
-		/>
+		<FormField label="Data da Realização" name="data" type="date" span={3} mono bind:value={data} />
 		<FormField
 			label="Tipo / Nome do Exame"
 			name="tipo"

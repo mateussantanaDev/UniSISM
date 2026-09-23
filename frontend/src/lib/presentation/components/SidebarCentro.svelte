@@ -23,7 +23,14 @@
 		const list: NavGroup[] = [];
 
 		// Recepção: Atendentes, Reguladores, Admins e Devs
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ENFERMEIRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'REGULADOR_SMS' ||
+			role === 'ATENDENTE_UBS' ||
+			role === 'ATENDENTE_CENTRO' ||
+			role === 'ENFERMEIRO' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'RECEPÇÃO',
 				items: [
@@ -37,7 +44,14 @@
 		}
 
 		// Enfermagem & Triagem
-		if (role === 'ENFERMEIRO' || role === 'REGULADOR_SMS' || role === 'ATENDENTE_CENTRO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'ENFERMEIRO' ||
+			role === 'REGULADOR_SMS' ||
+			role === 'ATENDENTE_CENTRO' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'ENFERMAGEM & TRIAGEM',
 				items: [
@@ -49,7 +63,12 @@
 		}
 
 		// Médico: Médicos, Coordenadores, Admins e Devs
-		if (role === 'MEDICO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'MEDICO' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'MÉDICO ERP',
 				items: [
@@ -61,7 +80,12 @@
 		}
 
 		// Gestão: Direção, Coordenadores, Reguladores, Admins e Devs
-		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'REGULADOR_SMS' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'GESTÃO ERP',
 				items: [
@@ -88,22 +112,22 @@
 	<div class="border-b border-slate-200 bg-gradient-to-b from-blue-50 to-white px-4 py-4">
 		<div class="flex items-center gap-2">
 			<div
-				class="flex h-8 w-8 items-center justify-center bg-blue-900 text-xs font-bold text-white font-mono"
+				class="flex h-8 w-8 items-center justify-center bg-blue-900 font-mono text-xs font-bold text-white"
 			>
 				CEM
 			</div>
 			<div class="leading-tight">
-				<div class="text-xs font-bold tracking-widest text-slate-900 font-mono">UNISISM</div>
-				<div class="text-[9px] font-bold tracking-wider text-blue-900 font-mono">ESPECIALIDADES MÉDICAS</div>
+				<div class="font-mono text-xs font-bold tracking-widest text-slate-900">UNISISM</div>
+				<div class="font-mono text-[9px] font-bold tracking-wider text-blue-900">
+					ESPECIALIDADES MÉDICAS
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Bloco de contexto -->
 	<div class="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3">
-		<div class="text-[10px] tracking-wider text-slate-500 font-mono">
-			ÓRGÃO MUNICIPAL
-		</div>
+		<div class="font-mono text-[10px] tracking-wider text-slate-500">ÓRGÃO MUNICIPAL</div>
 		<div class="truncate text-xs font-semibold text-slate-900">
 			{auth.me?.prefeitura ?? 'CEM — Centro de Especialidades Médicas'}
 		</div>
@@ -113,7 +137,9 @@
 	<nav class="flex flex-1 flex-col overflow-y-auto py-2" aria-label="Navegação Centro">
 		{#each gruposVisiveis as grupo (grupo.titulo)}
 			<div class="mt-3 first:mt-1">
-				<div class="px-5 pb-1.5 font-mono text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+				<div
+					class="px-5 pb-1.5 font-mono text-[9px] font-bold tracking-widest text-slate-400 uppercase"
+				>
 					{grupo.titulo}
 				</div>
 				{#each grupo.items as item (item.href)}
@@ -148,25 +174,29 @@
 		aria-label="Abrir perfil"
 	>
 		<div
-			class="flex h-9 w-9 shrink-0 items-center justify-center border font-mono text-[11px] font-bold text-white border-slate-300 bg-blue-900"
+			class="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-[11px] font-bold text-white"
 		>
 			{auth.me?.iniciais ?? '··'}
 		</div>
 		<div class="min-w-0 flex-1 leading-tight">
-			<div class="text-[10px] tracking-wider text-slate-500 font-mono">SESSÃO ATIVA</div>
+			<div class="font-mono text-[10px] tracking-wider text-slate-500">SESSÃO ATIVA</div>
 			<div class="truncate text-xs font-semibold text-slate-900 group-hover:text-blue-900">
 				{auth.me?.nome ?? 'Operador'}
 			</div>
-			<div class="flex items-center gap-1.5 text-[11px] text-emerald-700 font-mono">
+			<div class="flex items-center gap-1.5 font-mono text-[11px] text-emerald-700">
 				<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
-				<span class="font-semibold truncate" title={formatarCargoPerfil(auth.me)}>{formatarCargoPerfil(auth.me)}</span>
+				<span class="truncate font-semibold" title={formatarCargoPerfil(auth.me)}
+					>{formatarCargoPerfil(auth.me)}</span
+				>
 			</div>
 		</div>
 	</button>
 </aside>
 
 <style>
-	aside, kbd, button {
+	aside,
+	kbd,
+	button {
 		border-radius: 0 !important;
 	}
 </style>

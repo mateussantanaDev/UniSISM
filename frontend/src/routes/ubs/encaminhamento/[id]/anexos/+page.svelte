@@ -47,9 +47,7 @@
 		</div>
 		<div class="relative border border-slate-200 bg-white px-4 py-3">
 			<span class="absolute top-0 left-0 h-full w-1 bg-slate-400"></span>
-			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-				Volume Total
-			</div>
+			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Volume Total</div>
 			<div class="mt-1 font-mono text-2xl font-bold text-slate-900">{totalMb()}</div>
 			<div class="font-mono text-[10px] text-slate-500">megabytes</div>
 		</div>
@@ -143,8 +141,8 @@
 												: 'Arquivo bloqueado pelo scan de segurança'}
 										class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase
 											{scanLiberado
-												? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
-												: 'cursor-not-allowed text-slate-400'}"
+											? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
+											: 'cursor-not-allowed text-slate-400'}"
 									>
 										Visualizar
 									</button>
@@ -158,8 +156,8 @@
 												: 'Arquivo bloqueado pelo scan de segurança'}
 										class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase
 											{scanLiberado
-												? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
-												: 'cursor-not-allowed text-slate-400'}"
+											? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
+											: 'cursor-not-allowed text-slate-400'}"
 									>
 										Baixar
 									</button>

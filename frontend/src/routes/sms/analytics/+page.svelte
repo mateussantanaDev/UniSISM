@@ -31,9 +31,7 @@
 	let total = $derived(encaminhamentos.length);
 	let aprovados = $derived(encaminhamentos.filter((e) => e.status === 'APROVADO').length);
 	let taxaAprovacao = $derived(total > 0 ? Math.round((aprovados / total) * 100) : 0);
-	let emFila = $derived(
-		encaminhamentos.filter((e) => e.status === 'AGUARDANDO_REGULACAO').length
-	);
+	let emFila = $derived(encaminhamentos.filter((e) => e.status === 'AGUARDANDO_REGULACAO').length);
 
 	/** Ranking de UBSs por volume de encaminhamentos. */
 	let ranking = $derived.by(() => {
@@ -149,9 +147,7 @@
 							<div class="flex flex-1 flex-col items-center gap-1.5">
 								<div class="font-mono text-[10px] font-bold text-slate-700">{d.volume}</div>
 								<div class="w-full bg-blue-900 transition-all" style="height: {pct}%"></div>
-								<div
-									class="font-mono text-[10px] tracking-widest text-slate-500 uppercase"
-								>
+								<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
 									{d.dia}
 								</div>
 							</div>
@@ -163,11 +159,7 @@
 
 		<!-- Ranking UBSs -->
 		<div class="col-span-12 border border-slate-200 bg-white xl:col-span-5">
-			<PanelHeader
-				title="Ranking de UBSs"
-				subtitle="Por volume de encaminhamentos"
-				index="02"
-			/>
+			<PanelHeader title="Ranking de UBSs" subtitle="Por volume de encaminhamentos" index="02" />
 			<ul class="divide-y divide-slate-100 px-4">
 				{#if carregando}
 					{#each Array(5) as _, i (i)}
@@ -176,9 +168,7 @@
 						</li>
 					{/each}
 				{:else if ranking.length === 0}
-					<li class="py-4 text-center font-mono text-xs text-slate-500">
-						Sem dados de produção.
-					</li>
+					<li class="py-4 text-center font-mono text-xs text-slate-500">Sem dados de produção.</li>
 				{:else}
 					{#each ranking.slice(0, 8) as u, i (u.nome)}
 						{@const pct = (u.total / maxVolume) * 100}

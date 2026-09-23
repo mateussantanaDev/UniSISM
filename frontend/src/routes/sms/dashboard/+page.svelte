@@ -1,7 +1,6 @@
 <script lang="ts">
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import HistoricoTable from '$lib/presentation/components/HistoricoTable.svelte';
-	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import { api } from '$lib/api';
 	import type { Encaminhamento, MetricasDashboard } from '$lib/api/types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
@@ -68,11 +67,15 @@
 {#if modoSimples}
 	<!-- ─────────── Modo Simples (REGULADOR_SMS) ─────────── -->
 	<div class="flex flex-col gap-5">
-		<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-3 font-sans text-[13px] text-blue-900">
-			<strong class="font-mono tracking-widest uppercase">Bom dia, {auth.me?.nome ?? 'Atendente'}.</strong>
+		<div
+			class="border-l-4 border-blue-900 bg-blue-50 px-4 py-3 font-sans text-[13px] text-blue-900"
+		>
+			<strong class="font-mono tracking-widest uppercase"
+				>Bom dia, {auth.me?.nome ?? 'Atendente'}.</strong
+			>
 			Aqui está o resumo de hoje. Use o menu à esquerda para abrir as
-			<strong>Solicitações</strong> recebidas das UBSs ou as <strong>Respostas</strong> oficiais
-			devolvidas pelo SUS.
+			<strong>Solicitações</strong> recebidas das UBSs ou as <strong>Respostas</strong> oficiais devolvidas
+			pelo SUS.
 		</div>
 
 		<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -99,9 +102,7 @@
 				class="group relative cursor-pointer border border-slate-200 bg-white px-4 py-4 text-left transition-colors hover:border-amber-600 hover:bg-amber-50"
 			>
 				<span class="absolute top-0 left-0 h-full w-1 bg-amber-600"></span>
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Pendentes
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Pendentes</div>
 				<div class="mt-2 font-mono text-4xl font-bold text-slate-900">
 					{carregando ? '—' : (metricas?.aguardandoRegulacao ?? 0)}
 				</div>
@@ -116,9 +117,7 @@
 				class="group relative cursor-pointer border border-slate-200 bg-white px-4 py-4 text-left transition-colors hover:border-blue-700 hover:bg-blue-50"
 			>
 				<span class="absolute top-0 left-0 h-full w-1 bg-blue-700"></span>
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Enviados
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Enviados</div>
 				<div class="mt-2 font-mono text-4xl font-bold text-slate-900">
 					{carregando ? '—' : enviadosAguardando}
 				</div>
@@ -228,7 +227,9 @@
 			<MetricCard
 				label="Taxa de Aprovação"
 				value={taxaAprovacao}
-				sublabel="Decididos hoje · SLA {metricas ? formatarTempoMedio(metricas.tempoMedioConsolidacaoSegundos) : '—'}"
+				sublabel="Decididos hoje · SLA {metricas
+					? formatarTempoMedio(metricas.tempoMedioConsolidacaoSegundos)
+					: '—'}"
 			/>
 		</section>
 

@@ -27,6 +27,7 @@ import type { ScheduledTask } from 'node-cron';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
 import type { IAuditLogger } from '../../../infrastructure/audit/PrismaAuditLogger';
+import { env } from '../../../shared/env';
 
 const GRACE_HRS = 24;
 
@@ -65,11 +66,12 @@ export class RecoveryTokenPurgeCron {
    * Default: a cada 6h. Override: env `RECOVERY_PURGE_CRON`.
    */
   start(): void {
-    const expr = process.env['RECOVERY_PURGE_CRON'] ?? '0 */6 * * *';
+    const expr = env.RECOVERY_PURGE_CRON;
     if (!cron.validate(expr)) {
       logger.error({ expr }, 'RECOVERY_PURGE_CRON inválida — cron NÃO ativado');
       return;
     }
+    const tz = env.RECOVERY_PURGE_CRON_TZ;
 
     // Catch-up — purga ao subir (não bloqueia startup).
     void this.runOnce('boot-catchup').catch((err) =>
@@ -83,11 +85,11 @@ export class RecoveryTokenPurgeCron {
           logger.error({ err }, 'purge de recovery tokens (cron) falhou'),
         );
       },
-      { timezone: process.env['RECOVERY_PURGE_CRON_TZ'] ?? 'UTC' },
+      { timezone: tz },
     );
 
     logger.info(
-      { expr, tz: process.env['RECOVERY_PURGE_CRON_TZ'] ?? 'UTC' },
+      { expr, tz },
       '✓ cron de purga de recovery tokens iniciado',
     );
   }

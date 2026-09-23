@@ -18,7 +18,7 @@ export interface ChamarPacienteUbsInput {
 export class ChamarPacienteUbsUseCase {
   constructor(private readonly repo: FilaUbsRepository = filaUbsRepository) {}
 
-  async exec(input: ChamarPacienteUbsInput, scope?: AccessScope): Promise<{
+  async exec(input: ChamarPacienteUbsInput, _scope?: AccessScope): Promise<{
     atendimento: AtendimentoUbsItem;
     chamada: ChamadaPainelUbs;
   }> {

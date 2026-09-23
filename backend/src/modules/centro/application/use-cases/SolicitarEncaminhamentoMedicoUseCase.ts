@@ -1,10 +1,10 @@
-import { StatusEncaminhamento, CanalRoteamento } from '../../../../../generated/prisma';
+import { StatusEncaminhamento, CanalRoteamento, Sexo } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento, PrioridadeClinica } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound, Unprocessable } from '../../../../shared/errors';
+import { NotFound } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface SolicitarEncaminhamentoMedicoInput {
@@ -37,7 +37,7 @@ export class SolicitarEncaminhamentoMedicoUseCase {
       cpf: string;
       cartaoSus?: string | null;
       dataNascimento: Date;
-      sexo: string;
+      sexo: Sexo;
       telefone?: string | null;
       endereco?: string | null;
       ubsId: string;
@@ -113,7 +113,7 @@ export class SolicitarEncaminhamentoMedicoUseCase {
     const protocolo = `UBS-${ano}-${String(seq.valor).padStart(6, '0')}`;
 
     const crmVal = doctor.matricula || 'CRM 00000';
-    const prioridadeVal = (solicitacao.prioridade as any) || 'ELETIVA';
+    const prioridadeVal = solicitacao.prioridade || 'ELETIVA';
 
     const created = await prisma.encaminhamento.create({
       data: {
@@ -130,7 +130,7 @@ export class SolicitarEncaminhamentoMedicoUseCase {
         pacienteCpf: pacienteData.cpf,
         pacienteCartaoSus: pacienteData.cartaoSus || '',
         pacienteDataNascimento: pacienteData.dataNascimento,
-        pacienteSexo: pacienteData.sexo as any,
+        pacienteSexo: pacienteData.sexo,
         pacienteTelefone: pacienteData.telefone || '',
         pacienteEndereco: pacienteData.endereco || '',
         medicoSolicitante: doctor.nome,

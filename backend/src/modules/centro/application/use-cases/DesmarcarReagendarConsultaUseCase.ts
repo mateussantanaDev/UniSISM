@@ -5,7 +5,7 @@ import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-c
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound, BadRequest } from '../../../../shared/errors';
+import { NotFound } from '../../../../shared/errors';
 
 export interface DesmarcarReagendarInput {
   encaminhamentoId: string;
@@ -28,7 +28,7 @@ export class DesmarcarReagendarConsultaUseCase {
       throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
     }
 
-    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
+    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
     if (input.acao === 'DESMARCAR') {
       const updated = await prisma.$transaction(async (tx) => {

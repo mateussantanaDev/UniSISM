@@ -62,7 +62,7 @@
 			<StatusBadge status={encaminhamento.status} />
 		</div>
 		<div class="text-sm font-bold text-blue-900">{encaminhamento.protocolo}</div>
-		<div class="text-xs font-sans font-semibold text-slate-900">
+		<div class="font-sans text-xs font-semibold text-slate-900">
 			{encaminhamento.paciente.nome}
 		</div>
 		<div class="text-[11px] text-slate-700">
@@ -101,7 +101,9 @@
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-amber-700">◐</span>
-				<span>Observação vira <code class="px-1 text-slate-900">observacoesRegulacao</code> visível na UBS</span>
+				<span
+					>Observação vira <code class="px-1 text-slate-900">observacoesRegulacao</code> visível na UBS</span
+				>
 			</li>
 			<li class="flex gap-2">
 				<span class="font-bold text-amber-700">◐</span>

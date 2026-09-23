@@ -16,10 +16,11 @@
 import type { Request } from 'express';
 import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
-import type { Prisma } from '../../../../generated/prisma';
+import { StatusViagemFrota, type Prisma } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
+import { enumValue } from '../../../shared/prismaHelpers';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
@@ -78,7 +79,9 @@ const INCLUDE_FULL = {
       encaminhamento: { select: { id: true, protocolo: true, especialidadeSolicitada: true } },
     },
   },
-};
+} satisfies Prisma.ViagemFrotaInclude;
+
+type ViagemFrotaRow = Prisma.ViagemFrotaGetPayload<{ include: typeof INCLUDE_FULL }>;
 
 // TfdPacientePrioridade ('NORMAL'|'PRIORITARIA'|'URGENTE') → DTO prioridade.
 function _mapPrioPaciente(p: string): string {
@@ -98,9 +101,9 @@ function _parseAssento(raw: string | null | undefined): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function rowParaViagem(r: any) {
+function rowParaViagem(r: ViagemFrotaRow) {
   // Passageiros de duas fontes: UBS (ViagemPassageiro) + App (TfdPacienteSolicitacao APROVADA/EMBARCADA)
-  const passageirosUbs = (r.passageiros ?? []).map((p: any) => ({
+  const passageirosUbs = (r.passageiros ?? []).map((p) => ({
     id: p.id,
     origem: 'UBS' as const,
     solicitacaoId: p.solicitacaoId,
@@ -117,7 +120,7 @@ function rowParaViagem(r: any) {
     marcadoEm: p.marcadoEm?.toISOString() ?? null,
   }));
 
-  const passageirosApp = (r.solicitacoesPaciente ?? []).map((s: any) => ({
+  const passageirosApp = (r.solicitacoesPaciente ?? []).map((s) => ({
     id: `sol-${s.id}`,
     origem: 'APP' as const,
     solicitacaoId: s.id,
@@ -137,8 +140,8 @@ function rowParaViagem(r: any) {
 
   const passageiros = [...passageirosUbs, ...passageirosApp];
   const assentosOcupados = passageiros
-    .map((p: any) => p.numeroAssento)
-    .filter((n: any): n is number => typeof n === 'number');
+    .map((p) => p.numeroAssento)
+    .filter((n): n is number => typeof n === 'number');
 
   return {
     id: r.id,
@@ -185,7 +188,11 @@ export class ViagensTfdUseCases {
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const where: Prisma.ViagemFrotaWhereInput = { prefeituraId };
-    if (filtros.status) where.status = filtros.status as any;
+    if (filtros.status) {
+      const status = enumValue(Object.values(StatusViagemFrota), filtros.status);
+      if (!status) throw Unprocessable('STATUS_INVALIDO', 'Status de viagem TFD inválido');
+      where.status = status;
+    }
     if (filtros.desde || filtros.ate) {
       const range: Prisma.DateTimeFilter = {};
       if (filtros.desde) range.gte = new Date(`${filtros.desde}T00:00:00.000Z`);
@@ -638,7 +645,7 @@ export class ViagensTfdUseCases {
     const assentoStr = String(assentoFinal);
     const ocupadoUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === assentoStr);
     const ocupadoApp = viagem.solicitacoesPaciente.some(
-      (s: any) => String(s.numeroAssento) === assentoStr,
+      (s) => String(s.numeroAssento) === assentoStr,
     );
     if (ocupadoUbs || ocupadoApp) {
       if (numeroAssento !== undefined && numeroAssento !== null) {
@@ -648,7 +655,7 @@ export class ViagensTfdUseCases {
         for (let a = 1; a <= viagem.vagasTotais; a++) {
           const str = String(a);
           const oUbs = viagem.passageiros.some((p) => String(p.numeroAssento) === str);
-          const oApp = viagem.solicitacoesPaciente.some((s: any) => String(s.numeroAssento) === str);
+          const oApp = viagem.solicitacoesPaciente.some((s) => String(s.numeroAssento) === str);
           if (!oUbs && !oApp) {
             assentoFinal = a;
             break;

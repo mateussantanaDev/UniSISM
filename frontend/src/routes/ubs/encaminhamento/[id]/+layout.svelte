@@ -109,11 +109,7 @@
 						stroke="currentColor"
 						class="h-3 w-3"
 					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M15.75 19.5 8.25 12l7.5-7.5"
-						/>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
 					</svg>
 					VOLTAR
 				</button>
@@ -152,10 +148,7 @@
 						/>
 					{/if}
 					{#if encaminhamento.status === 'PENDENCIA_DOCUMENTO' && auth.podeConsolidarEncaminhamento}
-						<PrimaryButton
-							label="Resolver Pendência"
-							onclick={() => (resolverAberto = true)}
-						/>
+						<PrimaryButton label="Resolver Pendência" onclick={() => (resolverAberto = true)} />
 					{/if}
 				</div>
 			{/if}
@@ -170,9 +163,7 @@
 				<a
 					href={`${baseHref}${tab.slug}`}
 					class="relative flex items-center gap-2 border-r border-slate-200 px-4 py-2.5 font-mono text-[11px] font-bold tracking-widest uppercase transition-colors
-						{active
-						? 'bg-white text-blue-900'
-						: 'text-slate-600 hover:bg-white hover:text-slate-900'}"
+						{active ? 'bg-white text-blue-900' : 'text-slate-600 hover:bg-white hover:text-slate-900'}"
 				>
 					{#if active}
 						<span class="absolute top-0 left-0 h-0.5 w-full bg-blue-900"></span>
@@ -180,9 +171,7 @@
 					<span>{tab.label}</span>
 					<kbd
 						class="border px-1 py-px text-[9px] font-normal
-							{active
-							? 'border-blue-900 bg-blue-50 text-blue-900'
-							: 'border-slate-300 bg-white text-slate-500'}"
+							{active ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-slate-300 bg-white text-slate-500'}"
 					>
 						{tab.shortcut}
 					</kbd>

@@ -9,7 +9,12 @@ function getBaseUrl(): string {
 	if (import.meta.env.VITE_API_BASE_URL) {
 		return import.meta.env.VITE_API_BASE_URL;
 	}
-	if (browser && location.protocol === 'https:' && !location.hostname.includes('localhost') && !location.hostname.includes('127.0.0.1')) {
+	if (
+		browser &&
+		location.protocol === 'https:' &&
+		!location.hostname.includes('localhost') &&
+		!location.hostname.includes('127.0.0.1')
+	) {
 		return '/api-proxy';
 	}
 	return VPS_BASE;
@@ -40,4 +45,4 @@ if (browser) {
 }
 
 export { ApiError };
-export type { AnexoUpload } from './client';
+export type { AnexoUpload, IntegracoesAdminResponse } from './client';

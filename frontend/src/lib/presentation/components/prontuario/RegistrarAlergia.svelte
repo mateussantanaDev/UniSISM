@@ -45,11 +45,9 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-slate-900">
-	<div
-		class="border-l-4 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900"
-	>
-		Alergias marcam o prontuário com alerta vermelho. Médicos e enfermeiros verão essa
-		informação antes de qualquer prescrição.
+	<div class="border-l-4 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900">
+		Alergias marcam o prontuário com alerta vermelho. Médicos e enfermeiros verão essa informação
+		antes de qualquer prescrição.
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">

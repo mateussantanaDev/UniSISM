@@ -17,7 +17,7 @@ export interface AtualizarStatusAtendimentoUbsInput {
 export class AtualizarStatusAtendimentoUbsUseCase {
   constructor(private readonly repo: FilaUbsRepository = filaUbsRepository) {}
 
-  async exec(input: AtualizarStatusAtendimentoUbsInput, scope?: AccessScope): Promise<AtendimentoUbsItem> {
+  async exec(input: AtualizarStatusAtendimentoUbsInput, _scope?: AccessScope): Promise<AtendimentoUbsItem> {
     const item = await this.repo.obterPorId(input.atendimentoId);
     if (!item) {
       throw NotFound('ATENDIMENTO_NAO_ENCONTRADO', 'Atendimento não encontrado na fila da UBS');

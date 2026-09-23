@@ -20,11 +20,7 @@ export interface AuthContext {
   prefeituraId?: string | null;
 }
 
-const DEFAULT_PREFEITURA_ID = process.env.DEFAULT_PREFEITURA_ID || 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
-
 export function buildScope(ctx: AuthContext): AccessScope {
-  const fallbackPrefId = ctx.prefeituraId || DEFAULT_PREFEITURA_ID;
-
   switch (ctx.role) {
     case 'DESENVOLVEDOR':
       return { kind: 'GLOBAL' };
@@ -38,13 +34,16 @@ export function buildScope(ctx: AuthContext): AccessScope {
     case 'MEDICO_ESPECIALISTA':
     case 'ATENDENTE_CENTRO':
     case 'ENFERMEIRO':
-      return { kind: 'PREFEITURA', prefeituraId: fallbackPrefId };
+      if (!ctx.prefeituraId) {
+        throw Forbidden('USUARIO_SEM_PREFEITURA', 'Usuário sem prefeitura vinculada');
+      }
+      return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
     case 'COORDENADOR_UBS':
     case 'ATENDENTE_UBS':
       if (!ctx.ubsId) {
-        return { kind: 'PREFEITURA', prefeituraId: fallbackPrefId };
+        throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');
       }
-      return { kind: 'UBS', ubsId: ctx.ubsId, prefeituraId: fallbackPrefId };
+      return { kind: 'UBS', ubsId: ctx.ubsId, prefeituraId: ctx.prefeituraId ?? undefined };
   }
 }
 

@@ -36,10 +36,10 @@
 			⚠ Relatório Nominal · Uso Restrito
 		</div>
 		<p>
-			Ao confirmar, o relatório de busca ativa incluirá <strong>nomes dos pacientes</strong> com
-			CPF e Cartão SUS <strong>mascarados</strong>. O arquivo será marcado como <strong
-				>CONFIDENCIAL</strong
-			> e sua justificativa ficará gravada em auditoria por 5 anos, conforme LGPD (Art. 37).
+			Ao confirmar, o relatório de busca ativa incluirá <strong>nomes dos pacientes</strong> com CPF
+			e Cartão SUS <strong>mascarados</strong>. O arquivo será marcado como
+			<strong>CONFIDENCIAL</strong> e sua justificativa ficará gravada em auditoria por 5 anos, conforme
+			LGPD (Art. 37).
 		</p>
 	</div>
 
@@ -63,11 +63,7 @@
 			<span class="text-slate-500">Registrado em auditoria · LGPD</span>
 			<span
 				class="font-bold
-					{valido
-					? 'text-emerald-700'
-					: caracteres > 0
-						? 'text-amber-700'
-						: 'text-slate-500'}"
+					{valido ? 'text-emerald-700' : caracteres > 0 ? 'text-amber-700' : 'text-slate-500'}"
 			>
 				{caracteres}/{MIN}
 				{valido ? '✓' : ''}

@@ -5,6 +5,7 @@
 import type { Request } from 'express';
 import { Conflict, NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
+import type { VeiculoTFD } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
@@ -32,7 +33,7 @@ export interface AtualizarVeiculoInput extends Partial<CriarVeiculoInput> {
   status?: 'ATIVO' | 'EM_MANUTENCAO' | 'INATIVO';
 }
 
-function rowParaVeiculo(r: any) {
+function rowParaVeiculo(r: VeiculoTFD) {
   return {
     id: r.id,
     placa: r.placa,

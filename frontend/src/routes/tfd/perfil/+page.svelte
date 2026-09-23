@@ -15,7 +15,9 @@
 		{#if me}
 			<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-xs">
 				<div class="col-span-12 flex items-center gap-3">
-					<div class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-base font-bold text-white">
+					<div
+						class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-blue-900 font-mono text-base font-bold text-white"
+					>
 						{me.iniciais}
 					</div>
 					<div class="leading-tight">
@@ -26,9 +28,7 @@
 					</div>
 				</div>
 				<div class="col-span-6">
-					<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-						Cargo
-					</dt>
+					<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Cargo</dt>
 					<dd class="mt-0.5 text-slate-900">{me.cargo || '—'}</dd>
 				</div>
 				<div class="col-span-6">
@@ -48,8 +48,8 @@
 	</div>
 
 	<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900">
-		Para alterar dados cadastrais, troca de senha ou histórico de sessões, peça ao administrador
-		que use o módulo de
+		Para alterar dados cadastrais, troca de senha ou histórico de sessões, peça ao administrador que
+		use o módulo de
 		<a href="/sms/rede/usuarios" class="font-bold underline">/sms/rede/usuarios</a>.
 	</div>
 </div>

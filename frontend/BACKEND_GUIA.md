@@ -58,21 +58,21 @@ Qualquer uma das três abaixo cobre os requisitos. **Escolha uma e seja consiste
 
 Alinha com o frontend (tipos compartilhados). Maturidade alta na equipe.
 
-| Camada | Ferramenta |
-|---|---|
-| Runtime | Node.js 22 LTS |
-| Framework HTTP | Fastify 4+ (performático, schema-first) |
-| Validação | Zod ou TypeBox |
-| ORM | Prisma 5+ |
-| Banco | PostgreSQL 16+ |
-| Cache | Redis 7+ |
-| Fila | BullMQ (Redis) ou RabbitMQ |
-| Storage | S3-compatible (MinIO em dev, AWS S3/Wasabi em prod) |
-| Antivírus | ClamAV via fila |
-| OCR | Tesseract ou AWS Textract |
-| Auth | `jsonwebtoken` + `argon2` |
-| Testes | Vitest + Supertest |
-| Observabilidade | Pino (logs) + OpenTelemetry |
+| Camada          | Ferramenta                                          |
+| --------------- | --------------------------------------------------- |
+| Runtime         | Node.js 22 LTS                                      |
+| Framework HTTP  | Fastify 4+ (performático, schema-first)             |
+| Validação       | Zod ou TypeBox                                      |
+| ORM             | Prisma 5+                                           |
+| Banco           | PostgreSQL 16+                                      |
+| Cache           | Redis 7+                                            |
+| Fila            | BullMQ (Redis) ou RabbitMQ                          |
+| Storage         | S3-compatible (MinIO em dev, AWS S3/Wasabi em prod) |
+| Antivírus       | ClamAV via fila                                     |
+| OCR             | Tesseract ou AWS Textract                           |
+| Auth            | `jsonwebtoken` + `argon2`                           |
+| Testes          | Vitest + Supertest                                  |
+| Observabilidade | Pino (logs) + OpenTelemetry                         |
 
 ### Opção B · **Go · Chi · sqlc · PostgreSQL**
 
@@ -118,41 +118,48 @@ Espelha a arquitetura do frontend (`domain/` · `application/` · `infrastructur
 ```ts
 // src/application/use-cases/aprovar-encaminhamento.ts
 export class AprovarEncaminhamentoUseCase {
-  constructor(
-    private readonly encaminhamentos: EncaminhamentoRepository,
-    private readonly audit: AuditLogger,
-    private readonly bus: EventBus,
-  ) {}
+	constructor(
+		private readonly encaminhamentos: EncaminhamentoRepository,
+		private readonly audit: AuditLogger,
+		private readonly bus: EventBus
+	) {}
 
-  async execute(input: {
-    encaminhamentoId: string;
-    regulador: AutenticadoContext;
-    nota?: string;
-    agendamentoPrevisto?: string;
-  }): Promise<Encaminhamento> {
-    const enc = await this.encaminhamentos.findById(input.encaminhamentoId);
-    if (!enc) throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO');
+	async execute(input: {
+		encaminhamentoId: string;
+		regulador: AutenticadoContext;
+		nota?: string;
+		agendamentoPrevisto?: string;
+	}): Promise<Encaminhamento> {
+		const enc = await this.encaminhamentos.findById(input.encaminhamentoId);
+		if (!enc) throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO');
 
-    // Isolation por prefeitura — o repo JÁ filtrou, mas defesa em profundidade:
-    if (enc.prefeituraId !== input.regulador.prefeituraId) {
-      throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO'); // 404, não 403
-    }
+		// Isolation por prefeitura — o repo JÁ filtrou, mas defesa em profundidade:
+		if (enc.prefeituraId !== input.regulador.prefeituraId) {
+			throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO'); // 404, não 403
+		}
 
-    // Máquina de estados (no Domain, não aqui)
-    enc.aprovar({ autor: input.regulador, nota: input.nota, agendamentoPrevisto: input.agendamentoPrevisto });
+		// Máquina de estados (no Domain, não aqui)
+		enc.aprovar({
+			autor: input.regulador,
+			nota: input.nota,
+			agendamentoPrevisto: input.agendamentoPrevisto
+		});
 
-    await this.encaminhamentos.save(enc);
-    await this.audit.registrar({
-      action: 'APROVAR_ENCAMINHAMENTO',
-      atendenteId: input.regulador.id,
-      recursoId: enc.id,
-      statusAntes: 'AGUARDANDO_REGULACAO',
-      statusDepois: 'APROVADO',
-    });
-    await this.bus.publish('encaminhamento.aprovado', { id: enc.id, prefeituraId: enc.prefeituraId });
+		await this.encaminhamentos.save(enc);
+		await this.audit.registrar({
+			action: 'APROVAR_ENCAMINHAMENTO',
+			atendenteId: input.regulador.id,
+			recursoId: enc.id,
+			statusAntes: 'AGUARDANDO_REGULACAO',
+			statusDepois: 'APROVADO'
+		});
+		await this.bus.publish('encaminhamento.aprovado', {
+			id: enc.id,
+			prefeituraId: enc.prefeituraId
+		});
 
-    return enc.toSnapshot();
-  }
+		return enc.toSnapshot();
+	}
 }
 ```
 
@@ -211,21 +218,21 @@ Use o **mesmo vocabulário** do domínio de saúde pública brasileiro. Não inv
 
 ### Entidades primárias
 
-| Entidade | Descrição | Identidade |
-|---|---|---|
-| `Prefeitura` | Cliente institucional (tenant) | UUID + CNPJ |
-| `Ubs` | Unidade Básica de Saúde de uma prefeitura | UUID + CNES |
-| `Usuario` | Servidor público com acesso ao sistema | UUID + matrícula + email |
-| `Paciente` | Cidadão cadastrado no município | UUID + Cartão SUS + CPF |
+| Entidade         | Descrição                                              | Identidade                           |
+| ---------------- | ------------------------------------------------------ | ------------------------------------ |
+| `Prefeitura`     | Cliente institucional (tenant)                         | UUID + CNPJ                          |
+| `Ubs`            | Unidade Básica de Saúde de uma prefeitura              | UUID + CNES                          |
+| `Usuario`        | Servidor público com acesso ao sistema                 | UUID + matrícula + email             |
+| `Paciente`       | Cidadão cadastrado no município                        | UUID + Cartão SUS + CPF              |
 | `Encaminhamento` | Solicitação clínica para especialidade (agregado raiz) | UUID + Protocolo (`UBS-AAAA-NNNNNN`) |
-| `AnexoDocumento` | Arquivo vinculado a um encaminhamento | UUID |
-| `EventoTimeline` | Evento na linha do tempo do encaminhamento | UUID |
-| `Atendimento` | Registro de consulta/procedimento na UBS | UUID |
-| `ViagemTFD` | Viagem custeada (Tratamento Fora do Domicílio) | UUID + Protocolo TFD |
-| `ExameRealizado` | Exame do paciente | UUID |
-| `VacinaAplicada` | Dose administrada | UUID |
-| `Relatorio` | Relatório gerado sob demanda | UUID |
-| `AuditLog` | Registro imutável de ação administrativa | UUID (append-only) |
+| `AnexoDocumento` | Arquivo vinculado a um encaminhamento                  | UUID                                 |
+| `EventoTimeline` | Evento na linha do tempo do encaminhamento             | UUID                                 |
+| `Atendimento`    | Registro de consulta/procedimento na UBS               | UUID                                 |
+| `ViagemTFD`      | Viagem custeada (Tratamento Fora do Domicílio)         | UUID + Protocolo TFD                 |
+| `ExameRealizado` | Exame do paciente                                      | UUID                                 |
+| `VacinaAplicada` | Dose administrada                                      | UUID                                 |
+| `Relatorio`      | Relatório gerado sob demanda                           | UUID                                 |
+| `AuditLog`       | Registro imutável de ação administrativa               | UUID (append-only)                   |
 
 ### Value Objects obrigatórios
 
@@ -468,20 +475,21 @@ CREATE INDEX idx_outbox_pendentes ON outbox_events(criado_em) WHERE publicado_em
 
 ```json
 {
-  "sub": "<usuarioId>",
-  "nome": "MATEUS SANTANA",
-  "role": "REGULADOR_SMS",
-  "prefeituraId": "<uuid>",       // null para DEV
-  "ubsId": "<uuid>",               // null para ADMIN/REGULADOR/DEV
-  "sid": "<sessaoId>",             // para revogação
-  "iat": 1700000000,
-  "exp": 1700001800
+	"sub": "<usuarioId>",
+	"nome": "MATEUS SANTANA",
+	"role": "REGULADOR_SMS",
+	"prefeituraId": "<uuid>", // null para DEV
+	"ubsId": "<uuid>", // null para ADMIN/REGULADOR/DEV
+	"sid": "<sessaoId>", // para revogação
+	"iat": 1700000000,
+	"exp": 1700001800
 }
 ```
 
 Algoritmo: **RS256** (chave pública publicada para gateways validarem sem consultar o auth service).
 
 **Refresh token** (TTL 7 dias padrão · 30 dias com "lembrar"):
+
 - Opaco (não JWT). Hash SHA-256 salvo em `sessoes.refresh_token_hash`.
 - Renovação: verifica hash, gera novo access token, **roda** o refresh token (rotação).
 
@@ -500,21 +508,21 @@ Algoritmo: **RS256** (chave pública publicada para gateways validarem sem consu
 ```ts
 // src/http/middlewares/auth.ts
 export async function authMiddleware(req, reply) {
-  const token = extractBearer(req.headers.authorization);
-  if (!token) return reply.code(401).send(erro('TOKEN_AUSENTE', 'Token ausente.'));
-  try {
-    const payload = verify(token, PUBLIC_KEY);
-    // Verifica se sessão não foi revogada
-    if (!(await sessaoAtiva(payload.sid))) {
-      return reply.code(401).send(erro('TOKEN_INVALIDO', 'Sessão revogada.'));
-    }
-    req.auth = payload;  // disponível pras rotas
-  } catch (e) {
-    if (e.name === 'TokenExpiredError') {
-      return reply.code(401).send(erro('TOKEN_EXPIRADO', 'Token expirado.'));
-    }
-    return reply.code(401).send(erro('TOKEN_INVALIDO', 'Token inválido.'));
-  }
+	const token = extractBearer(req.headers.authorization);
+	if (!token) return reply.code(401).send(erro('TOKEN_AUSENTE', 'Token ausente.'));
+	try {
+		const payload = verify(token, PUBLIC_KEY);
+		// Verifica se sessão não foi revogada
+		if (!(await sessaoAtiva(payload.sid))) {
+			return reply.code(401).send(erro('TOKEN_INVALIDO', 'Sessão revogada.'));
+		}
+		req.auth = payload; // disponível pras rotas
+	} catch (e) {
+		if (e.name === 'TokenExpiredError') {
+			return reply.code(401).send(erro('TOKEN_EXPIRADO', 'Token expirado.'));
+		}
+		return reply.code(401).send(erro('TOKEN_INVALIDO', 'Token inválido.'));
+	}
 }
 ```
 
@@ -525,18 +533,22 @@ Usar **decorators** ou **route guards** explícitos — nunca `if (role === ...)
 ```ts
 // src/http/middlewares/rbac.ts
 export function requireRole(...roles: Role[]) {
-  return async (req, reply) => {
-    if (!roles.includes(req.auth.role)) {
-      return reply.code(403).send(erro('PERMISSAO_INSUFICIENTE', 'Permissão insuficiente.'));
-    }
-  };
+	return async (req, reply) => {
+		if (!roles.includes(req.auth.role)) {
+			return reply.code(403).send(erro('PERMISSAO_INSUFICIENTE', 'Permissão insuficiente.'));
+		}
+	};
 }
 
 // src/http/routes/encaminhamentos.ts
-fastify.post('/:id/aprovar', {
-  preHandler: [authMiddleware, requireRole('REGULADOR_SMS', 'DESENVOLVEDOR')],
-  schema: { body: AprovarSchema, params: IdSchema },
-}, aprovarHandler);
+fastify.post(
+	'/:id/aprovar',
+	{
+		preHandler: [authMiddleware, requireRole('REGULADOR_SMS', 'DESENVOLVEDOR')],
+		schema: { body: AprovarSchema, params: IdSchema }
+	},
+	aprovarHandler
+);
 ```
 
 ### Política de senhas
@@ -565,16 +577,14 @@ Mais simples que schemas separados, performance suficiente com índices composto
 ```ts
 // src/infrastructure/database/repositories/base-repository.ts
 abstract class TenantScopedRepository<T> {
-  constructor(
-    protected readonly prisma: PrismaClient,
-    protected readonly tenant: TenantContext,
-  ) {}
+	constructor(
+		protected readonly prisma: PrismaClient,
+		protected readonly tenant: TenantContext
+	) {}
 
-  protected get tenantFilter() {
-    return this.tenant.prefeituraId
-      ? { prefeituraId: this.tenant.prefeituraId }
-      : {}; // DEV · sem filtro
-  }
+	protected get tenantFilter() {
+		return this.tenant.prefeituraId ? { prefeituraId: this.tenant.prefeituraId } : {}; // DEV · sem filtro
+	}
 }
 ```
 
@@ -584,7 +594,7 @@ Mesmo com filtro do repo, **todo use case** valida explicitamente:
 
 ```ts
 if (recurso.prefeituraId !== ctx.prefeituraId && ctx.role !== 'DESENVOLVEDOR') {
-  throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO'); // 404, nunca 403
+	throw new NaoEncontradoError('ENCAMINHAMENTO_NAO_ENCONTRADO'); // 404, nunca 403
 }
 ```
 
@@ -593,6 +603,7 @@ if (recurso.prefeituraId !== ctx.prefeituraId && ctx.role !== 'DESENVOLVEDOR') {
 ### Testes obrigatórios
 
 Cada endpoint tem teste que:
+
 1. Cria recurso na prefeitura A.
 2. Autentica usuário da prefeitura B.
 3. Tenta acessar o recurso da A.
@@ -642,14 +653,14 @@ Para listagens paginadas (roadmap):
 
 ```json
 {
-  "error": {
-    "code": "ENCAMINHAMENTO_NAO_EM_PENDENCIA",
-    "message": "Encaminhamento não está em pendência.",
-    "details": {
-      "statusAtual": "APROVADO"
-    },
-    "requestId": "req_abc123"
-  }
+	"error": {
+		"code": "ENCAMINHAMENTO_NAO_EM_PENDENCIA",
+		"message": "Encaminhamento não está em pendência.",
+		"details": {
+			"statusAtual": "APROVADO"
+		},
+		"requestId": "req_abc123"
+	}
 }
 ```
 
@@ -661,8 +672,8 @@ Zod ou TypeBox na rota. Rejeita em `400 PAYLOAD_INVALIDO` com detalhes.
 
 ```ts
 const AprovarSchema = z.object({
-  nota: z.string().max(2000).optional(),
-  agendamentoPrevisto: z.string().date().optional(),
+	nota: z.string().max(2000).optional(),
+	agendamentoPrevisto: z.string().date().optional()
 });
 ```
 
@@ -670,13 +681,13 @@ const AprovarSchema = z.object({
 
 Redis-backed, por IP + por usuário:
 
-| Endpoint | Limite |
-|---|---|
-| `POST /auth/login` | 10/min/IP |
-| `POST /auth/forgot-password` | 1/min/login |
-| `POST /encaminhamentos/extract-pdf` | 30/min/usuário |
-| `POST /encaminhamentos/:id/(aprovar|registrar-pendencia|rejeitar|resposta-sus)` | 30/min/usuário |
-| `GET /*` | 600/min/usuário |
+| Endpoint                            | Limite              |
+| ----------------------------------- | ------------------- | -------- | -------------- | -------------- |
+| `POST /auth/login`                  | 10/min/IP           |
+| `POST /auth/forgot-password`        | 1/min/login         |
+| `POST /encaminhamentos/extract-pdf` | 30/min/usuário      |
+| `POST /encaminhamentos/:id/(aprovar | registrar-pendencia | rejeitar | resposta-sus)` | 30/min/usuário |
+| `GET /*`                            | 600/min/usuário     |
 
 ---
 
@@ -706,42 +717,46 @@ A entidade `Encaminhamento` **é** a máquina de estados — nunca delegar isso 
 ```ts
 // src/domain/entities/encaminhamento.ts
 export class Encaminhamento {
-  aprovar(input: { autor: Autor; nota?: string; agendamentoPrevisto?: Date }) {
-    if (this.status !== 'AGUARDANDO_REGULACAO') {
-      throw new RegraDeNegocioError('ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO');
-    }
-    // Adiciona eventos timeline (em ordem)
-    if (input.nota) this.timeline.push(Evento.observacao(input.autor, input.nota));
-    this.timeline.push(Evento.aprovado(input.autor));
-    if (input.agendamentoPrevisto) {
-      this.agendamentoPrevisto = input.agendamentoPrevisto;
-      this.timeline.push(Evento.agendado(input.autor, input.agendamentoPrevisto));
-    }
-    this.status = 'APROVADO';
-    this.atualizadoEm = new Date();
-    this.domainEvents.push(new EncaminhamentoAprovadoEvent(this.id, this.prefeituraId));
-  }
+	aprovar(input: { autor: Autor; nota?: string; agendamentoPrevisto?: Date }) {
+		if (this.status !== 'AGUARDANDO_REGULACAO') {
+			throw new RegraDeNegocioError('ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO');
+		}
+		// Adiciona eventos timeline (em ordem)
+		if (input.nota) this.timeline.push(Evento.observacao(input.autor, input.nota));
+		this.timeline.push(Evento.aprovado(input.autor));
+		if (input.agendamentoPrevisto) {
+			this.agendamentoPrevisto = input.agendamentoPrevisto;
+			this.timeline.push(Evento.agendado(input.autor, input.agendamentoPrevisto));
+		}
+		this.status = 'APROVADO';
+		this.atualizadoEm = new Date();
+		this.domainEvents.push(new EncaminhamentoAprovadoEvent(this.id, this.prefeituraId));
+	}
 
-  registrarRespostaSUS(input: { autor: Autor; anexo: Anexo; observacao: string }) {
-    if (this.status !== 'APROVADO') {
-      throw new RegraDeNegocioError('ENCAMINHAMENTO_NAO_APROVADO');
-    }
-    if (this.respostaSUS) {
-      throw new RegraDeNegocioError('RESPOSTA_SUS_JA_REGISTRADA');
-    }
-    this.respostaSUS = {
-      anexoId: input.anexo.id,
-      observacao: input.observacao,
-      registradoEm: new Date(),
-      registradoPor: { id: input.autor.id, nome: input.autor.nome, matricula: input.autor.matricula },
-    };
-    this.anexos.push(input.anexo);
-    this.timeline.push(Evento.respostaSus(input.autor, input.observacao));
-    this.atualizadoEm = new Date();
-    this.domainEvents.push(new RespostaSusRegistradaEvent(this.id));
-  }
+	registrarRespostaSUS(input: { autor: Autor; anexo: Anexo; observacao: string }) {
+		if (this.status !== 'APROVADO') {
+			throw new RegraDeNegocioError('ENCAMINHAMENTO_NAO_APROVADO');
+		}
+		if (this.respostaSUS) {
+			throw new RegraDeNegocioError('RESPOSTA_SUS_JA_REGISTRADA');
+		}
+		this.respostaSUS = {
+			anexoId: input.anexo.id,
+			observacao: input.observacao,
+			registradoEm: new Date(),
+			registradoPor: {
+				id: input.autor.id,
+				nome: input.autor.nome,
+				matricula: input.autor.matricula
+			}
+		};
+		this.anexos.push(input.anexo);
+		this.timeline.push(Evento.respostaSus(input.autor, input.observacao));
+		this.atualizadoEm = new Date();
+		this.domainEvents.push(new RespostaSusRegistradaEvent(this.id));
+	}
 
-  // aprovar / rejeitar / registrarPendencia / resolverPendencia seguem mesmo padrão
+	// aprovar / rejeitar / registrarPendencia / resolverPendencia seguem mesmo padrão
 }
 ```
 
@@ -751,11 +766,11 @@ Cada use case roda em **uma transação DB única**. Se falhar qualquer passo, r
 
 ```ts
 await prisma.$transaction(async (tx) => {
-  // save encaminhamento
-  // insert eventos timeline
-  // insert anexos novos
-  // insert outbox event
-  // insert audit log
+	// save encaminhamento
+	// insert eventos timeline
+	// insert anexos novos
+	// insert outbox event
+	// insert audit log
 });
 ```
 
@@ -794,6 +809,7 @@ await prisma.$transaction(async (tx) => {
 ### URLs de download
 
 Nunca expor S3 diretamente. Endpoint `GET /anexos/:id/download`:
+
 1. Valida auth + autorização (anexo pertence a encaminhamento no escopo).
 2. Gera URL pré-assinada S3 (TTL 5 min).
 3. Redireciona 302 para a URL pré-assinada.
@@ -806,13 +822,13 @@ Use **BullMQ** (Redis) para jobs. Nunca bloqueie HTTP com tarefas lentas.
 
 ### Filas obrigatórias
 
-| Fila | O que processa | Concorrência |
-|---|---|---|
-| `av-scan` | ClamAV nos anexos | 2 workers |
-| `ocr` | Extração OCR de PDF (se não cachear resultado) | 4 workers |
-| `notificacao` | Webhook pra UBS + email | 8 workers |
-| `relatorio` | Geração de PDF/XLSX/CSV | 4 workers |
-| `outbox-publisher` | Publica eventos no bus externo | 2 workers |
+| Fila               | O que processa                                 | Concorrência |
+| ------------------ | ---------------------------------------------- | ------------ |
+| `av-scan`          | ClamAV nos anexos                              | 2 workers    |
+| `ocr`              | Extração OCR de PDF (se não cachear resultado) | 4 workers    |
+| `notificacao`      | Webhook pra UBS + email                        | 8 workers    |
+| `relatorio`        | Geração de PDF/XLSX/CSV                        | 4 workers    |
+| `outbox-publisher` | Publica eventos no bus externo                 | 2 workers    |
 
 ### Padrões
 
@@ -831,11 +847,20 @@ Lê `outbox_events` onde `publicado_em IS NULL`, publica no bus (RabbitMQ/Kafka/
 ### Logs · Pino (JSON estruturado)
 
 Todo log obrigatoriamente tem:
+
 ```json
-{ "time": "...", "level": "info", "requestId": "...", "userId": "...", "prefeituraId": "...", "msg": "..." }
+{
+	"time": "...",
+	"level": "info",
+	"requestId": "...",
+	"userId": "...",
+	"prefeituraId": "...",
+	"msg": "..."
+}
 ```
 
 Níveis:
+
 - `trace/debug`: desenvolvimento apenas
 - `info`: operações de negócio (login, aprovar, criar UBS)
 - `warn`: degradação (OCR lento, rate limit atingido)
@@ -913,6 +938,7 @@ Pirâmide de testes:
 ### CI obrigatório
 
 Nenhum PR passa sem:
+
 - Lint (ESLint + Prettier)
 - Typecheck (`tsc --noEmit`)
 - Tests (unit + integration)
@@ -950,24 +976,24 @@ Nenhum PR passa sem:
 
 ### SLOs
 
-| Operação | Alvo P95 |
-|---|---|
-| Login | ≤ 1s |
-| GET detalhe (com anexos + timeline) | ≤ 500ms |
-| GET listagem paginada | ≤ 800ms |
-| Mutação (aprovar/rejeitar/pendenciar) | ≤ 2s |
-| Extract PDF nativo | ≤ 5s |
-| Extract PDF OCR (escaneado) | ≤ 15s |
-| `GET /encaminhamentos/arvore` | ≤ 300ms |
+| Operação                              | Alvo P95 |
+| ------------------------------------- | -------- |
+| Login                                 | ≤ 1s     |
+| GET detalhe (com anexos + timeline)   | ≤ 500ms  |
+| GET listagem paginada                 | ≤ 800ms  |
+| Mutação (aprovar/rejeitar/pendenciar) | ≤ 2s     |
+| Extract PDF nativo                    | ≤ 5s     |
+| Extract PDF OCR (escaneado)           | ≤ 15s    |
+| `GET /encaminhamentos/arvore`         | ≤ 300ms  |
 
 ### Cache (Redis)
 
-| Chave | TTL | Invalidação |
-|---|---|---|
-| `auth:session:{sid}` | 30 min | logout / revogação |
-| `user:me:{userId}` | 1 min | perfil alterado |
-| `dashboard:metrics:{prefId}` | 30s | — (deixa expirar) |
-| `arvore:{prefId}:{ubsId?}:{ano?}:{mes?}` | 5 min | evento de encaminhamento |
+| Chave                                    | TTL    | Invalidação              |
+| ---------------------------------------- | ------ | ------------------------ |
+| `auth:session:{sid}`                     | 30 min | logout / revogação       |
+| `user:me:{userId}`                       | 1 min  | perfil alterado          |
+| `dashboard:metrics:{prefId}`             | 30s    | — (deixa expirar)        |
+| `arvore:{prefId}:{ubsId?}:{ano?}:{mes?}` | 5 min  | evento de encaminhamento |
 
 Padrão: **write-through** para estados críticos, **lazy-expire** para agregados.
 
@@ -1042,20 +1068,20 @@ services:
       POSTGRES_DB: unisism
       POSTGRES_USER: unisism
       POSTGRES_PASSWORD: unisism
-    ports: ["5432:5432"]
+    ports: ['5432:5432']
   redis:
     image: redis:7
-    ports: ["6379:6379"]
+    ports: ['6379:6379']
   minio:
     image: minio/minio
     command: server /data --console-address :9001
     environment:
       MINIO_ROOT_USER: unisism
       MINIO_ROOT_PASSWORD: unisism123
-    ports: ["9000:9000", "9001:9001"]
+    ports: ['9000:9000', '9001:9001']
   clamav:
     image: clamav/clamav
-    ports: ["3310:3310"]
+    ports: ['3310:3310']
 ```
 
 ### Migrations
@@ -1070,6 +1096,7 @@ npx prisma migrate dev      # em dev
 ### Secrets
 
 Nunca em env vars planos em produção. Usar:
+
 - Vault Hashicorp, OU
 - AWS Secrets Manager, OU
 - Kubernetes Secrets (se o cluster for confiável).
@@ -1092,16 +1119,20 @@ Template obrigatório:
 
 ```markdown
 ## O que
+
 <resumo da mudança>
 
 ## Por quê
+
 <contexto, issue, tíquete>
 
 ## Como testar
+
 1. ...
 2. ...
 
 ## Checklist
+
 - [ ] Testes unit + integration
 - [ ] Atualiza BACKEND_API.md se contrato mudou
 - [ ] Migration incluída e reversível
@@ -1109,6 +1140,7 @@ Template obrigatório:
 ```
 
 Review exige **2 aprovadores** para:
+
 - Mudanças em auth/RBAC
 - Mudanças em migration de encaminhamentos
 - Mudanças em isolation por tenant
@@ -1130,6 +1162,7 @@ refactor(repos): extrai TenantScopedRepository base
 Consolidado de [BACKEND_API.md §14](BACKEND_API.md). Checklist para "pronto pra produção":
 
 ### Auth
+
 - [ ] `POST /auth/login`
 - [ ] `POST /auth/logout`
 - [ ] `POST /auth/forgot-password`
@@ -1138,14 +1171,17 @@ Consolidado de [BACKEND_API.md §14](BACKEND_API.md). Checklist para "pronto pra
 - [ ] `GET  /auth/me`
 
 ### Perfil
+
 - [ ] `GET  /me/profile`
 - [ ] `POST /me/password`
 - [ ] `POST /me/sessions/revoke-others`
 
 ### Dashboard
+
 - [ ] `GET  /dashboard/metrics`
 
 ### Encaminhamentos (Face 1 · UBS)
+
 - [ ] `POST /encaminhamentos/extract-pdf`
 - [ ] `POST /encaminhamentos`
 - [ ] `GET  /encaminhamentos`
@@ -1153,30 +1189,36 @@ Consolidado de [BACKEND_API.md §14](BACKEND_API.md). Checklist para "pronto pra
 - [ ] `POST /encaminhamentos/:id/resolve-pendencia`
 
 ### Encaminhamentos (Face 2 · SMS)
+
 - [ ] `POST /encaminhamentos/:id/aprovar`
 - [ ] `POST /encaminhamentos/:id/registrar-pendencia`
 - [ ] `POST /encaminhamentos/:id/rejeitar`
-- [ ] `POST /encaminhamentos/:id/resposta-sus`   ⬅ **NOVO**
-- [ ] `GET  /encaminhamentos/arvore`             ⬅ **NOVO**
+- [ ] `POST /encaminhamentos/:id/resposta-sus` ⬅ **NOVO**
+- [ ] `GET  /encaminhamentos/arvore` ⬅ **NOVO**
 
 ### Pacientes
+
 - [ ] `GET  /pacientes`
 - [ ] `GET  /pacientes/:id`
 
 ### Relatórios
+
 - [ ] `GET  /relatorios`
 - [ ] `POST /relatorios`
 - [ ] `GET  /relatorios/:id/download`
 
 ### Admin
+
 - [ ] `GET  /admin/prefeituras` · `POST /admin/prefeituras`
 - [ ] `GET  /admin/ubs` · `POST /admin/ubs`
 - [ ] `GET  /admin/usuarios` · `POST /admin/usuarios`
 
 ### Anexos
+
 - [ ] `GET  /anexos/:id/download` (redirect S3 pré-assinado)
 
 ### Infra
+
 - [ ] Armazenamento S3 + scan AV
 - [ ] RBAC por UBS + Prefeitura
 - [ ] Audit log imutável
@@ -1190,6 +1232,7 @@ Consolidado de [BACKEND_API.md §14](BACKEND_API.md). Checklist para "pronto pra
 Ordem sugerida de implementação (sprints de 1-2 semanas cada):
 
 ### Sprint 1 · Fundação
+
 - Setup do projeto (TS + Fastify + Prisma + Zod)
 - Docker compose (Postgres, Redis, MinIO, ClamAV)
 - Schema Prisma inicial (prefeituras, ubs, usuarios)
@@ -1198,6 +1241,7 @@ Ordem sugerida de implementação (sprints de 1-2 semanas cada):
 - Middleware de auth + rbac + tenant
 
 ### Sprint 2 · Core Face 1
+
 - Encaminhamentos CRUD
 - Upload + AV scan (async)
 - Extract-PDF (OCR Tesseract)
@@ -1206,6 +1250,7 @@ Ordem sugerida de implementação (sprints de 1-2 semanas cada):
 - Tests E2E do fluxo UBS
 
 ### Sprint 3 · Core Face 2
+
 - Aprovar / registrar-pendencia / rejeitar
 - `POST /encaminhamentos/:id/resposta-sus`
 - `GET /encaminhamentos/arvore` com cache Redis
@@ -1213,17 +1258,20 @@ Ordem sugerida de implementação (sprints de 1-2 semanas cada):
 - Tests de isolation por prefeitura
 
 ### Sprint 4 · Pacientes e Perfil
+
 - Pacientes (list + byId)
 - Perfil completo com produção agregada
 - Relatórios (gerador + download)
 
 ### Sprint 5 · Admin
+
 - Prefeituras (DEV only)
 - UBS (DEV + ADMIN)
 - Usuarios (DEV + ADMIN)
 - RBAC validado ponta-a-ponta
 
 ### Sprint 6 · Observabilidade + Hardening
+
 - Prometheus + Grafana dashboards
 - OpenTelemetry tracing
 - Rate limiting refinado
@@ -1231,6 +1279,7 @@ Ordem sugerida de implementação (sprints de 1-2 semanas cada):
 - Pen test interno
 
 ### Sprint 7 · Integrações oficiais
+
 - CADSUS (SUS federal)
 - e-SUS APS (PEC)
 - SISREG (fila nacional)
@@ -1265,12 +1314,12 @@ npm run cli -- audit:export --prefeitura <id> --desde 2026-04-01
 
 ## Apêndice B · Referências
 
-| Doc | Conteúdo |
-|---|---|
-| [BACKEND_API.md](BACKEND_API.md) | Contrato completo (request/response) de todos os endpoints |
-| [FACE2_SMS.md](FACE2_SMS.md) | Visão do módulo SMS (centro de comando) |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Design system do frontend |
-| [BACKEND_GUIDE.md](BACKEND_GUIDE.md) | Este documento — engenharia |
+| Doc                                  | Conteúdo                                                   |
+| ------------------------------------ | ---------------------------------------------------------- |
+| [BACKEND_API.md](BACKEND_API.md)     | Contrato completo (request/response) de todos os endpoints |
+| [FACE2_SMS.md](FACE2_SMS.md)         | Visão do módulo SMS (centro de comando)                    |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Design system do frontend                                  |
+| [BACKEND_GUIDE.md](BACKEND_GUIDE.md) | Este documento — engenharia                                |
 
 ---
 

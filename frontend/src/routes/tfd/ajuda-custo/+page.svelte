@@ -3,14 +3,12 @@
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
-	import FormField from '$lib/presentation/components/FormField.svelte';
 	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarCpf, formatarData } from '$lib/presentation/utils/tfdFormat';
 	import type {
 		AjudaCusto,
 		CategoriaAjuda,
-		ItemAjudaCusto,
 		MetodoPagamento,
 		PassageiroViagem,
 		StatusAjudaCusto,
@@ -168,7 +166,9 @@
 	// Registro Tardio / Reembolso Retroativo de Ajuda de Custo
 	let isRegistroTardioAjuda = $state(false);
 	let dataConcessaoRetroativa = $state(new Date().toISOString().substring(0, 10));
-	let justificativaTardiaAjuda = $state('Reembolso retroativo concedido após apresentação de recibos e atestado de comparecimento.');
+	let justificativaTardiaAjuda = $state(
+		'Reembolso retroativo concedido após apresentação de recibos e atestado de comparecimento.'
+	);
 
 	const categorias: Array<{ value: CategoriaAjuda; label: string }> = [
 		{ value: 'ALIMENTACAO', label: 'Alimentação' },
@@ -189,18 +189,13 @@
 	function abrirNova() {
 		novaViagemId = '';
 		novaPacienteId = '';
-		novosItens = [
-			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }
-		];
+		novosItens = [{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }];
 		erroNova = '';
 		novaAberto = true;
 	}
 
 	function adicionarItem() {
-		novosItens = [
-			...novosItens,
-			{ categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }
-		];
+		novosItens = [...novosItens, { categoria: 'ALIMENTACAO', descricao: '', valorBRL: '' }];
 	}
 
 	function removerItem(idx: number) {
@@ -245,7 +240,12 @@
 				}))
 			});
 			novaAberto = false;
-			notificar('ok', isRegistroTardioAjuda ? '✓ Reembolso tardio registrado com sucesso no histórico TFD.' : 'Ajuda de custo criada · pendente de autorização.');
+			notificar(
+				'ok',
+				isRegistroTardioAjuda
+					? '✓ Reembolso tardio registrado com sucesso no histórico TFD.'
+					: 'Ajuda de custo criada · pendente de autorização.'
+			);
 			await carregar();
 		} catch (e) {
 			erroNova = mensagemErroTfd(e);
@@ -267,7 +267,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -280,11 +281,7 @@
 	{/if}
 
 	<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
-		<MetricCard
-			label="Total"
-			value={carregando ? '—' : ajudas.length}
-			sublabel="Ajudas no mês"
-		/>
+		<MetricCard label="Total" value={carregando ? '—' : ajudas.length} sublabel="Ajudas no mês" />
 		<MetricCard
 			label="Aguardando"
 			value={carregando ? '—' : totalPendentes}
@@ -359,14 +356,18 @@
 					{:else}
 						{#each lista as a (a.id)}
 							<tr class="border-b border-slate-100 hover:bg-slate-50">
-								<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900 underline decoration-blue-900/30 underline-offset-2">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900 underline decoration-blue-900/30 underline-offset-2"
+								>
 									<a href={`/tfd/ajuda-custo/${a.id}`}>{a.protocolo}</a>
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">
 									{a.pacienteNome ?? '—'}
 									<div class="text-[10px] text-slate-500">{formatarCpf(a.pacienteCpf)}</div>
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700"
+								>
 									{a.itens.length} item(s):
 									{a.itens
 										.map((i) => i.categoria)
@@ -381,7 +382,9 @@
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2">
 									<span
-										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {tone[a.status]}"
+										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {tone[
+											a.status
+										]}"
 									>
 										{a.status}
 									</span>
@@ -439,26 +442,32 @@
 	<div class="flex flex-col gap-4 font-mono text-slate-900">
 		<div class="flex flex-col gap-3">
 			<!-- Registro Tardio / Reembolso Retroativo -->
-			<div class="border border-amber-300 bg-amber-50/60 p-3 flex flex-col gap-2 font-mono text-xs">
+			<div class="flex flex-col gap-2 border border-amber-300 bg-amber-50/60 p-3 font-mono text-xs">
 				<div class="flex items-center justify-between">
-					<span class="font-bold text-amber-950 uppercase tracking-wider text-[10px]">
+					<span class="text-[10px] font-bold tracking-wider text-amber-950 uppercase">
 						⚡ TIPO DE SOLICITAÇÃO DE AJUDA DE CUSTO
 					</span>
-					<span class="text-[9px] text-amber-800 font-bold uppercase">Prévia vs Reembolso Tardio</span>
+					<span class="text-[9px] font-bold text-amber-800 uppercase"
+						>Prévia vs Reembolso Tardio</span
+					>
 				</div>
 
 				<div class="grid grid-cols-2 gap-2">
 					<button
 						type="button"
-						onclick={() => isRegistroTardioAjuda = false}
-						class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {!isRegistroTardioAjuda ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						onclick={() => (isRegistroTardioAjuda = false)}
+						class="flex items-center justify-center gap-1 border px-2.5 py-1.5 font-bold uppercase transition-colors {!isRegistroTardioAjuda
+							? 'border-blue-900 bg-blue-900 text-white'
+							: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 					>
 						<span>💰 PRÉVIA REGULAR</span>
 					</button>
 					<button
 						type="button"
-						onclick={() => isRegistroTardioAjuda = true}
-						class="px-2.5 py-1.5 font-bold uppercase border transition-colors flex items-center justify-center gap-1 {isRegistroTardioAjuda ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+						onclick={() => (isRegistroTardioAjuda = true)}
+						class="flex items-center justify-center gap-1 border px-2.5 py-1.5 font-bold uppercase transition-colors {isRegistroTardioAjuda
+							? 'border-amber-900 bg-amber-900 text-white'
+							: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 					>
 						<span>🔙 REEMBOLSO TARDIO</span>
 					</button>
@@ -466,26 +475,32 @@
 
 				{#if isRegistroTardioAjuda}
 					<div class="flex flex-col gap-2 border-t border-amber-300 pt-2 font-sans text-xs">
-						<div class="bg-amber-100 border border-amber-300 p-2 text-[10px] text-amber-950">
-							<strong>💡 Reembolso Retroativo:</strong> Registre ajudas de custo reembolsadas ao paciente após a apresentação dos comprovantes/comprovantes de comparecimento de viagens emergenciais já realizadas.
+						<div class="border border-amber-300 bg-amber-100 p-2 text-[10px] text-amber-950">
+							<strong>💡 Reembolso Retroativo:</strong> Registre ajudas de custo reembolsadas ao paciente
+							após a apresentação dos comprovantes/comprovantes de comparecimento de viagens emergenciais
+							já realizadas.
 						</div>
 						<div class="grid grid-cols-2 gap-2 font-mono">
 							<div class="flex flex-col gap-1">
-								<label for="dt-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase">Data do Reembolso/Viagem *</label>
+								<label for="dt-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase"
+									>Data do Reembolso/Viagem *</label
+								>
 								<input
 									id="dt-aj-tardia"
 									type="date"
 									bind:value={dataConcessaoRetroativa}
-									class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-mono font-bold"
+									class="border border-amber-400 bg-white px-2 py-1 font-mono text-xs font-bold outline-none"
 								/>
 							</div>
 							<div class="flex flex-col gap-1">
-								<label for="just-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase">Justificativa do Reembolso *</label>
+								<label for="just-aj-tardia" class="text-[9px] font-bold text-amber-950 uppercase"
+									>Justificativa do Reembolso *</label
+								>
 								<input
 									id="just-aj-tardia"
 									type="text"
 									bind:value={justificativaTardiaAjuda}
-									class="border border-amber-400 bg-white px-2 py-1 outline-none text-xs font-sans"
+									class="border border-amber-400 bg-white px-2 py-1 font-sans text-xs outline-none"
 								/>
 							</div>
 						</div>
@@ -627,9 +642,7 @@
 			<div
 				class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-3 py-2"
 			>
-				<div class="font-mono text-[10px] tracking-widest text-slate-600 uppercase">
-					Total
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-600 uppercase">Total</div>
 				<div class="font-mono text-sm font-bold text-blue-900">
 					{formatarBRL(totalNovaAjuda)}
 				</div>
@@ -639,8 +652,8 @@
 		<div
 			class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[11px] text-blue-900"
 		>
-			Ao salvar, a ajuda fica em <strong>PENDENTE</strong> e <strong>reserva</strong> o valor no
-			saldo de ajuda de custo. A liberação para pagamento exige autorização (próximo passo).
+			Ao salvar, a ajuda fica em <strong>PENDENTE</strong> e <strong>reserva</strong> o valor no saldo
+			de ajuda de custo. A liberação para pagamento exige autorização (próximo passo).
 		</div>
 
 		{#if erroNova}
@@ -652,16 +665,8 @@
 		{/if}
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (novaAberto = false)}
-			/>
-			<PrimaryButton
-				label="Criar Ajuda de Custo"
-				onclick={salvarNova}
-				loading={processandoNova}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (novaAberto = false)} />
+			<PrimaryButton label="Criar Ajuda de Custo" onclick={salvarNova} loading={processandoNova} />
 		</div>
 	</div>
 </Modal>

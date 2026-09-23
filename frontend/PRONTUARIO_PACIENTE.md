@@ -35,6 +35,7 @@ O prontuário do paciente é a tela mais densa do UNISISM. Um paciente tem:
 - **Encaminhamentos** (já existia; agora integra com o cadastro incremental)
 
 Todas as abas:
+
 - Consomem dados via **context compartilhado** (`usePaciente()`)
 - Fazem escrita via `api.pacientes.*` → retornam `PacienteCompleto` completo
 - Atualizam o context automaticamente com `ctx.atualizar(novo)`
@@ -94,9 +95,9 @@ Todos os modais de registro seguem o mesmo contrato:
 
 ```ts
 interface Props {
-  pacienteId: string;
-  onCancel: () => void;
-  onSalvo: (atualizado: PacienteCompleto) => void;
+	pacienteId: string;
+	onCancel: () => void;
+	onSalvo: (atualizado: PacienteCompleto) => void;
 }
 ```
 
@@ -111,11 +112,11 @@ caller, que chama `ctx.atualizar(atualizado)`. Zero refetch.
 
 ```ts
 export interface PacienteContext {
-  readonly paciente: PacienteCompleto | null;
-  readonly carregando: boolean;
-  readonly erro: boolean;
-  /** Atualiza o paciente no context após um PATCH/POST/DELETE. */
-  atualizar?: (novo: PacienteCompleto) => void;
+	readonly paciente: PacienteCompleto | null;
+	readonly carregando: boolean;
+	readonly erro: boolean;
+	/** Atualiza o paciente no context após um PATCH/POST/DELETE. */
+	atualizar?: (novo: PacienteCompleto) => void;
 }
 ```
 
@@ -129,9 +130,9 @@ O `+layout.svelte` do paciente:
 
 ```svelte
 <script>
-  import { usePaciente } from '$lib/presentation/contexts/pacienteContext';
-  const ctx = usePaciente();
-  let p = $derived(ctx.paciente!);
+	import { usePaciente } from '$lib/presentation/contexts/pacienteContext';
+	const ctx = usePaciente();
+	let p = $derived(ctx.paciente!);
 </script>
 ```
 
@@ -139,9 +140,9 @@ Quando um modal de registro dispara `onSalvo(atualizado)`, a aba faz:
 
 ```ts
 function handleSalvo(atualizado: PacienteCompleto) {
-  ctx.atualizar?.(atualizado);
-  modalAberto = false;
-  notificar('ok', 'Registro criado.');
+	ctx.atualizar?.(atualizado);
+	modalAberto = false;
+	notificar('ok', 'Registro criado.');
 }
 ```
 
@@ -154,8 +155,8 @@ Svelte 5 re-renderiza todas as abas automaticamente via reactivity de runes.
 ### 5.1 Flags do `AuthContext`
 
 ```ts
-auth.podeConsolidarEncaminhamento  // ATENDENTE_UBS · COORDENADOR_UBS · DEV
-auth.ehAdminOuDev                  // ADMIN · DEV
+auth.podeConsolidarEncaminhamento; // ATENDENTE_UBS · COORDENADOR_UBS · DEV
+auth.ehAdminOuDev; // ADMIN · DEV
 ```
 
 ### 5.2 Regra de edição no frontend
@@ -163,9 +164,7 @@ auth.ehAdminOuDev                  // ADMIN · DEV
 Cada aba do prontuário computa:
 
 ```ts
-let podeEditar = $derived(
-  auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev
-);
+let podeEditar = $derived(auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev);
 ```
 
 - **Face UBS**: ATENDENTE_UBS e COORDENADOR_UBS podem editar (são linha de frente)
@@ -231,6 +230,7 @@ removeViagemTfd(pacienteId, id)               → PacienteCompleto
 ### 6.2 Tipos — `src/lib/api/types.ts`
 
 **Entidades com `id: string` (v0.7.0+):**
+
 - `Alergia`, `CondicaoCronica`, `MedicamentoEmUso` — agora têm id
 - `Atendimento`, `ExameRealizado`, `VacinaAplicada`, `ViagemTFD` — já tinham
 
@@ -306,51 +306,51 @@ Cada aba segue o mesmo esqueleto:
 
 ```svelte
 <script>
-  import PanelHeader from '...';
-  import PrimaryButton from '...';
-  import Modal from '...';
-  import Registrar<Entidade> from '...prontuario/...';
-  import ConfirmarRemocao from '...prontuario/ConfirmarRemocao.svelte';
-  import { usePaciente } from '...';
-  import { useAuth } from '...';
-  import { api, ApiError } from '$lib/api';
+	import PanelHeader from '...';
+	import PrimaryButton from '...';
+	import Modal from '...';
+	import RegistrarEntidade from '...prontuario/...';
+	import ConfirmarRemocao from '...prontuario/ConfirmarRemocao.svelte';
+	import { usePaciente } from '...';
+	import { useAuth } from '...';
+	import { api, ApiError } from '$lib/api';
 
-  const ctx = usePaciente();
-  const auth = useAuth();
-  let p = $derived(ctx.paciente!);
-  let podeEditar = $derived(auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev);
+	const ctx = usePaciente();
+	const auth = useAuth();
+	let p = $derived(ctx.paciente!);
+	let podeEditar = $derived(auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev);
 
-  // Estado dos modais
-  let modalAberto = $state(false);
-  let removendoId = $state<string | null>(null);
-  let removendo = $state(false);
-  let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
+	// Estado dos modais
+	let modalAberto = $state(false);
+	let removendoId = $state<string | null>(null);
+	let removendo = $state(false);
+	let mensagem = $state<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
-  function notificar(tipo, texto) {
-    mensagem = { tipo, texto };
-    setTimeout(() => (mensagem = null), 4000);
-  }
+	function notificar(tipo, texto) {
+		mensagem = { tipo, texto };
+		setTimeout(() => (mensagem = null), 4000);
+	}
 
-  function handleSalvo(atualizado) {
-    ctx.atualizar?.(atualizado);
-    modalAberto = false;
-    notificar('ok', '...');
-  }
+	function handleSalvo(atualizado) {
+		ctx.atualizar?.(atualizado);
+		modalAberto = false;
+		notificar('ok', '...');
+	}
 
-  async function confirmarRemocao() {
-    if (!removendoId) return;
-    removendo = true;
-    try {
-      const atualizado = await api.pacientes.remove<Entidade>(p.id, removendoId);
-      ctx.atualizar?.(atualizado);
-      notificar('ok', 'Registro removido.');
-    } catch (e) {
-      notificar('erro', e instanceof ApiError ? e.message : 'Falha ao remover.');
-    } finally {
-      removendo = false;
-      removendoId = null;
-    }
-  }
+	async function confirmarRemocao() {
+		if (!removendoId) return;
+		removendo = true;
+		try {
+			const atualizado = await api.pacientes.remove<Entidade>(p.id, removendoId);
+			ctx.atualizar?.(atualizado);
+			notificar('ok', 'Registro removido.');
+		} catch (e) {
+			notificar('erro', e instanceof ApiError ? e.message : 'Falha ao remover.');
+		} finally {
+			removendo = false;
+			removendoId = null;
+		}
+	}
 </script>
 ```
 
@@ -359,49 +359,52 @@ Cada aba segue o mesmo esqueleto:
 ```svelte
 <!-- Banner de feedback -->
 {#if mensagem}
-  <div class="border ... {mensagem.tipo === 'ok' ? 'border-emerald-700 ...' : 'border-red-700 ...'}">
-    {mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
-  </div>
+	<div
+		class="border ... {mensagem.tipo === 'ok' ? 'border-emerald-700 ...' : 'border-red-700 ...'}"
+	>
+		{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+		{mensagem.texto}
+	</div>
 {/if}
 
 <!-- Panel com botão Adicionar -->
 <PanelHeader ...>
-  {#if podeEditar}
-    <PrimaryButton label="+ Entidade" onclick={() => (modalAberto = true)} />
-  {/if}
+	{#if podeEditar}
+		<PrimaryButton label="+ Entidade" onclick={() => (modalAberto = true)} />
+	{/if}
 </PanelHeader>
 
 <!-- Linhas com botão Remover (gated) -->
 {#each lista as item (item.id)}
-  <tr>
-    <td>...</td>
-    {#if podeEditar}
-      <td>
-        <button onclick={() => (removendoId = item.id)} class="... text-red-700 ...">
-          Remover
-        </button>
-      </td>
-    {/if}
-  </tr>
+	<tr>
+		<td>...</td>
+		{#if podeEditar}
+			<td>
+				<button onclick={() => (removendoId = item.id)} class="text-red-700 ... ...">
+					Remover
+				</button>
+			</td>
+		{/if}
+	</tr>
 {/each}
 
 <!-- Modais -->
 <Modal isOpen={modalAberto} ...>
-  <Registrar<Entidade>
-    pacienteId={p.id}
-    onCancel={() => (modalAberto = false)}
-    onSalvo={handleSalvo}
-  />
+	<RegistrarEntidade
+		pacienteId={p.id}
+		onCancel={() => (modalAberto = false)}
+		onSalvo={handleSalvo}
+	/>
 </Modal>
 
 <Modal isOpen={removendoId !== null} ...>
-  <ConfirmarRemocao
-    mensagem="..."
-    detalhe="..."
-    processando={removendo}
-    onConfirmar={confirmarRemocao}
-    onCancelar={() => (removendoId = null)}
-  />
+	<ConfirmarRemocao
+		mensagem="..."
+		detalhe="..."
+		processando={removendo}
+		onConfirmar={confirmarRemocao}
+		onCancelar={() => (removendoId = null)}
+	/>
 </Modal>
 ```
 
@@ -469,18 +472,33 @@ Rodapé em todas as páginas com ID do paciente + banner legal (LGPD + Res. CFM 
 
 ```css
 @media print {
-  :global(body *) { visibility: hidden !important; }
-  .print-overlay, .print-overlay * { visibility: visible !important; }
-  .print-toolbar { display: none !important; }
-  .print-overlay { position: static !important; background: white !important; }
-  .print-scope {
-    box-shadow: none !important;
-    margin: 0 !important;
-    max-width: none !important;
-    padding: 10mm 12mm !important;
-  }
-  .page-break { page-break-before: always; }
-  @page { size: A4; margin: 0; }
+	:global(body *) {
+		visibility: hidden !important;
+	}
+	.print-overlay,
+	.print-overlay * {
+		visibility: visible !important;
+	}
+	.print-toolbar {
+		display: none !important;
+	}
+	.print-overlay {
+		position: static !important;
+		background: white !important;
+	}
+	.print-scope {
+		box-shadow: none !important;
+		margin: 0 !important;
+		max-width: none !important;
+		padding: 10mm 12mm !important;
+	}
+	.page-break {
+		page-break-before: always;
+	}
+	@page {
+		size: A4;
+		margin: 0;
+	}
 }
 ```
 
@@ -494,23 +512,24 @@ No `+layout.svelte` do paciente (UBS e SMS):
 
 ```svelte
 <PrimaryButton
-  label="Imprimir Prontuário"
-  variant="secondary"
-  onclick={() => (imprimirAberto = true)}
+	label="Imprimir Prontuário"
+	variant="secondary"
+	onclick={() => (imprimirAberto = true)}
 />
 
 {#if imprimirAberto && paciente}
-  <ImprimirProntuario
-    {paciente}
-    operador={auth.me ? `${auth.me.nome} (${auth.me.matricula})` : '—'}
-    prefeitura={auth.me?.prefeitura ?? null}
-    unidade={auth.me?.unidade ?? paciente.unidadeVinculada}
-    onFechar={() => (imprimirAberto = false)}
-  />
+	<ImprimirProntuario
+		{paciente}
+		operador={auth.me ? `${auth.me.nome} (${auth.me.matricula})` : '—'}
+		prefeitura={auth.me?.prefeitura ?? null}
+		unidade={auth.me?.unidade ?? paciente.unidadeVinculada}
+		onFechar={() => (imprimirAberto = false)}
+	/>
 {/if}
 ```
 
 **Atalhos de teclado:**
+
 - `ESC` — fecha a prévia sem imprimir
 - `Ctrl+P` / `Cmd+P` — dispara impressão nativa (mesma que botão "Imprimir")
 
@@ -633,6 +652,7 @@ o `ctx.atualizar()` substitui o paciente inteiro.
 ### 11.3 Componentes (`src/lib/presentation/components/prontuario/`)
 
 Novos:
+
 - `RegistrarAlergia.svelte`
 - `RegistrarCondicaoCronica.svelte`
 - `RegistrarMedicamento.svelte`
@@ -646,6 +666,7 @@ Novos:
 ### 11.4 Rotas (`src/routes/ubs/pacientes/[id]/`)
 
 Modificados:
+
 - `+layout.svelte` — wiring de `ImprimirProntuario` no botão
 - `quadro-clinico/+page.svelte` — reescrita completa com CRUD
 - `atendimentos/+page.svelte` — botão "+ Atendimento" + Remover
@@ -656,12 +677,13 @@ Modificados:
 ### 11.5 Rotas (`src/routes/sms/pacientes/[id]/`)
 
 Modificados:
+
 - `+layout.svelte` — wiring de `ImprimirProntuario` idêntico ao UBS
 
-*O SMS tem os mesmos arquivos que UBS mas ainda não ganhou os botões
+_O SMS tem os mesmos arquivos que UBS mas ainda não ganhou os botões
 "+ Entidade" nas abas filhas. Se quiser que ADMIN/DEV também cadastre
 direto via SMS, duplique o padrão do UBS nas abas espelho (o código é
-praticamente idêntico, só muda o guard).*
+praticamente idêntico, só muda o guard)._
 
 ### 11.6 Documentação
 
@@ -675,6 +697,7 @@ praticamente idêntico, só muda o guard).*
 ### 12.1 Atalhos de teclado
 
 Dentro do `ImprimirProntuario`:
+
 - `ESC` → fecha prévia
 - `Ctrl+P` / `Cmd+P` → dispara impressão
 
@@ -690,7 +713,7 @@ específico. Códigos conhecidos são traduzidos para pt-BR (ex.:
 ### 12.3 Data/hora
 
 - **Entrada em formulários:** `<input type="date">` YYYY-MM-DD; `<input
-  type="datetime-local">` para atendimentos (sem timezone, localtime)
+type="datetime-local">` para atendimentos (sem timezone, localtime)
 - **Saída em telas:** `new Date(iso).toLocaleString('pt-BR', {...})`
 - **Envio ao backend:** sempre ISO 8601 (`new Date(value).toISOString()`)
 
@@ -705,4 +728,4 @@ específico. Códigos conhecidos são traduzidos para pt-BR (ex.:
 
 ---
 
-*Última atualização: 2026-04-24. Versão: frontend pós-v0.7.0.*
+_Última atualização: 2026-04-24. Versão: frontend pós-v0.7.0._

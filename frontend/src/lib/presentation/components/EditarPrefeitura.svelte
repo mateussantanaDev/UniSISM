@@ -84,9 +84,7 @@
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Identificação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Identificação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Nome" name="nome" span={12} bind:value={nome} />
@@ -103,9 +101,7 @@
 		</div>
 	</section>
 
-	<section
-		class="border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-700"
-	>
+	<section class="border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-700">
 		<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">ID</div>
 		<div class="font-mono font-bold">{prefeitura.id}</div>
 	</section>

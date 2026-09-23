@@ -38,8 +38,6 @@ const TIPOS_FALLBACK_EMAIL = new Set([
 ]);
 
 const MAX_TENTATIVAS = 4;
-// Backoff em minutos: 0 (first try), 1, 5, 30
-const BACKOFF_MIN = [0, 1, 5, 30] as const;
 const BATCH_SIZE = 50;
 const DEFAULT_INTERVAL_MS = 15 * 1000;
 

@@ -18,7 +18,7 @@ export interface RegistrarProcedimentosInput {
 export class RegistrarProcedimentosAtendimentoUseCase {
   async exec(
     input: RegistrarProcedimentosInput,
-    scope: AccessScope,
+    _scope: AccessScope,
     registradoPorId: string,
   ) {
     // Check if Atendimento or AgendamentoCentro exists

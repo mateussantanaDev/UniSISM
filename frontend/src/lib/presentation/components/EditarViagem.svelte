@@ -72,7 +72,7 @@
 	let kmOk = $derived(kmEstimados.trim() === '' || Number(kmEstimados) > 0);
 
 	let podeSalvar = $derived(
-		pendente > 0 && !enviando && dataOk && horaSaidaOk && destinoOk && kmOk,
+		pendente > 0 && !enviando && dataOk && horaSaidaOk && destinoOk && kmOk
 	);
 
 	let viagemTrancada = $derived(viagem.status !== 'AGENDADA');
@@ -122,20 +122,25 @@
 		<section
 			class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
 		>
-			Veículo e motorista não são editáveis aqui (para trocar, cancele a viagem
-			e crie nova). Hodômetro é atualizado por iniciar/concluir.
+			Veículo e motorista não são editáveis aqui (para trocar, cancele a viagem e crie nova).
+			Hodômetro é atualizado por iniciar/concluir.
 		</section>
 	{/if}
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Programação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Programação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Data" name="data" type="date" span={4} mono bind:value={data} />
-			<FormField label="Hora de saída" name="horaSaida" span={4} mono bind:value={horaSaida} placeholder="HH:mm" />
+			<FormField
+				label="Hora de saída"
+				name="horaSaida"
+				span={4}
+				mono
+				bind:value={horaSaida}
+				placeholder="HH:mm"
+			/>
 			<FormField
 				label="Hora prevista de retorno"
 				name="horaPrevistaRetorno"
@@ -149,9 +154,7 @@
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Destino & rota
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Destino & rota</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Cidade de destino" name="destino" span={6} bind:value={destino} />
@@ -181,9 +184,7 @@
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Observações
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Observações</h3>
 		</div>
 		<textarea
 			bind:value={observacoes}
@@ -202,7 +203,9 @@
 
 	<div class="flex items-center justify-between pt-2">
 		<span class="font-sans text-[11px] text-slate-500">
-			{pendente === 0 ? 'Nenhum campo alterado' : `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
+			{pendente === 0
+				? 'Nenhum campo alterado'
+				: `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
 		</span>
 		<div class="flex gap-2">
 			<PrimaryButton label="Cancelar" variant="secondary" onclick={onCancel} disabled={enviando} />

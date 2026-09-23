@@ -25,6 +25,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import forge from 'node-forge';
 import { logger } from '../../../infrastructure/logger';
+import { env } from '../../../shared/env';
 
 export type ModoAssinatura = 'ICP_BRASIL' | 'HASH_ONLY';
 
@@ -54,8 +55,8 @@ let cacheCert: CarregamentoCert | null = null;
 function carregarCert(): CarregamentoCert {
   if (cacheCert) return cacheCert;
 
-  const path = process.env['TFD_SIGN_CERT_PATH'];
-  const password = process.env['TFD_SIGN_CERT_PASSWORD'];
+  const path = env.TFD_SIGN_CERT_PATH;
+  const password = env.TFD_SIGN_CERT_PASSWORD;
 
   if (!path || !password) {
     cacheCert = {
@@ -127,7 +128,7 @@ function carregarCert(): CarregamentoCert {
  * disponível, lança — boot falha (fail-fast em produção).
  */
 export function bootstrapAssinaturaTfd(): void {
-  const required = process.env['TFD_SIGN_REQUIRED'] === 'true';
+  const required = env.TFD_SIGN_REQUIRED;
   const r = carregarCert();
   if (r.ok) return;
   if (required) {
@@ -170,7 +171,7 @@ export function assinarConteudoTj(conteudo: Buffer): AssinaturaResult {
       authenticatedAttributes: [
         { type: CONTENT_TYPE_OID, value: DATA_OID },
         { type: MESSAGE_DIGEST_OID }, // computed automatically by forge
-        { type: SIGNING_TIME_OID, value: new Date() as unknown as string },
+        { type: SIGNING_TIME_OID, value: new Date().toISOString() },
       ],
     });
     p7.sign({ detached: true });

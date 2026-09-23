@@ -1,4 +1,5 @@
 // Composition root — instancia repositórios, serviços, use cases e controllers.
+import { env } from '../shared/env';
 import { PrismaAtendenteRepository } from '../infrastructure/database/PrismaAtendenteRepository';
 import { PrismaSessaoRepository } from '../infrastructure/database/PrismaSessaoRepository';
 import { PrismaPasswordResetRepository } from '../infrastructure/database/PrismaPasswordResetRepository';
@@ -86,7 +87,6 @@ import { ListarAgendaEspecialistaUseCase } from '../modules/gestao/application/u
 import { RegistrarAtendimentoEspecialistaUseCase } from '../modules/gestao/application/use-cases/RegistrarAtendimentoEspecialistaUseCase';
 import { RegulacaoController } from '../modules/gestao/presentation/controllers/RegulacaoController';
 import { EspecialistaController } from '../modules/gestao/presentation/controllers/EspecialistaController';
-import { buildEspecialistaRoutes } from '../modules/gestao/presentation/routes/especialista.routes';
 
 import { ListarFilaEsperaCentroRecepcaoUseCase } from '../modules/centro/application/use-cases/ListarFilaEsperaCentroRecepcaoUseCase';
 import { AgendarConsultaCentroUseCase } from '../modules/centro/application/use-cases/AgendarConsultaCentroUseCase';
@@ -269,7 +269,7 @@ export function buildContainer() {
 
   // Outbox publisher (start é feito em main/server.ts depois do boot)
   const outbox = new OutboxPublisher(logOnlyOutboxHandler, {
-    intervalMs: Number(process.env['OUTBOX_INTERVAL_MS'] ?? 500),
+    intervalMs: env.OUTBOX_INTERVAL_MS,
   });
 
   const emailService = buildEmailService();

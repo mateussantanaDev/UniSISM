@@ -1,0 +1,345 @@
+{
+	"src/lib/api/client.ts": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 3
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 4
+		}
+	},
+	"src/lib/api/types.ts": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 3
+		}
+	},
+	"src/lib/domain/centro/alocadorInteligenteEscala.ts": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 2
+		},
+		"prefer-const": {
+			"count": 1
+		}
+	},
+	"src/lib/presentation/components/EditarUsuario.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 5
+		}
+	},
+	"src/lib/presentation/components/RemarcarEncaminhamento.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 1
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		},
+		"svelte/prefer-writable-derived": {
+			"count": 1
+		}
+	},
+	"src/lib/presentation/components/SidebarCem.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 1
+		}
+	},
+	"src/lib/presentation/components/SidebarCeo.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 1
+		}
+	},
+	"src/lib/presentation/components/centro/ModalDossiePaciente.svelte": {
+		"svelte/require-each-key": {
+			"count": 5
+		}
+	},
+	"src/lib/presentation/components/centro/ModalReferenciaIntermunicipal.svelte": {
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/lib/presentation/utils/pdfGenerator.ts": {
+		"@typescript-eslint/ban-ts-comment": {
+			"count": 1
+		}
+	},
+	"src/routes/api-proxy/[...path]/+server.ts": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 2
+		}
+	},
+	"src/routes/cem/+layout.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/+layout.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/enfermagem/triagem/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 4
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 6
+		}
+	},
+	"src/routes/centro/gestao/analytics/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 5
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 3
+		},
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/gestao/auditoria/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 4
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 5
+		}
+	},
+	"src/routes/centro/gestao/dashboard/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 1
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		},
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/gestao/especialidades/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 6
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 4
+		},
+		"svelte/require-each-key": {
+			"count": 1
+		}
+	},
+	"src/routes/centro/gestao/producao/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 6
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 4
+		},
+		"svelte/require-each-key": {
+			"count": 4
+		}
+	},
+	"src/routes/centro/gestao/salas/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 5
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 3
+		},
+		"svelte/require-each-key": {
+			"count": 9
+		}
+	},
+	"src/routes/centro/gestao/usuarios/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 19
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 12
+		},
+		"svelte/require-each-key": {
+			"count": 6
+		}
+	},
+	"src/routes/centro/gestao/vagas/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 10
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 14
+		},
+		"svelte/require-each-key": {
+			"count": 13
+		}
+	},
+	"src/routes/centro/medico/agenda/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 27
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 43
+		},
+		"no-useless-assignment": {
+			"count": 1
+		},
+		"svelte/require-each-key": {
+			"count": 3
+		}
+	},
+	"src/routes/centro/medico/desempenho/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 10
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 4
+		},
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/medico/historico/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 9
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 6
+		}
+	},
+	"src/routes/centro/pacientes/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 4
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 6
+		},
+		"svelte/require-each-key": {
+			"count": 1
+		}
+	},
+	"src/routes/centro/recepcao/agenda/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 14
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 7
+		},
+		"no-empty": {
+			"count": 1
+		},
+		"svelte/require-each-key": {
+			"count": 6
+		}
+	},
+	"src/routes/centro/recepcao/balcao/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 8
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 6
+		},
+		"svelte/require-each-key": {
+			"count": 6
+		}
+	},
+	"src/routes/centro/recepcao/fila/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 10
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 7
+		},
+		"no-useless-assignment": {
+			"count": 2
+		},
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/routes/centro/recepcao/painel/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 5
+		},
+		"svelte/require-each-key": {
+			"count": 1
+		}
+	},
+	"src/routes/centro/whatsapp/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 11
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 4
+		},
+		"svelte/valid-prop-names-in-kit-pages": {
+			"count": 1
+		}
+	},
+	"src/routes/ceo/+layout.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		}
+	},
+	"src/routes/login/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 1
+		}
+	},
+	"src/routes/sms/pacientes/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 1
+		}
+	},
+	"src/routes/tfd/solicitacoes/nova/+page.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 1
+		},
+		"svelte/no-unused-svelte-ignore": {
+			"count": 2
+		},
+		"svelte/require-each-key": {
+			"count": 1
+		}
+	},
+	"src/routes/tv/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 6
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 1
+		},
+		"svelte/require-each-key": {
+			"count": 1
+		}
+	},
+	"src/routes/ubs/medico/agenda/+page.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 9
+		}
+	},
+	"src/routes/ubs/pacientes/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 1
+		}
+	},
+	"src/routes/ubs/pacientes/[id]/atendimentos/+page.svelte": {
+		"@typescript-eslint/no-unused-vars": {
+			"count": 2
+		}
+	},
+	"src/routes/ubs/recepcao/fila/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 5
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 5
+		},
+		"svelte/require-each-key": {
+			"count": 2
+		}
+	},
+	"src/routes/ubs/recepcao/painel/+page.svelte": {
+		"@typescript-eslint/no-explicit-any": {
+			"count": 3
+		},
+		"@typescript-eslint/no-unused-vars": {
+			"count": 1
+		}
+	}
+}

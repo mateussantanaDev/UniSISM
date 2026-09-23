@@ -1,8 +1,8 @@
-# UNISISM — Design System
+# AgPDV — Design System
 
-Guia de replicação da linguagem visual e componentes do UNISISM para ser aplicado na **Face 2 (Secretaria / Moderação)** e em quaisquer Faces futuras (ex.: aplicativo do cidadão).
+Guia de replicação da linguagem visual e componentes do UNISISM para ser aplicado na **assitencia tecnica** e em quaisquer Faces futuras (ex.: sistema erp de gestao).
 
-> **Objetivo:** qualquer equipe, a partir deste documento, consegue montar uma nova UI do ecossistema UNISISM com **identidade visual idêntica** à Face 1 (UBS), usando os mesmos tokens, componentes e padrões.
+> **Objetivo:** qualquer equipe, a partir deste documento, consegue montar uma nova UI do ecossistema AgPDV com **identidade visual idêntica** ao design system, usando os mesmos tokens, componentes e padrões.
 
 ---
 
@@ -30,18 +30,18 @@ Guia de replicação da linguagem visual e componentes do UNISISM para ser aplic
 
 ### Princípios
 
-| # | Princípio | Tradução prática |
-|---|---|---|
-| P1 | **Autoridade institucional** | Fonte sem serifa · alto contraste · azul marinho como cor de ação. Nada que pareça "startup fofa". |
-| P2 | **Densidade informacional** | Uma tela ≈ um Bloomberg panel. Evitar rolagem longa. Prefira `text-xs` e `text-[11px]` com `leading-tight`. |
-| P3 | **Cantos retos** | Proibido `rounded-*` além de `rounded-sm`. O reset global zera `border-radius` em `button/input/select/textarea`. |
-| P4 | **Bordas finas, não sombras** | Hierarquia por bordas `border-slate-200` e por cor de fundo, nunca por `shadow-md` difuso. |
-| P5 | **Cores sóbrias** | Azul marinho `blue-900` = ação. Cinzas `slate-*` = neutro. Semântico só em estados (verde ok / âmbar pendência / vermelho crítico). |
-| P6 | **Monoespaçada para dados** | `font-mono` em protocolos, CPF, datas, IDs, timestamps e badges. `font-sans` (Inter) em nomes e textos corridos. |
-| P7 | **Atalhos por teclado** | Todo botão primário e toda aba ganha um `<kbd>` com letra/número. O usuário é operador — navega com teclado. |
-| P8 | **Sub-rotas sobre modais** | Informação persistente/detalhada = rota. Ação pontual (resolver pendência, abrir perfil) = sub-rota ou modal focado. |
-| P9 | **Zero gradiente colorido** | Única exceção: gradientes muito sutis `from-white to-slate-50` em cabeçalhos/rodapés pra criar profundidade mínima. |
-| P10 | **RBAC visível** | UI esconde o que o backend já proíbe via 403. Não mostra botão que o usuário não pode usar. |
+| #   | Princípio                     | Tradução prática                                                                                                                    |
+| --- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | **Autoridade institucional**  | Fonte sem serifa · alto contraste · azul marinho como cor de ação. Nada que pareça "startup fofa".                                  |
+| P2  | **Densidade informacional**   | Uma tela ≈ um Bloomberg panel. Evitar rolagem longa. Prefira `text-xs` e `text-[11px]` com `leading-tight`.                         |
+| P3  | **Cantos retos**              | Proibido `rounded-*` além de `rounded-sm`. O reset global zera `border-radius` em `button/input/select/textarea`.                   |
+| P4  | **Bordas finas, não sombras** | Hierarquia por bordas `border-slate-200` e por cor de fundo, nunca por `shadow-md` difuso.                                          |
+| P5  | **Cores sóbrias**             | Azul marinho `blue-900` = ação. Cinzas `slate-*` = neutro. Semântico só em estados (verde ok / âmbar pendência / vermelho crítico). |
+| P6  | **Monoespaçada para dados**   | `font-mono` em protocolos, CPF, datas, IDs, timestamps e badges. `font-sans` (Inter) em nomes e textos corridos.                    |
+| P7  | **Atalhos por teclado**       | Todo botão primário e toda aba ganha um `<kbd>` com letra/número. O usuário é operador — navega com teclado.                        |
+| P8  | **Sub-rotas sobre modais**    | Informação persistente/detalhada = rota. Ação pontual (resolver pendência, abrir perfil) = sub-rota ou modal focado.                |
+| P9  | **Zero gradiente colorido**   | Única exceção: gradientes muito sutis `from-white to-slate-50` em cabeçalhos/rodapés pra criar profundidade mínima.                 |
+| P10 | **RBAC visível**              | UI esconde o que o backend já proíbe via 403. Não mostra botão que o usuário não pode usar.                                         |
 
 ---
 
@@ -51,60 +51,62 @@ Guia de replicação da linguagem visual e componentes do UNISISM para ser aplic
 
 Todos derivados do Tailwind v4 stock — **não** criar paleta customizada.
 
-| Classe | Uso |
-|---|---|
-| `bg-slate-50` | Fundo da página |
-| `bg-white` | Fundo de painéis e cards |
-| `bg-slate-100` | Hover de linhas / botões secundários ativos |
-| `border-slate-200` | Borda padrão de containers (1px) |
-| `border-slate-300` | Borda de botões secundários e inputs |
-| `text-slate-900` | Texto primário |
-| `text-slate-700` | Texto de tabelas e corpo |
-| `text-slate-600` | Texto secundário |
-| `text-slate-500` | Labels (`uppercase tracking-widest`) |
-| `text-slate-400` | Placeholders e ícones neutros |
+| Classe             | Uso                                         |
+| ------------------ | ------------------------------------------- |
+| `bg-slate-50`      | Fundo da página                             |
+| `bg-white`         | Fundo de painéis e cards                    |
+| `bg-slate-100`     | Hover de linhas / botões secundários ativos |
+| `border-slate-200` | Borda padrão de containers (1px)            |
+| `border-slate-300` | Borda de botões secundários e inputs        |
+| `text-slate-900`   | Texto primário                              |
+| `text-slate-700`   | Texto de tabelas e corpo                    |
+| `text-slate-600`   | Texto secundário                            |
+| `text-slate-500`   | Labels (`uppercase tracking-widest`)        |
+| `text-slate-400`   | Placeholders e ícones neutros               |
 
 **Cor institucional (ação)**:
 
-| Classe | Uso |
-|---|---|
-| `bg-blue-900` | Botão primário, barra de acento, avatar, badge ativa |
-| `text-blue-900` | Links e números de protocolo |
-| `bg-blue-50` / `border-blue-700` | Tabs ativas, informativo |
+| Classe                           | Uso                                                  |
+| -------------------------------- | ---------------------------------------------------- |
+| `bg-blue-900`                    | Botão primário, barra de acento, avatar, badge ativa |
+| `text-blue-900`                  | Links e números de protocolo                         |
+| `bg-blue-50` / `border-blue-700` | Tabs ativas, informativo                             |
 
 **Semânticas (estados apenas)**:
 
-| Tom | Classes | Uso |
-|---|---|---|
-| Sucesso | `border-emerald-700 bg-emerald-50 text-emerald-800` | APROVADO, sessão ativa, exame normal, confirmação |
-| Atenção | `border-amber-600 bg-amber-50 text-amber-800` | PENDÊNCIA, PRIORITÁRIA, exame alterado, aguardando |
-| Crítico | `border-red-700 bg-red-50 text-red-800` | URGENTE, alergia grave, rejeitado, abandono >90d |
-| Neutro escuro | `border-slate-600 bg-slate-50 text-slate-700` | Rascunho, encerrada |
+| Tom           | Classes                                             | Uso                                                |
+| ------------- | --------------------------------------------------- | -------------------------------------------------- |
+| Sucesso       | `border-emerald-700 bg-emerald-50 text-emerald-800` | APROVADO, sessão ativa, exame normal, confirmação  |
+| Atenção       | `border-amber-600 bg-amber-50 text-amber-800`       | PENDÊNCIA, PRIORITÁRIA, exame alterado, aguardando |
+| Crítico       | `border-red-700 bg-red-50 text-red-800`             | URGENTE, alergia grave, rejeitado, abandono >90d   |
+| Neutro escuro | `border-slate-600 bg-slate-50 text-slate-700`       | Rascunho, encerrada                                |
 
 **Regra de ouro**: nenhum uso estético/decorativo de cor. Verde/âmbar/vermelho são reservados pra comunicar **estado** — nunca pra "bonito".
 
 ### 2.2. Tipografia
 
 **Famílias**:
+
 - `font-sans` → Inter (nomes, textos corridos, cabeçalhos)
 - `font-mono` → `ui-monospace` / SF Mono / JetBrains Mono (IDs, protocolos, datas, badges, labels uppercase, tabelas de dados)
 
 **Escala em uso** (apenas estes tamanhos):
 
-| Tailwind | px | Uso |
-|---|---|---|
-| `text-[9px]` | 9 | Atalhos de teclado (`<kbd>`) |
-| `text-[10px]` | 10 | Labels `uppercase tracking-widest`, badges |
-| `text-[11px]` | 11 | Texto auxiliar em painéis densos |
-| `text-xs` | 12 | Corpo de tabelas, formulários |
-| `text-sm` | 14 | Texto principal, inputs |
-| `text-base` | 16 | Títulos de painéis destacados |
-| `text-lg` | 18 | Cabeçalho de modal / login |
-| `text-xl`–`text-3xl` | 20–30 | Métricas numéricas (`MetricCard`) |
+| Tailwind             | px    | Uso                                        |
+| -------------------- | ----- | ------------------------------------------ |
+| `text-[9px]`         | 9     | Atalhos de teclado (`<kbd>`)               |
+| `text-[10px]`        | 10    | Labels `uppercase tracking-widest`, badges |
+| `text-[11px]`        | 11    | Texto auxiliar em painéis densos           |
+| `text-xs`            | 12    | Corpo de tabelas, formulários              |
+| `text-sm`            | 14    | Texto principal, inputs                    |
+| `text-base`          | 16    | Títulos de painéis destacados              |
+| `text-lg`            | 18    | Cabeçalho de modal / login                 |
+| `text-xl`–`text-3xl` | 20–30 | Métricas numéricas (`MetricCard`)          |
 
 **Features**: Inter com `font-feature-settings: 'cv02','cv03','cv04','cv11'` (melhora legibilidade de `0/O` e `1/I/l`). Já configurado globalmente.
 
 **Spacing de texto**:
+
 - Labels sempre: `text-[10px] font-semibold tracking-widest uppercase`
 - Títulos de painéis: `font-mono text-xs font-bold tracking-widest uppercase`
 - Dados tabulares: `font-mono text-xs`
@@ -124,15 +126,15 @@ Baseado em múltiplos de 4px (padrão Tailwind). Em uso:
 
 ### 2.4. Bordas
 
-| Classe | Uso |
-|---|---|
-| `border border-slate-200` | Container padrão |
-| `border border-slate-100` | Divisores de lista (`divide-y divide-slate-100`) |
-| `border-2 border-red-700` | Destaque crítico (alergias, pendências urgentes) |
-| `border-2 border-emerald-700` | Confirmação de sucesso (protocolo criado) |
-| `border-2 border-slate-900` | Modal (brutalismo pesado) |
-| `border-l-4 border-blue-900` | Blockquote de justificativa |
-| `border-l-2 border-blue-900` | Item de navegação ativo |
+| Classe                        | Uso                                              |
+| ----------------------------- | ------------------------------------------------ |
+| `border border-slate-200`     | Container padrão                                 |
+| `border border-slate-100`     | Divisores de lista (`divide-y divide-slate-100`) |
+| `border-2 border-red-700`     | Destaque crítico (alergias, pendências urgentes) |
+| `border-2 border-emerald-700` | Confirmação de sucesso (protocolo criado)        |
+| `border-2 border-slate-900`   | Modal (brutalismo pesado)                        |
+| `border-l-4 border-blue-900`  | Blockquote de justificativa                      |
+| `border-l-2 border-blue-900`  | Item de navegação ativo                          |
 
 ### 2.5. Sombras
 
@@ -159,13 +161,13 @@ Usar **Heroicons** inline (SVG) com `stroke-width="1.5"` ou `"2"`, `class="h-3 w
 
 ```json
 {
-  "@tailwindcss/forms": "^0.5.11",
-  "@tailwindcss/typography": "^0.5.19",
-  "@tailwindcss/vite": "^4.2.2",
-  "tailwindcss": "^4.2.4",
-  "svelte": "^5.55.2",
-  "@sveltejs/kit": "^2.57.0",
-  "typescript": "^6.0.2"
+	"@tailwindcss/forms": "^0.5.11",
+	"@tailwindcss/typography": "^0.5.19",
+	"@tailwindcss/vite": "^4.2.2",
+	"tailwindcss": "^4.2.4",
+	"svelte": "^5.55.2",
+	"@sveltejs/kit": "^2.57.0",
+	"typescript": "^6.0.2"
 }
 ```
 
@@ -179,28 +181,33 @@ Arquivo **idêntico** em todas as Faces:
 @plugin '@tailwindcss/typography';
 
 @theme {
-  --font-sans:
-    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-mono:
-    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono',
-    monospace;
+	--font-sans:
+		'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+		Arial, sans-serif;
+	--font-mono:
+		ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
-html, body {
-  font-family: var(--font-sans);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  -webkit-font-smoothing: antialiased;
-  background-color: rgb(248 250 252);
-  color: rgb(15 23 42);
+html,
+body {
+	font-family: var(--font-sans);
+	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	-webkit-font-smoothing: antialiased;
+	background-color: rgb(248 250 252);
+	color: rgb(15 23 42);
 }
 
 /* B2G Brutalist: squared corners by default, subtle outlines over shadows. */
-button, input, textarea, select { border-radius: 0; }
+button,
+input,
+textarea,
+select {
+	border-radius: 0;
+}
 
 ::selection {
-  background-color: rgb(30 58 138);
-  color: white;
+	background-color: rgb(30 58 138);
+	color: white;
 }
 ```
 
@@ -270,7 +277,7 @@ Cabeçalho padronizado de todo painel. Traz índice numerado opcional.
 
 ```svelte
 <PanelHeader title="Paciente" subtitle="Identificação resumida" index="01">
-  <StatusBadge prioridade="URGENTE" />
+	<StatusBadge prioridade="URGENTE" />
 </PanelHeader>
 ```
 
@@ -285,16 +292,17 @@ Card numérico com barra de acento lateral. **Principal elemento de dashboard.**
 
 ```svelte
 <MetricCard
-  label="Encaminhamentos Hoje"
-  value={47}
-  sublabel="Ingestões consolidadas em 24h"
-  trend="+12%"
-  trendDirection="up"
-  accent="default"
+	label="Encaminhamentos Hoje"
+	value={47}
+	sublabel="Ingestões consolidadas em 24h"
+	trend="+12%"
+	trendDirection="up"
+	accent="default"
 />
 ```
 
 **Props**:
+
 - `label` · `value` (string|number) · `sublabel?`
 - `trend?` (string curta, ex "+12%") · `trendDirection?`: `'up' | 'down' | 'neutral'`
 - `accent?`: `'default' | 'warning' | 'critical' | 'success'`
@@ -338,6 +346,7 @@ Botão brutalista quadrado com 3 variantes + suporte a atalho.
 ```
 
 **Variantes**:
+
 - `primary` → fundo `blue-900`, texto branco
 - `secondary` → fundo branco, borda `slate-300`, hover `blue-900`
 - `danger` → fundo `red-800`, texto branco
@@ -363,6 +372,7 @@ Input controlado com label uppercase e grid-span built-in.
 ```
 
 **Regras**:
+
 - Sempre usar dentro de um grid `grid-cols-12 gap-3`
 - `mono` quando o valor é numérico/padrão (CPF, CRM, SUS, CID-10)
 - `readonly` → fundo `slate-50`
@@ -392,6 +402,7 @@ Input controlado com label uppercase e grid-span built-in.
 **Estados**: idle (mostra ícone + labels) · loading (spinner + texto OCR) · filled (lista de arquivos com tamanho).
 
 **Regras de negócio**:
+
 - Upload da Solicitação Médica → `mode="ocr"` (mostra "OCR + EXTRAÇÃO ESTRUTURADA EM ANDAMENTO")
 - Anexos complementares → `mode="simple"` + `variant="secondary"` (sem OCR, apenas upload)
 
@@ -424,11 +435,18 @@ Modal focado para ações pontuais (resolver pendência, confirmar alteração).
 Barra de abas brutalista para sub-rotas.
 
 ```svelte
-<SubNav tabs={[
-  { label: 'Visão Geral', href: '/face-N/dashboard', shortcut: '1' },
-  { label: 'Fila', href: '/face-N/dashboard/fila', shortcut: '3',
-    badge: 9, badgeTone: 'critical' },
-]} />
+<SubNav
+	tabs={[
+		{ label: 'Visão Geral', href: '/face-N/dashboard', shortcut: '1' },
+		{
+			label: 'Fila',
+			href: '/face-N/dashboard/fila',
+			shortcut: '3',
+			badge: 9,
+			badgeTone: 'critical'
+		}
+	]}
+/>
 ```
 
 **Props por tab**: `label` · `href` (exact match para ativo) · `shortcut?` · `badge?` (string|number) · `badgeTone?`: `'default' | 'warning' | 'critical' | 'success'`.
@@ -443,17 +461,17 @@ Item de timeline vertical para histórico de eventos.
 
 ```svelte
 <ol>
-  {#each eventos as ev, i}
-    <TimelineStep
-      tipo={ev.tipo}
-      titulo={ev.titulo}
-      descricao={ev.descricao}
-      autor={ev.autor}
-      autorPapel={ev.autorPapel}
-      em={ev.em}
-      isLast={i === eventos.length - 1}
-    />
-  {/each}
+	{#each eventos as ev, i}
+		<TimelineStep
+			tipo={ev.tipo}
+			titulo={ev.titulo}
+			descricao={ev.descricao}
+			autor={ev.autor}
+			autorPapel={ev.autorPapel}
+			em={ev.em}
+			isLast={i === eventos.length - 1}
+		/>
+	{/each}
 </ol>
 ```
 
@@ -516,6 +534,7 @@ Quando precisar criar uma tabela nova (ex.: lista de UBSs na Face 2):
 ```
 
 **Regras**:
+
 - `border-collapse` + `border-r` entre colunas (não `border` em cada célula)
 - Head: `bg-slate-50` + label uppercase `font-mono text-[10px]`
 - Body: `font-mono` em toda tbody; sobrescreve com `font-sans` nas células de nome
@@ -574,6 +593,7 @@ Para telas com várias facetas (encaminhamento, paciente, perfil):
 ```
 
 **Padrão do `+layout.svelte`**:
+
 1. Recebe `id` via `page.params.id`
 2. Usa `$effect` para refetch quando `id` muda
 3. Cria um Svelte context com getter `encaminhamento`/`paciente`/etc.
@@ -621,29 +641,32 @@ Exemplo: [src/routes/login/esqueci-senha/+page.svelte](src/routes/login/esqueci-
 ### 7.1. Loading
 
 **Spinner padrão brutalista**:
+
 ```svelte
 <div class="h-6 w-6 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
 ```
 
 Quando dentro de tabela, usar skeleton row:
+
 ```svelte
 {#if carregando}
-  {#each Array(6) as _, i (i)}
-    <tr class="border-b border-slate-100">
-      <td colspan="N" class="px-3 py-3">
-        <div class="h-3 w-full animate-pulse bg-slate-100"></div>
-      </td>
-    </tr>
-  {/each}
+	{#each Array(6) as _, i (i)}
+		<tr class="border-b border-slate-100">
+			<td colspan="N" class="px-3 py-3">
+				<div class="h-3 w-full animate-pulse bg-slate-100"></div>
+			</td>
+		</tr>
+	{/each}
 {/if}
 ```
 
 ### 7.2. Empty state
 
 Mensagem centralizada em `font-sans text-sm text-slate-500`:
+
 ```svelte
 <td colspan="N" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
-  Nenhum encaminhamento encontrado com os filtros aplicados.
+	Nenhum encaminhamento encontrado com os filtros aplicados.
 </td>
 ```
 
@@ -652,46 +675,50 @@ Quando for toda uma tela, adicionar CTA de ação primária embaixo.
 ### 7.3. Erro
 
 Container com borda vermelha dupla:
+
 ```svelte
 <div class="border-2 border-red-700 bg-red-50 p-6 text-center">
-  <div class="font-mono text-sm font-bold tracking-widest text-red-900 uppercase">
-    Encaminhamento não encontrado
-  </div>
-  <p class="mt-2 text-xs text-red-800">O ID informado não foi localizado.</p>
+	<div class="font-mono text-sm font-bold tracking-widest text-red-900 uppercase">
+		Encaminhamento não encontrado
+	</div>
+	<p class="mt-2 text-xs text-red-800">O ID informado não foi localizado.</p>
 </div>
 ```
 
 **Erros de validação inline** (em forms):
+
 ```svelte
-<div class="border border-red-700 bg-red-50 px-3 py-2
-            font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
-  ⚠ {mensagem}
+<div
+	class="border border-red-700 bg-red-50 px-3 py-2
+            font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+>
+	⚠ {mensagem}
 </div>
 ```
 
 ### 7.4. Sucesso
 
 Confirmação de ação crítica:
+
 ```svelte
 <div class="border-2 border-emerald-700 bg-emerald-50 p-6">
-  <div class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
-    ✓ ENCAMINHAMENTO CONSOLIDADO COM SUCESSO
-  </div>
-  <div class="mt-1 font-mono text-3xl font-bold text-emerald-900">
-    UBS-2026-100137
-  </div>
+	<div class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase">
+		✓ ENCAMINHAMENTO CONSOLIDADO COM SUCESSO
+	</div>
+	<div class="mt-1 font-mono text-3xl font-bold text-emerald-900">UBS-2026-100137</div>
 </div>
 ```
 
 ### 7.5. Info / alerta contextual
 
 Faixa com borda lateral:
+
 ```svelte
 <div class="border-l-4 border-amber-600 bg-amber-50 px-3 py-2">
-  <div class="font-mono text-[10px] font-bold tracking-widest text-amber-800 uppercase">
-    Observações da Regulação
-  </div>
-  <div class="mt-0.5 text-xs text-amber-900">{texto}</div>
+	<div class="font-mono text-[10px] font-bold tracking-widest text-amber-800 uppercase">
+		Observações da Regulação
+	</div>
+	<div class="mt-0.5 text-xs text-amber-900">{texto}</div>
 </div>
 ```
 
@@ -705,13 +732,13 @@ Paleta de borda lateral: `emerald-700` (sucesso) / `amber-600` (atenção) / `re
 
 Critério de decisão:
 
-| Situação | Use |
-|---|---|
-| Múltiplas facetas de um recurso (detalhe, abas) | Sub-rotas |
-| Fluxo linear em passos (wizard) | Sub-rotas com stepper |
-| Busca/filtro por status | Sub-rotas (URL-shareable) |
-| Ação pontual sobre um recurso (editar, resolver, confirmar) | Modal focado |
-| Seleção rápida em contexto | Dropdown/popover (não temos ainda) |
+| Situação                                                    | Use                                |
+| ----------------------------------------------------------- | ---------------------------------- |
+| Múltiplas facetas de um recurso (detalhe, abas)             | Sub-rotas                          |
+| Fluxo linear em passos (wizard)                             | Sub-rotas com stepper              |
+| Busca/filtro por status                                     | Sub-rotas (URL-shareable)          |
+| Ação pontual sobre um recurso (editar, resolver, confirmar) | Modal focado                       |
+| Seleção rápida em contexto                                  | Dropdown/popover (não temos ainda) |
 
 ### 8.2. Row-level no UI (RBAC)
 
@@ -722,13 +749,13 @@ Pattern central: contexto de auth com helpers puros.
 ```ts
 // src/lib/presentation/contexts/authContext.ts
 export const rbac = {
-  podeConsolidarEncaminhamento(role: Role | undefined): boolean {
-    return role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS' || role === 'DESENVOLVEDOR';
-  },
-  podeCriarUsuario(role: Role | undefined): boolean {
-    return role === 'DESENVOLVEDOR' || role === 'ADMIN';
-  },
-  // …
+	podeConsolidarEncaminhamento(role: Role | undefined): boolean {
+		return role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS' || role === 'DESENVOLVEDOR';
+	},
+	podeCriarUsuario(role: Role | undefined): boolean {
+		return role === 'DESENVOLVEDOR' || role === 'ADMIN';
+	}
+	// …
 };
 ```
 
@@ -736,11 +763,12 @@ E uso em componentes:
 
 ```svelte
 {#if auth.podeConsolidarEncaminhamento}
-  <PrimaryButton label="Novo Encaminhamento" ... />
+	<PrimaryButton label="Novo Encaminhamento" ... />
 {/if}
 ```
 
 **Na Face 2 (Regulação)**, defina os helpers equivalentes:
+
 - `podeAprovarEncaminhamento(role)` → `REGULADOR_SMS | DESENVOLVEDOR`
 - `podeRegistrarPendencia(role)` → mesmo
 - `podeVerFilaCompleta(role)` → todos autenticados
@@ -751,20 +779,20 @@ Todo `+layout` raiz da área autenticada faz:
 
 ```ts
 onMount(async () => {
-  if (!api.tokens.get()) {
-    goto('/login', { replaceState: true });
-    return;
-  }
-  try {
-    me = await api.auth.me();
-  } catch (e) {
-    if (e instanceof ApiError && e.status !== 401) {
-      api.tokens.set(null);
-      goto('/login', { replaceState: true });
-    }
-  } finally {
-    autenticando = false;
-  }
+	if (!api.tokens.get()) {
+		goto('/login', { replaceState: true });
+		return;
+	}
+	try {
+		me = await api.auth.me();
+	} catch (e) {
+		if (e instanceof ApiError && e.status !== 401) {
+			api.tokens.set(null);
+			goto('/login', { replaceState: true });
+		}
+	} finally {
+		autenticando = false;
+	}
 });
 ```
 
@@ -789,22 +817,22 @@ Tabela `pageTitles: Record<string, { label, crumb }>` no `+layout.svelte` raiz +
 
 ## 10. Anti-patterns
 
-| ❌ NÃO FAZER | ✅ FAZER |
-|---|---|
-| `rounded-lg`, `rounded-xl`, `rounded-full` | `rounded-sm` no máximo, quase sempre retos |
-| `shadow-md` ou `shadow-lg` difusos | Bordas finas `border-slate-200` |
-| Gradientes coloridos (`from-blue-500 to-purple-500`) | `from-white to-slate-50` sutil (apenas headers/footers) |
-| Paleta custom (`#3E8EDE`…) | Apenas `slate-*` e `blue-900` + semânticas |
-| Cor decorativa (verde "porque é bonito") | Verde/âmbar/vermelho apenas para ESTADO |
-| Ícones coloridos decorativos | Heroicons em `currentColor` |
-| Tipografia com serifa, scripts, ou fontes divertidas | Inter (sans) + ui-monospace |
-| Tooltips excessivos | Labels uppercase explícitas |
-| Uma tela com 10 responsabilidades | Sub-rotas — uma tela por responsabilidade |
-| Botão fantasma (texto-only sem borda) | `<PrimaryButton variant="secondary">` |
-| Ícones grandes + pouca densidade | Alta densidade de dados, ícones pequenos `h-3 w-3` a `h-5 w-5` |
-| Animações elaboradas | Apenas `transition-colors` e `animate-spin`/`animate-pulse` |
-| Mocks no código de produção | Camada `$lib/api/` tipada com contrato do backend |
-| Hardcode de `me.nome` | `useAuth().me` de contexto |
+| ❌ NÃO FAZER                                         | ✅ FAZER                                                       |
+| ---------------------------------------------------- | -------------------------------------------------------------- |
+| `rounded-lg`, `rounded-xl`, `rounded-full`           | `rounded-sm` no máximo, quase sempre retos                     |
+| `shadow-md` ou `shadow-lg` difusos                   | Bordas finas `border-slate-200`                                |
+| Gradientes coloridos (`from-blue-500 to-purple-500`) | `from-white to-slate-50` sutil (apenas headers/footers)        |
+| Paleta custom (`#3E8EDE`…)                           | Apenas `slate-*` e `blue-900` + semânticas                     |
+| Cor decorativa (verde "porque é bonito")             | Verde/âmbar/vermelho apenas para ESTADO                        |
+| Ícones coloridos decorativos                         | Heroicons em `currentColor`                                    |
+| Tipografia com serifa, scripts, ou fontes divertidas | Inter (sans) + ui-monospace                                    |
+| Tooltips excessivos                                  | Labels uppercase explícitas                                    |
+| Uma tela com 10 responsabilidades                    | Sub-rotas — uma tela por responsabilidade                      |
+| Botão fantasma (texto-only sem borda)                | `<PrimaryButton variant="secondary">`                          |
+| Ícones grandes + pouca densidade                     | Alta densidade de dados, ícones pequenos `h-3 w-3` a `h-5 w-5` |
+| Animações elaboradas                                 | Apenas `transition-colors` e `animate-spin`/`animate-pulse`    |
+| Mocks no código de produção                          | Camada `$lib/api/` tipada com contrato do backend              |
+| Hardcode de `me.nome`                                | `useAuth().me` de contexto                                     |
 
 ---
 
@@ -887,7 +915,7 @@ Antes do go-live, conferir:
 
 - [ ] Nenhum `rounded-lg`/`rounded-xl`/`rounded-full` no codebase (`grep -rn "rounded-\(lg\|xl\|full\|2xl\|3xl\)" src/`)
 - [ ] Nenhuma `shadow-lg`/`shadow-xl` (`grep -rn "shadow-\(lg\|xl\|2xl\)" src/`)
-- [ ] Nenhuma cor fora de `slate-*`, `blue-900`/950`, `emerald-*`, `amber-*`, `red-*`
+- [ ] Nenhuma cor fora de `slate-*`, `blue-900`/950`, `emerald-_`, `amber-_`, `red-\*`
 - [ ] Todo botão primário tem `<PrimaryButton>`, nunca `<button>` solto
 - [ ] `svelte-check` com 0 erros 0 warnings
 - [ ] Comparar paleta lado a lado com a Face 1 em duas telas equivalentes (dashboard, detalhe)
@@ -896,15 +924,15 @@ Antes do go-live, conferir:
 
 ## 12. Referências rápidas
 
-| Tópico | Arquivo |
-|---|---|
-| CSS global + reset brutalista | [src/routes/layout.css](src/routes/layout.css) |
-| Componentes do design system | [src/lib/presentation/components/](src/lib/presentation/components/) |
-| Contextos de sessão e dados | [src/lib/presentation/contexts/](src/lib/presentation/contexts/) |
-| Cliente HTTP tipado | [src/lib/api/](src/lib/api/) |
-| Modelos de domínio (re-exports) | [src/lib/domain/models/](src/lib/domain/models/) |
-| Contrato de backend | [BACKEND_API.md](BACKEND_API.md) |
-| Rotas de exemplo (UBS) | [src/routes/ubs/](src/routes/ubs/) |
+| Tópico                          | Arquivo                                                              |
+| ------------------------------- | -------------------------------------------------------------------- |
+| CSS global + reset brutalista   | [src/routes/layout.css](src/routes/layout.css)                       |
+| Componentes do design system    | [src/lib/presentation/components/](src/lib/presentation/components/) |
+| Contextos de sessão e dados     | [src/lib/presentation/contexts/](src/lib/presentation/contexts/)     |
+| Cliente HTTP tipado             | [src/lib/api/](src/lib/api/)                                         |
+| Modelos de domínio (re-exports) | [src/lib/domain/models/](src/lib/domain/models/)                     |
+| Contrato de backend             | [BACKEND_API.md](BACKEND_API.md)                                     |
+| Rotas de exemplo (UBS)          | [src/routes/ubs/](src/routes/ubs/)                                   |
 
 ---
 
@@ -918,6 +946,7 @@ Antes do go-live, conferir:
 - Paleta semântica (verde/âmbar/vermelho) → **imutável**
 
 **Divergências Face 1 ↔ Face 2** (ou futuras):
+
 - Permitidas: menu items, atalhos, rótulos, dados mock iniciais
 - **Proibidas**: tokens, componentes visuais, padrões de layout, anti-patterns
 

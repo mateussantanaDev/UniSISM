@@ -45,8 +45,14 @@
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
-	let tituloProfissional = $derived(ehCeo ? 'CIRURGIÃO-DENTISTA ESPECIALISTA' : 'MÉDICO ESPECIALISTA');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
+	let tituloProfissional = $derived(
+		ehCeo ? 'CIRURGIÃO-DENTISTA ESPECIALISTA' : 'MÉDICO ESPECIALISTA'
+	);
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 	let rotuloSala = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório Médico');
 
@@ -103,11 +109,15 @@
 		triagemDados?: SinaisVitaisTriagem;
 	}
 
-	let dataAgenda = $state(page.url.searchParams.get('data') || new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
+	let dataAgenda = $state(
+		page.url.searchParams.get('data') || new Date().toISOString().substring(0, 10)
+	); // YYYY-MM-DD
 	let medicoLogado = $state('Especialista');
 	let medicoCrm = $state('Regulação');
 	let busca = $state('');
-	let filtroStatus = $state<'TODOS' | 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU'>('TODOS');
+	let filtroStatus = $state<'TODOS' | 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU'>(
+		'TODOS'
+	);
 	let carregando = $state(true);
 	let erroGlobal = $state('');
 	let mensagemSucesso = $state('');
@@ -117,7 +127,7 @@
 
 	// Filtragem dinâmica de consultas da agenda
 	let filtrados = $derived.by(() => {
-		return consultas.filter(c => {
+		return consultas.filter((c) => {
 			if (filtroStatus !== 'TODOS' && c.status !== filtroStatus) return false;
 			if (busca.trim()) {
 				const q = busca.toLowerCase();
@@ -126,7 +136,8 @@
 					c.paciente.cpf.includes(q) ||
 					c.protocolo.toLowerCase().includes(q) ||
 					c.solicitacao.cid10.toLowerCase().includes(q) ||
-					(c.solicitacao.especialidadeSolicitada && c.solicitacao.especialidadeSolicitada.toLowerCase().includes(q))
+					(c.solicitacao.especialidadeSolicitada &&
+						c.solicitacao.especialidadeSolicitada.toLowerCase().includes(q))
 				);
 			}
 			return true;
@@ -139,7 +150,9 @@
 	let timerInterval: any = null;
 
 	// Form fields for active SOAP Consultation
-	let tabAtendimento = $state<'SOAP' | 'PRESCRICAO' | 'EXAMES' | 'ATESTADO' | 'CONTRA_REFERENCIA'>('SOAP');
+	let tabAtendimento = $state<'SOAP' | 'PRESCRICAO' | 'EXAMES' | 'ATESTADO' | 'CONTRA_REFERENCIA'>(
+		'SOAP'
+	);
 	let soapQueixa = $state('');
 	let soapExameFisico = $state('');
 	let soapPa = $state('');
@@ -218,7 +231,7 @@
 	}
 
 	function removerProcedimento(id: string) {
-		procedimentosRealizados = procedimentosRealizados.filter(p => p.id !== id);
+		procedimentosRealizados = procedimentosRealizados.filter((p) => p.id !== id);
 	}
 
 	function selecionarProcedimentoSugerido(p: { codigo: string; nome: string }) {
@@ -273,15 +286,20 @@
 					observacoes: dados.obsRetorno
 				} as any);
 			} catch (e) {
-				console.info('[UniSISM] Endpoint /v1/centro/medico/retorno em transição — gravando retorno localmente.', e);
+				console.info(
+					'[UniSISM] Endpoint /v1/centro/medico/retorno em transição — gravando retorno localmente.',
+					e
+				);
 			}
 
 			// Adiciona à conduta da consulta ativa
 			soapConduta += `\n\nRETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${dados.horaRetorno} com Dr(a). ${dados.medicoRetornoNome || medicoLogado}. Obs: ${dados.obsRetorno}`;
-			
+
 			modalRetornoAberto = false;
 			mensagemSucesso = `✓ RETORNO DO PACIENTE AGENDADO COM SUCESSO!\nPaciente: ${consultaAtiva.paciente.nome}\nData Escolhida: ${dtFmt} às ${dados.horaRetorno}\nMédico: ${dados.medicoRetornoNome || medicoLogado}`;
-			setTimeout(() => { mensagemSucesso = ''; }, 6000);
+			setTimeout(() => {
+				mensagemSucesso = '';
+			}, 6000);
 		} catch (err: any) {
 			console.error(err);
 			erroModalRetorno = `Falha ao agendar retorno: ${err?.message || 'Erro do servidor'}`;
@@ -332,8 +350,12 @@
 	// Form fields for Prescrição / Exames / Atestado / Contra-Referência
 	let atestadoDias = $state(1);
 	let atestadoMotivo = $state('Necessidade de repouso para recuperação médica.');
-	let examesPedidosTexto = $state('1. Eletrocardiógrafo 12 canais (ECG de repouso)\n2. Ecocardiograma Transtorácico');
-	let contraReferenciaTexto = $state('Devolutiva para a UBS de origem: Paciente avaliado pela Cardiologia com diagnóstico de Hipertensão arterial essencial (I10). Mantida conduta medicamentosa. Retorno em 60 dias.');
+	let examesPedidosTexto = $state(
+		'1. Eletrocardiógrafo 12 canais (ECG de repouso)\n2. Ecocardiograma Transtorácico'
+	);
+	let contraReferenciaTexto = $state(
+		'Devolutiva para a UBS de origem: Paciente avaliado pela Cardiologia com diagnóstico de Hipertensão arterial essencial (I10). Mantida conduta medicamentosa. Retorno em 60 dias.'
+	);
 
 	// Modals State
 	let modalSolicitacaoAberto = $state(false);
@@ -374,7 +396,7 @@
 				observacao: `Solicitado em consulta pelo especialista ${medicoLogado}`
 			});
 
-			const prot = res.protocolo || ('ENC' + Date.now().toString().substring(3, 11));
+			const prot = res.protocolo || 'ENC' + Date.now().toString().substring(3, 11);
 			mensagemSucesso = `✓ SOLICITAÇÃO DE ENCAMINHAMENTO REGISTRADA COM SUCESSO!\nProtocolo ${prot} enviado diretamente à Fila de Regulação da Secretaria Municipal de Saúde.`;
 			modalNovoEncaminhamentoAberto = false;
 			if (timerMensagem) clearTimeout(timerMensagem);
@@ -405,7 +427,9 @@
 	let modalDossieAberto = $state(false);
 	let pacienteDossie = $state<PacienteCompleto | null>(null);
 	let carregandoDossie = $state(false);
-	let abaDossieAtiva = $state<'resumo' | 'quadro' | 'atendimentos' | 'exames' | 'vacinas' | 'viagens'>('resumo');
+	let abaDossieAtiva = $state<
+		'resumo' | 'quadro' | 'atendimentos' | 'exames' | 'vacinas' | 'viagens'
+	>('resumo');
 
 	let modalImprimirAberto = $state(false);
 
@@ -415,7 +439,9 @@
 	let refEspecialidade = $state('Oncologia Cirúrgica');
 	let refCid10 = $state('C50.9');
 	let refDiagnostico = $state('Neoplasia maligna da mama');
-	let refJustificativa = $state('Tratamento cirúrgico de alta complexidade e radioterapia não disponíveis na rede municipal.');
+	let refJustificativa = $state(
+		'Tratamento cirúrgico de alta complexidade e radioterapia não disponíveis na rede municipal.'
+	);
 	let refPrioridade = $state<PrioridadeClinica>('URGENTE');
 	let refTransporte = $state('VAN_SMS');
 	let refAcompanhante = $state(true);
@@ -453,7 +479,11 @@
 		if (enc.horaAgendamento && typeof enc.horaAgendamento === 'string') {
 			return enc.horaAgendamento.substring(0, 5);
 		}
-		if (enc.agendamentoPrevisto && typeof enc.agendamentoPrevisto === 'string' && enc.agendamentoPrevisto.includes('T')) {
+		if (
+			enc.agendamentoPrevisto &&
+			typeof enc.agendamentoPrevisto === 'string' &&
+			enc.agendamentoPrevisto.includes('T')
+		) {
 			const d = new Date(enc.agendamentoPrevisto);
 			if (!isNaN(d.getTime())) {
 				const h = d.getUTCHours().toString().padStart(2, '0');
@@ -463,7 +493,20 @@
 				}
 			}
 		}
-		const horasPadrao = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '13:30', '14:00', '14:30', '15:00', '15:30'];
+		const horasPadrao = [
+			'08:00',
+			'08:30',
+			'09:00',
+			'09:30',
+			'10:00',
+			'10:30',
+			'11:00',
+			'13:30',
+			'14:00',
+			'14:30',
+			'15:00',
+			'15:30'
+		];
 		return horasPadrao[idx % horasPadrao.length];
 	}
 
@@ -480,7 +523,10 @@
 						id: enc.id,
 						protocolo: enc.protocolo,
 						horario: extrairHorarioReal(enc, idx),
-						status: (enc.statusAtendimentoCentro === 'AGUARDANDO_ATENDIMENTO' || enc.statusAtendimentoCentro === 'AGENDADO' ? 'AGUARDANDO' : (enc.statusAtendimentoCentro || 'AGUARDANDO')) as any,
+						status: (enc.statusAtendimentoCentro === 'AGUARDANDO_ATENDIMENTO' ||
+						enc.statusAtendimentoCentro === 'AGENDADO'
+							? 'AGUARDANDO'
+							: enc.statusAtendimentoCentro || 'AGUARDANDO') as any,
 						pacienteId: (enc.paciente as any).id || enc.id,
 						paciente: {
 							nome: enc.paciente.nome,
@@ -512,8 +558,10 @@
 
 			// Consulta via API de encaminhamentos aprovados
 			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
-			const filtradosCentro = res.filter(e => pertenceAoOrgaoCentro(e, centroAtivo));
-			const agendados = filtradosCentro.filter(e => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda);
+			const filtradosCentro = res.filter((e) => pertenceAoOrgaoCentro(e, centroAtivo));
+			const agendados = filtradosCentro.filter(
+				(e) => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda
+			);
 
 			consultas = agendados.map((enc, idx) => {
 				return {
@@ -566,15 +614,21 @@
 			if (me && me.nome) {
 				const esp = (me as any).especialidade ? ` (${(me as any).especialidade})` : '';
 				medicoLogado = `${me.nome}${esp}`;
-				medicoCrm = (me as any).crm ? `CRM ${(me as any).crm}` : (me as any).cpf ? `CRM/REG ${(me as any).cpf.substring(0, 6)}` : 'CRM Regulação';
+				medicoCrm = (me as any).crm
+					? `CRM ${(me as any).crm}`
+					: (me as any).cpf
+						? `CRM/REG ${(me as any).cpf.substring(0, 6)}`
+						: 'CRM Regulação';
 			}
 		} catch (e) {
 			console.info('[UniSISM] Erro ao carregar perfil do médico conectado.', e);
 		}
 		try {
-			const procs = await api.centroGestao.listEspecialidades({ centro: centroAtivo }).catch(() => []);
+			const procs = await api.centroGestao
+				.listEspecialidades({ centro: centroAtivo })
+				.catch(() => []);
 			if (Array.isArray(procs) && procs.length > 0) {
-				procedimentosDoBanco = procs.map(p => ({
+				procedimentosDoBanco = procs.map((p) => ({
 					codigo: p.codigoSigtap || '00.00.00.000-0',
 					nome: p.nome
 				}));
@@ -594,7 +648,7 @@
 
 	// Filtered schedule list
 	let consultasFiltradas = $derived.by(() => {
-		return consultas.filter(c => {
+		return consultas.filter((c) => {
 			if (filtroStatus !== 'TODOS' && c.status !== filtroStatus) return false;
 			if (busca.trim()) {
 				const q = busca.toLowerCase();
@@ -611,14 +665,18 @@
 
 	// Metrics
 	let totalAgendados = $derived(consultas.length);
-	let totalAguardando = $derived(consultas.filter(c => c.status === 'AGUARDANDO').length);
-	let totalEmAtendimento = $derived(consultas.filter(c => c.status === 'EM_ATENDIMENTO').length);
-	let totalConcluidos = $derived(consultas.filter(c => c.status === 'CONCLUIDO').length);
-	let totalFaltas = $derived(consultas.filter(c => c.status === 'FALTOU').length);
-	let taxaOcupacao = $derived(totalAgendados > 0 ? Math.round((totalConcluidos / totalAgendados) * 100) : 0);
+	let totalAguardando = $derived(consultas.filter((c) => c.status === 'AGUARDANDO').length);
+	let totalEmAtendimento = $derived(consultas.filter((c) => c.status === 'EM_ATENDIMENTO').length);
+	let totalConcluidos = $derived(consultas.filter((c) => c.status === 'CONCLUIDO').length);
+	let totalFaltas = $derived(consultas.filter((c) => c.status === 'FALTOU').length);
+	let taxaOcupacao = $derived(
+		totalAgendados > 0 ? Math.round((totalConcluidos / totalAgendados) * 100) : 0
+	);
 
 	function formatarTimer(seg: number): string {
-		const m = Math.floor(seg / 60).toString().padStart(2, '0');
+		const m = Math.floor(seg / 60)
+			.toString()
+			.padStart(2, '0');
 		const s = (seg % 60).toString().padStart(2, '0');
 		return `${m}:${s}`;
 	}
@@ -648,7 +706,16 @@
 
 	function formatarDataExtensa(iso: string) {
 		const d = new Date(iso + 'T12:00:00');
-		return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+		return d.toLocaleDateString('pt-BR', {
+			weekday: 'long',
+			day: '2-digit',
+			month: 'long',
+			year: 'numeric'
+		});
+	}
+
+	function podeIniciarAtendimento(status: string): boolean {
+		return ['AGUARDANDO', 'AGUARDANDO_ATENDIMENTO', 'AGENDADO'].includes(status);
 	}
 
 	// Attendance Actions
@@ -661,16 +728,23 @@
 		try {
 			await api.centroMedico.chamarPaciente(c.id);
 		} catch (errChamar) {
-			console.info('[UniSISM] Endpoint /v1/centro/medico/chamar em transição — usando estado local.', errChamar);
+			console.info(
+				'[UniSISM] Endpoint /v1/centro/medico/chamar em transição — usando estado local.',
+				errChamar
+			);
 		}
 
 		// Reset SOAP form com dados reais da solicitação
-		procedimentosRealizados = c.solicitacao?.procedimentoSolicitado ? [{
-			id: 'proc-ini-' + Date.now(),
-			nome: c.solicitacao.procedimentoSolicitado,
-			quantidade: 1,
-			observacao: 'Procedimento solicitado no encaminhamento'
-		}] : [];
+		procedimentosRealizados = c.solicitacao?.procedimentoSolicitado
+			? [
+					{
+						id: 'proc-ini-' + Date.now(),
+						nome: c.solicitacao.procedimentoSolicitado,
+						quantidade: 1,
+						observacao: 'Procedimento solicitado no encaminhamento'
+					}
+				]
+			: [];
 		soapQueixa = c.solicitacao?.justificativaClinica
 			? `Queixa informada na solicitação: ${c.solicitacao.justificativaClinica}`
 			: '';
@@ -685,7 +759,8 @@
 			soapTemp = c.triagemDados.temperatura ? String(c.triagemDados.temperatura) : '';
 			soapGlicemia = c.triagemDados.glicemiaCapilar ? String(c.triagemDados.glicemiaCapilar) : '';
 			if (c.triagemDados.queixaPrincipal) {
-				soapQueixa += (soapQueixa ? '\n' : '') + `[TRIAGEM ENFERMAGEM]: ${c.triagemDados.queixaPrincipal}`;
+				soapQueixa +=
+					(soapQueixa ? '\n' : '') + `[TRIAGEM ENFERMAGEM]: ${c.triagemDados.queixaPrincipal}`;
 			}
 		} else {
 			soapPa = '';
@@ -721,9 +796,17 @@
 		salvandoAtendimento = true;
 		erroSoapForm = '';
 		try {
-			const procResumo = procedimentosRealizados.length > 0 
-				? `\n\nProcedimentos Realizados (${procedimentosRealizados.length}): ` + procedimentosRealizados.map(p => `${p.nome} (${p.quantidade}x)` + (p.codigoSigtap ? ` [SIGTAP ${p.codigoSigtap}]` : '')).join('; ')
-				: '';
+			const procResumo =
+				procedimentosRealizados.length > 0
+					? `\n\nProcedimentos Realizados (${procedimentosRealizados.length}): ` +
+						procedimentosRealizados
+							.map(
+								(p) =>
+									`${p.nome} (${p.quantidade}x)` +
+									(p.codigoSigtap ? ` [SIGTAP ${p.codigoSigtap}]` : '')
+							)
+							.join('; ')
+					: '';
 			const condutaCompleta = soapConduta + procResumo;
 
 			// Register attendance via dedicated Centro SOAP endpoint (v3.0.0 centro-doc-back.md)
@@ -740,7 +823,10 @@
 					prescricaoResumo: soapPrescricao
 				});
 			} catch (errSoap) {
-				console.info('[UniSISM] Endpoint /v1/centro/medico/atendimento/:id em transição — usando fallback pacientes.addAtendimento', errSoap);
+				console.info(
+					'[UniSISM] Endpoint /v1/centro/medico/atendimento/:id em transição — usando fallback pacientes.addAtendimento',
+					errSoap
+				);
 				try {
 					await api.pacientes.addAtendimento(consultaAtiva.pacienteId, {
 						data: new Date().toISOString(),
@@ -756,14 +842,17 @@
 						prescricaoResumo: soapPrescricao
 					});
 				} catch (e) {
-					console.warn('Backend API não disponivel para gravação do PEC — gravando estado local.', e);
+					console.warn(
+						'Backend API não disponivel para gravação do PEC — gravando estado local.',
+						e
+					);
 				}
 			}
 
 			if (procedimentosRealizados.length > 0) {
 				try {
 					await api.centroMedico.registrarProcedimentos(consultaAtiva.id, {
-						procedimentos: procedimentosRealizados.map(p => ({
+						procedimentos: procedimentosRealizados.map((p) => ({
 							codigoSigtap: p.codigoSigtap,
 							nome: p.nome,
 							quantidade: p.quantidade,
@@ -776,7 +865,10 @@
 			}
 
 			// Update consultation in list
-			const agoraHora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+			const agoraHora = new Date().toLocaleTimeString('pt-BR', {
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 			consultaAtiva.status = 'CONCLUIDO';
 			consultaAtiva.atendimentoSOAP = {
 				queixaPrincipal: soapQueixa,
@@ -789,7 +881,7 @@
 			};
 
 			mensagemSucesso = `✓ ATENDIMENTO CONCLUÍDO COM SUCESSO!\nPaciente: ${consultaAtiva.paciente.nome} | CID-10: ${soapCid10} (${soapDiagnostico}) | Horário: ${agoraHora}`;
-			
+
 			// Stop timer & close
 			if (timerInterval) clearInterval(timerInterval);
 			consultaAtiva = null;
@@ -807,7 +899,11 @@
 	}
 
 	function marcarFalta(c: ConsultaAgenda) {
-		if (confirm(`Confirmar que o paciente ${c.paciente.nome} faltou à consulta agendada para às ${c.horario}?`)) {
+		if (
+			confirm(
+				`Confirmar que o paciente ${c.paciente.nome} faltou à consulta agendada para às ${c.horario}?`
+			)
+		) {
 			c.status = 'FALTOU';
 		}
 	}
@@ -833,7 +929,10 @@
 					return;
 				}
 			} catch (errCentroPront) {
-				console.info('[UniSISM] Endpoint /v1/centro/medico/pacientes/:id/prontuario em transição — usando fallback pacientes.byId', errCentroPront);
+				console.info(
+					'[UniSISM] Endpoint /v1/centro/medico/pacientes/:id/prontuario em transição — usando fallback pacientes.byId',
+					errCentroPront
+				);
 			}
 
 			const p = await api.pacientes.byId(c.pacienteId);
@@ -893,7 +992,10 @@
 					protocoloObtido = resTfd.encaminhamento.protocolo;
 				}
 			} catch (errInter) {
-				console.info('[UniSISM] Endpoint /v1/centro/medico/encaminhamento-intermunicipal em transição — usando fallback encaminhamentos.create', errInter);
+				console.info(
+					'[UniSISM] Endpoint /v1/centro/medico/encaminhamento-intermunicipal em transição — usando fallback encaminhamentos.create',
+					errInter
+				);
 				const criado = await api.encaminhamentos.create({
 					paciente: {
 						nome: consultaAtiva.paciente.nome,
@@ -944,19 +1046,23 @@
 <div class="flex flex-col gap-4 font-mono text-xs">
 	<!-- Banner de Sucesso Global -->
 	{#if mensagemSucesso}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 flex flex-col gap-1 shadow-sm whitespace-pre-wrap">
+		<div
+			class="flex flex-col gap-1 border-2 border-emerald-700 bg-emerald-50 p-4 font-bold whitespace-pre-wrap text-emerald-900 shadow-sm"
+		>
 			<div class="flex items-center gap-2 text-sm font-black">
-				<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono">CONCLUÍDO</span>
+				<span class="bg-emerald-700 px-2 py-0.5 font-mono text-xs text-white">CONCLUÍDO</span>
 				<span>ATENDIMENTO MÉDICO REGISTRADO</span>
 			</div>
-			<div class="text-xs font-mono font-normal mt-1">{mensagemSucesso}</div>
+			<div class="mt-1 font-mono text-xs font-normal">{mensagemSucesso}</div>
 		</div>
 	{/if}
 
 	<!-- Banner de Erro Global -->
 	{#if erroGlobal}
-		<div class="border border-amber-600 bg-amber-50 p-3 font-semibold text-amber-900 flex items-center gap-2">
-			<IconAlertTriangle size={16} class="text-amber-800 shrink-0" />
+		<div
+			class="flex items-center gap-2 border border-amber-600 bg-amber-50 p-3 font-semibold text-amber-900"
+		>
+			<IconAlertTriangle size={16} class="shrink-0 text-amber-800" />
 			<span>{erroGlobal}</span>
 		</div>
 	{/if}
@@ -964,24 +1070,37 @@
 	<!-- 1. Cabeçalho de Contexto do Médico e Seletor de Data da Agenda -->
 	<section class="grid grid-cols-1 gap-3 md:grid-cols-12">
 		<!-- Card de Identificação do Especialista -->
-		<div class="border border-slate-200 bg-white p-4 md:col-span-4 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-white p-4 md:col-span-4">
 			<div>
-				<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">ESPECIALISTA RESPONSÁVEL</div>
-				<div class="mt-1 text-base font-bold text-slate-900 font-sans">{medicoLogado}</div>
-				<div class="text-[11px] text-blue-900 font-bold mt-0.5">Centro Municipal de Especialidades · {medicoCrm}</div>
+				<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+					ESPECIALISTA RESPONSÁVEL
+				</div>
+				<div class="mt-1 font-sans text-base font-bold text-slate-900">{medicoLogado}</div>
+				<div class="mt-0.5 text-[11px] font-bold text-blue-900">
+					Centro Municipal de Especialidades · {medicoCrm}
+				</div>
 			</div>
-			<div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-600">
-				<span>Status da Escala: <strong class="text-emerald-700 font-bold">EM ATENDIMENTO</strong></span>
+			<div
+				class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-600"
+			>
+				<span
+					>Status da Escala: <strong class="font-bold text-emerald-700">EM ATENDIMENTO</strong
+					></span
+				>
 				<span>Turno: <strong>08h às 17h</strong></span>
 			</div>
 		</div>
 
 		<!-- Card de Controle da Data da Agenda -->
-		<div class="border border-slate-200 bg-white p-4 md:col-span-8 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-white p-4 md:col-span-8">
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<div>
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">DATA DA AGENDA DO MÉDICO</div>
-					<div class="mt-0.5 text-sm font-bold text-slate-900 capitalize flex flex-wrap items-center gap-2">
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+						DATA DA AGENDA DO MÉDICO
+					</div>
+					<div
+						class="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-900 capitalize"
+					>
 						<span>{formatarDataExtensa(dataAgenda)}</span>
 						<input
 							type="date"
@@ -1004,7 +1123,7 @@
 					<button
 						type="button"
 						onclick={irParaHoje}
-						class="border border-blue-900 bg-blue-900 text-white px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+						class="border border-blue-900 bg-blue-900 px-3 py-1 text-[11px] font-bold tracking-wider text-white uppercase"
 					>
 						Hoje
 					</button>
@@ -1018,25 +1137,27 @@
 				</div>
 			</div>
 
-			<div class="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 border-t border-slate-100 pt-3 text-center">
+			<div
+				class="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 text-center sm:grid-cols-5"
+			>
 				<div class="border-r border-slate-100 pr-2">
 					<div class="text-[9px] text-slate-500 uppercase">Agendados</div>
 					<div class="text-lg font-bold text-slate-900">{totalAgendados}</div>
 				</div>
 				<div class="border-r border-slate-100 pr-2">
-					<div class="text-[9px] text-amber-700 uppercase font-bold">Aguardando</div>
+					<div class="text-[9px] font-bold text-amber-700 uppercase">Aguardando</div>
 					<div class="text-lg font-bold text-amber-700">{totalAguardando}</div>
 				</div>
 				<div class="border-r border-slate-100 pr-2">
-					<div class="text-[9px] text-blue-900 uppercase font-bold">Em Atendimento</div>
+					<div class="text-[9px] font-bold text-blue-900 uppercase">Em Atendimento</div>
 					<div class="text-lg font-bold text-blue-900">{totalEmAtendimento}</div>
 				</div>
 				<div class="border-r border-slate-100 pr-2">
-					<div class="text-[9px] text-emerald-700 uppercase font-bold">Concluídos</div>
+					<div class="text-[9px] font-bold text-emerald-700 uppercase">Concluídos</div>
 					<div class="text-lg font-bold text-emerald-700">{totalConcluidos}</div>
 				</div>
 				<div>
-					<div class="text-[9px] text-red-700 uppercase font-bold">Faltas</div>
+					<div class="text-[9px] font-bold text-red-700 uppercase">Faltas</div>
 					<div class="text-lg font-bold text-red-700">{totalFaltas}</div>
 				</div>
 			</div>
@@ -1047,32 +1168,42 @@
 	{#if consultaAtiva}
 		<section class="border-2 border-blue-900 bg-white shadow-md">
 			<!-- Header do Atendimento com Cronômetro -->
-			<div class="flex flex-wrap items-center justify-between border-b-2 border-blue-900 bg-blue-900 px-6 py-3 text-white">
+			<div
+				class="flex flex-wrap items-center justify-between border-b-2 border-blue-900 bg-blue-900 px-6 py-3 text-white"
+			>
 				<div class="flex items-center gap-3">
-					<span class="flex h-7 w-7 items-center justify-center bg-white font-mono text-xs font-bold text-blue-900">
+					<span
+						class="flex h-7 w-7 items-center justify-center bg-white font-mono text-xs font-bold text-blue-900"
+					>
 						<IconStethoscope size={16} />
 					</span>
 					<div>
-						<div class="text-[10px] font-mono tracking-widest text-blue-200 uppercase">
+						<div class="font-mono text-[10px] tracking-widest text-blue-200 uppercase">
 							EM CONSULTA MÉDICA ESPECIALIZADA · {consultaAtiva.solicitacao.especialidadeSolicitada}
 						</div>
-						<div class="text-base font-bold font-sans">
-							{consultaAtiva.paciente.nome} <span class="text-xs font-normal font-mono opacity-90">({calcularIdade(consultaAtiva.paciente.dataNascimento)} anos · CPF: {consultaAtiva.paciente.cpf})</span>
+						<div class="font-sans text-base font-bold">
+							{consultaAtiva.paciente.nome}
+							<span class="font-mono text-xs font-normal opacity-90"
+								>({calcularIdade(consultaAtiva.paciente.dataNascimento)} anos · CPF: {consultaAtiva
+									.paciente.cpf})</span
+							>
 						</div>
 					</div>
 				</div>
 
 				<div class="flex items-center gap-4">
-					<div class="flex items-center gap-2 border border-blue-700 bg-blue-950 px-3 py-1 font-mono text-xs">
+					<div
+						class="flex items-center gap-2 border border-blue-700 bg-blue-950 px-3 py-1 font-mono text-xs"
+					>
 						<span class="inline-block h-2 w-2 animate-ping bg-emerald-400"></span>
 						<span class="text-slate-300">Tempo:</span>
-						<span class="font-bold text-white text-sm">{formatarTimer(timerSegundos)}</span>
+						<span class="text-sm font-bold text-white">{formatarTimer(timerSegundos)}</span>
 					</div>
 
 					<button
 						type="button"
 						onclick={() => abrirDossie(consultaAtiva!)}
-						class="border border-white/40 bg-white/10 hover:bg-white/20 px-3 py-1 font-bold text-xs uppercase tracking-wider text-white flex items-center gap-1.5"
+						class="flex items-center gap-1.5 border border-white/40 bg-white/10 px-3 py-1 text-xs font-bold tracking-wider text-white uppercase hover:bg-white/20"
 					>
 						<IconFileText size={14} />
 						<span>Prontuário Clínico</span>
@@ -1080,8 +1211,8 @@
 
 					<button
 						type="button"
-						onclick={() => consultaAtiva = null}
-						class="border border-red-400/40 bg-red-900/60 hover:bg-red-800 px-2.5 py-1 text-xs font-bold uppercase text-white"
+						onclick={() => (consultaAtiva = null)}
+						class="border border-red-400/40 bg-red-900/60 px-2.5 py-1 text-xs font-bold text-white uppercase hover:bg-red-800"
 						title="Minimizar consulta"
 					>
 						✕ Pausar
@@ -1090,123 +1221,212 @@
 			</div>
 
 			<!-- Alertas Rápidos de Alergias e Crônicas -->
-			<div class="grid grid-cols-1 md:grid-cols-3 border-b border-slate-200 bg-slate-50 text-xs">
-				<div class="border-r border-slate-200 p-3 bg-red-50 text-red-900 font-semibold flex items-center gap-2">
-					<span class="bg-red-700 text-white px-1.5 py-0.5 text-[10px] font-bold">ALERTA</span>
+			<div class="grid grid-cols-1 border-b border-slate-200 bg-slate-50 text-xs md:grid-cols-3">
+				<div
+					class="flex items-center gap-2 border-r border-slate-200 bg-red-50 p-3 font-semibold text-red-900"
+				>
+					<span class="bg-red-700 px-1.5 py-0.5 text-[10px] font-bold text-white">ALERTA</span>
 					<span>Alergia Registrada: <strong class="underline">PENICILINA (GRAVE)</strong></span>
 				</div>
-				<div class="border-r border-slate-200 p-3 text-slate-800 font-sans">
+				<div class="border-r border-slate-200 p-3 font-sans text-slate-800">
 					<strong>Condições Crônicas:</strong> Hipertensão Arterial (I10), Diabetes Mellitus (E11)
 				</div>
-				<div class="p-3 text-slate-800 font-sans">
+				<div class="p-3 font-sans text-slate-800">
 					<strong>Medicamentos Ativos:</strong> Losartana 50mg, Metformina 850mg
 				</div>
 			</div>
 
 			<!-- Painel de Triagem Clínica da Enfermagem -->
 			{#if consultaAtiva.triagemRealizada && consultaAtiva.triagemDados}
-				<div class="border-b border-emerald-300 bg-emerald-50/90 p-3 text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono">
-					<div class="flex items-center gap-2 flex-wrap">
-						<span class="bg-emerald-700 text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+				<div
+					class="flex flex-col justify-between gap-2 border-b border-emerald-300 bg-emerald-50/90 p-3 font-mono text-xs md:flex-row md:items-center"
+				>
+					<div class="flex flex-wrap items-center gap-2">
+						<span
+							class="flex items-center gap-1 bg-emerald-700 px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase"
+						>
 							<IconCheck size={12} />
 							<span>TRIAGEM DE ENFERMAGEM</span>
 						</span>
-						<span class="text-emerald-950 font-bold font-sans">
-							Enf. {consultaAtiva.triagemPorNome || 'Enfermagem'} ({consultaAtiva.triagemCoren || 'COREN'})
+						<span class="font-sans font-bold text-emerald-950">
+							Enf. {consultaAtiva.triagemPorNome || 'Enfermagem'} ({consultaAtiva.triagemCoren ||
+								'COREN'})
 						</span>
 						{#if consultaAtiva.triagemDados.classificacaoRisco}
-							<span class="px-2 py-0.5 text-[10px] font-bold border {consultaAtiva.triagemDados.classificacaoRisco === 'VERMELHO' ? 'bg-red-600 text-white' : consultaAtiva.triagemDados.classificacaoRisco === 'LARANJA' ? 'bg-orange-500 text-white' : consultaAtiva.triagemDados.classificacaoRisco === 'AMARELO' ? 'bg-yellow-400 text-slate-900' : 'bg-emerald-600 text-white'}">
+							<span
+								class="border px-2 py-0.5 text-[10px] font-bold {consultaAtiva.triagemDados
+									.classificacaoRisco === 'VERMELHO'
+									? 'bg-red-600 text-white'
+									: consultaAtiva.triagemDados.classificacaoRisco === 'LARANJA'
+										? 'bg-orange-500 text-white'
+										: consultaAtiva.triagemDados.classificacaoRisco === 'AMARELO'
+											? 'bg-yellow-400 text-slate-900'
+											: 'bg-emerald-600 text-white'}"
+							>
 								RISCO: {consultaAtiva.triagemDados.classificacaoRisco}
 							</span>
 						{/if}
 					</div>
 					<div class="flex flex-wrap items-center gap-2.5 text-[11px] text-emerald-950">
-						<span class="bg-white border border-emerald-300 px-1.5 py-0.5 font-bold">PA: {consultaAtiva.triagemDados.pressaoArterial}</span>
-						{#if consultaAtiva.triagemDados.frequenciaCardiaca}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">FC: {consultaAtiva.triagemDados.frequenciaCardiaca} bpm</span>{/if}
-						{#if consultaAtiva.triagemDados.temperatura}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Temp: {consultaAtiva.triagemDados.temperatura}°C</span>{/if}
-						{#if consultaAtiva.triagemDados.saturacaoO2}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">SpO2: {consultaAtiva.triagemDados.saturacaoO2}%</span>{/if}
-						{#if consultaAtiva.triagemDados.pesoKg}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Peso: {consultaAtiva.triagemDados.pesoKg}kg</span>{/if}
-						{#if consultaAtiva.triagemDados.alturaCm}<span class="bg-white border border-emerald-300 px-1.5 py-0.5">Alt: {consultaAtiva.triagemDados.alturaCm}cm</span>{/if}
-						{#if consultaAtiva.triagemDados.imc}<span class="bg-emerald-200 border border-emerald-400 px-1.5 py-0.5 font-black">IMC: {consultaAtiva.triagemDados.imc}</span>{/if}
+						<span class="border border-emerald-300 bg-white px-1.5 py-0.5 font-bold"
+							>PA: {consultaAtiva.triagemDados.pressaoArterial}</span
+						>
+						{#if consultaAtiva.triagemDados.frequenciaCardiaca}<span
+								class="border border-emerald-300 bg-white px-1.5 py-0.5"
+								>FC: {consultaAtiva.triagemDados.frequenciaCardiaca} bpm</span
+							>{/if}
+						{#if consultaAtiva.triagemDados.temperatura}<span
+								class="border border-emerald-300 bg-white px-1.5 py-0.5"
+								>Temp: {consultaAtiva.triagemDados.temperatura}°C</span
+							>{/if}
+						{#if consultaAtiva.triagemDados.saturacaoO2}<span
+								class="border border-emerald-300 bg-white px-1.5 py-0.5"
+								>SpO2: {consultaAtiva.triagemDados.saturacaoO2}%</span
+							>{/if}
+						{#if consultaAtiva.triagemDados.pesoKg}<span
+								class="border border-emerald-300 bg-white px-1.5 py-0.5"
+								>Peso: {consultaAtiva.triagemDados.pesoKg}kg</span
+							>{/if}
+						{#if consultaAtiva.triagemDados.alturaCm}<span
+								class="border border-emerald-300 bg-white px-1.5 py-0.5"
+								>Alt: {consultaAtiva.triagemDados.alturaCm}cm</span
+							>{/if}
+						{#if consultaAtiva.triagemDados.imc}<span
+								class="border border-emerald-400 bg-emerald-200 px-1.5 py-0.5 font-black"
+								>IMC: {consultaAtiva.triagemDados.imc}</span
+							>{/if}
 					</div>
 				</div>
 			{:else if consultaAtiva.necessitaTriagem}
-				<div class="border-b border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900 font-bold flex items-center gap-2 font-mono">
-					<span class="bg-amber-600 text-white px-2 py-0.5 text-[10px]">AVISO</span>
-					<span>Especialidade com exigência de triagem prévia de enfermagem (ainda não triado).</span>
+				<div
+					class="flex items-center gap-2 border-b border-amber-300 bg-amber-50 p-2.5 font-mono text-xs font-bold text-amber-900"
+				>
+					<span class="bg-amber-600 px-2 py-0.5 text-[10px] text-white">AVISO</span>
+					<span
+						>Especialidade com exigência de triagem prévia de enfermagem (ainda não triado).</span
+					>
 				</div>
 			{/if}
 
 			<!-- Form SOAP da Consulta -->
-			<div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 font-sans">
+			<div class="grid grid-cols-1 gap-6 p-6 font-sans md:grid-cols-12">
 				<!-- Lado Esquerdo: SOAP Subjetivo, Objetivo e Sinais Vitais -->
-				<div class="md:col-span-6 flex flex-col gap-4">
+				<div class="flex flex-col gap-4 md:col-span-6">
 					<!-- S: Subjetivo / Anamnese -->
 					<div class="flex flex-col gap-1">
-						<label for="soap-queixa" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase flex items-center justify-between">
-							<span>S — SUBJETIVO / ANAMNESE E EVOLUÇÃO CLÍNICA <span class="text-red-700">*</span></span>
+						<label
+							for="soap-queixa"
+							class="flex items-center justify-between font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
+						>
+							<span
+								>S — SUBJETIVO / ANAMNESE E EVOLUÇÃO CLÍNICA <span class="text-red-700">*</span
+								></span
+							>
 						</label>
 						<textarea
 							id="soap-queixa"
 							rows="4"
 							bind:value={soapQueixa}
 							placeholder="Relato do paciente, queixa principal, evolução da queixa..."
-							class="w-full border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-blue-900 resize-none font-sans"
+							class="w-full resize-none border border-slate-300 bg-white p-2.5 font-sans text-xs outline-none focus:border-blue-900"
 						></textarea>
 					</div>
 
 					<!-- O: Objetivo / Sinais Vitais + Exame Físico -->
-					<div class="border border-slate-200 bg-slate-50 p-3 flex flex-col gap-3">
-						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase flex items-center justify-between">
+					<div class="flex flex-col gap-3 border border-slate-200 bg-slate-50 p-3">
+						<div
+							class="flex items-center justify-between font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
+						>
 							<span>O — OBJETIVO / SINAIS VITAIS E AFERIÇÕES</span>
-							<span class="text-blue-900 bg-blue-100 px-2 py-0.5 font-bold">IMC: {soapImc.imc} ({soapImc.classificacao})</span>
+							<span class="bg-blue-100 px-2 py-0.5 font-bold text-blue-900"
+								>IMC: {soapImc.imc} ({soapImc.classificacao})</span
+							>
 						</div>
 						<div class="grid grid-cols-3 gap-2 font-mono text-xs sm:grid-cols-6">
 							<div>
-								<label for="sv-pa" class="text-[9px] text-slate-500 font-bold">PA (mmHg)</label>
-								<input id="sv-pa" type="text" bind:value={soapPa} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-pa" class="text-[9px] font-bold text-slate-500">PA (mmHg)</label>
+								<input
+									id="sv-pa"
+									type="text"
+									bind:value={soapPa}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 							<div>
-								<label for="sv-fc" class="text-[9px] text-slate-500 font-bold">FC (bpm)</label>
-								<input id="sv-fc" type="text" bind:value={soapFc} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-fc" class="text-[9px] font-bold text-slate-500">FC (bpm)</label>
+								<input
+									id="sv-fc"
+									type="text"
+									bind:value={soapFc}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 							<div>
-								<label for="sv-peso" class="text-[9px] text-slate-500 font-bold">PESO (kg)</label>
-								<input id="sv-peso" type="text" bind:value={soapPeso} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-peso" class="text-[9px] font-bold text-slate-500">PESO (kg)</label>
+								<input
+									id="sv-peso"
+									type="text"
+									bind:value={soapPeso}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 							<div>
-								<label for="sv-altura" class="text-[9px] text-slate-500 font-bold">ALTURA (cm)</label>
-								<input id="sv-altura" type="text" bind:value={soapAltura} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-altura" class="text-[9px] font-bold text-slate-500"
+									>ALTURA (cm)</label
+								>
+								<input
+									id="sv-altura"
+									type="text"
+									bind:value={soapAltura}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 							<div>
-								<label for="sv-spo2" class="text-[9px] text-slate-500 font-bold">SpO2 (%)</label>
-								<input id="sv-spo2" type="text" bind:value={soapSpo2} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-spo2" class="text-[9px] font-bold text-slate-500">SpO2 (%)</label>
+								<input
+									id="sv-spo2"
+									type="text"
+									bind:value={soapSpo2}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 							<div>
-								<label for="sv-glic" class="text-[9px] text-slate-500 font-bold">GLICEMIA (mg/dL)</label>
-								<input id="sv-glic" type="text" bind:value={soapGlicemia} class="w-full border border-slate-300 bg-white px-2 py-1 outline-none text-xs font-bold" />
+								<label for="sv-glic" class="text-[9px] font-bold text-slate-500"
+									>GLICEMIA (mg/dL)</label
+								>
+								<input
+									id="sv-glic"
+									type="text"
+									bind:value={soapGlicemia}
+									class="w-full border border-slate-300 bg-white px-2 py-1 text-xs font-bold outline-none"
+								/>
 							</div>
 						</div>
-						<div class="flex flex-col gap-1 mt-1">
-							<label for="soap-exame" class="font-mono text-[10px] font-bold text-slate-600">EXAME FÍSICO ESPECIALIZADO</label>
+						<div class="mt-1 flex flex-col gap-1">
+							<label for="soap-exame" class="font-mono text-[10px] font-bold text-slate-600"
+								>EXAME FÍSICO ESPECIALIZADO</label
+							>
 							<textarea
 								id="soap-exame"
 								rows="3"
 								bind:value={soapExameFisico}
 								placeholder="Achados do exame físico cardiologico/especializado..."
-								class="w-full border border-slate-300 bg-white p-2 text-xs outline-none focus:border-blue-900 resize-none font-sans"
+								class="w-full resize-none border border-slate-300 bg-white p-2 font-sans text-xs outline-none focus:border-blue-900"
 							></textarea>
 						</div>
 					</div>
 				</div>
 
 				<!-- Lado Direito: SOAP Avaliação, Diagnóstico CID-10, Plano, Prescrição e Encaminhamentos -->
-				<div class="md:col-span-6 flex flex-col gap-4">
+				<div class="flex flex-col gap-4 md:col-span-6">
 					<!-- A: Avaliação e CID-10 com sugestões rápidas -->
 					<div class="flex flex-col gap-2 border border-slate-200 bg-slate-50 p-3">
 						<div class="grid grid-cols-12 gap-2">
 							<div class="col-span-4 flex flex-col gap-1">
-								<label for="soap-cid" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+								<label
+									for="soap-cid"
+									class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
+								>
 									CID-10 <span class="text-red-700">*</span>
 								</label>
 								<input
@@ -1214,11 +1434,14 @@
 									type="text"
 									bind:value={soapCid10}
 									placeholder="I10"
-									class="w-full border border-slate-300 bg-white p-2 font-mono text-xs font-bold outline-none focus:border-blue-900 uppercase"
+									class="w-full border border-slate-300 bg-white p-2 font-mono text-xs font-bold uppercase outline-none focus:border-blue-900"
 								/>
 							</div>
 							<div class="col-span-8 flex flex-col gap-1">
-								<label for="soap-diag" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+								<label
+									for="soap-diag"
+									class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
+								>
 									DIAGNÓSTICO DA ESPECIALIDADE <span class="text-red-700">*</span>
 								</label>
 								<input
@@ -1232,12 +1455,14 @@
 						</div>
 						<!-- CIDs Frequentes da Especialidade -->
 						<div class="flex items-center gap-1 overflow-x-auto pt-1">
-							<span class="text-[9px] font-bold text-slate-500 font-mono shrink-0">CIDs Rápidos:</span>
+							<span class="shrink-0 font-mono text-[9px] font-bold text-slate-500"
+								>CIDs Rápidos:</span
+							>
 							{#each cidsFrequentes as item}
 								<button
 									type="button"
 									onclick={() => selecionarCidRapido(item)}
-									class="border border-slate-300 bg-white hover:bg-slate-100 text-[9px] font-mono px-1.5 py-0.5 font-bold shrink-0"
+									class="shrink-0 border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[9px] font-bold hover:bg-slate-100"
 								>
 									{item.codigo}
 								</button>
@@ -1247,7 +1472,10 @@
 
 					<!-- P: Plano / Conduta -->
 					<div class="flex flex-col gap-1">
-						<label for="soap-conduta" class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+						<label
+							for="soap-conduta"
+							class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
+						>
 							P — PLANO TERAPÊUTICO E CONDUTA MÉDICA <span class="text-red-700">*</span>
 						</label>
 						<textarea
@@ -1255,30 +1483,35 @@
 							rows="3"
 							bind:value={soapConduta}
 							placeholder="Conduta médica, exames solicitados, orientações..."
-							class="w-full border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-blue-900 resize-none font-sans"
+							class="w-full resize-none border border-slate-300 bg-white p-2.5 font-sans text-xs outline-none focus:border-blue-900"
 						></textarea>
 					</div>
 
 					<!-- Prescrição Médica + Botões da REMUME -->
 					<div class="flex flex-col gap-1 border border-emerald-200 bg-emerald-50/50 p-3">
-						<label for="soap-presc" class="font-mono text-[10px] font-bold tracking-widest text-emerald-900 uppercase flex items-center justify-between">
+						<label
+							for="soap-presc"
+							class="flex items-center justify-between font-mono text-[10px] font-bold tracking-widest text-emerald-900 uppercase"
+						>
 							<span>💊 RECEITA E PRESCRIÇÃO DE MEDICAMENTOS (REMUME)</span>
-							<span class="text-[9px] text-emerald-800 font-normal">Farmácia Municipal</span>
+							<span class="text-[9px] font-normal text-emerald-800">Farmácia Municipal</span>
 						</label>
 						<textarea
 							id="soap-presc"
 							rows="3"
 							bind:value={soapPrescricao}
 							placeholder="1. Nome do medicamento - posologia..."
-							class="w-full border border-emerald-300 bg-white p-2.5 text-xs font-mono outline-none focus:border-emerald-700 resize-none"
+							class="w-full resize-none border border-emerald-300 bg-white p-2.5 font-mono text-xs outline-none focus:border-emerald-700"
 						></textarea>
 						<div class="flex flex-wrap gap-1 pt-1">
-							<span class="text-[9px] font-bold text-emerald-800 font-mono self-center">Atalhos REMUME:</span>
+							<span class="self-center font-mono text-[9px] font-bold text-emerald-800"
+								>Atalhos REMUME:</span
+							>
 							{#each medicamentosRemume as med}
 								<button
 									type="button"
 									onclick={() => inserirMedicamentoPrescricao(med)}
-									class="border border-emerald-300 bg-white hover:bg-emerald-100 text-[9px] font-mono px-1.5 py-0.5 font-semibold text-emerald-950"
+									class="border border-emerald-300 bg-white px-1.5 py-0.5 font-mono text-[9px] font-semibold text-emerald-950 hover:bg-emerald-100"
 								>
 									+ {med.nome.split(' ')[0]}
 								</button>
@@ -1288,25 +1521,39 @@
 
 					<!-- PROCEDIMENTOS REALIZADOS NO ATENDIMENTO (1 ou mais) -->
 					<div class="flex flex-col gap-2 border border-purple-300 bg-purple-50/40 p-3">
-						<div class="font-mono text-[10px] font-bold tracking-widest text-purple-900 uppercase flex items-center justify-between">
+						<div
+							class="flex items-center justify-between font-mono text-[10px] font-bold tracking-widest text-purple-900 uppercase"
+						>
 							<span class="flex items-center gap-1.5">
 								<IconFlask size={14} class="text-purple-900" />
-								<span>PROCEDIMENTOS REALIZADOS NESTE ATENDIMENTO ({procedimentosRealizados.length})</span>
+								<span
+									>PROCEDIMENTOS REALIZADOS NESTE ATENDIMENTO ({procedimentosRealizados.length})</span
+								>
 							</span>
-							<span class="text-[9px] text-purple-800 font-normal">Tabela SIGTAP / Faturamento SIA-SUS</span>
+							<span class="text-[9px] font-normal text-purple-800"
+								>Tabela SIGTAP / Faturamento SIA-SUS</span
+							>
 						</div>
 
-						<div class="bg-purple-100/70 border border-purple-300 p-2 text-[10px] text-purple-950 font-sans flex items-start gap-1.5">
-							<IconInfoCircle size={14} class="text-purple-900 shrink-0 mt-0.5" />
-							<span><strong>Não precisa enviar o paciente de volta ao balcão!</strong> Se durante a consulta foi necessário realizar algum exame ou procedimento (*ex: ECG, Biópsia, Curativo, Infiltração, Lavagem*), basta adicionar abaixo para compor o faturamento e histórico do paciente.</span>
+						<div
+							class="flex items-start gap-1.5 border border-purple-300 bg-purple-100/70 p-2 font-sans text-[10px] text-purple-950"
+						>
+							<IconInfoCircle size={14} class="mt-0.5 shrink-0 text-purple-900" />
+							<span
+								><strong>Não precisa enviar o paciente de volta ao balcão!</strong> Se durante a consulta
+								foi necessário realizar algum exame ou procedimento (*ex: ECG, Biópsia, Curativo, Infiltração,
+								Lavagem*), basta adicionar abaixo para compor o faturamento e histórico do paciente.</span
+							>
 						</div>
 
 						<!-- Lista de Procedimentos Já Adicionados -->
 						{#if procedimentosRealizados.length > 0}
-							<div class="border border-purple-200 bg-white overflow-hidden text-xs">
-								<table class="w-full text-left border-collapse">
+							<div class="overflow-hidden border border-purple-200 bg-white text-xs">
+								<table class="w-full border-collapse text-left">
 									<thead>
-										<tr class="bg-purple-100 text-purple-900 font-mono text-[9px] uppercase font-bold border-b border-purple-200">
+										<tr
+											class="border-b border-purple-200 bg-purple-100 font-mono text-[9px] font-bold text-purple-900 uppercase"
+										>
 											<th class="p-2">Procedimento / Serviço</th>
 											<th class="p-2">Código SIGTAP</th>
 											<th class="p-2 text-center">Qtd</th>
@@ -1318,14 +1565,16 @@
 										{#each procedimentosRealizados as proc (proc.id)}
 											<tr class="hover:bg-purple-50/60">
 												<td class="p-2 font-bold text-purple-950">{proc.nome}</td>
-												<td class="p-2 text-purple-800 font-mono">{proc.codigoSigtap || '—'}</td>
+												<td class="p-2 font-mono text-purple-800">{proc.codigoSigtap || '—'}</td>
 												<td class="p-2 text-center font-bold">{proc.quantidade}</td>
-												<td class="p-2 text-slate-600 font-sans text-[10px]">{proc.observacao || '—'}</td>
+												<td class="p-2 font-sans text-[10px] text-slate-600"
+													>{proc.observacao || '—'}</td
+												>
 												<td class="p-2 text-center">
 													<button
 														type="button"
 														onclick={() => removerProcedimento(proc.id)}
-														class="text-red-700 hover:text-red-900 font-bold text-[10px]"
+														class="text-[10px] font-bold text-red-700 hover:text-red-900"
 													>
 														[Remover]
 													</button>
@@ -1336,15 +1585,20 @@
 								</table>
 							</div>
 						{:else}
-							<div class="text-[11px] text-purple-800 italic font-sans bg-white/60 p-2 border border-purple-200/60">
-								Nenhum procedimento extra registrado neste atendimento. Adicione procedimentos abaixo se realizados.
+							<div
+								class="border border-purple-200/60 bg-white/60 p-2 font-sans text-[11px] text-purple-800 italic"
+							>
+								Nenhum procedimento extra registrado neste atendimento. Adicione procedimentos
+								abaixo se realizados.
 							</div>
 						{/if}
 
 						<!-- Formulário para Adicionar Novo Procedimento -->
 						<div class="grid grid-cols-12 gap-2 pt-1">
-							<div class="col-span-12 md:col-span-5 flex flex-col gap-1">
-								<label for="proc-nome-in" class="text-[9px] font-bold text-purple-900 uppercase">Nome do Procedimento</label>
+							<div class="col-span-12 flex flex-col gap-1 md:col-span-5">
+								<label for="proc-nome-in" class="text-[9px] font-bold text-purple-900 uppercase"
+									>Nome do Procedimento</label
+								>
 								<input
 									id="proc-nome-in"
 									type="text"
@@ -1353,31 +1607,35 @@
 									class="border border-purple-300 bg-white p-1.5 text-xs outline-none focus:border-purple-800"
 								/>
 							</div>
-							<div class="col-span-6 md:col-span-3 flex flex-col gap-1">
-								<label for="proc-cod-in" class="text-[9px] font-bold text-purple-900 uppercase">Código SIGTAP</label>
+							<div class="col-span-6 flex flex-col gap-1 md:col-span-3">
+								<label for="proc-cod-in" class="text-[9px] font-bold text-purple-900 uppercase"
+									>Código SIGTAP</label
+								>
 								<input
 									id="proc-cod-in"
 									type="text"
 									bind:value={novoProcedimentoCodigo}
 									placeholder="04.01.01.002-3"
-									class="border border-purple-300 bg-white p-1.5 text-xs font-mono outline-none focus:border-purple-800"
+									class="border border-purple-300 bg-white p-1.5 font-mono text-xs outline-none focus:border-purple-800"
 								/>
 							</div>
-							<div class="col-span-3 md:col-span-2 flex flex-col gap-1">
-								<label for="proc-qtd-in" class="text-[9px] font-bold text-purple-900 uppercase">Qtd</label>
+							<div class="col-span-3 flex flex-col gap-1 md:col-span-2">
+								<label for="proc-qtd-in" class="text-[9px] font-bold text-purple-900 uppercase"
+									>Qtd</label
+								>
 								<input
 									id="proc-qtd-in"
 									type="number"
 									min="1"
 									bind:value={novoProcedimentoQtd}
-									class="border border-purple-300 bg-white p-1.5 text-xs font-bold text-center outline-none focus:border-purple-800"
+									class="border border-purple-300 bg-white p-1.5 text-center text-xs font-bold outline-none focus:border-purple-800"
 								/>
 							</div>
-							<div class="col-span-3 md:col-span-2 flex flex-col justify-end">
+							<div class="col-span-3 flex flex-col justify-end md:col-span-2">
 								<button
 									type="button"
 									onclick={adicionarProcedimento}
-									class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white p-1.5 font-bold text-[10px] uppercase font-mono tracking-wider w-full"
+									class="w-full border border-purple-900 bg-purple-900 p-1.5 font-mono text-[10px] font-bold tracking-wider text-white uppercase hover:bg-purple-950"
 								>
 									+ Adicionar
 								</button>
@@ -1386,12 +1644,14 @@
 
 						<!-- Sugestões Rápidas de Procedimentos SIGTAP -->
 						<div class="flex flex-wrap gap-1 pt-1">
-							<span class="text-[9px] font-bold text-purple-900 font-mono self-center">Frequentes SIGTAP:</span>
+							<span class="self-center font-mono text-[9px] font-bold text-purple-900"
+								>Frequentes SIGTAP:</span
+							>
 							{#each procedimentosSigtapSugeridos as ps}
 								<button
 									type="button"
 									onclick={() => selecionarProcedimentoSugerido(ps)}
-									class="border border-purple-300 bg-white hover:bg-purple-100 text-[9px] font-mono px-1.5 py-0.5 font-semibold text-purple-950"
+									class="border border-purple-300 bg-white px-1.5 py-0.5 font-mono text-[9px] font-semibold text-purple-950 hover:bg-purple-100"
 								>
 									+ {ps.nome}
 								</button>
@@ -1401,23 +1661,37 @@
 
 					<!-- Botão de Destaque: Encaminhar para Outra Cidade (Regulação SMS / TFD) -->
 					{#if consultaAtiva.encaminhamentoIntermunicipal}
-						<div class="border border-blue-900 bg-blue-50 p-3 font-mono text-xs flex justify-between items-center text-blue-900 font-bold">
+						<div
+							class="flex items-center justify-between border border-blue-900 bg-blue-50 p-3 font-mono text-xs font-bold text-blue-900"
+						>
 							<div>
-								<span>✓ ENCAMINHAMENTO GERADO: Protocolo {consultaAtiva.encaminhamentoIntermunicipal.protocolo}</span>
-								<div class="text-[10px] font-normal text-slate-600">Para {consultaAtiva.encaminhamentoIntermunicipal.especialidade} em {consultaAtiva.encaminhamentoIntermunicipal.municipioDestino}</div>
+								<span
+									>✓ ENCAMINHAMENTO GERADO: Protocolo {consultaAtiva.encaminhamentoIntermunicipal
+										.protocolo}</span
+								>
+								<div class="text-[10px] font-normal text-slate-600">
+									Para {consultaAtiva.encaminhamentoIntermunicipal.especialidade} em {consultaAtiva
+										.encaminhamentoIntermunicipal.municipioDestino}
+								</div>
 							</div>
-							<span class="bg-blue-900 text-white text-[10px] px-2 py-0.5 font-mono">REGULAÇÃO SMS</span>
+							<span class="bg-blue-900 px-2 py-0.5 font-mono text-[10px] text-white"
+								>REGULAÇÃO SMS</span
+							>
 						</div>
 					{:else}
-						<div class="border border-amber-300 bg-amber-50 p-3 flex items-center justify-between">
+						<div class="flex items-center justify-between border border-amber-300 bg-amber-50 p-3">
 							<div class="leading-tight">
-								<div class="font-mono text-[10px] font-bold text-amber-900 uppercase">NECESSITA ENCAMINHAR PARA OUTRA CIDADE?</div>
-								<div class="text-[11px] text-amber-800">Envie o laudo direto para a Regulação da Secretaria de Saúde (TFD)</div>
+								<div class="font-mono text-[10px] font-bold text-amber-900 uppercase">
+									NECESSITA ENCAMINHAR PARA OUTRA CIDADE?
+								</div>
+								<div class="text-[11px] text-amber-800">
+									Envie o laudo direto para a Regulação da Secretaria de Saúde (TFD)
+								</div>
 							</div>
 							<button
 								type="button"
 								onclick={abrirFormularioReferencia}
-								class="border border-amber-800 bg-amber-800 hover:bg-amber-900 text-white px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+								class="border border-amber-800 bg-amber-800 px-3 py-1.5 font-mono text-xs font-bold tracking-wider whitespace-nowrap text-white uppercase hover:bg-amber-900"
 							>
 								+ Encaminhar Outra Cidade
 							</button>
@@ -1425,8 +1699,10 @@
 					{/if}
 
 					{#if erroSoapForm}
-						<div class="border-2 border-red-700 bg-red-50 p-3 font-mono text-xs font-bold text-red-900 flex items-center gap-2">
-							<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+						<div
+							class="flex items-center gap-2 border-2 border-red-700 bg-red-50 p-3 font-mono text-xs font-bold text-red-900"
+						>
+							<IconAlertTriangle size={14} class="shrink-0 text-red-700" />
 							<span>{erroSoapForm}</span>
 						</div>
 					{/if}
@@ -1434,7 +1710,9 @@
 			</div>
 
 			<!-- Rodapé de Ações de Conclusão -->
-			<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+			<div
+				class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4"
+			>
 				<div class="font-mono text-xs text-slate-600">
 					* Ao concluir, o registro será gravado permanentemente no Prontuário do Paciente.
 				</div>
@@ -1443,7 +1721,7 @@
 					<button
 						type="button"
 						onclick={abrirModalRetorno}
-						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+						class="flex items-center gap-1.5 border border-purple-900 bg-purple-900 px-4 py-2 font-mono text-xs font-bold tracking-wider text-white uppercase hover:bg-purple-950"
 					>
 						<IconCalendar size={14} />
 						<span>Agendar Retorno / Volta</span>
@@ -1452,7 +1730,7 @@
 					<button
 						type="button"
 						onclick={abrirFormNovoEncaminhamento}
-						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+						class="flex items-center gap-1.5 border border-blue-900 bg-blue-900 px-4 py-2 font-mono text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950"
 					>
 						<IconPlus size={14} />
 						<span>Encaminhar Regulação / SMS</span>
@@ -1461,7 +1739,7 @@
 					<button
 						type="button"
 						onclick={() => abrirDossie(consultaAtiva!)}
-						class="border border-slate-300 bg-white hover:bg-slate-100 px-4 py-2 font-mono text-xs font-bold uppercase text-slate-800"
+						class="border border-slate-300 bg-white px-4 py-2 font-mono text-xs font-bold text-slate-800 uppercase hover:bg-slate-100"
 					>
 						Dossiê
 					</button>
@@ -1470,7 +1748,7 @@
 						type="button"
 						onclick={concluirAtendimento}
 						disabled={salvandoAtendimento}
-						class="border border-emerald-800 bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+						class="border border-emerald-800 bg-emerald-700 px-6 py-2 font-mono text-xs font-bold tracking-wider text-white uppercase hover:bg-emerald-800 disabled:opacity-50"
 					>
 						{salvandoAtendimento ? 'Gravando no Prontuário...' : '✓ CONCLUIR ATENDIMENTO'}
 					</button>
@@ -1485,46 +1763,58 @@
 			<button
 				type="button"
 				onclick={carregarAgendaDoDia}
-				class="border border-slate-300 bg-white hover:bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 uppercase"
+				class="border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 uppercase hover:bg-slate-50"
 			>
 				Atualizar
 			</button>
 		</PanelHeader>
 
-		<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 p-3">
+		<div
+			class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 p-3"
+		>
 			<div class="flex flex-wrap items-center gap-2">
 				<button
 					type="button"
-					onclick={() => filtroStatus = 'TODOS'}
-					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'TODOS' ? 'border border-blue-900 bg-blue-900 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => (filtroStatus = 'TODOS')}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'TODOS'
+						? 'border border-blue-900 bg-blue-900 text-white'
+						: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Todos ({totalAgendados})
 				</button>
 				<button
 					type="button"
-					onclick={() => filtroStatus = 'AGUARDANDO'}
-					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'AGUARDANDO' ? 'border border-amber-700 bg-amber-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => (filtroStatus = 'AGUARDANDO')}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'AGUARDANDO'
+						? 'border border-amber-700 bg-amber-700 text-white'
+						: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Aguardando ({totalAguardando})
 				</button>
 				<button
 					type="button"
-					onclick={() => filtroStatus = 'EM_ATENDIMENTO'}
-					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'EM_ATENDIMENTO' ? 'border border-blue-900 bg-blue-900 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => (filtroStatus = 'EM_ATENDIMENTO')}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'EM_ATENDIMENTO'
+						? 'border border-blue-900 bg-blue-900 text-white'
+						: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Em Atendimento ({totalEmAtendimento})
 				</button>
 				<button
 					type="button"
-					onclick={() => filtroStatus = 'CONCLUIDO'}
-					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'CONCLUIDO' ? 'border border-emerald-700 bg-emerald-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => (filtroStatus = 'CONCLUIDO')}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'CONCLUIDO'
+						? 'border border-emerald-700 bg-emerald-700 text-white'
+						: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Concluídos ({totalConcluidos})
 				</button>
 				<button
 					type="button"
-					onclick={() => filtroStatus = 'FALTOU'}
-					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'FALTOU' ? 'border border-red-700 bg-red-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => (filtroStatus = 'FALTOU')}
+					class="px-2.5 py-1 text-xs font-bold uppercase {filtroStatus === 'FALTOU'
+						? 'border border-red-700 bg-red-700 text-white'
+						: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Faltas ({totalFaltas})
 				</button>
@@ -1537,7 +1827,7 @@
 					type="text"
 					bind:value={busca}
 					placeholder="Nome ou CPF do paciente..."
-					class="border border-slate-300 bg-white p-1 text-xs font-sans w-56 outline-none focus:border-blue-900"
+					class="w-56 border border-slate-300 bg-white p-1 font-sans text-xs outline-none focus:border-blue-900"
 				/>
 			</div>
 		</div>
@@ -1546,7 +1836,9 @@
 		<div class="overflow-x-auto">
 			<table class="w-full border-collapse text-xs">
 				<thead>
-					<tr class="border-b border-slate-200 bg-slate-100 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+					<tr
+						class="border-b border-slate-200 bg-slate-100 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+					>
 						<th class="border-r border-slate-200 px-3 py-2.5">Horário / Status</th>
 						<th class="border-r border-slate-200 px-3 py-2.5">Paciente</th>
 						<th class="border-r border-slate-200 px-3 py-2.5">Especialidade / Procedimento</th>
@@ -1572,11 +1864,20 @@
 						</tr>
 					{:else}
 						{#each filtrados as c (c.id)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<!-- Horário e Status -->
 								<td class="border-r border-slate-100 px-3 py-2.5">
-									<div class="font-bold text-slate-900 text-sm">{c.horario}</div>
-									<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase mt-0.5 {c.status === 'EM_ATENDIMENTO' ? 'bg-blue-100 text-blue-900 border border-blue-300' : c.status === 'AGUARDANDO' ? 'bg-amber-100 text-amber-900 border border-amber-300' : c.status === 'CONCLUIDO' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-red-100 text-red-900 border border-red-300'}">
+									<div class="text-sm font-bold text-slate-900">{c.horario}</div>
+									<span
+										class="mt-0.5 inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase {c.status ===
+										'EM_ATENDIMENTO'
+											? 'border border-blue-300 bg-blue-100 text-blue-900'
+											: c.status === 'AGUARDANDO'
+												? 'border border-amber-300 bg-amber-100 text-amber-900'
+												: c.status === 'CONCLUIDO'
+													? 'border border-emerald-300 bg-emerald-100 text-emerald-900'
+													: 'border border-red-300 bg-red-100 text-red-900'}"
+									>
 										{c.status.replace('_', ' ')}
 									</span>
 								</td>
@@ -1585,28 +1886,35 @@
 								<td class="border-r border-slate-100 px-3 py-2.5 font-sans">
 									<div class="font-bold text-slate-900">{c.paciente.nome}</div>
 									<div class="font-mono text-[10px] text-slate-500">
-										CPF: {c.paciente.cpf} · {calcularIdade(c.paciente.dataNascimento)} anos ({c.paciente.sexo})
+										CPF: {c.paciente.cpf} · {calcularIdade(c.paciente.dataNascimento)} anos ({c
+											.paciente.sexo})
 									</div>
 								</td>
 
 								<!-- Especialidade / Procedimento / CID-10 -->
 								<td class="border-r border-slate-100 px-3 py-2.5 font-sans">
-									<div class="flex items-center gap-1.5 mb-0.5">
+									<div class="mb-0.5 flex items-center gap-1.5">
 										{#if c.solicitacao.tipoServico === 'PROCEDIMENTO' || c.solicitacao.procedimentoSolicitado}
-											<span class="bg-purple-100 text-purple-900 border border-purple-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase flex items-center gap-1">
+											<span
+												class="py-0.2 flex items-center gap-1 border border-purple-300 bg-purple-100 px-1.5 font-mono text-[9px] font-bold text-purple-900 uppercase"
+											>
 												<IconFlask size={11} />
 												<span>PROCEDIMENTO</span>
 											</span>
 										{:else}
-											<span class="bg-blue-100 text-blue-900 border border-blue-300 text-[9px] font-bold px-1.5 py-0.2 font-mono uppercase flex items-center gap-1">
+											<span
+												class="py-0.2 flex items-center gap-1 border border-blue-300 bg-blue-100 px-1.5 font-mono text-[9px] font-bold text-blue-900 uppercase"
+											>
 												<IconStethoscope size={11} />
 												<span>CONSULTA</span>
 											</span>
 										{/if}
-										<span class="font-semibold text-slate-900">{c.solicitacao.especialidadeSolicitada}</span>
+										<span class="font-semibold text-slate-900"
+											>{c.solicitacao.especialidadeSolicitada}</span
+										>
 									</div>
 									{#if c.solicitacao.procedimentoSolicitado}
-										<div class="font-mono text-[10px] text-purple-900 font-bold">
+										<div class="font-mono text-[10px] font-bold text-purple-900">
 											Proc: {c.solicitacao.procedimentoSolicitado}
 										</div>
 									{/if}
@@ -1614,13 +1922,20 @@
 										CID-10: <strong>{c.solicitacao.cid10}</strong> ({c.solicitacao.cidDescricao})
 									</div>
 									{#if c.triagemRealizada}
-										<div class="mt-1 flex items-center gap-1 font-mono text-[9px] bg-emerald-50 text-emerald-900 border border-emerald-300 px-1.5 py-0.5 font-bold w-fit">
-											<IconCheck size={11} class="text-emerald-700 shrink-0" />
-											<span>TRIADO ({c.triagemPorNome || 'Enf.'}) — PA: {c.triagemDados?.pressaoArterial || '--'}</span>
+										<div
+											class="mt-1 flex w-fit items-center gap-1 border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-900"
+										>
+											<IconCheck size={11} class="shrink-0 text-emerald-700" />
+											<span
+												>TRIADO ({c.triagemPorNome || 'Enf.'}) — PA: {c.triagemDados
+													?.pressaoArterial || '--'}</span
+											>
 										</div>
 									{:else if c.necessitaTriagem}
-										<div class="mt-1 flex items-center gap-1 font-mono text-[9px] bg-amber-50 text-amber-900 border border-amber-300 px-1.5 py-0.5 font-bold w-fit">
-											<IconClock size={11} class="text-amber-700 shrink-0" />
+										<div
+											class="mt-1 flex w-fit items-center gap-1 border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-900"
+										>
+											<IconClock size={11} class="shrink-0 text-amber-700" />
 											<span>EXIGE TRIAGEM PRÉVIA</span>
 										</div>
 									{/if}
@@ -1632,19 +1947,21 @@
 								</td>
 
 								<!-- Origem -->
-								<td class="border-r border-slate-100 px-3 py-2.5 font-sans text-slate-700 text-[11px]">
+								<td
+									class="border-r border-slate-100 px-3 py-2.5 font-sans text-[11px] text-slate-700"
+								>
 									<div>{c.unidadeOrigem}</div>
 									<div class="font-mono text-[10px] text-slate-500">Req: {c.protocolo}</div>
 								</td>
 
 								<!-- Ações Clínicas -->
 								<td class="px-3 py-2.5 text-center">
-									<div class="flex items-center justify-center gap-1.5 flex-wrap">
+									<div class="flex flex-wrap items-center justify-center gap-1.5">
 										<!-- Botão Ver Solicitação -->
 										<button
 											type="button"
 											onclick={() => abrirSolicitacao(c)}
-											class="border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase"
+											class="border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold uppercase hover:bg-slate-100"
 											title="Ver encaminhamento médico original"
 										>
 											Solicitação
@@ -1654,18 +1971,18 @@
 										<button
 											type="button"
 											onclick={() => abrirDossie(c)}
-											class="border border-blue-900 bg-white text-blue-900 hover:bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase"
+											class="border border-blue-900 bg-white px-2 py-1 text-[10px] font-bold text-blue-900 uppercase hover:bg-blue-50"
 											title="Ver Prontuário Eletrônico do Paciente"
 										>
 											Dossiê Clínico
 										</button>
 
 										<!-- Fluxo de Atendimento -->
-										{#if c.status === 'AGUARDANDO' || c.status === 'AGUARDANDO_ATENDIMENTO' || c.status === 'AGENDADO'}
+										{#if podeIniciarAtendimento(c.status)}
 											<button
 												type="button"
 												onclick={() => iniciarAtendimento(c)}
-												class="border border-emerald-800 bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+												class="flex items-center gap-1 border border-emerald-800 bg-emerald-700 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase hover:bg-emerald-800"
 											>
 												<IconPlayerPlay size={11} />
 												<span>Iniciar</span>
@@ -1673,15 +1990,17 @@
 											<button
 												type="button"
 												onclick={() => marcarFalta(c)}
-												class="border border-red-700 bg-white text-red-700 hover:bg-red-50 px-2 py-1 text-[10px] font-bold uppercase"
+												class="border border-red-700 bg-white px-2 py-1 text-[10px] font-bold text-red-700 uppercase hover:bg-red-50"
 											>
 												Falta
 											</button>
 										{:else if c.status === 'EM_ATENDIMENTO'}
 											<button
 												type="button"
-												onclick={() => { consultaAtiva = c; }}
-												class="border border-blue-900 bg-blue-900 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+												onclick={() => {
+													consultaAtiva = c;
+												}}
+												class="flex items-center gap-1 border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase"
 											>
 												<IconNotes size={11} />
 												<span>Atender</span>
@@ -1761,8 +2080,9 @@
 />
 
 <style>
-	select, input, textarea, button {
+	input,
+	textarea,
+	button {
 		border-radius: 0 !important;
 	}
 </style>
-

@@ -4,11 +4,7 @@
 	import PrimaryButton from './PrimaryButton.svelte';
 	import { api, ApiError } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
-	import type {
-		AtualizarMotoristaRequest,
-		CategoriaCNH,
-		Motorista
-	} from '$lib/api/tfd-types';
+	import type { AtualizarMotoristaRequest, CategoriaCNH, Motorista } from '$lib/api/tfd-types';
 
 	/**
 	 * Modal-friendly de edição de Motorista TFD.
@@ -61,9 +57,7 @@
 	let cnhOk = $derived(cnh.trim().length >= 9);
 	let telefoneOk = $derived(telefone.trim().length >= 8);
 
-	let podeSalvar = $derived(
-		pendente > 0 && !enviando && nomeOk && cnhOk && telefoneOk,
-	);
+	let podeSalvar = $derived(pendente > 0 && !enviando && nomeOk && cnhOk && telefoneOk);
 
 	async function salvar() {
 		erro = '';
@@ -98,27 +92,30 @@
 	<section
 		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
 	>
-		CPF é imutável (identidade). Status (ativo/afastado/inativo) é alterado pelas ações
-		no detalhe. Atenção à validade da CNH — vencida bloqueia o motorista no app.
+		CPF é imutável (identidade). Status (ativo/afastado/inativo) é alterado pelas ações no detalhe.
+		Atenção à validade da CNH — vencida bloqueia o motorista no app.
 	</section>
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Identificação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Identificação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Nome Completo" name="nome" span={12} bind:value={nome} />
-			<FormField label="Telefone" name="telefone" span={4} mono bind:value={telefone} hint="DDD + número" />
+			<FormField
+				label="Telefone"
+				name="telefone"
+				span={4}
+				mono
+				bind:value={telefone}
+				hint="DDD + número"
+			/>
 		</div>
 	</section>
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				CNH
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">CNH</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="Número da CNH" name="cnh" span={5} mono bind:value={cnh} />
@@ -158,7 +155,9 @@
 
 	<div class="flex items-center justify-between pt-2">
 		<span class="font-sans text-[11px] text-slate-500">
-			{pendente === 0 ? 'Nenhum campo alterado' : `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
+			{pendente === 0
+				? 'Nenhum campo alterado'
+				: `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
 		</span>
 		<div class="flex gap-2">
 			<PrimaryButton label="Cancelar" variant="secondary" onclick={onCancel} disabled={enviando} />

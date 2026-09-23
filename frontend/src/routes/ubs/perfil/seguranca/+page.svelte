@@ -141,11 +141,7 @@
 				{/if}
 				<div class="flex justify-end gap-2 pt-1">
 					<PrimaryButton label="Cancelar" variant="secondary" onclick={cancelar} />
-					<PrimaryButton
-						label="Confirmar Alteração"
-						onclick={alterar}
-						loading={submitting}
-					/>
+					<PrimaryButton label="Confirmar Alteração" onclick={alterar} loading={submitting} />
 				</div>
 			</div>
 		{:else}
@@ -259,7 +255,10 @@
 				<div
 					class="border-2 border-emerald-700 bg-emerald-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-emerald-800 uppercase"
 				>
-					✓ {sessoesEncerradas} sessão{sessoesEncerradas === 1 ? '' : 'ões'} encerrada{sessoesEncerradas === 1 ? '' : 's'}
+					✓ {sessoesEncerradas} sessão{sessoesEncerradas === 1 ? '' : 'ões'} encerrada{sessoesEncerradas ===
+					1
+						? ''
+						: 's'}
 				</div>
 			{/if}
 			<PrimaryButton

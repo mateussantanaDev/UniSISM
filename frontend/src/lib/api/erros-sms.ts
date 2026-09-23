@@ -13,26 +13,21 @@ import { ApiError } from './client';
 export const ERROS_SMS_SIMPLES: Record<string, string> = {
 	// 4xx · validação
 	PAYLOAD_INVALIDO: 'Dados inválidos. Verifique os campos.',
-	PARAMS_INCOMPATIVEIS:
-		'Combinação de filtros inválida (ex.: mês sem ano, ano sem UBS).',
+	PARAMS_INCOMPATIVEIS: 'Combinação de filtros inválida (ex.: mês sem ano, ano sem UBS).',
 
 	// 401 / 403 · auth
 	TOKEN_AUSENTE: 'Sessão expirada. Faça login novamente.',
 	TOKEN_EXPIRADO: 'Sessão expirada. Faça login novamente.',
 	NAO_AUTENTICADO: 'Sessão inválida. Faça login novamente.',
-	PERMISSAO_INSUFICIENTE:
-		'Sua função não tem permissão para este recurso.',
+	PERMISSAO_INSUFICIENTE: 'Sua função não tem permissão para este recurso.',
 
 	// 404 · recursos
-	ENCAMINHAMENTO_NAO_ENCONTRADO:
-		'Encaminhamento não encontrado (ou pertence a outra prefeitura).',
+	ENCAMINHAMENTO_NAO_ENCONTRADO: 'Encaminhamento não encontrado (ou pertence a outra prefeitura).',
 	UBS_NAO_ENCONTRADA: 'UBS não encontrada.',
-	ANEXO_NAO_ENCONTRADO:
-		'Anexo não encontrado (ou pertence a outra prefeitura).',
+	ANEXO_NAO_ENCONTRADO: 'Anexo não encontrado (ou pertence a outra prefeitura).',
 
 	// 409 · scan
-	ANEXO_NAO_LIBERADO:
-		'Anexo em verificação de antivírus. Tente novamente em instantes.',
+	ANEXO_NAO_LIBERADO: 'Anexo em verificação de antivírus. Tente novamente em instantes.',
 
 	// 500
 	ERRO_INTERNO: 'Erro inesperado. Tente novamente.'

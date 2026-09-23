@@ -32,6 +32,7 @@ Todos os IDs são strings (UUIDv4 ou IDs estáveis do seed como `ubs-central`).
 ## 1. Autenticação e tokens
 
 - Esquema: `Authorization: Bearer <accessToken>`.
+- Quando `API_KEY` estiver configurada, envie também `x-api-key` (ou o header definido em `API_KEY_HEADER`) em todas as rotas, exceto `/v1/health` e `/metrics`.
 - O **accessToken** vem em todo response de `POST /auth/login` (TTL 30 min).
 - O **refreshToken** vem no mesmo response — guardar em cookie `httpOnly` ou storage seguro. Hoje o backend não tem rota de rotação automática (roadmap); para "lembrar-me", basta o frontend reusar o `accessToken` enquanto válido.
 - O JWT contém: `sub` (atendenteId), `role`, `ubsId?`, `prefeituraId?`, `sid` (sessão), `iat`, `exp`.
@@ -915,7 +916,7 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → `GET /e
 
 ## 12. Face 3 · App do Paciente
 
-Módulo destinado ao **app mobile do cidadão** (Flutter). Auth independente da Face 1/2 — usa **CPF + senha** com token opaco (não JWT) válido por 24h.
+Módulo destinado ao **app mobile do cidadão** (Flutter). Auth independente da Face 1/2 — usa **CPF + senha** com access token opaco curto e refresh token rotativo. A fonte viva detalhada do contrato atual é [`PACIENTE_APP_API.md`](PACIENTE_APP_API.md).
 
 **Base URL**: `http://HOST/v1/paciente-app`
 
@@ -939,8 +940,9 @@ Módulo destinado ao **app mobile do cidadão** (Flutter). Auth independente da 
 **Response 200:**
 ```json
 {
-  "token": "opaco-base64-url",
-  "expiresIn": 86400,
+  "accessToken": "opaco-base64-url",
+  "refreshToken": "refresh-token-opaco",
+  "expiresAt": "2026-05-27T15:32:18.000Z",
   "paciente": {
     "id": "uuid",
     "cpf": "53474131826",
@@ -953,7 +955,7 @@ Módulo destinado ao **app mobile do cidadão** (Flutter). Auth independente da 
 }
 ```
 
-> Quando `senhaProvisoria === true` o app **deve** redirecionar para tela de troca de senha (`POST /auth/trocar-senha`) antes de liberar o restante da navegação.
+> Quando `senhaProvisoria === true` o app **deve** redirecionar para tela de troca de senha (`POST /paciente-app/auth/trocar-senha` ou `POST /auth/paciente/trocar-senha`) antes de liberar o restante da navegação.
 
 **Erros:**
 - `401 CREDENCIAIS_INVALIDAS`

@@ -136,7 +136,11 @@ nunca confirma a existência de recursos fora do escopo do paciente autenticado.
 | Device físico mesma Wi-Fi | `http://<IP-DO-MAC>:3333/v1` (`ipconfig getifaddr en0`) |
 | Produção (alvo) | `https://api.unisism.aguasbelas.pe.gov.br/v1` |
 
-**Prefixo de TODAS as rotas do app paciente:** `/v1/paciente-app/*`
+**Prefixos expostos para o app paciente:**
+
+- Legado/compatibilidade: `/v1/paciente-app/*`
+- Contrato novo de autenticação: `/v1/auth/paciente/*`
+- Contrato novo de recursos: `/v1/paciente/*`
 
 ---
 
@@ -148,6 +152,7 @@ nunca confirma a existência de recursos fora do escopo do paciente autenticado.
 |---|---|---|
 | `Content-Type` | `application/json` | em POST/PATCH |
 | `Accept` | `application/json` | sempre |
+| `x-api-key` | valor de `API_KEY` | obrigatório quando `API_KEY` estiver configurada no backend |
 | `Authorization` | `Bearer <token-opaco>` | em todas exceto login + ativar-conta |
 | `X-Client-Platform` | `flutter-mobile` | recomendado (telemetria) |
 | `X-Client-Version` | `0.1.0` | recomendado |

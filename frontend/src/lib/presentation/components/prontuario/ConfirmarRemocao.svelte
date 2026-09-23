@@ -21,10 +21,8 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-slate-900">
-	<div
-		class="border-2 border-red-700 bg-red-50 px-3 py-3 font-sans text-[12px] text-red-900"
-	>
-		<strong class="font-mono uppercase tracking-wider">Atenção</strong>
+	<div class="border-2 border-red-700 bg-red-50 px-3 py-3 font-sans text-[12px] text-red-900">
+		<strong class="font-mono tracking-wider uppercase">Atenção</strong>
 		<p class="mt-1">{mensagem}</p>
 		{#if detalhe}
 			<p class="mt-1 font-mono text-[11px] text-red-800">{detalhe}</p>

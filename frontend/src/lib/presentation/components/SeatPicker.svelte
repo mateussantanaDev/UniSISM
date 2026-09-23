@@ -46,16 +46,10 @@
 		onSelecionar?.(numero);
 	}
 
-	function classeAssento(
-		numero: number,
-		ocupado: boolean,
-		isSelecionado: boolean
-	): string {
-		const base =
-			tamanho === 'compact'
-				? 'h-8 w-8 text-[10px]'
-				: 'h-12 w-12 text-xs';
-		const cursor = readonly || ocupado ? 'cursor-not-allowed' : 'cursor-pointer hover:border-blue-900';
+	function classeAssento(numero: number, ocupado: boolean, isSelecionado: boolean): string {
+		const base = tamanho === 'compact' ? 'h-8 w-8 text-[10px]' : 'h-12 w-12 text-xs';
+		const cursor =
+			readonly || ocupado ? 'cursor-not-allowed' : 'cursor-pointer hover:border-blue-900';
 		if (ocupado) {
 			return `${base} ${cursor} border border-slate-400 bg-slate-200 text-slate-700`;
 		}
@@ -78,7 +72,9 @@
 
 <div class="flex flex-col gap-3">
 	<!-- Legenda -->
-	<div class="flex flex-wrap items-center gap-3 font-mono text-[10px] tracking-wider text-slate-600 uppercase">
+	<div
+		class="flex flex-wrap items-center gap-3 font-mono text-[10px] tracking-wider text-slate-600 uppercase"
+	>
 		<div class="flex items-center gap-1.5">
 			<span class="h-3 w-3 border border-emerald-700 bg-emerald-50"></span>
 			<span>Livre</span>
@@ -121,7 +117,7 @@
 	</div>
 
 	<!-- Grid de assentos -->
-	<div class="grid {colsClass} gap-2 justify-items-center">
+	<div class="grid {colsClass} justify-items-center gap-2">
 		{#each assentos as a (a.numero)}
 			{@const ocupado = !!a.ocupante}
 			{@const isSel = selecionado === a.numero}
@@ -134,9 +130,7 @@
 					: `Assento ${a.numero} · disponível`}
 				class="flex items-center justify-center font-mono font-bold transition-all
 					{classeAssento(a.numero, ocupado, isSel)}"
-				aria-label={ocupado
-					? `Assento ${a.numero} ocupado`
-					: `Selecionar assento ${a.numero}`}
+				aria-label={ocupado ? `Assento ${a.numero} ocupado` : `Selecionar assento ${a.numero}`}
 				aria-pressed={isSel}
 			>
 				{a.numero}

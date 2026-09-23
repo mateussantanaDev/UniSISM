@@ -41,8 +41,7 @@
 					return new Date(db).getTime() - new Date(da).getTime();
 				});
 		} catch (e) {
-			erro =
-				e instanceof ApiError ? e.message : 'Falha ao carregar respostas do SUS.';
+			erro = e instanceof ApiError ? e.message : 'Falha ao carregar respostas do SUS.';
 		} finally {
 			carregando = false;
 		}
@@ -78,9 +77,7 @@
 		if (!e.respostaSUS) return;
 		baixandoId = e.id;
 		try {
-			const { blob, filename } = await api.encaminhamentos.downloadAnexo(
-				e.respostaSUS.anexoId
-			);
+			const { blob, filename } = await api.encaminhamentos.downloadAnexo(e.respostaSUS.anexoId);
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
@@ -139,7 +136,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -180,9 +178,7 @@
 		</div>
 		<div class="relative border border-slate-200 bg-white px-4 py-3">
 			<span class="absolute top-0 left-0 h-full w-1 bg-blue-900"></span>
-			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-				Filtrados
-			</div>
+			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Filtrados</div>
 			<div class="mt-1 font-mono text-2xl font-bold text-slate-900">
 				{carregando ? '—' : filtrada.length}
 			</div>
@@ -265,7 +261,9 @@
 								>
 									{e.protocolo}
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+								>
 									{e.paciente.nome}
 									<div class="text-[10px] text-slate-500">{e.paciente.cpf}</div>
 								</td>
@@ -273,10 +271,14 @@
 									{e.solicitacao.especialidadeSolicitada}
 									<div class="text-[10px] text-slate-500">CID {e.solicitacao.cid10}</div>
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700"
+								>
 									{trecho(e.respostaSUS?.observacao)}
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans text-[11px] text-slate-700"
+								>
 									{e.respostaSUS?.registradoPor.nome ?? '—'}
 								</td>
 								<td class="px-3 py-2">

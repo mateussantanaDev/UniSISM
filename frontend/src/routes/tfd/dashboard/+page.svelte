@@ -1,7 +1,6 @@
 <script lang="ts">
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
-	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarData, mesAtual } from '$lib/presentation/utils/tfdFormat';
@@ -85,27 +84,19 @@
 	let cadastradasSemana = $derived(
 		solicitacoes.filter((s) => new Date(s.criadaEm).getTime() >= semanaMs).length
 	);
-	let cadastradasMes = $derived(
-		solicitacoes.filter((s) => s.criadaEm.startsWith(mesIso)).length
-	);
+	let cadastradasMes = $derived(solicitacoes.filter((s) => s.criadaEm.startsWith(mesIso)).length);
 
-	let pendentesMinhas = $derived(
-		solicitacoes.filter((s) => s.status === 'PENDENTE').length
-	);
+	let pendentesMinhas = $derived(solicitacoes.filter((s) => s.status === 'PENDENTE').length);
 	let aprovadasMinhas = $derived(
 		solicitacoes.filter((s) => s.status === 'APROVADA' || s.status === 'ALOCADA').length
 	);
-	let realizadasMinhas = $derived(
-		solicitacoes.filter((s) => s.status === 'REALIZADA').length
-	);
+	let realizadasMinhas = $derived(solicitacoes.filter((s) => s.status === 'REALIZADA').length);
 	let negadasMinhas = $derived(
 		solicitacoes.filter((s) => s.status === 'NEGADA' || s.status === 'CANCELADA').length
 	);
 
 	let recentes = $derived(
-		[...solicitacoes]
-			.sort((a, b) => (a.criadaEm < b.criadaEm ? 1 : -1))
-			.slice(0, 8)
+		[...solicitacoes].sort((a, b) => (a.criadaEm < b.criadaEm ? 1 : -1)).slice(0, 8)
 	);
 
 	const statusTone = {
@@ -129,10 +120,14 @@
 			</div>
 		{/if}
 
-		<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-3 font-sans text-[13px] text-blue-900">
-			<strong class="font-mono tracking-widest uppercase">Bom dia, {auth.me?.nome ?? 'Atendente'}.</strong>
-			Aqui está o resumo das solicitações que você cadastrou. Para abrir uma nova viagem TFD,
-			clique em <strong>+ Nova Solicitação</strong>.
+		<div
+			class="border-l-4 border-blue-900 bg-blue-50 px-4 py-3 font-sans text-[13px] text-blue-900"
+		>
+			<strong class="font-mono tracking-widest uppercase"
+				>Bom dia, {auth.me?.nome ?? 'Atendente'}.</strong
+			>
+			Aqui está o resumo das solicitações que você cadastrou. Para abrir uma nova viagem TFD, clique em
+			<strong>+ Nova Solicitação</strong>.
 		</div>
 
 		<!-- 4 cards principais -->
@@ -277,7 +272,9 @@
 									</td>
 									<td class="px-3 py-2">
 										<span
-											class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {statusTone[s.status]}"
+											class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {statusTone[
+												s.status
+											]}"
 										>
 											{s.status}
 										</span>
@@ -367,10 +364,7 @@
 								{/each}
 							{:else if pendentes.length === 0}
 								<tr>
-									<td
-										colspan="5"
-										class="px-3 py-8 text-center font-sans text-sm text-slate-500"
-									>
+									<td colspan="5" class="px-3 py-8 text-center font-sans text-sm text-slate-500">
 										Nenhuma solicitação pendente.
 									</td>
 								</tr>
@@ -461,9 +455,7 @@
 											<div class="font-mono text-xs font-bold text-slate-900">
 												{v.veiculoPlaca ?? '—'} · {v.destino}
 											</div>
-											<div
-												class="font-mono text-[10px] tracking-wider text-slate-500 uppercase"
-											>
+											<div class="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
 												{v.motoristaNome ?? '—'} · {formatarData(v.data)} · Saída {v.horaSaida}
 											</div>
 										</div>
@@ -497,7 +489,7 @@
 			<div
 				class="border-l-4 border-blue-900 bg-blue-50 px-4 py-3 font-sans text-[12px] text-blue-900"
 			>
-				<strong class="font-mono uppercase tracking-wider">Atenção:</strong>
+				<strong class="font-mono tracking-wider uppercase">Atenção:</strong>
 				{aguardandoAlocacao.length} solicitação(ões) aprovada(s) ainda sem viagem alocada — abra
 				<a class="underline" href="/tfd/viagens/nova">/tfd/viagens/nova</a> para criar uma nova viagem.
 			</div>

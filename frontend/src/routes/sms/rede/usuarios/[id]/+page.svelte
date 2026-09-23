@@ -11,7 +11,10 @@
 	import { goto } from '$app/navigation';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { obterIniciais } from '$lib/presentation/utils/stringUtils';
-	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
+	import {
+		formatarCargoPerfil,
+		formatarVinculoUsuario
+	} from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -152,9 +155,7 @@
 		}
 	}
 
-	let usuarioAtualMesmaConta = $derived(
-		!!usuario && auth.me?.id === usuario.id
-	);
+	let usuarioAtualMesmaConta = $derived(!!usuario && auth.me?.id === usuario.id);
 </script>
 
 {#if carregando}
@@ -188,7 +189,8 @@
 					? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 					: 'border-red-700 bg-red-50 text-red-900'}"
 			>
-				{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+				{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+				{mensagem.texto}
 			</div>
 		{/if}
 
@@ -206,7 +208,8 @@
 					</div>
 					<div class="text-sm font-bold text-slate-900">{usuario.nome}</div>
 					<div class="font-mono text-[11px] text-slate-600">
-						{usuario.matricula} · <strong class="text-blue-950 font-bold">{formatarCargoPerfil(usuario)}</strong>
+						{usuario.matricula} ·
+						<strong class="font-bold text-blue-950">{formatarCargoPerfil(usuario)}</strong>
 					</div>
 				</div>
 			</div>
@@ -220,11 +223,7 @@
 		<section class="grid grid-cols-12 gap-4">
 			<div class="col-span-12 border border-slate-200 bg-white xl:col-span-8">
 				<PanelHeader title="Dados do Usuário" index="01">
-					<PrimaryButton
-						label="Editar"
-						variant="secondary"
-						onclick={() => (editarAberto = true)}
-					/>
+					<PrimaryButton label="Editar" variant="secondary" onclick={() => (editarAberto = true)} />
 				</PanelHeader>
 				<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4">
 					<div class="col-span-12">
@@ -240,9 +239,7 @@
 						<dd class="mt-0.5 font-mono text-sm text-slate-900">{usuario.matricula}</dd>
 					</div>
 					<div class="col-span-4">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-							CPF
-						</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">CPF</dt>
 						<dd class="mt-0.5 font-mono text-sm text-slate-900">{usuario.cpf}</dd>
 					</div>
 					<div class="col-span-4">
@@ -269,7 +266,7 @@
 						<dt class="tracking-widest text-slate-500 uppercase">Cargo / Perfil</dt>
 						<dd>
 							<span
-								class="border border-blue-900 bg-blue-50 text-blue-950 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+								class="border border-blue-900 bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-blue-950 uppercase"
 							>
 								{formatarCargoPerfil(usuario)}
 							</span>
@@ -277,8 +274,10 @@
 					</div>
 					<div class="flex items-center justify-between px-4 py-2.5">
 						<dt class="tracking-widest text-slate-500 uppercase">Unidade / Face</dt>
-						<dd class="truncate pl-2 text-slate-900 font-bold">
-							{usuario.tipoUnidade ? `${usuario.tipoUnidade} — ${formatarVinculoUsuario(usuario)}` : formatarVinculoUsuario(usuario)}
+						<dd class="truncate pl-2 font-bold text-slate-900">
+							{usuario.tipoUnidade
+								? `${usuario.tipoUnidade} — ${formatarVinculoUsuario(usuario)}`
+								: formatarVinculoUsuario(usuario)}
 						</dd>
 					</div>
 					<div class="flex items-center justify-between px-4 py-2.5">
@@ -294,9 +293,7 @@
 					<div class="flex items-center justify-between px-4 py-2.5">
 						<dt class="tracking-widest text-slate-500 uppercase">Município</dt>
 						<dd class="truncate pl-2 text-slate-900">
-							{usuario.prefeitura?.nome ??
-								usuario.ubs?.prefeitura?.nome ??
-								'Global'}
+							{usuario.prefeitura?.nome ?? usuario.ubs?.prefeitura?.nome ?? 'Global'}
 						</dd>
 					</div>
 					{#if usuario.ubs}
@@ -384,11 +381,7 @@
 		subtitle="Atualizar dados cadastrais"
 		maxWidth="lg"
 	>
-		<EditarUsuario
-			{usuario}
-			onCancel={() => (editarAberto = false)}
-			onSaved={handleSalvo}
-		/>
+		<EditarUsuario {usuario} onCancel={() => (editarAberto = false)} onSaved={handleSalvo} />
 	</Modal>
 
 	<!-- Modal Reset Senha -->
@@ -409,8 +402,7 @@
 				class="border-l-4 border-amber-600 bg-amber-50 px-3 py-2 font-sans text-[12px] text-amber-900"
 			>
 				A senha atual do usuário será invalidada. Ele receberá a senha provisória pelos canais
-				oficiais e será forçado a trocar no próximo login. Todas as sessões ativas serão
-				encerradas.
+				oficiais e será forçado a trocar no próximo login. Todas as sessões ativas serão encerradas.
 			</div>
 			<div class="grid grid-cols-12 gap-3">
 				<FormField
@@ -436,11 +428,7 @@
 				</div>
 			{/if}
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-				<PrimaryButton
-					label="Cancelar"
-					variant="secondary"
-					onclick={() => (resetAberto = false)}
-				/>
+				<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (resetAberto = false)} />
 				<PrimaryButton
 					label="Redefinir Senha"
 					variant="danger"
@@ -471,23 +459,22 @@
 		<div class="flex flex-col gap-4 font-mono text-slate-900">
 			{#if acaoEmCurso === 'excluir'}
 				<div class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900">
-					<strong>Atenção:</strong> excluir <strong>{usuario.nome}</strong> ({usuario.matricula})
-					é uma operação permanente. O registro ficará arquivado apenas para fins de auditoria e
-					o usuário não poderá mais acessar o sistema.
+					<strong>Atenção:</strong> excluir <strong>{usuario.nome}</strong> ({usuario.matricula}) é
+					uma operação permanente. O registro ficará arquivado apenas para fins de auditoria e o
+					usuário não poderá mais acessar o sistema.
 				</div>
 			{:else if acaoEmCurso === 'desativar'}
 				<div
 					class="border-l-4 border-amber-600 bg-amber-50 px-3 py-2 font-sans text-[12px] text-amber-900"
 				>
-					<strong>{usuario.nome}</strong> ficará sem acesso ao sistema. Sessões ativas serão
-					encerradas. O usuário pode ser reativado a qualquer momento.
+					<strong>{usuario.nome}</strong> ficará sem acesso ao sistema. Sessões ativas serão encerradas.
+					O usuário pode ser reativado a qualquer momento.
 				</div>
 			{:else}
 				<div
 					class="border-l-4 border-emerald-700 bg-emerald-50 px-3 py-2 font-sans text-[12px] text-emerald-900"
 				>
-					<strong>{usuario.nome}</strong> voltará a ter acesso ao sistema com as mesmas
-					credenciais anteriores.
+					<strong>{usuario.nome}</strong> voltará a ter acesso ao sistema com as mesmas credenciais anteriores.
 				</div>
 			{/if}
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">

@@ -5,11 +5,10 @@
 > cartão de crédito.
 >
 > **Stack production-grade incluído**:
-> - Backend Node + PostgreSQL + Redis + MinIO + ClamAV (já no `docker-compose.yml`)
-> - **Caddy** — proxy reverso HTTPS com Let's Encrypt automático
-> - **Tempo + Grafana + Prometheus** — observabilidade completa
+> - Backend Node + PostgreSQL + Redis + MinIO + ClamAV + ntfy (já no `docker-compose.yml`)
+> - **Caddy** — proxy reverso HTTPS com Let's Encrypt automático (`docker-compose.prod.yml`)
 > - **SMTP real** — Brevo/SMTP2GO/Resend (300+ emails/dia grátis)
-> - **OpenTelemetry** — tracing distribuído
+> - **Observabilidade pronta para plugar** — `/metrics` Prometheus e OpenTelemetry OTLP configurável
 >
 > Custo total: **R$ 0/mês** (apenas o custo da VPS — qualquer plano de 2GB
 > RAM serve: Hetzner CPX11 €5/mês, Oracle Cloud Free Tier R$0, Hostinger VPS R$15/mês, etc.)
@@ -20,14 +19,15 @@
 
 1. [Geração de secrets fortes](#1-geração-de-secrets-fortes)
 2. [Configuração SMTP gratuita](#2-configuração-smtp-gratuita)
-3. [HTTPS automático com Caddy](#3-https-automático-com-caddy)
-4. [Storage S3 (MinIO local ou Backblaze B2 grátis)](#4-storage-s3)
-5. [Antivírus ClamAV](#5-antivírus-clamav)
-6. [Observabilidade — Prometheus + Grafana + Tempo](#6-observabilidade)
-7. [Hardening de runtime](#7-hardening-de-runtime)
-8. [Comandos de deploy](#8-comandos-de-deploy)
-9. [Checklist pré-deploy](#9-checklist-pré-deploy)
-10. [Operação dia-a-dia](#10-operação-dia-a-dia)
+3. [Frontend na Vercel](#3-frontend-na-vercel)
+4. [HTTPS automático com Caddy](#4-https-automático-com-caddy)
+5. [Storage S3 (MinIO local ou Backblaze B2 grátis)](#5-storage-s3)
+6. [Antivírus ClamAV](#6-antivírus-clamav)
+7. [Observabilidade](#7-observabilidade)
+8. [Hardening de runtime](#8-hardening-de-runtime)
+9. [Comandos de deploy](#9-comandos-de-deploy)
+10. [Checklist pré-deploy](#10-checklist-pré-deploy)
+11. [Operação dia-a-dia](#11-operação-dia-a-dia)
 
 ---
 
@@ -39,7 +39,7 @@ openssl rand -base64 48
 openssl rand -base64 48
 openssl rand -base64 32
 
-# Senhas para Postgres e Grafana:
+# Senha para Postgres:
 openssl rand -base64 24
 ```
 
@@ -50,8 +50,8 @@ $EDITOR .env.prod   # preencha tudo marcado como REPLACE_*
 ```
 
 > **Validação automática**: se você esquecer de trocar, o backend **não sobe**.
-> O `env.ts` rejeita placeholders fracos, secrets iguais, CORS=`*` e SMTP_HOST
-> vazio em produção. Erros são explícitos no boot.
+> O `env.ts` rejeita placeholders fracos, secrets iguais, CORS=`*`, SMTP/S3/ntfy
+> incompletos e timeouts HTTP incoerentes em produção. Erros são explícitos no boot.
 
 ### O que o backend valida em PROD
 
@@ -61,7 +61,10 @@ $EDITOR .env.prod   # preencha tudo marcado como REPLACE_*
 | `JWT_SECRET == JWT_REFRESH_SECRET` | `Error: [PROD] JWT_SECRET e JWT_REFRESH_SECRET devem ser DIFERENTES` |
 | `CORS_ORIGIN=*` | `Error: [PROD] CORS_ORIGIN deve ser lista explícita (sem '*')` |
 | `CORS_ORIGIN=http://...` (sem ser localhost) | `Error: [PROD] CORS_ORIGIN deve ser https://` |
-| `EMAIL_PROVIDER=smtp` sem `SMTP_HOST` | `Error: [PROD] SMTP_HOST/USER/PASS exigidos` |
+| `EMAIL_PROVIDER=smtp` sem host/user/pass | `Error: [PROD] EMAIL_PROVIDER=smtp requer SMTP_HOST, SMTP_USER, SMTP_PASS` |
+| `STORAGE_PROVIDER=s3` sem bucket/access/secret | `Error: [PROD] STORAGE_PROVIDER=s3 requer ...` |
+| `PUSH_PROVIDER=ntfy` sem `NTFY_BASE_URL` | `Error: [PROD] PUSH_PROVIDER=ntfy requer NTFY_BASE_URL` |
+| `HTTP_HEADERS_TIMEOUT_MS <= HTTP_KEEP_ALIVE_TIMEOUT_MS` | `Error: [PROD] HTTP_HEADERS_TIMEOUT_MS deve ser maior...` |
 | `TFD_SIGN_REQUIRED=true` sem cert válido | `Error: cert ICP-Brasil indisponível` |
 
 ---
@@ -131,10 +134,54 @@ explícito (ex.: dry-run).
 
 ---
 
-## 3. HTTPS automático com Caddy
+## 3. Frontend na Vercel
 
-Já incluído em `docker-compose.prod.yml`. **Zero configuração**: Caddy obtém
-cert Let's Encrypt automaticamente quando o servidor sobe.
+Arquitetura atual:
+
+| Camada | Onde roda | URL/env relevante |
+|---|---|---|
+| Frontend web | Vercel project `unisism` | `https://unisism.vercel.app` |
+| Backend API | VPS com Docker Compose | `https://api.seu-dominio/v1` |
+| Reset de senha | Frontend Vercel | `https://unisism.vercel.app/redefinir` |
+
+### Vercel envs do projeto `unisism`
+
+Configure em **Vercel → Project `unisism` → Settings → Environment Variables**:
+
+```bash
+VITE_API_BASE_URL=https://api.seu-dominio/v1
+VITE_API_KEY=
+```
+
+`VITE_API_KEY` deve ficar vazio se `API_KEY` estiver vazio no backend. Se voce
+habilitar `API_KEY` no backend, use o mesmo valor na Vercel sabendo que todo
+`VITE_*` e publico no navegador; isso e apenas uma camada leve junto de CORS/JWT.
+
+### Backend envs que precisam casar
+
+```bash
+CORS_ORIGIN=https://unisism.vercel.app
+CORS_ALLOW_VERCEL_PREVIEW=false
+CORS_VERCEL_PROJECT=unisism
+APP_RESET_SENHA_URL=https://unisism.vercel.app/redefinir
+```
+
+Se quiser testar previews da Vercel, ligue temporariamente:
+
+```bash
+CORS_ALLOW_VERCEL_PREVIEW=true
+```
+
+Mesmo nesse modo, o backend aceita apenas hosts que comecem com
+`unisism-` e terminem em `.vercel.app`, alem da origem explicita em
+`CORS_ORIGIN`.
+
+---
+
+## 4. HTTPS automático com Caddy
+
+Já incluído no overlay `docker-compose.prod.yml`. Caddy obtém o certificado
+Let's Encrypt automaticamente quando o servidor sobe com domínio e email válidos.
 
 ### Pré-requisitos
 
@@ -164,16 +211,17 @@ curl -I https://api.unisism.exemplo.com.br/v1/health
 
 ### Headers de segurança configurados
 
-Caddy + helmet enviam:
+Helmet no backend envia os headers principais:
 
 ```
 Strict-Transport-Security: max-age=15552000; includeSubDomains; preload
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=()
-Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
 ```
+
+Se quiser `Permissions-Policy` ou `Content-Security-Policy` no proxy, troque o
+comando `caddy reverse-proxy` por um `Caddyfile` dedicado.
 
 ### HSTS preload (opcional, nível avançado)
 
@@ -184,7 +232,7 @@ Após rodar 6 meses sem incidente:
 
 ---
 
-## 4. Storage S3
+## 5. Storage S3
 
 ### MinIO local (default — incluído)
 
@@ -226,7 +274,7 @@ Todos usam o mesmo cliente — só muda `S3_ENDPOINT` + creds.
 
 ---
 
-## 5. Antivírus ClamAV
+## 6. Antivírus ClamAV
 
 Já incluído. **Atenção**: na primeira inicialização demora ~5 minutos
 baixando assinaturas de vírus (~250 MB).
@@ -255,38 +303,35 @@ de custo, comprovantes de abastecimento) é escaneado em background. Status:
 
 ---
 
-## 6. Observabilidade
+## 7. Observabilidade
 
-### Stack incluído (free, self-hosted)
+O compose baseline nao publica UIs de observabilidade. O backend ja entrega os
+pontos de integracao:
 
-| Componente | Função | Porta interna | Acesso externo |
-|---|---|---|---|
-| **Prometheus** | scrape `/metrics` | 9090 | nenhum (rede Docker) |
-| **Tempo** | recebe spans OTLP | 4318/4317 | nenhum (rede Docker) |
-| **Grafana** | UI dashboards + traces | 3000 | localhost only (SSH tunnel) |
+| Recurso | Como ligar |
+|---|---|
+| Metricas Prometheus | `METRICS_ENABLED=true` e scrape em `http://backend:3333/metrics` dentro da rede Docker |
+| Traces OTLP/HTTP | `OTEL_ENABLED=true` e `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318` |
+| Logs estruturados | Docker json-file com rotacao em `docker-compose.prod.yml` |
 
-### Acesso ao Grafana via SSH tunnel
+Para VPS, existe um overlay opcional:
 
 ```bash
-# Da sua máquina local:
-ssh -L 3000:127.0.0.1:3000 user@vps-ip
-
-# Abra http://localhost:3000
-# Login: admin / GRAFANA_PASSWORD do .env.prod
+docker compose --env-file .env.prod \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.observability.yml up -d prometheus tempo grafana
 ```
 
-### Configurar datasources (1ª vez)
+Ele prende Grafana e Prometheus em `127.0.0.1`. Acesse por tunel SSH:
 
-Em Grafana → Connections → Data sources:
+```bash
+ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 usuario@ip-da-vps
+```
 
-1. **Prometheus**: URL `http://prometheus:9090`
-2. **Tempo**: URL `http://tempo:3200`
+Depois abra `http://localhost:3000`.
 
-Importe dashboards prontos:
-- Node.js exporter (ID 11159)
-- Prometheus 2.0 stats (ID 3662)
-
-### Métricas disponíveis (Prometheus)
+### Metricas disponiveis
 
 ```
 # Request rate
@@ -302,7 +347,7 @@ sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total
 # (filtrar nos logs do Postgres)
 ```
 
-### Tracing distribuído (OpenTelemetry)
+### Tracing distribuido (OpenTelemetry)
 
 Auto-instrumentação ligada para:
 - `express` (todas as rotas)
@@ -311,22 +356,32 @@ Auto-instrumentação ligada para:
 - `ioredis` (cache)
 - `nodemailer` (envio de email)
 
-Cada request HTTP gera um trace com waterfall completo. Em Grafana → Explore →
-Tempo, busca por `service.name = unisism-backend`.
+Cada request HTTP gera um trace com waterfall completo quando `OTEL_ENABLED=true`
+e o endpoint OTLP esta acessivel. No Tempo/Grafana, busque por
+`service.name = unisism-backend`.
+
+### Ligar tracing com o overlay local
+
+```bash
+# .env.prod
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318
+```
 
 ### Desligar tracing (zero overhead)
 
 ```bash
 # .env.prod
 OTEL_ENABLED=false
+OTEL_EXPORTER_OTLP_ENDPOINT=
 ```
 
-O `tracing.ts` faz check antes de carregar o SDK — se desligado, **nem carrega**
-as deps OTLP no runtime.
+Com `OTEL_ENABLED=false`, o `tracing.ts` faz check antes de carregar o SDK — se
+desligado, **nem carrega** as deps OTLP no runtime.
 
 ---
 
-## 7. Hardening de runtime
+## 8. Hardening de runtime
 
 ### Trust proxy
 
@@ -359,15 +414,17 @@ helmet({
 
 ### Não-`root` no container
 
-Recomendado adicionar ao `Dockerfile`:
-```dockerfile
-RUN addgroup -S app && adduser -S -G app app
-USER app
+O `Dockerfile` roda o runtime como usuario `app` (`uid=10001`, `gid=10001`).
+Na VPS, garanta que o bind mount de uploads permita escrita:
+
+```bash
+mkdir -p uploads
+sudo chown -R 10001:10001 uploads
 ```
 
 ---
 
-## 8. Comandos de deploy
+## 9. Comandos de deploy
 
 ### Build local + push
 
@@ -383,18 +440,25 @@ docker push registry.exemplo.com/unisism-backend:v0.8.2
 ### Deploy stack completa
 
 ```bash
+# Validacao local antes de subir
+npm run validate
+npm run test:smoke:production
+docker compose --env-file .env.prod \
+  -f docker-compose.yml -f docker-compose.prod.yml config >/tmp/unisism-compose.yml
+
+# Permissao do volume de uploads para o usuario nao-root do container
+mkdir -p uploads
+sudo chown -R 10001:10001 uploads
+
 # Primeira vez (subir tudo do zero)
 docker compose --env-file .env.prod \
-  -f docker-compose.yml -f docker-compose.prod.yml up -d
+  -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Atualização (após push de nova imagem)
 docker compose --env-file .env.prod \
   -f docker-compose.yml -f docker-compose.prod.yml pull
 docker compose --env-file .env.prod \
   -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps backend
-
-# Migrações
-docker compose --env-file .env.prod exec backend npx prisma migrate deploy
 
 # Triggers SQL imutabilidade
 docker compose --env-file .env.prod exec backend npm run db:setup-triggers
@@ -404,7 +468,16 @@ docker compose --env-file .env.prod exec backend npm run minio:init
 
 # Seed (opcional — só pra criar usuário DEV inicial)
 docker compose --env-file .env.prod exec backend npm run db:seed
+
+# Observabilidade opcional
+docker compose --env-file .env.prod \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.observability.yml up -d prometheus tempo grafana
 ```
+
+O backend roda `npm run start:container` no compose, que aplica
+`prisma migrate deploy` antes de iniciar `node dist/main/server.js`.
 
 ### Logs
 
@@ -421,17 +494,20 @@ docker compose logs backend | grep ERROR
 
 ---
 
-## 9. Checklist pré-deploy
+## 10. Checklist pré-deploy
 
 ### Secrets e auth
 - [ ] `JWT_SECRET` gerado com `openssl rand -base64 48`
 - [ ] `JWT_REFRESH_SECRET` gerado separadamente (DIFERENTE do anterior)
 - [ ] `POSTGRES_PASSWORD` forte (≥ 24 chars)
 - [ ] `S3_SECRET_KEY` forte
-- [ ] `GRAFANA_PASSWORD` trocado do default
 
 ### CORS e HTTPS
-- [ ] `CORS_ORIGIN` lista explícita (sem `*`) com `https://`
+- [ ] `CORS_ORIGIN=https://unisism.vercel.app`
+- [ ] `CORS_ALLOW_VERCEL_PREVIEW=false` em produção, exceto staging controlado
+- [ ] `CORS_VERCEL_PROJECT=unisism`
+- [ ] `APP_RESET_SENHA_URL=https://unisism.vercel.app/redefinir`
+- [ ] `VITE_API_BASE_URL=https://api.seu-dominio/v1` configurado no projeto Vercel `unisism`
 - [ ] DNS A do `UNISISM_DOMAIN` apontando pro IP da VPS
 - [ ] Portas 80 e 443 abertas no firewall
 - [ ] `ACME_EMAIL` configurado
@@ -448,9 +524,9 @@ docker compose logs backend | grep ERROR
 - [ ] ClamAV operacional (verificar logs após 5 min)
 
 ### Observabilidade
-- [ ] `OTEL_ENABLED=true` apontando pra `http://tempo:4318`
-- [ ] Acesso ao Grafana funcionando (SSH tunnel)
-- [ ] Dashboards de Node.js importados
+- [ ] `/metrics` acessível apenas pela rede interna ou firewall
+- [ ] Se usar overlay local, `GRAFANA_PASSWORD` forte
+- [ ] Se usar tracing, `OTEL_ENABLED=true` e `OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318`
 
 ### Audit e compliance
 - [ ] `npm run db:setup-triggers` executado (triggers de imutabilidade)
@@ -458,14 +534,17 @@ docker compose logs backend | grep ERROR
 - [ ] Cert ICP-Brasil obtido (e-CNPJ A1) — quando disponível, setar `TFD_SIGN_REQUIRED=true`
 
 ### Validação
+- [ ] `npm run validate`
+- [ ] `npm run test:smoke:production`
+- [ ] `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml config`
 - [ ] `curl https://seu-dominio/v1/health` → `{"ok":true}`
 - [ ] Login funcional via frontend
 - [ ] Headers de segurança presentes (`curl -I`)
-- [ ] Trace de request aparece no Grafana → Tempo
+- [ ] Se `OTEL_ENABLED=true`, trace de request aparece no backend collector
 
 ---
 
-## 10. Operação dia-a-dia
+## 11. Operação dia-a-dia
 
 ### Backup automático do banco
 
@@ -550,8 +629,8 @@ docker compose up -d --no-deps backend
 | `503 Service Unavailable` (Caddy) | Backend não subiu | `docker compose logs backend` |
 | `email enviado` mas chega em spam | Sem SPF/DKIM/DMARC | Configurar DNS TXT do domínio (provider mostra) |
 | ClamAV `connection refused` | Container ainda baixando assinaturas | Aguardar 5min, ver `docker compose logs clamav` |
-| Trace não aparece no Tempo | OTEL_EXPORTER_OTLP_ENDPOINT errado | Deve ser `http://tempo:4318` (sem `/v1/traces`) |
-| Grafana mostra "Bad Gateway" | Tempo/Prometheus não subiram | `docker compose ps` deve mostrar todos `Up` |
+| Trace não chega no collector | `OTEL_EXPORTER_OTLP_ENDPOINT` errado | Use a base OTLP/HTTP, ex. `http://collector:4318` (sem `/v1/traces`) |
+| `npm run test:smoke:production` falha em compose | Variável obrigatória ausente ou YAML inválido | Rode `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml config` |
 
 ---
 
@@ -565,7 +644,7 @@ docker compose up -d --no-deps backend
 | Cert TLS | Let's Encrypt (Caddy) | R$0 |
 | SMTP (300/dia) | Brevo | R$0 |
 | Storage 10GB | MinIO local + Backblaze B2 backup | R$0 |
-| Tracing/Métricas | Tempo + Grafana + Prometheus self-hosted | R$0 |
+| Tracing/Métricas | `/metrics` + OTEL para stack externa/opcional | R$0 no backend |
 | Cert ICP-Brasil e-CNPJ A1 | ACs (Serpro/Soluti/etc.) | ~R$200/ano (R$17/mês) — opcional |
 | **TOTAL** | | **R$33–50/mês** |
 
@@ -578,11 +657,7 @@ backend/
 ├── .env.example                  # template DEV
 ├── .env.prod.example             # template PROD (copie e edite)
 ├── docker-compose.yml            # base (postgres, redis, minio, clamav, backend)
-├── docker-compose.prod.yml       # overlay PROD (caddy, tempo, prometheus, grafana)
-├── deploy/
-│   ├── caddy/Caddyfile           # config HTTPS + headers
-│   ├── tempo/tempo.yaml          # config tracing
-│   └── prometheus/prometheus.yml # config scrape
+├── docker-compose.prod.yml       # overlay PROD baseline (Caddy + hardening backend)
 └── src/
     ├── shared/env.ts             # validação fail-fast em PROD
     ├── main/
@@ -595,4 +670,4 @@ backend/
 
 ---
 
-*Última atualização: 2026-04-26*
+*Última atualização: 2026-09-22*

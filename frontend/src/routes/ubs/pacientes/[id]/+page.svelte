@@ -42,9 +42,7 @@
 		<div class="col-span-12 border-2 border-red-700 bg-red-50 px-4 py-3">
 			<div class="flex items-center justify-between">
 				<div>
-					<div
-						class="font-mono text-[10px] font-bold tracking-widest text-red-800 uppercase"
-					>
+					<div class="font-mono text-[10px] font-bold tracking-widest text-red-800 uppercase">
 						⚠ ALERTA CRÍTICO · ALERGIAS
 					</div>
 					<div class="mt-1 flex flex-wrap gap-1.5">
@@ -154,9 +152,7 @@
 			class="relative border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-blue-900"
 		>
 			<span class="absolute top-0 left-0 h-full w-1 bg-slate-400"></span>
-			<div class="pl-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-				Exames
-			</div>
+			<div class="pl-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">Exames</div>
 			<div class="pl-2 font-mono text-2xl font-bold text-slate-900">{p.exames.length}</div>
 			<div class="pl-2 font-mono text-[10px] text-slate-500">
 				{p.exames.filter((e) => e.resultado === 'ALTERADO').length} alterado{p.exames.filter(
@@ -196,7 +192,9 @@
 					</li>
 				{/each}
 				{#if cronicasAtivas.length > 3}
-					<li class="px-4 py-1.5 text-center font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+					<li
+						class="px-4 py-1.5 text-center font-mono text-[10px] tracking-wider text-slate-500 uppercase"
+					>
 						+ {cronicasAtivas.length - 3} outra{cronicasAtivas.length - 3 === 1 ? '' : 's'}
 					</li>
 				{/if}
@@ -230,7 +228,9 @@
 					</li>
 				{/each}
 				{#if medsAtivos.length > 3}
-					<li class="px-4 py-1.5 text-center font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+					<li
+						class="px-4 py-1.5 text-center font-mono text-[10px] tracking-wider text-slate-500 uppercase"
+					>
 						+ {medsAtivos.length - 3} outro{medsAtivos.length - 3 === 1 ? '' : 's'}
 					</li>
 				{/if}

@@ -21,6 +21,7 @@ import type { ScheduledTask } from 'node-cron';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
 import type { IAuditLogger } from '../../../infrastructure/audit/PrismaAuditLogger';
+import { env } from '../../../shared/env';
 
 export async function purgePushDevicesInativos(diasInativo: number): Promise<{
   deletados: number;
@@ -40,12 +41,13 @@ export class PushTokenCleanupCron {
   constructor(private readonly audit: IAuditLogger) {}
 
   start(): void {
-    const expr = process.env['PUSH_DEVICE_CLEANUP_CRON'] ?? '30 3 1 * *';
+    const expr = env.PUSH_DEVICE_CLEANUP_CRON;
     if (!cron.validate(expr)) {
       logger.error({ expr }, 'PUSH_DEVICE_CLEANUP_CRON inválida — cron NÃO ativado');
       return;
     }
-    const dias = Number(process.env['PUSH_DEVICE_TTL_DIAS']) || 90;
+    const dias = env.PUSH_DEVICE_TTL_DIAS;
+    const tz = env.PUSH_DEVICE_CLEANUP_CRON_TZ;
 
     void this._runOnce('boot-catchup', dias).catch((err) =>
       logger.error({ err }, 'push device cleanup no boot falhou'),
@@ -58,9 +60,9 @@ export class PushTokenCleanupCron {
           logger.error({ err }, 'push device cleanup (cron) falhou'),
         );
       },
-      { timezone: process.env['PUSH_DEVICE_CLEANUP_CRON_TZ'] ?? 'UTC' },
+      { timezone: tz },
     );
-    logger.info({ expr, dias }, '✓ cron de cleanup de push devices iniciado');
+    logger.info({ expr, dias, tz }, '✓ cron de cleanup de push devices iniciado');
   }
 
   stop(): void {

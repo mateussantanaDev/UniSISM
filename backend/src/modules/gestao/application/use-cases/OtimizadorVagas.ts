@@ -128,7 +128,7 @@ export async function findDoctorAsync(
         };
       }
     }
-  } catch (err) {
+  } catch (_err) {
     // Fallback gracioso se o banco estiver desconectado ou em migração
     console.info('[UniSISM] Banco de escalas não acessível no momento — utilizando mapeamento inteligente fallback.');
   }

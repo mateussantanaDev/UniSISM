@@ -62,8 +62,8 @@
 	<div
 		class="border-l-4 border-emerald-700 bg-emerald-50 px-3 py-2 font-sans text-[12px] text-emerald-900"
 	>
-		Medicamentos de uso contínuo. Registro aparece no prontuário para verificação de interações
-		em futuras prescrições.
+		Medicamentos de uso contínuo. Registro aparece no prontuário para verificação de interações em
+		futuras prescrições.
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">
@@ -95,14 +95,7 @@
 			placeholder="Ex.: Dr. João Cardoso · CRM/BA 12345"
 			bind:value={prescritor}
 		/>
-		<FormField
-			label="Início do Uso"
-			name="desde"
-			type="date"
-			span={4}
-			mono
-			bind:value={desde}
-		/>
+		<FormField label="Início do Uso" name="desde" type="date" span={4} mono bind:value={desde} />
 	</div>
 
 	{#if erro}

@@ -242,9 +242,7 @@
 {#if autenticando}
 	<div class="flex h-screen items-center justify-center bg-slate-50">
 		<div class="flex flex-col items-center gap-3">
-			<div
-				class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
-			></div>
+			<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
 			<div class="font-mono text-xs tracking-widest text-slate-600 uppercase">
 				Verificando sessão...
 			</div>

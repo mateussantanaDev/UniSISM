@@ -1,10 +1,10 @@
-import { StatusAtendimentoCentro, TipoEventoTimeline } from '../../../../../generated/prisma';
+import { Prisma, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound, BadRequest } from '../../../../shared/errors';
+import { NotFound } from '../../../../shared/errors';
 
 export interface RegistrarPresencaInput {
   encaminhamentoId: string;
@@ -27,11 +27,11 @@ export class RegistrarPresencaPacienteUseCase {
       throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO', 'Encaminhamento não encontrado');
     }
 
-    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
+    ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
     const now = new Date();
-    const updateData: any = {
-      statusAtendimentoCentro: input.status as StatusAtendimentoCentro,
+    const updateData: Prisma.EncaminhamentoUpdateInput = {
+      statusAtendimentoCentro: input.status,
     };
 
     let eventTitle = '';

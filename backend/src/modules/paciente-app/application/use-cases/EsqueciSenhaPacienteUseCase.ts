@@ -33,6 +33,7 @@ import type { IEmailService } from '../../../../infrastructure/email/EmailServic
 import type { IAuditLogger } from '../../../../infrastructure/audit/PrismaAuditLogger';
 import type { PasswordRecoveryRateLimiter } from '../../infrastructure/PasswordRecoveryRateLimiter';
 import { normalizarCpf, isCpfValido, formatarCpf } from '../../../../shared/cpf';
+import { env } from '../../../../shared/env';
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30min
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1h
@@ -139,8 +140,7 @@ export class EsqueciSenhaPacienteUseCase {
     });
 
     const primeiroNome = conta.nome.trim().split(/\s+/)[0] ?? '';
-    const linkResetSite = process.env['APP_RESET_SENHA_URL']
-      ?? 'https://app.unisism.aguasbelas.pe.gov.br/redefinir';
+    const linkResetSite = env.APP_RESET_SENHA_URL;
     const linkCompleto = `${linkResetSite}?t=${token}`;
 
     await this.email.enviar({

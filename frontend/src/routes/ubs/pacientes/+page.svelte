@@ -50,7 +50,9 @@
 
 			if (Array.isArray(res)) {
 				lista = res;
-				totalRegistros = metricas.totalCadastrados || (res.length >= limite ? paginaAtual * limite + 1 : res.length);
+				totalRegistros =
+					metricas.totalCadastrados ||
+					(res.length >= limite ? paginaAtual * limite + 1 : res.length);
 				totalPaginas = Math.max(1, Math.ceil(totalRegistros / limite));
 			} else if (res && typeof res === 'object') {
 				lista = res.itens ?? [];
@@ -169,7 +171,9 @@
 			</span>
 		</PanelHeader>
 
-		<div class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
 			<div class="flex flex-1 items-center gap-2">
 				<label
 					for="busca"
@@ -242,7 +246,9 @@
 								class="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
 								onclick={() => goto(`/ubs/pacientes/${p.id}`)}
 							>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+								>
 									{p.nome}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
@@ -304,9 +310,17 @@
 		</div>
 
 		<!-- Paginação -->
-		<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+		<div
+			class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs"
+		>
 			<div class="font-mono text-slate-600">
-				Mostrando <strong class="text-slate-900">{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> pacientes
+				Mostrando <strong class="text-slate-900"
+					>{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(
+						paginaAtual * limite,
+						totalRegistros
+					)}</strong
+				>
+				de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> pacientes
 			</div>
 
 			<div class="flex items-center gap-1">
@@ -314,7 +328,7 @@
 					type="button"
 					onclick={() => irParaPagina(1)}
 					disabled={paginaAtual <= 1}
-					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 					title="Primeira página"
 				>
 					«
@@ -323,13 +337,15 @@
 					type="button"
 					onclick={() => irParaPagina(paginaAtual - 1)}
 					disabled={paginaAtual <= 1}
-					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 					title="Página anterior"
 				>
 					‹ Anterior
 				</button>
 
-				<span class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900">
+				<span
+					class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900"
+				>
 					Pág. {paginaAtual} de {totalPaginas}
 				</span>
 
@@ -337,7 +353,7 @@
 					type="button"
 					onclick={() => irParaPagina(paginaAtual + 1)}
 					disabled={paginaAtual >= totalPaginas}
-					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 					title="Próxima página"
 				>
 					Próxima ›
@@ -346,7 +362,7 @@
 					type="button"
 					onclick={() => irParaPagina(totalPaginas)}
 					disabled={paginaAtual >= totalPaginas}
-					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+					class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 					title="Última página"
 				>
 					»
@@ -354,7 +370,10 @@
 
 				<select
 					bind:value={limite}
-					onchange={() => { paginaAtual = 1; carregarPacientes(); }}
+					onchange={() => {
+						paginaAtual = 1;
+						carregarPacientes();
+					}}
 					class="ml-2 border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700 outline-none"
 				>
 					<option value={25}>25 / pág</option>

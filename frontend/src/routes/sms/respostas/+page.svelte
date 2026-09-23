@@ -41,9 +41,7 @@
 	let encaminhamentosFiltrados = $derived.by(() => {
 		const term = termoBusca.trim().toLowerCase();
 		if (!term) return encaminhamentos;
-		return encaminhamentos.filter((e) =>
-			(e.paciente?.nome ?? '').toLowerCase().includes(term)
-		);
+		return encaminhamentos.filter((e) => (e.paciente?.nome ?? '').toLowerCase().includes(term));
 	});
 
 	let arquivo = $state<File | null>(null);
@@ -135,11 +133,7 @@
 		processando = true;
 		erro = '';
 		try {
-			await api.encaminhamentos.registrarRespostaSus(
-				encSelecionado.id,
-				arquivo,
-				observacao.trim()
-			);
+			await api.encaminhamentos.registrarRespostaSus(encSelecionado.id, arquivo, observacao.trim());
 			notificar('ok', 'Resposta SUS registrada · anexada ao encaminhamento.');
 			abrir = false;
 			recargaKey++; // força explorer a recarregar
@@ -186,16 +180,15 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{toast.tipo === 'ok' ? '✓' : '⚠'} {toast.texto}
+			{toast.tipo === 'ok' ? '✓' : '⚠'}
+			{toast.texto}
 		</div>
 	{/if}
 
 	<!-- Ação principal: enviar resposta SUS -->
 	<div class="flex items-center justify-between border border-slate-200 bg-white px-4 py-3">
 		<div class="leading-tight">
-			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-				Ação
-			</div>
+			<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Ação</div>
 			<div class="font-sans text-sm text-slate-700">
 				Anexar o PDF oficial devolvido pela regulação federal a um encaminhamento aprovado.
 			</div>
@@ -234,10 +227,18 @@
 	>
 		<div class="flex flex-col gap-3 py-1">
 			<!-- Breadcrumb das etapas -->
-			<div class="flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+			<div
+				class="flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase"
+			>
 				<span class={etapa === 'ubs' ? 'font-bold text-blue-900' : ''}>UBS</span>
 				<span>›</span>
-				<span class={etapa === 'enc' ? 'font-bold text-blue-900' : etapa === 'ubs' ? 'text-slate-300' : ''}>
+				<span
+					class={etapa === 'enc'
+						? 'font-bold text-blue-900'
+						: etapa === 'ubs'
+							? 'text-slate-300'
+							: ''}
+				>
 					{ubsSelecionada?.nome ?? 'Encaminhamento'}
 				</span>
 				<span>›</span>
@@ -255,7 +256,9 @@
 			<!-- ─── Etapa 1: Escolher UBS ────────────────────────────── -->
 			{#if etapa === 'ubs'}
 				{#if ubss.length === 0}
-					<div class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500">
+					<div
+						class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500"
+					>
 						Nenhuma UBS cadastrada nesta prefeitura.
 					</div>
 				{:else}
@@ -267,7 +270,9 @@
 									onclick={() => escolherUbs(u)}
 									class="flex w-full items-start gap-3 bg-white px-3 py-3 text-left hover:bg-blue-50 hover:text-blue-900"
 								>
-									<div class="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-300 bg-slate-50 font-mono text-[11px] font-bold text-slate-700">
+									<div
+										class="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-300 bg-slate-50 font-mono text-[11px] font-bold text-slate-700"
+									>
 										UBS
 									</div>
 									<div class="leading-tight">
@@ -290,7 +295,9 @@
 						Carregando encaminhamentos aprovados...
 					</div>
 				{:else if encaminhamentos.length === 0}
-					<div class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500">
+					<div
+						class="border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center font-sans text-sm text-slate-500"
+					>
 						Nenhum encaminhamento APROVADO sem resposta nesta UBS.
 					</div>
 				{:else}
@@ -300,14 +307,16 @@
 							type="text"
 							bind:value={termoBusca}
 							placeholder="🔍 Digite o nome do paciente para filtrar..."
-							class="w-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-sans"
+							class="w-full border border-slate-300 bg-white px-3 py-1.5 font-sans text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 						/>
 					</div>
 
 					<div class="max-h-[300px] overflow-y-auto border border-slate-200">
 						<table class="w-full border-collapse text-xs">
 							<thead class="sticky top-0 z-10 bg-slate-100">
-								<tr class="border-b border-slate-200 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+								<tr
+									class="border-b border-slate-200 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+								>
 									<th class="border-r border-slate-200 px-3 py-2">Protocolo</th>
 									<th class="border-r border-slate-200 px-3 py-2">Paciente</th>
 									<th class="border-r border-slate-200 px-3 py-2">Especialidade</th>
@@ -330,7 +339,9 @@
 											<td class="border-r border-slate-100 px-3 py-2 font-bold text-blue-900">
 												{e.protocolo}
 											</td>
-											<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900 font-semibold">
+											<td
+												class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+											>
 												{e.paciente.nome}
 											</td>
 											<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">

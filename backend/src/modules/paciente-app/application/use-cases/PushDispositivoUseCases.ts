@@ -16,6 +16,7 @@ import crypto from 'node:crypto';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { Unprocessable } from '../../../../shared/errors';
 import { logger } from '../../../../infrastructure/logger';
+import { env } from '../../../../shared/env';
 import type {
   PlataformaPush,
   PushProvider as PushProviderEnum,
@@ -77,10 +78,7 @@ function _validarEndpoint(provider: PushProviderEnum, endpoint: string): void {
 }
 
 export class RegistrarPushDispositivoUseCase {
-  constructor(
-    private readonly audit: IAuditLogger,
-    private readonly defaultProvider: PushProviderEnum = 'NTFY',
-  ) {}
+  constructor(private readonly audit: IAuditLogger) {}
 
   async exec(
     contaId: string,
@@ -173,8 +171,8 @@ export class RegistrarPushDispositivoUseCase {
     );
 
     const out: RegistrarPushOutput = { endpoint, provider };
-    if (provider === 'NTFY' && process.env['NTFY_BASE_URL']) {
-      const base = process.env['NTFY_BASE_URL'].replace(/\/+$/, '');
+    if (provider === 'NTFY' && env.NTFY_BASE_URL) {
+      const base = env.NTFY_BASE_URL.replace(/\/+$/, '');
       // Cliente Flutter usa wss:// pra WebSocket persistente
       out.subscribeUrl = `${base.replace(/^http/, 'ws')}/${endpoint}/ws`;
     }

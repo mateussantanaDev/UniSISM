@@ -51,7 +51,9 @@
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.cartaoSus}</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Data de Nascimento</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+					Data de Nascimento
+				</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">
 					{formatarData(p.dataNascimento)}
 				</dd>
@@ -91,9 +93,7 @@
 		<PanelHeader title="Filiação" index="02" />
 		<dl class="divide-y divide-slate-100 px-4">
 			<div class="py-2.5">
-				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Nome da Mãe
-				</dt>
+				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Nome da Mãe</dt>
 				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p.nomeMae}</dd>
 			</div>
 			<div class="py-2.5">
@@ -113,9 +113,7 @@
 				<dd class="mt-0.5 text-sm text-slate-900">{p.endereco}</dd>
 			</div>
 			<div class="col-span-6">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Bairro
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Bairro</dt>
 				<dd class="mt-0.5 text-sm text-slate-900">{p.bairro}</dd>
 			</div>
 			<div class="col-span-3">
@@ -129,15 +127,11 @@
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.municipio}/{p.uf}</dd>
 			</div>
 			<div class="col-span-6">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Telefone
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Telefone</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.telefone}</dd>
 			</div>
 			<div class="col-span-6">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Email
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Email</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.email ?? '—'}</dd>
 			</div>
 		</dl>

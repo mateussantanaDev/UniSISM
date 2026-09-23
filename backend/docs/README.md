@@ -107,6 +107,76 @@ Endpoints expostos:
 
 ---
 
+## Smokes automatizados
+
+Os smokes devem rodar em banco separado do desenvolvimento. O runner carrega
+`.env`, depois `.env.smoke` se existir, e usa `SMOKE_DATABASE_URL` quando
+configurado. Sem `.env.smoke`, ele deriva automaticamente um banco com sufixo
+`_smoke` a partir do `DATABASE_URL`.
+
+```bash
+cp .env.smoke.example .env.smoke
+npm run test:smoke:http
+```
+
+O comando acima aplica o schema no banco de smoke, sobe o backend em porta
+isolada (`3334` por padrão), roda o contrato do app paciente e valida HTTP real
+para admin, TFD gestão, centro, prontuário, app motorista e fluxos críticos
+fim a fim.
+
+Para rodar somente as jornadas críticas HTTP:
+
+```bash
+npm run test:smoke:critical
+```
+
+Esse comando cobre paciente, push, UBS, encaminhamentos, anexos, notificações,
+dossiê, centro, TFD paciente/gestão, app motorista e relatórios.
+
+Para rodar somente os checks de segurança da etapa 10:
+
+```bash
+npm run test:smoke:security
+```
+
+Esse comando valida CORS, API key, redaction de logger e máscara recursiva de
+payloads sensíveis em auditoria.
+
+Para rodar somente os checks de confiabilidade da etapa 11:
+
+```bash
+npm run test:smoke:reliability
+```
+
+Esse comando valida fila de push com backoff sem starvation e parada graceful
+do outbox em batch ativo.
+
+Para rodar tudo em sequência, incluindo os smokes legados das etapas 1 a 11:
+
+```bash
+npm run test:smoke:all
+```
+
+Proteção: o banco usado pelos smokes precisa ter `smoke`, `test`, `testing` ou
+`ci` no nome. Override manual, só quando consciente:
+`SMOKE_ALLOW_NON_ISOLATED_DB=true`.
+
+---
+
+## Validação de migrations
+
+Para testar o caminho de deploy do banco do zero:
+
+```bash
+npm run db:validate-migrations
+```
+
+O comando recria o banco descartável `unisism_ubs_migrate_test`, aplica
+`prisma migrate deploy`, aplica triggers de imutabilidade, roda o seed e
+confirma que o banco migrado não tem drift contra `prisma/schema.prisma`.
+
+---
+
 ## 🧰 Toggles de infra (via `.env`)
 
 | Variável | Default | Efeito quando setada |

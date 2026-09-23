@@ -8,14 +8,14 @@
 import crypto from 'node:crypto';
 import { Forbidden, NotFound } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
-import type { Prisma } from '../../../../generated/prisma';
+import type { Prisma, TfdAuditLog } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import { assertMesmaPrefeitura, resolverPrefeituraIdEfetiva } from './_helpers';
 import { verificarCadeiaTfd } from '../infrastructure/TfdAuditLogger';
 import { assinarConteudoTj } from '../infrastructure/TfdSignatureService';
 import type { Request } from 'express';
 
-function rowParaRegistro(r: any) {
+function rowParaRegistro(r: TfdAuditLog) {
   return {
     id: r.id,
     acao: r.acao,

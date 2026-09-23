@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+
+# shellcheck disable=SC1091
+. scripts/smoke/env.sh
+
+smoke_load_env
+smoke_prepare_db
+
+npm run build
+
+SERVER_PID=""
+cleanup() {
+  if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    kill "$SERVER_PID" >/dev/null 2>&1 || true
+    wait "$SERVER_PID" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+npm start &
+SERVER_PID="$!"
+
+echo "-> aguardando backend em $BASE/health"
+for i in $(seq 1 40); do
+  if curl -s -f "$BASE/health" >/dev/null 2>&1; then
+    echo "  OK backend pronto apos ${i}s"
+    break
+  fi
+  if ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    echo "FAIL backend encerrou antes do health"
+    wait "$SERVER_PID" || true
+    exit 1
+  fi
+  sleep 1
+done
+
+if ! curl -s -f "$BASE/health" >/dev/null 2>&1; then
+  echo "FAIL backend nao ficou pronto em tempo"
+  exit 1
+fi
+
+npx ts-node --transpile-only scripts/smoke/smoke-critical-flows.ts

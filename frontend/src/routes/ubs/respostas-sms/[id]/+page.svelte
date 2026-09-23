@@ -45,9 +45,7 @@
 
 	let anexoResposta = $derived.by(() => {
 		if (!encaminhamento?.respostaSUS) return null;
-		return (
-			encaminhamento.anexos.find((a) => a.id === encaminhamento!.respostaSUS!.anexoId) ?? null
-		);
+		return encaminhamento.anexos.find((a) => a.id === encaminhamento!.respostaSUS!.anexoId) ?? null;
 	});
 
 	async function carregar() {
@@ -89,9 +87,7 @@
 		carregandoPdf = true;
 		erroPdf = null;
 		try {
-			const { blob } = await api.encaminhamentos.downloadAnexo(
-				encaminhamento.respostaSUS.anexoId
-			);
+			const { blob } = await api.encaminhamentos.downloadAnexo(encaminhamento.respostaSUS.anexoId);
 			pdfBlob = blob;
 			pdfUrl = URL.createObjectURL(blob);
 		} catch (e) {
@@ -171,19 +167,24 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
 	{#if carregando}
-		<div class="border border-slate-200 bg-white px-6 py-12 text-center font-sans text-sm text-slate-500">
+		<div
+			class="border border-slate-200 bg-white px-6 py-12 text-center font-sans text-sm text-slate-500"
+		>
 			<div
 				class="mx-auto mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
 			></div>
 			Carregando resposta...
 		</div>
 	{:else if erro}
-		<div class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+		>
 			⚠ {erro}
 		</div>
 		<button
@@ -224,9 +225,7 @@
 					</div>
 				</div>
 				<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-					<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-						Status
-					</div>
+					<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Status</div>
 					<div class="mt-1.5">
 						<StatusBadge status={encaminhamento.status} />
 					</div>
@@ -318,13 +317,15 @@
 					<PanelHeader title="Resumo da Resposta" index="04" />
 					<div class="p-4">
 						<div
-							class="border-l-4 border-purple-700 bg-purple-50 px-3 py-2 font-sans text-[13px] leading-relaxed text-purple-900 whitespace-pre-wrap"
+							class="border-l-4 border-purple-700 bg-purple-50 px-3 py-2 font-sans text-[13px] leading-relaxed whitespace-pre-wrap text-purple-900"
 						>
 							{encaminhamento.respostaSUS?.observacao ?? '—'}
 						</div>
 
 						{#if encaminhamento.agendamentoPrevisto}
-							<div class="mt-3 border-l-4 border-emerald-700 bg-emerald-50 px-3 py-2 font-sans text-[13px] text-emerald-900">
+							<div
+								class="mt-3 border-l-4 border-emerald-700 bg-emerald-50 px-3 py-2 font-sans text-[13px] text-emerald-900"
+							>
 								Agendamento previsto:
 								<strong>
 									{new Date(encaminhamento.agendamentoPrevisto).toLocaleDateString('pt-BR')}
@@ -333,7 +334,9 @@
 						{/if}
 
 						{#if anexoResposta}
-							<div class="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 font-mono text-[11px] text-slate-700">
+							<div
+								class="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 font-mono text-[11px] text-slate-700"
+							>
 								<div>
 									<span class="text-slate-500">Arquivo:</span>
 									<span class="font-bold text-slate-900">{anexoResposta.nome}</span>
@@ -366,15 +369,21 @@
 					/>
 
 					{#if carregandoPdf}
-						<div class="flex flex-col items-center justify-center px-6 py-16 font-sans text-sm text-slate-500">
+						<div
+							class="flex flex-col items-center justify-center px-6 py-16 font-sans text-sm text-slate-500"
+						>
 							<div
 								class="mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
 							></div>
 							Carregando PDF...
 						</div>
 					{:else if erroPdf}
-						<div class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center font-sans text-sm">
-							<div class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+						<div
+							class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center font-sans text-sm"
+						>
+							<div
+								class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+							>
 								⚠ {erroPdf}
 							</div>
 							<button

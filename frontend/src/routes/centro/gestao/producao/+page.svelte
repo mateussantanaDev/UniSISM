@@ -18,7 +18,11 @@
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista' : 'Médico Especialista');
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
@@ -78,28 +82,28 @@
 	let novoProcCodigo = $state('02.11.02.003-6');
 	let novoProcNome = $state('Eletrocardiograma (ECG)');
 	let novoProcQtd = $state(1);
-	let novoProcValor = $state(45.00);
+	let novoProcValor = $state(45.0);
 
 	const catalogoSigtapGestorMed = [
-		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)', valor: 45.00 },
-		{ codigo: '02.05.02.009-7', nome: 'Ecocardiograma Transtorácico', valor: 180.00 },
-		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo', valor: 95.00 },
-		{ codigo: '03.01.01.004-0', nome: 'Lavagem Otológica', valor: 35.00 },
-		{ codigo: '04.08.01.004-7', nome: 'Infiltração Articular / Bainha Tendinosa', valor: 110.00 },
-		{ codigo: '02.11.05.008-3', nome: 'Holter 24 Horas (3 Canais)', valor: 150.00 },
-		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento', valor: 40.00 },
-		{ codigo: '02.06.01.007-9', nome: 'Endoscopia Digestiva Alta', valor: 220.00 }
+		{ codigo: '02.11.02.003-6', nome: 'Eletrocardiograma (ECG)', valor: 45.0 },
+		{ codigo: '02.05.02.009-7', nome: 'Ecocardiograma Transtorácico', valor: 180.0 },
+		{ codigo: '04.04.01.001-2', nome: 'Biópsia de Pele e Subcutâneo', valor: 95.0 },
+		{ codigo: '03.01.01.004-0', nome: 'Lavagem Otológica', valor: 35.0 },
+		{ codigo: '04.08.01.004-7', nome: 'Infiltração Articular / Bainha Tendinosa', valor: 110.0 },
+		{ codigo: '02.11.05.008-3', nome: 'Holter 24 Horas (3 Canais)', valor: 150.0 },
+		{ codigo: '04.01.01.002-3', nome: 'Curativo Especial / Debridamento', valor: 40.0 },
+		{ codigo: '02.06.01.007-9', nome: 'Endoscopia Digestiva Alta', valor: 220.0 }
 	];
 
 	const catalogoSigtapGestorOdonto = [
-		{ codigo: '03.07.02.006-1', nome: 'Tratamento Endodôntico Dente Permanente', valor: 110.00 },
-		{ codigo: '03.07.01.004-0', nome: 'Raspagem e Alisamento Periodontal', valor: 65.00 },
-		{ codigo: '04.14.01.014-9', nome: 'Exodontia de Dente Incluso / Semi-incluso', valor: 140.00 },
-		{ codigo: '03.07.03.003-2', nome: 'Condicionamento Odontopediátrico', valor: 80.00 },
-		{ codigo: '03.07.04.004-6', nome: 'Atendimento Odonto PNE', valor: 95.00 },
-		{ codigo: '07.01.07.012-9', nome: 'Moldagem e Instalação de Prótese', valor: 190.00 },
-		{ codigo: '02.01.01.042-8', nome: 'Biópsia de Lesão Bucal', valor: 120.00 },
-		{ codigo: '02.04.01.018-0', nome: 'Radiografia Periapical', valor: 25.00 }
+		{ codigo: '03.07.02.006-1', nome: 'Tratamento Endodôntico Dente Permanente', valor: 110.0 },
+		{ codigo: '03.07.01.004-0', nome: 'Raspagem e Alisamento Periodontal', valor: 65.0 },
+		{ codigo: '04.14.01.014-9', nome: 'Exodontia de Dente Incluso / Semi-incluso', valor: 140.0 },
+		{ codigo: '03.07.03.003-2', nome: 'Condicionamento Odontopediátrico', valor: 80.0 },
+		{ codigo: '03.07.04.004-6', nome: 'Atendimento Odonto PNE', valor: 95.0 },
+		{ codigo: '07.01.07.012-9', nome: 'Moldagem e Instalação de Prótese', valor: 190.0 },
+		{ codigo: '02.01.01.042-8', nome: 'Biópsia de Lesão Bucal', valor: 120.0 },
+		{ codigo: '02.04.01.018-0', nome: 'Radiografia Periapical', valor: 25.0 }
 	];
 
 	let catalogoSigtapGestor = $derived(ehCeo ? catalogoSigtapGestorOdonto : catalogoSigtapGestorMed);
@@ -107,7 +111,9 @@
 	let listaAtendimentosAjustaveis = $state<AtendimentoProcedimentoGestor[]>([]);
 
 	// Report Generator State
-	let relatorioTipo = $state<'BPA_SUS' | 'ABSENTEISMO_UBS' | 'DEMANDA_REPRIMIDA' | 'TFD_INTERMUNICIPAL'>('BPA_SUS');
+	let relatorioTipo = $state<
+		'BPA_SUS' | 'ABSENTEISMO_UBS' | 'DEMANDA_REPRIMIDA' | 'TFD_INTERMUNICIPAL'
+	>('BPA_SUS');
 	let relatorioFormato = $state<'PDF' | 'CSV' | 'XLSX'>('PDF');
 	let relatorioDataInicio = $state('2026-07-01');
 	let relatorioDataFim = $state('2026-07-27');
@@ -117,15 +123,26 @@
 	let logsAuditoria = $state<LogAuditoriaOperacional[]>([]);
 
 	// Derived metrics
-	let totalConsultasMes = $derived(listaProducaoMedica.reduce((acc, m) => acc + m.atendimentosMes, 0));
-	let totalBpaBrl = $derived(listaProducaoMedica.reduce((acc, m) => acc + m.valorBpaEstimadoBRL, 0));
-	let totalTfdGerados = $derived(listaProducaoMedica.reduce((acc, m) => acc + m.encaminhamentosTFD, 0));
+	let totalConsultasMes = $derived(
+		listaProducaoMedica.reduce((acc, m) => acc + m.atendimentosMes, 0)
+	);
+	let totalBpaBrl = $derived(
+		listaProducaoMedica.reduce((acc, m) => acc + m.valorBpaEstimadoBRL, 0)
+	);
+	let totalTfdGerados = $derived(
+		listaProducaoMedica.reduce((acc, m) => acc + m.encaminhamentosTFD, 0)
+	);
 	let absenteismoMedioGlobal = $derived(
-		(listaProducaoMedica.reduce((acc, m) => acc + m.taxaAbsenteismo, 0) / (listaProducaoMedica.length || 1)).toFixed(1)
+		(
+			listaProducaoMedica.reduce((acc, m) => acc + m.taxaAbsenteismo, 0) /
+			(listaProducaoMedica.length || 1)
+		).toFixed(1)
 	);
 
 	let producaoFiltrada = $derived(
-		listaProducaoMedica.filter(m => filtroEspecialidade === 'TODAS' || m.especialidade === filtroEspecialidade)
+		listaProducaoMedica.filter(
+			(m) => filtroEspecialidade === 'TODAS' || m.especialidade === filtroEspecialidade
+		)
 	);
 
 	function abrirAjusteProcedimentoGestor(atend: AtendimentoProcedimentoGestor) {
@@ -133,7 +150,7 @@
 		novoProcCodigo = '02.11.02.003-6';
 		novoProcNome = 'Eletrocardiograma (ECG)';
 		novoProcQtd = 1;
-		novoProcValor = 45.00;
+		novoProcValor = 45.0;
 		modalAjusteGestorAberto = true;
 	}
 
@@ -164,22 +181,28 @@
 		};
 
 		atendimentoSelecionadoAjuste.procedimentosAdicionados.push(item);
-		
+
 		// Recalculate doctor BPA production
-		const med = listaProducaoMedica.find(m => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome);
+		const med = listaProducaoMedica.find(
+			(m) => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome
+		);
 		if (med) {
 			med.valorBpaEstimadoBRL += item.valorUnitarioBrl * item.quantidade;
 		}
 
 		// Persist via dedicated API
-		api.centroMedico.registrarProcedimentos(atendimentoSelecionadoAjuste.id, {
-			procedimentos: [{
-				codigoSigtap: item.codigoSigtap,
-				nome: item.nome,
-				quantidade: item.quantidade,
-				valorUnitario: item.valorUnitarioBrl
-			}]
-		}).catch(err => console.info('[UniSISM] Registro de faturamento pelo gestor:', err));
+		api.centroMedico
+			.registrarProcedimentos(atendimentoSelecionadoAjuste.id, {
+				procedimentos: [
+					{
+						codigoSigtap: item.codigoSigtap,
+						nome: item.nome,
+						quantidade: item.quantidade,
+						valorUnitario: item.valorUnitarioBrl
+					}
+				]
+			})
+			.catch((err) => console.info('[UniSISM] Registro de faturamento pelo gestor:', err));
 
 		// Log in auditoria
 		logsAuditoria.unshift({
@@ -194,7 +217,7 @@
 
 		mensagemSucesso = `✓ Procedimento ${item.nome} lançado pelo Gestor no atendimento de ${atendimentoSelecionadoAjuste.pacienteNome}! Faturamento SIGTAP atualizado (+R$ ${(item.valorUnitarioBrl * item.quantidade).toFixed(2)}).`;
 		if (timerMensagem) clearTimeout(timerMensagem);
-		timerMensagem = setTimeout(() => mensagemSucesso = '', 5000);
+		timerMensagem = setTimeout(() => (mensagemSucesso = ''), 5000);
 	}
 
 	onDestroy(() => {
@@ -203,14 +226,22 @@
 
 	function removerProcedimentoGestor(procId: string) {
 		if (!atendimentoSelecionadoAjuste) return;
-		const removed = atendimentoSelecionadoAjuste.procedimentosAdicionados.find(p => p.id === procId);
+		const removed = atendimentoSelecionadoAjuste.procedimentosAdicionados.find(
+			(p) => p.id === procId
+		);
 		if (removed) {
-			const med = listaProducaoMedica.find(m => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome);
+			const med = listaProducaoMedica.find(
+				(m) => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome
+			);
 			if (med) {
-				med.valorBpaEstimadoBRL = Math.max(0, med.valorBpaEstimadoBRL - (removed.valorUnitarioBrl * removed.quantidade));
+				med.valorBpaEstimadoBRL = Math.max(
+					0,
+					med.valorBpaEstimadoBRL - removed.valorUnitarioBrl * removed.quantidade
+				);
 			}
 		}
-		atendimentoSelecionadoAjuste.procedimentosAdicionados = atendimentoSelecionadoAjuste.procedimentosAdicionados.filter(p => p.id !== procId);
+		atendimentoSelecionadoAjuste.procedimentosAdicionados =
+			atendimentoSelecionadoAjuste.procedimentosAdicionados.filter((p) => p.id !== procId);
 	}
 
 	onMount(async () => {
@@ -221,8 +252,8 @@
 			]);
 
 			if (encsRes.status === 'fulfilled' && Array.isArray(encsRes.value)) {
-				const doCentro = encsRes.value.filter(e => e.filaDestino === 'CENTRO_ESPECIALIDADES');
-				
+				const doCentro = encsRes.value.filter((e) => e.filaDestino === 'CENTRO_ESPECIALIDADES');
+
 				// Monta lista de atendimentos ajustáveis com dados reais do banco
 				listaAtendimentosAjustaveis = doCentro.slice(0, 30).map((enc) => ({
 					id: enc.id,
@@ -254,7 +285,7 @@
 						valorBpaEstimadoBRL: 0
 					};
 					existing.atendimentosMes++;
-					existing.valorBpaEstimadoBRL += 130.00;
+					existing.valorBpaEstimadoBRL += 130.0;
 					mapaMedicos.set(nome, existing);
 				});
 
@@ -263,7 +294,11 @@
 				}
 			}
 
-			if (auditRes.status === 'fulfilled' && Array.isArray(auditRes.value.logs) && auditRes.value.logs.length > 0) {
+			if (
+				auditRes.status === 'fulfilled' &&
+				Array.isArray(auditRes.value.logs) &&
+				auditRes.value.logs.length > 0
+			) {
 				logsAuditoria = auditRes.value.logs.map((l: any) => ({
 					id: l.id,
 					timestamp: l.timestamp || l.criadoEm || new Date().toISOString(),
@@ -287,15 +322,19 @@
 		gerandoRelatorio = true;
 		try {
 			if (relatorioFormato === 'CSV' || relatorioFormato === 'XLSX') {
-				let csvContent = 'Médico Especialista;CRM;Especialidade;Atendimentos;Faltas;Absenteísmo (%);Encaminhamentos TFD;Valor BPA Estimado (R$)\n';
-				listaProducaoMedica.forEach(m => {
+				let csvContent =
+					'Médico Especialista;CRM;Especialidade;Atendimentos;Faltas;Absenteísmo (%);Encaminhamentos TFD;Valor BPA Estimado (R$)\n';
+				listaProducaoMedica.forEach((m) => {
 					csvContent += `"${m.medicoNome}";"${m.crm}";"${m.especialidade}";${m.atendimentosMes};${m.faltasPaciente};${m.taxaAbsenteismo}%;${m.encaminhamentosTFD};${m.valorBpaEstimadoBRL.toFixed(2)}\n`;
 				});
 				const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 				const url = URL.createObjectURL(blob);
 				const link = document.createElement('a');
 				link.setAttribute('href', url);
-				link.setAttribute('download', `relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.csv`);
+				link.setAttribute(
+					'download',
+					`relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.csv`
+				);
 				document.body.appendChild(link);
 				link.click();
 				document.body.removeChild(link);
@@ -308,14 +347,17 @@
 					console.info('[UniSISM] Gerando exportação de produção consolidada.', e);
 				}
 				let txtContent = `UNISISM - RELATÓRIO OFICIAL DE PRODUÇÃO MÉDICA E FATURAMENTO SIA-SUS\nCompetência: ${periodoMes} | Período: ${relatorioDataInicio} a ${relatorioDataFim}\n\n`;
-				listaProducaoMedica.forEach(m => {
+				listaProducaoMedica.forEach((m) => {
 					txtContent += `Médico: ${m.medicoNome} (${m.crm}) - ${m.especialidade}\nConsultas: ${m.atendimentosMes} | Faltas: ${m.faltasPaciente} (${m.taxaAbsenteismo}%) | TFD: ${m.encaminhamentosTFD} | Faturamento BPA: R$ ${m.valorBpaEstimadoBRL.toFixed(2)}\n------------------------------------------------------------\n`;
 				});
 				const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
 				const url = URL.createObjectURL(blob);
 				const link = document.createElement('a');
 				link.setAttribute('href', url);
-				link.setAttribute('download', `relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.txt`);
+				link.setAttribute(
+					'download',
+					`relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.txt`
+				);
 				document.body.appendChild(link);
 				link.click();
 				document.body.removeChild(link);
@@ -327,7 +369,7 @@
 			mensagemSucesso = `Falha ao exportar relatório: ${e?.message || 'Erro no processamento'}`;
 		} finally {
 			gerandoRelatorio = false;
-			setTimeout(() => mensagemSucesso = '', 6000);
+			setTimeout(() => (mensagemSucesso = ''), 6000);
 		}
 	}
 </script>
@@ -345,36 +387,52 @@
 
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm flex flex-col gap-1 whitespace-pre-wrap">
+		<div
+			class="flex flex-col gap-1 border-2 border-emerald-700 bg-emerald-50 p-4 font-bold whitespace-pre-wrap text-emerald-900 shadow-sm"
+		>
 			<div class="text-sm font-black">DIRETORIA EXECUÇÃO · PRESTAÇÃO DE CONTAS</div>
 			<div class="font-mono text-xs font-normal">{mensagemSucesso}</div>
 		</div>
 	{/if}
 
 	<!-- 1. Indicadores Executivos Globais (Director Executive Board) -->
-	<section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+	<section class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Produção de Atendimentos / Mês</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Produção de Atendimentos / Mês
+			</div>
 			<div class="mt-2 text-3xl font-bold text-slate-900">{totalConsultasMes}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Procedimentos especializados realizados no {siglaOrgao}</div>
+			<div class="mt-1 text-[11px] text-slate-600">
+				Procedimentos especializados realizados no {siglaOrgao}
+			</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Faturamento BPA/SIA-SUS Estimado</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Faturamento BPA/SIA-SUS Estimado
+			</div>
 			<div class="mt-2 text-2xl font-bold text-emerald-700">{formatarMoeda(totalBpaBrl)}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Repasse do SUS por produção de especialidades</div>
+			<div class="mt-1 text-[11px] text-slate-600">
+				Repasse do SUS por produção de especialidades
+			</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Taxa de Absenteísmo Global</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Taxa de Absenteísmo Global
+			</div>
 			<div class="mt-2 text-3xl font-bold text-amber-700">{absenteismoMedioGlobal}%</div>
-			<div class="text-[11px] text-slate-600 mt-1">Média municipal de ausência do paciente</div>
+			<div class="mt-1 text-[11px] text-slate-600">Média municipal de ausência do paciente</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Encaminhamentos TFD (Outras Cidades)</div>
-			<div class="mt-2 text-3xl font-bold text-blue-900">{totalTfdGerados} <span class="text-xs font-normal text-slate-500">casos</span></div>
-			<div class="text-[11px] text-slate-600 mt-1">Alta complexidade fora do município</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Encaminhamentos TFD (Outras Cidades)
+			</div>
+			<div class="mt-2 text-3xl font-bold text-blue-900">
+				{totalTfdGerados} <span class="text-xs font-normal text-slate-500">casos</span>
+			</div>
+			<div class="mt-1 text-[11px] text-slate-600">Alta complexidade fora do município</div>
 		</div>
 	</section>
 
@@ -382,29 +440,37 @@
 	<div class="flex border-b border-slate-200 bg-white font-mono text-xs font-bold">
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'dashboard'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'dashboard' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'dashboard')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'dashboard'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			01. Analytics de Produção Médica
 		</button>
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'relatorios'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'relatorios' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'relatorios')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'relatorios'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			02. Gerador de Relatórios Oficiais & SUS
 		</button>
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'ajustes'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'ajustes' ? 'border-purple-900 bg-purple-50 text-purple-900 font-black' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'ajustes')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'ajustes'
+				? 'border-purple-900 bg-purple-50 font-black text-purple-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			03. Lançamento & Ajuste de Procedimentos (Gestor)
 		</button>
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'auditoria'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'auditoria' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'auditoria')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'auditoria'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			04. Trilha de Auditoria & Compliance (Logs)
 		</button>
@@ -416,7 +482,11 @@
 			<PanelHeader title="Produtividade e Rendimento dos Médicos Especialistas" index="01">
 				<div class="flex items-center gap-2">
 					<label for="filtro-esp-prod" class="text-[10px] text-slate-500">Especialidade:</label>
-					<select id="filtro-esp-prod" bind:value={filtroEspecialidade} class="border border-slate-300 px-2 py-0.5 font-bold text-xs">
+					<select
+						id="filtro-esp-prod"
+						bind:value={filtroEspecialidade}
+						class="border border-slate-300 px-2 py-0.5 text-xs font-bold"
+					>
 						<option value="TODAS">TODAS AS ESPECIALIDADES</option>
 						<option value="Cardiologia">Cardiologia</option>
 						<option value="Oftalmologia">Oftalmologia</option>
@@ -429,11 +499,14 @@
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse text-xs">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+						<tr
+							class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+						>
 							<th class="border-r border-slate-200 px-4 py-3">Especialista / CRM</th>
 							<th class="border-r border-slate-200 px-3 py-3">Especialidade</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Consultas Realizadas</th>
-							<th class="border-r border-slate-200 px-3 py-3 text-center">Tempo Médio / Consulta</th>
+							<th class="border-r border-slate-200 px-3 py-3 text-center">Tempo Médio / Consulta</th
+							>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Faltas de Pacientes</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Absenteísmo</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Encaminhamentos TFD</th>
@@ -442,7 +515,7 @@
 					</thead>
 					<tbody class="font-mono">
 						{#each producaoFiltrada as med (med.crm)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<!-- Médico -->
 								<td class="border-r border-slate-100 px-4 py-3 font-sans">
 									<div class="font-bold text-slate-900">{med.medicoNome}</div>
@@ -450,12 +523,16 @@
 								</td>
 
 								<!-- Especialidade -->
-								<td class="border-r border-slate-100 px-3 py-3 font-sans font-semibold text-slate-800">
+								<td
+									class="border-r border-slate-100 px-3 py-3 font-sans font-semibold text-slate-800"
+								>
 									{med.especialidade}
 								</td>
 
 								<!-- Realizadas -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-blue-900 text-sm">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center text-sm font-bold text-blue-900"
+								>
 									{med.atendimentosMes}
 								</td>
 
@@ -470,12 +547,16 @@
 								</td>
 
 								<!-- Absenteísmo -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-amber-700">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center font-bold text-amber-700"
+								>
 									{med.taxaAbsenteismo}%
 								</td>
 
 								<!-- TFD Gerados -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-900"
+								>
 									{med.encaminhamentosTFD}
 								</td>
 
@@ -496,62 +577,144 @@
 		<div class="border border-slate-200 bg-white">
 			<PanelHeader title="Central de Relatórios Executivos e Prestação de Contas" index="02" />
 
-			<div class="p-6 font-sans text-xs flex flex-col gap-6">
-				<div class="border border-slate-200 bg-slate-50 p-4 font-mono text-xs flex items-center gap-2">
-					<IconFileText size={15} class="text-blue-900 shrink-0" />
-					<span>Selecione o relatório desejado para prestação de contas com a Secretaria Municipal de Saúde, SUS ou Tribunal de Contas:</span>
+			<div class="flex flex-col gap-6 p-6 font-sans text-xs">
+				<div
+					class="flex items-center gap-2 border border-slate-200 bg-slate-50 p-4 font-mono text-xs"
+				>
+					<IconFileText size={15} class="shrink-0 text-blue-900" />
+					<span
+						>Selecione o relatório desejado para prestação de contas com a Secretaria Municipal de
+						Saúde, SUS ou Tribunal de Contas:</span
+					>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono">
+				<div class="grid grid-cols-1 gap-6 font-mono md:grid-cols-2">
 					<!-- Seleção do Tipo de Relatório -->
 					<div class="flex flex-col gap-3">
-						<span class="font-bold text-slate-800 uppercase text-xs">01. Seleção do Relatório</span>
-						
-						<label for="rel-type-bpa" class="border p-3 flex items-start gap-3 cursor-pointer transition-colors {relatorioTipo === 'BPA_SUS' ? 'border-blue-900 bg-blue-50/60' : 'border-slate-200 bg-white'}">
-							<input id="rel-type-bpa" type="radio" bind:group={relatorioTipo} value="BPA_SUS" class="mt-0.5" />
+						<span class="text-xs font-bold text-slate-800 uppercase">01. Seleção do Relatório</span>
+
+						<label
+							for="rel-type-bpa"
+							class="flex cursor-pointer items-start gap-3 border p-3 transition-colors {relatorioTipo ===
+							'BPA_SUS'
+								? 'border-blue-900 bg-blue-50/60'
+								: 'border-slate-200 bg-white'}"
+						>
+							<input
+								id="rel-type-bpa"
+								type="radio"
+								bind:group={relatorioTipo}
+								value="BPA_SUS"
+								class="mt-0.5"
+							/>
 							<div>
-								<div class="font-bold text-slate-900">Relatório BPA / SIA-SUS (Produção Ambulatorial)</div>
-								<div class="text-[11px] text-slate-600 font-sans mt-0.5">Faturamento oficial de consultas especializadas por médico e procedimento SUS.</div>
+								<div class="font-bold text-slate-900">
+									Relatório BPA / SIA-SUS (Produção Ambulatorial)
+								</div>
+								<div class="mt-0.5 font-sans text-[11px] text-slate-600">
+									Faturamento oficial de consultas especializadas por médico e procedimento SUS.
+								</div>
 							</div>
 						</label>
 
-						<label for="rel-type-abs" class="border p-3 flex items-start gap-3 cursor-pointer transition-colors {relatorioTipo === 'ABSENTEISMO_UBS' ? 'border-blue-900 bg-blue-50/60' : 'border-slate-200 bg-white'}">
-							<input id="rel-type-abs" type="radio" bind:group={relatorioTipo} value="ABSENTEISMO_UBS" class="mt-0.5" />
+						<label
+							for="rel-type-abs"
+							class="flex cursor-pointer items-start gap-3 border p-3 transition-colors {relatorioTipo ===
+							'ABSENTEISMO_UBS'
+								? 'border-blue-900 bg-blue-50/60'
+								: 'border-slate-200 bg-white'}"
+						>
+							<input
+								id="rel-type-abs"
+								type="radio"
+								bind:group={relatorioTipo}
+								value="ABSENTEISMO_UBS"
+								class="mt-0.5"
+							/>
 							<div>
-								<div class="font-bold text-slate-900">Relatório de Absenteísmo e Faltas por UBS</div>
-								<div class="text-[11px] text-slate-600 font-sans mt-0.5">Indicador de faltas de pacientes por bairro para busca ativa de agentes de saúde.</div>
+								<div class="font-bold text-slate-900">
+									Relatório de Absenteísmo e Faltas por UBS
+								</div>
+								<div class="mt-0.5 font-sans text-[11px] text-slate-600">
+									Indicador de faltas de pacientes por bairro para busca ativa de agentes de saúde.
+								</div>
 							</div>
 						</label>
 
-						<label for="rel-type-dem" class="border p-3 flex items-start gap-3 cursor-pointer transition-colors {relatorioTipo === 'DEMANDA_REPRIMIDA' ? 'border-blue-900 bg-blue-50/60' : 'border-slate-200 bg-white'}">
-							<input id="rel-type-dem" type="radio" bind:group={relatorioTipo} value="DEMANDA_REPRIMIDA" class="mt-0.5" />
+						<label
+							for="rel-type-dem"
+							class="flex cursor-pointer items-start gap-3 border p-3 transition-colors {relatorioTipo ===
+							'DEMANDA_REPRIMIDA'
+								? 'border-blue-900 bg-blue-50/60'
+								: 'border-slate-200 bg-white'}"
+						>
+							<input
+								id="rel-type-dem"
+								type="radio"
+								bind:group={relatorioTipo}
+								value="DEMANDA_REPRIMIDA"
+								class="mt-0.5"
+							/>
 							<div>
-								<div class="font-bold text-slate-900">Relatório de Demanda Reprimida & Fila da Regulação</div>
-								<div class="text-[11px] text-slate-600 font-sans mt-0.5">Mapeamento de gargalos de esperas longas por especialidade para licitações.</div>
+								<div class="font-bold text-slate-900">
+									Relatório de Demanda Reprimida & Fila da Regulação
+								</div>
+								<div class="mt-0.5 font-sans text-[11px] text-slate-600">
+									Mapeamento de gargalos de esperas longas por especialidade para licitações.
+								</div>
 							</div>
 						</label>
 
-						<label for="rel-type-tfd" class="border p-3 flex items-start gap-3 cursor-pointer transition-colors {relatorioTipo === 'TFD_INTERMUNICIPAL' ? 'border-blue-900 bg-blue-50/60' : 'border-slate-200 bg-white'}">
-							<input id="rel-type-tfd" type="radio" bind:group={relatorioTipo} value="TFD_INTERMUNICIPAL" class="mt-0.5" />
+						<label
+							for="rel-type-tfd"
+							class="flex cursor-pointer items-start gap-3 border p-3 transition-colors {relatorioTipo ===
+							'TFD_INTERMUNICIPAL'
+								? 'border-blue-900 bg-blue-50/60'
+								: 'border-slate-200 bg-white'}"
+						>
+							<input
+								id="rel-type-tfd"
+								type="radio"
+								bind:group={relatorioTipo}
+								value="TFD_INTERMUNICIPAL"
+								class="mt-0.5"
+							/>
 							<div>
-								<div class="font-bold text-slate-900">Relatório de Encaminhamentos Intermunicipais / TFD</div>
-								<div class="text-[11px] text-slate-600 font-sans mt-0.5">Prestação de contas de pacientes enviados a outros municípios por alta complexidade.</div>
+								<div class="font-bold text-slate-900">
+									Relatório de Encaminhamentos Intermunicipais / TFD
+								</div>
+								<div class="mt-0.5 font-sans text-[11px] text-slate-600">
+									Prestação de contas de pacientes enviados a outros municípios por alta
+									complexidade.
+								</div>
 							</div>
 						</label>
 					</div>
 
 					<!-- Período e Formato -->
-					<div class="flex flex-col gap-4 bg-slate-50 p-4 border border-slate-200">
-						<span class="font-bold text-slate-800 uppercase text-xs">02. Filtros e Formato de Saída</span>
+					<div class="flex flex-col gap-4 border border-slate-200 bg-slate-50 p-4">
+						<span class="text-xs font-bold text-slate-800 uppercase"
+							>02. Filtros e Formato de Saída</span
+						>
 
 						<div class="grid grid-cols-2 gap-3">
 							<div class="flex flex-col gap-1">
 								<label for="rel-ini" class="text-[10px] text-slate-600">Data Inicial</label>
-								<input id="rel-ini" type="date" bind:value={relatorioDataInicio} class="border border-slate-300 bg-white p-2 text-xs" />
+								<input
+									id="rel-ini"
+									type="date"
+									bind:value={relatorioDataInicio}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 							<div class="flex flex-col gap-1">
 								<label for="rel-fim" class="text-[10px] text-slate-600">Data Final</label>
-								<input id="rel-fim" type="date" bind:value={relatorioDataFim} class="border border-slate-300 bg-white p-2 text-xs" />
+								<input
+									id="rel-fim"
+									type="date"
+									bind:value={relatorioDataFim}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 						</div>
 
@@ -561,8 +724,11 @@
 								{#each ['PDF', 'CSV', 'XLSX'] as f}
 									<button
 										type="button"
-										onclick={() => relatorioFormato = f as any}
-										class="px-4 py-2 font-bold text-xs border transition-colors {relatorioFormato === f ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+										onclick={() => (relatorioFormato = f as any)}
+										class="border px-4 py-2 text-xs font-bold transition-colors {relatorioFormato ===
+										f
+											? 'border-blue-900 bg-blue-900 text-white'
+											: 'border-slate-300 bg-white text-slate-700'}"
 									>
 										{f}
 									</button>
@@ -570,14 +736,16 @@
 							</div>
 						</div>
 
-						<div class="mt-auto pt-4 border-t border-slate-200">
+						<div class="mt-auto border-t border-slate-200 pt-4">
 							<button
 								type="button"
 								onclick={baixarRelatorioOficial}
 								disabled={gerandoRelatorio}
-								class="w-full border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white py-3 font-bold uppercase text-xs tracking-wider disabled:opacity-50"
+								class="w-full border border-blue-900 bg-blue-900 py-3 text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 							>
-								{gerandoRelatorio ? 'Processando Relatório...' : '📥 Gerar e Baixar Relatório Oficial'}
+								{gerandoRelatorio
+									? 'Processando Relatório...'
+									: '📥 Gerar e Baixar Relatório Oficial'}
 							</button>
 						</div>
 					</div>
@@ -589,24 +757,34 @@
 	<!-- 5. ABA 3: Lançamento & Ajuste de Procedimentos pelo Gestor -->
 	{#if abaAtiva === 'ajustes'}
 		<div class="border border-slate-200 bg-white">
-			<PanelHeader title="Lançamento e Auditoria de Procedimentos por Atendimento (Ajuste da Gestão)" index="03" />
+			<PanelHeader
+				title="Lançamento e Auditoria de Procedimentos por Atendimento (Ajuste da Gestão)"
+				index="03"
+			/>
 
-			<div class="p-4 flex flex-col gap-4 font-sans text-xs">
-				<div class="border border-purple-300 bg-purple-50 p-4 text-purple-950 font-mono text-xs flex flex-col gap-1">
-					<div class="font-bold uppercase tracking-wider flex items-center gap-2">
+			<div class="flex flex-col gap-4 p-4 font-sans text-xs">
+				<div
+					class="flex flex-col gap-1 border border-purple-300 bg-purple-50 p-4 font-mono text-xs text-purple-950"
+				>
+					<div class="flex items-center gap-2 font-bold tracking-wider uppercase">
 						<IconBulb size={15} class="text-purple-900" />
 						<span>AUDITORIA & REGISTRO RETROATIVO DE PROCEDIMENTOS</span>
-						<span class="bg-purple-900 text-white text-[9px] px-2 py-0.5 font-normal">GESTOR / FATURAMENTO</span>
+						<span class="bg-purple-900 px-2 py-0.5 text-[9px] font-normal text-white"
+							>GESTOR / FATURAMENTO</span
+						>
 					</div>
 					<div>
-						Se durante uma consulta o médico realizou exames ou procedimentos (*ex: Eletrocardiograma, Biópsia, Curativo Especial, Infiltração, Lavagem Otológica*) mas não registrou no sistema, o gestor pode fazer a inserção direta aqui. O valor do procedimento será computado no faturamento SIA-SUS/BPA e na produção do médico.
+						Se durante uma consulta o médico realizou exames ou procedimentos (*ex:
+						Eletrocardiograma, Biópsia, Curativo Especial, Infiltração, Lavagem Otológica*) mas não
+						registrou no sistema, o gestor pode fazer a inserção direta aqui. O valor do
+						procedimento será computado no faturamento SIA-SUS/BPA e na produção do médico.
 					</div>
 				</div>
 
 				<div class="overflow-x-auto border border-slate-200">
-					<table class="w-full text-left border-collapse font-mono text-xs">
+					<table class="w-full border-collapse text-left font-mono text-xs">
 						<thead>
-							<tr class="bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
+							<tr class="bg-slate-900 text-[10px] font-bold tracking-wider text-white uppercase">
 								<th class="p-3">Data / Protocolo</th>
 								<th class="p-3">Paciente</th>
 								<th class="p-3">Médico / Especialidade</th>
@@ -618,22 +796,29 @@
 						</thead>
 						<tbody class="divide-y divide-slate-200">
 							{#each listaAtendimentosAjustaveis as atend (atend.id)}
-								{@const totalAtendBrl = atend.procedimentosAdicionados.reduce((sum, p) => sum + (p.valorUnitarioBrl * p.quantidade), 0)}
+								{@const totalAtendBrl = atend.procedimentosAdicionados.reduce(
+									(sum, p) => sum + p.valorUnitarioBrl * p.quantidade,
+									0
+								)}
 								<tr class="hover:bg-slate-50">
 									<td class="p-3">
 										<div class="font-bold text-slate-900">{atend.dataAtendimento}</div>
-										<div class="text-[10px] text-slate-500 font-mono">{atend.protocolo}</div>
+										<div class="font-mono text-[10px] text-slate-500">{atend.protocolo}</div>
 									</td>
 									<td class="p-3 font-sans">
 										<div class="font-bold text-slate-900">{atend.pacienteNome}</div>
-										<div class="text-[10px] text-slate-500 font-mono">CPF: {atend.pacienteCpf}</div>
+										<div class="font-mono text-[10px] text-slate-500">CPF: {atend.pacienteCpf}</div>
 									</td>
 									<td class="p-3 font-sans">
 										<div class="font-semibold text-slate-900">{atend.medicoNome}</div>
-										<div class="text-[10px] text-slate-500 font-mono">{atend.medicoCrm} · {atend.especialidade}</div>
+										<div class="font-mono text-[10px] text-slate-500">
+											{atend.medicoCrm} · {atend.especialidade}
+										</div>
 									</td>
 									<td class="p-3">
-										<span class="bg-blue-100 text-blue-900 border border-blue-300 font-bold px-2 py-0.5 text-[10px]">
+										<span
+											class="border border-blue-300 bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-900"
+										>
 											{atend.tipoOrigem}
 										</span>
 									</td>
@@ -641,24 +826,30 @@
 										{#if atend.procedimentosAdicionados.length > 0}
 											<div class="flex flex-col gap-1">
 												{#each atend.procedimentosAdicionados as proc}
-													<div class="bg-purple-50 border border-purple-200 text-purple-950 px-2 py-1 text-[11px] flex justify-between items-center font-mono">
+													<div
+														class="flex items-center justify-between border border-purple-200 bg-purple-50 px-2 py-1 font-mono text-[11px] text-purple-950"
+													>
 														<span><strong>{proc.nome}</strong> ({proc.quantidade}x)</span>
-														<span class="font-bold text-emerald-800">R$ {(proc.valorUnitarioBrl * proc.quantidade).toFixed(2)}</span>
+														<span class="font-bold text-emerald-800"
+															>R$ {(proc.valorUnitarioBrl * proc.quantidade).toFixed(2)}</span
+														>
 													</div>
 												{/each}
 											</div>
 										{:else}
-											<span class="text-slate-400 italic text-[11px]">Nenhum procedimento extra registrado</span>
+											<span class="text-[11px] text-slate-400 italic"
+												>Nenhum procedimento extra registrado</span
+											>
 										{/if}
 									</td>
-									<td class="p-3 text-right font-bold text-emerald-800 text-sm">
+									<td class="p-3 text-right text-sm font-bold text-emerald-800">
 										R$ {totalAtendBrl.toFixed(2)}
 									</td>
 									<td class="p-3 text-center whitespace-nowrap">
 										<button
 											type="button"
 											onclick={() => abrirAjusteProcedimentoGestor(atend)}
-											class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-3 py-1.5 font-bold text-xs uppercase font-mono tracking-wider shadow-xs"
+											class="border border-purple-900 bg-purple-900 px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-white uppercase shadow-xs hover:bg-purple-950"
 										>
 											+ Lançar / Ajustar Procedimento
 										</button>
@@ -678,9 +869,11 @@
 			<PanelHeader title="Trilha de Auditoria Operacional (Audit Trail Compliance)" index="04" />
 
 			<div class="overflow-x-auto">
-				<table class="w-full border-collapse text-xs font-mono">
+				<table class="w-full border-collapse font-mono text-xs">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-50 text-left text-[10px] tracking-widest text-slate-600 uppercase">
+						<tr
+							class="border-b border-slate-200 bg-slate-50 text-left text-[10px] tracking-widest text-slate-600 uppercase"
+						>
 							<th class="border-r border-slate-200 px-3 py-3">Data / Hora (ISO)</th>
 							<th class="border-r border-slate-200 px-3 py-3">Operador / Matrícula</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Papel</th>
@@ -691,15 +884,19 @@
 					</thead>
 					<tbody>
 						{#each logsAuditoria as log (log.id)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<td class="border-r border-slate-100 px-3 py-2.5 font-bold text-slate-900">
 									{new Date(log.timestamp).toLocaleString('pt-BR')}
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2.5 font-sans font-bold text-slate-800">
+								<td
+									class="border-r border-slate-100 px-3 py-2.5 font-sans font-bold text-slate-800"
+								>
 									{log.operador}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2.5 text-center">
-									<span class="bg-slate-100 border border-slate-300 px-1.5 py-0.5 text-[10px] font-bold">
+									<span
+										class="border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold"
+									>
 										{log.papel}
 									</span>
 								</td>
@@ -725,36 +922,48 @@
 {#if modalAjusteGestorAberto && atendimentoSelecionadoAjuste}
 	<Modal
 		isOpen={modalAjusteGestorAberto}
-		onClose={() => modalAjusteGestorAberto = false}
+		onClose={() => (modalAjusteGestorAberto = false)}
 		title="LANÇAMENTO DE PROCEDIMENTO PELO GESTOR"
 		subtitle="Inserção retroativa no atendimento para cálculo de custo e faturamento SIA-SUS"
 		maxWidth="md"
 	>
 		<div class="flex flex-col gap-4 font-mono text-xs">
-			<div class="bg-slate-100 border border-slate-300 p-3 font-sans">
-				<div class="font-bold text-slate-900 text-sm">{atendimentoSelecionadoAjuste.pacienteNome}</div>
-				<div class="text-[11px] text-slate-600 font-mono">
-					CPF: {atendimentoSelecionadoAjuste.pacienteCpf} · Médico: <strong>{atendimentoSelecionadoAjuste.medicoNome}</strong> ({atendimentoSelecionadoAjuste.especialidade})
+			<div class="border border-slate-300 bg-slate-100 p-3 font-sans">
+				<div class="text-sm font-bold text-slate-900">
+					{atendimentoSelecionadoAjuste.pacienteNome}
+				</div>
+				<div class="font-mono text-[11px] text-slate-600">
+					CPF: {atendimentoSelecionadoAjuste.pacienteCpf} · Médico:
+					<strong>{atendimentoSelecionadoAjuste.medicoNome}</strong>
+					({atendimentoSelecionadoAjuste.especialidade})
 				</div>
 			</div>
 
 			<!-- Procedimentos Já Inseridos -->
 			<div class="flex flex-col gap-1">
-				<span class="font-bold text-slate-700 uppercase text-[10px]">Procedimentos Já Inseridos neste Atendimento:</span>
+				<span class="text-[10px] font-bold text-slate-700 uppercase"
+					>Procedimentos Já Inseridos neste Atendimento:</span
+				>
 				{#if atendimentoSelecionadoAjuste.procedimentosAdicionados.length > 0}
 					<div class="border border-slate-200 bg-white">
 						{#each atendimentoSelecionadoAjuste.procedimentosAdicionados as p}
-							<div class="p-2 border-b border-slate-100 last:border-b-0 flex justify-between items-center">
+							<div
+								class="flex items-center justify-between border-b border-slate-100 p-2 last:border-b-0"
+							>
 								<div>
 									<div class="font-bold text-purple-950">{p.nome} ({p.quantidade}x)</div>
-									<div class="text-[10px] text-slate-500">SIGTAP: {p.codigoSigtap} · Por {p.adicionadoPor}</div>
+									<div class="text-[10px] text-slate-500">
+										SIGTAP: {p.codigoSigtap} · Por {p.adicionadoPor}
+									</div>
 								</div>
 								<div class="flex items-center gap-3">
-									<span class="font-bold text-emerald-800">R$ {(p.valorUnitarioBrl * p.quantidade).toFixed(2)}</span>
+									<span class="font-bold text-emerald-800"
+										>R$ {(p.valorUnitarioBrl * p.quantidade).toFixed(2)}</span
+									>
 									<button
 										type="button"
 										onclick={() => removerProcedimentoGestor(p.id)}
-										class="text-red-700 font-bold hover:underline text-[10px]"
+										class="text-[10px] font-bold text-red-700 hover:underline"
 									>
 										[Remover]
 									</button>
@@ -763,7 +972,7 @@
 						{/each}
 					</div>
 				{:else}
-					<div class="text-slate-400 italic text-[11px] bg-slate-50 p-2 border border-slate-200">
+					<div class="border border-slate-200 bg-slate-50 p-2 text-[11px] text-slate-400 italic">
 						Nenhum procedimento registrado ainda.
 					</div>
 				{/if}
@@ -771,37 +980,69 @@
 
 			<!-- Formulário para Inserção -->
 			<div class="flex flex-col gap-3 border-t border-slate-200 pt-3">
-				<span class="font-bold text-purple-950 uppercase text-[11px] flex items-center gap-1">
+				<span class="flex items-center gap-1 text-[11px] font-bold text-purple-950 uppercase">
 					<IconPlus size={13} />
 					<span>Adicionar Novo Procedimento SIGTAP</span>
 				</span>
-				
+
 				{#if erroModalAjuste}
-					<div class="border border-rose-200 bg-rose-50 p-2 text-rose-900 font-bold flex items-center gap-1.5">
-						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+					<div
+						class="flex items-center gap-1.5 border border-rose-200 bg-rose-50 p-2 font-bold text-rose-900"
+					>
+						<IconAlertTriangle size={14} class="shrink-0 text-rose-700" />
 						<span>{erroModalAjuste}</span>
 					</div>
 				{/if}
 
 				<div class="flex flex-col gap-1">
-					<label for="gest-proc-name" class="text-[10px] font-bold text-slate-600 uppercase">Nome do Procedimento / Exame *</label>
-					<input id="gest-proc-name" type="text" bind:value={novoProcNome} class="border border-slate-300 p-2 text-xs font-sans" />
+					<label for="gest-proc-name" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Nome do Procedimento / Exame *</label
+					>
+					<input
+						id="gest-proc-name"
+						type="text"
+						bind:value={novoProcNome}
+						class="border border-slate-300 p-2 font-sans text-xs"
+					/>
 				</div>
 
 				<div class="grid grid-cols-3 gap-3">
 					<div class="flex flex-col gap-1">
-						<label for="gest-proc-cod" class="text-[10px] font-bold text-slate-600 uppercase">Código SIGTAP</label>
-						<input id="gest-proc-cod" type="text" bind:value={novoProcCodigo} class="border border-slate-300 p-2 text-xs font-mono" />
+						<label for="gest-proc-cod" class="text-[10px] font-bold text-slate-600 uppercase"
+							>Código SIGTAP</label
+						>
+						<input
+							id="gest-proc-cod"
+							type="text"
+							bind:value={novoProcCodigo}
+							class="border border-slate-300 p-2 font-mono text-xs"
+						/>
 					</div>
 
 					<div class="flex flex-col gap-1">
-						<label for="gest-proc-val" class="text-[10px] font-bold text-slate-600 uppercase">Valor Repasse (R$)</label>
-						<input id="gest-proc-val" type="number" step="0.01" bind:value={novoProcValor} class="border border-slate-300 p-2 text-xs font-bold text-emerald-800" />
+						<label for="gest-proc-val" class="text-[10px] font-bold text-slate-600 uppercase"
+							>Valor Repasse (R$)</label
+						>
+						<input
+							id="gest-proc-val"
+							type="number"
+							step="0.01"
+							bind:value={novoProcValor}
+							class="border border-slate-300 p-2 text-xs font-bold text-emerald-800"
+						/>
 					</div>
 
 					<div class="flex flex-col gap-1">
-						<label for="gest-proc-qtd" class="text-[10px] font-bold text-slate-600 uppercase">Quantidade</label>
-						<input id="gest-proc-qtd" type="number" min="1" bind:value={novoProcQtd} class="border border-slate-300 p-2 text-xs text-center font-bold" />
+						<label for="gest-proc-qtd" class="text-[10px] font-bold text-slate-600 uppercase"
+							>Quantidade</label
+						>
+						<input
+							id="gest-proc-qtd"
+							type="number"
+							min="1"
+							bind:value={novoProcQtd}
+							class="border border-slate-300 p-2 text-center text-xs font-bold"
+						/>
 					</div>
 				</div>
 
@@ -813,7 +1054,7 @@
 							<button
 								type="button"
 								onclick={() => selecionarSigtapPreset(sig)}
-								class="border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-950 px-2 py-1 text-[10px] font-mono text-left font-semibold"
+								class="border border-purple-300 bg-purple-50 px-2 py-1 text-left font-mono text-[10px] font-semibold text-purple-950 hover:bg-purple-100"
 							>
 								+ {sig.nome} (R$ {sig.valor.toFixed(2)})
 							</button>
@@ -822,18 +1063,18 @@
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 pt-3 mt-2">
+			<div class="mt-2 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
 				<button
 					type="button"
-					onclick={() => modalAjusteGestorAberto = false}
-					class="border border-slate-300 bg-white px-4 py-2 font-bold uppercase text-xs hover:bg-slate-100"
+					onclick={() => (modalAjusteGestorAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase hover:bg-slate-100"
 				>
 					Fechar
 				</button>
 				<button
 					type="button"
 					onclick={adicionarProcedimentoGestor}
-					class="border border-purple-900 bg-purple-900 text-white px-5 py-2 font-bold uppercase text-xs hover:bg-purple-950"
+					class="border border-purple-900 bg-purple-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-purple-950"
 				>
 					✓ Confirmar Lançamento pelo Gestor
 				</button>
@@ -843,8 +1084,9 @@
 {/if}
 
 <style>
-	select, input, button {
+	select,
+	input,
+	button {
 		border-radius: 0 !important;
 	}
 </style>
-

@@ -109,7 +109,9 @@
 				class="flex-1 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 			/>
 		</div>
-		<div class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
 			<span class="mr-2 font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 				Status
 			</span>
@@ -193,18 +195,22 @@
 									</span>
 								</td>
 								<!-- Hodômetro (Gestor Direto) -->
-								<td class="border-r border-slate-100 px-3 py-2 text-xs font-mono">
+								<td class="border-r border-slate-100 px-3 py-2 font-mono text-xs">
 									{#if v.kmInicialHodometro || v.kmFinalHodometro}
 										<div class="font-bold text-slate-900">
-											{v.kmInicialHodometro ? `Saída: ${v.kmInicialHodometro.toLocaleString('pt-BR')} km` : ''}
+											{v.kmInicialHodometro
+												? `Saída: ${v.kmInicialHodometro.toLocaleString('pt-BR')} km`
+												: ''}
 										</div>
 										{#if v.kmFinalHodometro}
-											<div class="text-[10px] text-emerald-800 font-bold">
+											<div class="text-[10px] font-bold text-emerald-800">
 												Chegada: {v.kmFinalHodometro.toLocaleString('pt-BR')} km
 											</div>
 										{/if}
 									{:else}
-										<span class="border border-amber-400 bg-amber-50 text-amber-900 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+										<span
+											class="border border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-900 uppercase"
+										>
 											🚗 Pendente KM Gestor
 										</span>
 									{/if}

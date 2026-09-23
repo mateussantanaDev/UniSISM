@@ -41,9 +41,7 @@
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.matricula}</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Admissão
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Admissão</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">
 					{formatarData(p.dataAdmissao)}
 				</dd>
@@ -62,9 +60,7 @@
 				<dd class="text-xs text-slate-600">{p.funcao}</dd>
 			</div>
 			<div class="col-span-12">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Lotação
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Lotação</dt>
 				<dd class="mt-0.5 text-sm text-slate-900">{p.lotacao}</dd>
 			</div>
 		</dl>

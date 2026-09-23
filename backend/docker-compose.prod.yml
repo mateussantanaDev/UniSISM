@@ -1,0 +1,106 @@
+# Overlay de producao para o docker-compose.yml base.
+# Uso:
+#   docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: unisism-caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+    command:
+      - caddy
+      - reverse-proxy
+      - --from
+      - ${UNISISM_DOMAIN:?configure UNISISM_DOMAIN}
+      - --to
+      - backend:3333
+      - --email
+      - ${ACME_EMAIL:?configure ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  backend:
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TRUST_PROXY: "true"
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-15552000}
+      CORS_ORIGIN: ${CORS_ORIGIN:?configure CORS_ORIGIN}
+      CORS_ALLOW_VERCEL_PREVIEW: ${CORS_ALLOW_VERCEL_PREVIEW:-false}
+      CORS_VERCEL_PROJECT: ${CORS_VERCEL_PROJECT:-unisism}
+      HTTP_KEEP_ALIVE_TIMEOUT_MS: ${HTTP_KEEP_ALIVE_TIMEOUT_MS:-65000}
+      HTTP_HEADERS_TIMEOUT_MS: ${HTTP_HEADERS_TIMEOUT_MS:-66000}
+      HTTP_REQUEST_TIMEOUT_MS: ${HTTP_REQUEST_TIMEOUT_MS:-300000}
+      SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-10000}
+      JWT_SECRET: ${JWT_SECRET:?configure JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?configure JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-8}
+      PASSWORD_HISTORY_SIZE: ${PASSWORD_HISTORY_SIZE:-5}
+      PASSWORD_VALIDITY_DAYS: ${PASSWORD_VALIDITY_DAYS:-180}
+      API_KEY: ${API_KEY:-}
+      API_KEY_HEADER: ${API_KEY_HEADER:-x-api-key}
+      REDIS_URL: redis://redis:6379
+      CACHE_TTL_ARVORE: ${CACHE_TTL_ARVORE:-60}
+      CACHE_TTL_DASHBOARD: ${CACHE_TTL_DASHBOARD:-30}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      SMTP_HOST: ${SMTP_HOST:?configure SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-UNISISM <noreply@unisism.local>}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-unisism-anexos}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-unisism}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?configure S3_SECRET_KEY}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-unisism-backend}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OUTBOX_ENABLED: ${OUTBOX_ENABLED:-true}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-500}
+      PUSH_DISPATCHER_ENABLED: ${PUSH_DISPATCHER_ENABLED:-true}
+      PUSH_DISPATCHER_INTERVAL_MS: ${PUSH_DISPATCHER_INTERVAL_MS:-15000}
+      PUSH_DEVICE_CLEANUP_CRON: "${PUSH_DEVICE_CLEANUP_CRON:-30 3 1 * *}"
+      PUSH_DEVICE_CLEANUP_CRON_TZ: ${PUSH_DEVICE_CLEANUP_CRON_TZ:-America/Recife}
+      PUSH_DEVICE_TTL_DIAS: ${PUSH_DEVICE_TTL_DIAS:-90}
+      PUSH_PROVIDER: ${PUSH_PROVIDER:-ntfy}
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://ntfy}
+      NTFY_PUBLIC_BASE_URL: ${NTFY_PUBLIC_BASE_URL:-}
+      NTFY_AUTH_TOKEN: ${NTFY_AUTH_TOKEN:-}
+      NTFY_TIMEOUT_MS: ${NTFY_TIMEOUT_MS:-10000}
+      APP_RESET_SENHA_URL: ${APP_RESET_SENHA_URL:?configure APP_RESET_SENHA_URL}
+      RECOVERY_PURGE_CRON: "${RECOVERY_PURGE_CRON:-0 */6 * * *}"
+      RECOVERY_PURGE_CRON_TZ: ${RECOVERY_PURGE_CRON_TZ:-America/Recife}
+      TFD_SALDO_CRON: "${TFD_SALDO_CRON:-30 0 1 * *}"
+      TFD_SALDO_CRON_TZ: ${TFD_SALDO_CRON_TZ:-America/Recife}
+      TFD_SIGN_REQUIRED: ${TFD_SIGN_REQUIRED:-false}
+      TFD_SIGN_CERT_PATH: ${TFD_SIGN_CERT_PATH:-}
+      TFD_SIGN_CERT_PASSWORD: ${TFD_SIGN_CERT_PASSWORD:-}
+      DEMO_SEED_ON_BOOT: "false"
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+volumes:
+  caddy_data:
+  caddy_config:

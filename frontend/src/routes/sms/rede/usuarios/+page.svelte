@@ -7,7 +7,10 @@
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
+	import {
+		formatarCargoPerfil,
+		formatarVinculoUsuario
+	} from '$lib/presentation/utils/usuarioUtils';
 
 	const auth = useAuth();
 
@@ -46,7 +49,9 @@
 
 	let ativos = $derived(lista.filter((u) => u.ativo).length);
 	let reguladores = $derived(lista.filter((u) => u.role === 'REGULADOR_SMS').length);
-	let coordenadores = $derived(lista.filter((u) => u.role === 'COORDENADOR_UBS' || u.role === 'ADMIN').length);
+	let coordenadores = $derived(
+		lista.filter((u) => u.role === 'COORDENADOR_UBS' || u.role === 'ADMIN').length
+	);
 
 	function formatarData(iso: string): string {
 		return new Date(iso).toLocaleDateString('pt-BR');
@@ -88,8 +93,17 @@
 <div class="flex flex-col gap-4">
 	<!-- KPIs -->
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard label="Total Cadastrados" value={carregando ? '—' : lista.length} sublabel="Rede municipal" />
-		<MetricCard label="Ativos" value={carregando ? '—' : ativos} sublabel="Login habilitado" accent="success" />
+		<MetricCard
+			label="Total Cadastrados"
+			value={carregando ? '—' : lista.length}
+			sublabel="Rede municipal"
+		/>
+		<MetricCard
+			label="Ativos"
+			value={carregando ? '—' : ativos}
+			sublabel="Login habilitado"
+			accent="success"
+		/>
 		<MetricCard
 			label="Reguladores"
 			value={carregando ? '—' : reguladores}
@@ -121,7 +135,9 @@
 			{/if}
 		</PanelHeader>
 
-		<div class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
 			<div class="flex flex-1 items-center gap-2">
 				<label
 					for="busca"
@@ -144,7 +160,9 @@
 					class="border border-slate-300 bg-white px-2 py-1 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase outline-none focus:border-blue-900"
 				>
 					{#each roles as r (r)}
-						<option value={r}>{r === 'TODOS' ? 'TODOS OS PERFIS' : formatarCargoPerfil({ role: r })}</option>
+						<option value={r}
+							>{r === 'TODOS' ? 'TODOS OS PERFIS' : formatarCargoPerfil({ role: r })}</option
+						>
 					{/each}
 				</select>
 
@@ -217,9 +235,12 @@
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
 									<div class="flex flex-col">
-										<span class="font-bold text-slate-900 text-xs">{formatarVinculoUsuario(u)}</span>
+										<span class="text-xs font-bold text-slate-900">{formatarVinculoUsuario(u)}</span
+										>
 										{#if u.tipoUnidade}
-											<span class="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Unidade: {u.tipoUnidade}</span>
+											<span class="font-mono text-[9px] tracking-wider text-slate-500 uppercase"
+												>Unidade: {u.tipoUnidade}</span
+											>
 										{/if}
 									</div>
 								</td>

@@ -5,11 +5,7 @@
 	import SeatPicker from '$lib/presentation/components/SeatPicker.svelte';
 	import { api, ApiError } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
-	import {
-		formatarCpf,
-		formatarData,
-		formatarDataHora
-	} from '$lib/presentation/utils/tfdFormat';
+	import { formatarCpf, formatarData, formatarDataHora } from '$lib/presentation/utils/tfdFormat';
 	import type { SolicitacaoTFD, ViagemFrota } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { page } from '$app/state';
@@ -26,10 +22,7 @@
 
 	// Anexar PDF tardio: UBS pode complementar até a solicitação ser realizada/cancelada.
 	let podeAnexar = $derived(
-		!!sol &&
-			(sol.status === 'PENDENTE' ||
-				sol.status === 'APROVADA' ||
-				sol.status === 'ALOCADA'),
+		!!sol && (sol.status === 'PENDENTE' || sol.status === 'APROVADA' || sol.status === 'ALOCADA')
 	);
 
 	let anexarAberto = $state(false);
@@ -230,7 +223,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -285,26 +279,36 @@
 						<dd class="mt-0.5 text-slate-900">{sol.motivo}</dd>
 					</div>
 					<div class="col-span-6">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Destino</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							Destino
+						</dt>
 						<dd class="mt-0.5 font-bold text-slate-900">{sol.destino}</dd>
 						{#if sol.unidadeDestino}
 							<dd class="mt-0.5 text-slate-700">{sol.unidadeDestino}</dd>
 						{/if}
 					</div>
 					<div class="col-span-6">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Especialidade</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							Especialidade
+						</dt>
 						<dd class="mt-0.5 font-bold text-slate-900">{sol.especialidade}</dd>
 					</div>
 					<div class="col-span-3">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Data Desejada</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							Data Desejada
+						</dt>
 						<dd class="mt-0.5 font-mono text-slate-900">{formatarData(sol.dataDesejada)}</dd>
 					</div>
 					<div class="col-span-3">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Prioridade</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							Prioridade
+						</dt>
 						<dd class="mt-0.5 font-mono font-bold text-slate-900">{sol.prioridade}</dd>
 					</div>
 					<div class="col-span-6">
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Acompanhante</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							Acompanhante
+						</dt>
 						<dd class="mt-0.5 text-slate-900">
 							{sol.acompanhanteNecessario ? 'Sim — paciente precisa de acompanhante' : 'Não'}
 						</dd>
@@ -314,12 +318,14 @@
 							<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 								Observações da Aprovação
 							</dt>
-							<dd class="mt-0.5 italic text-slate-700">{sol.observacoes}</dd>
+							<dd class="mt-0.5 text-slate-700 italic">{sol.observacoes}</dd>
 						</div>
 					{/if}
 					{#if sol.motivoNegacao}
 						<div class="col-span-12 border-l-4 border-red-700 bg-red-50 px-3 py-2">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-red-800 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-red-800 uppercase"
+							>
 								Motivo da Negação
 							</dt>
 							<dd class="mt-0.5 text-red-900">{sol.motivoNegacao}</dd>
@@ -340,7 +346,9 @@
 						<dd class="mt-0.5 font-mono text-slate-900">{formatarCpf(sol.pacienteCpf)}</dd>
 					</div>
 					<div>
-						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">UBS de Origem</dt>
+						<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							UBS de Origem
+						</dt>
 						<dd class="mt-0.5 text-slate-900">{sol.ubsNome ?? '—'}</dd>
 					</div>
 					<a
@@ -430,9 +438,7 @@
 										disabled={ax.scanStatus !== 'LIMPO'}
 										onclick={async () => {
 											try {
-												const { blob, filename } = await api.tfd.solicitacoes.downloadAnexo(
-													ax.id
-												);
+												const { blob, filename } = await api.tfd.solicitacoes.downloadAnexo(ax.id);
 												const url = URL.createObjectURL(blob);
 												const a = document.createElement('a');
 												a.href = url;
@@ -537,14 +543,10 @@
 						onclick={() => (etapaAprov = 'escolher-viagem')}
 						class="flex flex-col items-start gap-1.5 border-2 border-blue-900 bg-white p-3 text-left transition-colors hover:bg-blue-50"
 					>
-						<span
-							class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase"
-						>
+						<span class="font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">
 							1 · ALOCAR EM VIAGEM EXISTENTE
 						</span>
-						<span class="text-sm font-bold text-slate-900">
-							Escolher viagem + assento
-						</span>
+						<span class="text-sm font-bold text-slate-900"> Escolher viagem + assento </span>
 						<span class="text-[11px] text-slate-700">
 							Aprova e aloca atomicamente em 1 só request.
 						</span>
@@ -555,14 +557,10 @@
 						onclick={aprovarENovaViagem}
 						class="flex flex-col items-start gap-1.5 border-2 border-slate-300 bg-white p-3 text-left transition-colors hover:border-blue-900 hover:bg-blue-50"
 					>
-						<span
-							class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase"
-						>
+						<span class="font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
 							2 · CRIAR NOVA VIAGEM
 						</span>
-						<span class="text-sm font-bold text-slate-900">
-							Programar viagem dedicada
-						</span>
+						<span class="text-sm font-bold text-slate-900"> Programar viagem dedicada </span>
 						<span class="text-[11px] text-slate-700">
 							Aprova e abre o wizard pra criar viagem com este paciente.
 						</span>
@@ -573,14 +571,10 @@
 						onclick={aprovarSemAlocar}
 						class="flex flex-col items-start gap-1.5 border border-slate-300 bg-white p-3 text-left transition-colors hover:border-slate-900"
 					>
-						<span
-							class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
-						>
+						<span class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 							3 · APROVAR SEM ALOCAR
 						</span>
-						<span class="text-sm font-bold text-slate-900">
-							Decidir alocação depois
-						</span>
+						<span class="text-sm font-bold text-slate-900"> Decidir alocação depois </span>
 						<span class="text-[11px] text-slate-700">
 							Solicitação fica APROVADA na fila — alocação manual depois.
 						</span>
@@ -604,7 +598,9 @@
 				</div>
 
 				{#if viagensCandidatas.length === 0}
-					<div class="border border-slate-200 bg-slate-50 px-4 py-6 text-center font-mono text-xs text-slate-500">
+					<div
+						class="border border-slate-200 bg-slate-50 px-4 py-6 text-center font-mono text-xs text-slate-500"
+					>
 						Nenhuma viagem agendada com vagas. Use a opção "Criar Nova Viagem".
 					</div>
 				{:else}
@@ -646,7 +642,11 @@
 				{/if}
 
 				<div class="flex justify-between border-t border-slate-200 pt-4">
-					<PrimaryButton label="← Voltar" variant="secondary" onclick={() => (etapaAprov = 'decidir')} />
+					<PrimaryButton
+						label="← Voltar"
+						variant="secondary"
+						onclick={() => (etapaAprov = 'decidir')}
+					/>
 					<PrimaryButton
 						label="Próximo · Escolher Assento →"
 						onclick={() => (etapaAprov = 'escolher-assento')}
@@ -707,7 +707,8 @@
 	>
 		<div class="flex flex-col gap-4 font-mono text-slate-900">
 			<div class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900">
-				A negação é definitiva. Uma nova solicitação precisará ser aberta caso o caso seja reavaliado.
+				A negação é definitiva. Uma nova solicitação precisará ser aberta caso o caso seja
+				reavaliado.
 			</div>
 			<div class="flex flex-col">
 				<label

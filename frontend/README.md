@@ -1,42 +1,67 @@
-# sv
+# UNISISM Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Frontend SvelteKit do UNISISM. O deploy de produção roda na Vercel no projeto
+`unisism`; o backend roda separado em VPS.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+## Desenvolvimento
 
 ```sh
-# recreate this project
-npx sv@0.15.1 create --template minimal --types ts --add eslint sveltekit-adapter="adapter:auto" tailwindcss="plugins:forms,typography" vitest="usages:unit,component" prettier --install npm frontend
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+cp .env.example .env
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
+
+Por padrão, `.env.example` aponta para `http://localhost:3333/v1`.
+
+## Produção na Vercel
+
+Configure em **Vercel > Project `unisism` > Settings > Environment Variables**:
+
+| Variavel            | Valor                                           |
+| ------------------- | ----------------------------------------------- |
+| `VITE_API_BASE_URL` | `https://api.seu-dominio/v1`                    |
+| `VITE_API_KEY`      | vazio, ou o mesmo valor de `API_KEY` do backend |
+
+`VITE_API_KEY` fica publico no bundle do navegador. Use apenas como camada leve
+de protecao, junto de CORS e JWT no backend.
+
+No backend da VPS, mantenha:
+
+```sh
+CORS_ORIGIN=https://unisism.vercel.app
+CORS_ALLOW_VERCEL_PREVIEW=false
+CORS_VERCEL_PROJECT=unisism
+APP_RESET_SENHA_URL=https://unisism.vercel.app/redefinir
+```
+
+Para testar previews da Vercel, habilite temporariamente
+`CORS_ALLOW_VERCEL_PREVIEW=true`. O backend aceita apenas previews cujo hostname
+comece com `unisism-`.
+
+## Validação local
+
+```sh
+npm run check
+npm run lint
+npm test
+npm run test:browser
+npm run test:coverage
+npm run build
+```
+
+`npm run lint` é um gate incremental de ESLint baseado na baseline versionada
+em `.eslint-suppressions.json`. Para diagnosticar a dívida completa use
+`npm run lint:eslint:baseline`; para formatação, `npm run lint:format` ainda
+aponta o baseline legado de Prettier.
 
 ## Building
-
-To create a production version of your app:
 
 ```sh
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+Preview local:
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```sh
+npm run preview
+```

@@ -125,7 +125,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -224,18 +225,14 @@
 								class="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
 								onclick={() => goto(`/tfd/motoristas/${m.id}`)}
 							>
-								<td
-									class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900"
-								>
+								<td class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900">
 									{m.nome}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
 									{formatarCpf(m.cpf)}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">{m.cnh}</td>
-								<td class="border-r border-slate-100 px-3 py-2 text-slate-700"
-									>{m.categoriaCnh}</td
-								>
+								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">{m.categoriaCnh}</td>
 								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
 									{formatarData(m.validadeCnh)}
 									{#if m.cnhVencidaEm < 0}

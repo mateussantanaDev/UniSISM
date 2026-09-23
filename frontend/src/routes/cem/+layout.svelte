@@ -57,14 +57,25 @@
 		try {
 			const sessao = await api.auth.me();
 			const superUser = sessao.role === 'ADMIN' || sessao.role === 'DESENVOLVEDOR';
-			const ehCeo = sessao.tipoUnidade === 'CEO' || (sessao.unidade?.toUpperCase().includes('CEO') || sessao.unidade?.toUpperCase().includes('ODONTOL'));
+			const ehCeo =
+				sessao.tipoUnidade === 'CEO' ||
+				sessao.unidade?.toUpperCase().includes('CEO') ||
+				sessao.unidade?.toUpperCase().includes('ODONTOL');
 
 			if (!superUser && ehCeo) {
 				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 
-			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS', 'ENFERMEIRO'];
+			const allowedRoles = [
+				'REGULADOR_SMS',
+				'MEDICO',
+				'MEDICO_ESPECIALISTA',
+				'ATENDENTE_CENTRO',
+				'COORDENADOR_UBS',
+				'ATENDENTE_UBS',
+				'ENFERMEIRO'
+			];
 			if (!allowedRoles.includes(sessao.role) && !superUser) {
 				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
@@ -158,7 +169,9 @@
 		}
 	};
 
-	let meta = $derived(pageTitles[page.url.pathname] ?? { label: 'CENTRO DE ESPECIALIDADES MÉDICAS', crumb: 'CEM' });
+	let meta = $derived(
+		pageTitles[page.url.pathname] ?? { label: 'CENTRO DE ESPECIALIDADES MÉDICAS', crumb: 'CEM' }
+	);
 </script>
 
 <svelte:head>
@@ -170,9 +183,13 @@
 
 	<div class="flex flex-1 flex-col overflow-hidden">
 		<!-- Topbar do CEM -->
-		<header class="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 font-mono text-xs">
+		<header
+			class="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 font-mono text-xs"
+		>
 			<div class="flex items-center gap-3">
-				<span class="bg-indigo-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white uppercase">
+				<span
+					class="bg-indigo-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white uppercase"
+				>
 					CEM
 				</span>
 				<span class="font-mono text-[11px] font-bold tracking-wider text-slate-500">
@@ -184,9 +201,9 @@
 				</h1>
 			</div>
 
-			<div class="flex items-center gap-4 text-[11px] text-slate-600 font-mono">
+			<div class="flex items-center gap-4 font-mono text-[11px] text-slate-600">
 				{#if me?.role === 'ADMIN' || me?.role === 'DESENVOLVEDOR'}
-					<a href="/ceo/recepcao/fila" class="text-emerald-800 font-bold hover:underline">
+					<a href="/ceo/recepcao/fila" class="font-bold text-emerald-800 hover:underline">
 						🔄 Alternar para Centro Odontológico (CEO) →
 					</a>
 					<span>|</span>

@@ -9,11 +9,7 @@
 	import { ApiError } from '$lib/api/client';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarData, formatarDataHora } from '$lib/presentation/utils/tfdFormat';
-	import type {
-		PresencaPassageiro,
-		SolicitacaoTFD,
-		ViagemFrota
-	} from '$lib/api/tfd-types';
+	import type { PresencaPassageiro, SolicitacaoTFD, ViagemFrota } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -63,12 +59,9 @@
 
 	async function carregarAuxiliares() {
 		try {
-			const [vs, ms] = await Promise.all([
-				api.tfd.veiculos.list(),
-				api.tfd.motoristas.list()
-			]);
-			veiculosList = vs.map(x => ({ id: x.id, placa: x.placa, modelo: x.modelo }));
-			motoristasList = ms.map(x => ({ id: x.id, nome: x.nome }));
+			const [vs, ms] = await Promise.all([api.tfd.veiculos.list(), api.tfd.motoristas.list()]);
+			veiculosList = vs.map((x) => ({ id: x.id, placa: x.placa, modelo: x.modelo }));
+			motoristasList = ms.map((x) => ({ id: x.id, nome: x.nome }));
 		} catch (e) {
 			console.info('[UniSISM] Erro ao carregar listas de apoio:', e);
 		}
@@ -104,7 +97,9 @@
 	let modalKmGestorAberto = $state(false);
 	let kmInicialGestor = $state('');
 	let kmFinalGestor = $state('');
-	let justificativaKmGestor = $state('Registro e auditoria de quilometragem realizada diretamente pela Gestão TFD (Prevenção de Irregularidades).');
+	let justificativaKmGestor = $state(
+		'Registro e auditoria de quilometragem realizada diretamente pela Gestão TFD (Prevenção de Irregularidades).'
+	);
 	let salvandoKmGestor = $state(false);
 
 	function abrirModalKmGestor() {
@@ -129,9 +124,9 @@
 
 			try {
 				await api.tfd.viagens.update(v.id, {
-					kmEstimados: (kmFin && kmIni) ? (kmFin - kmIni) : v.kmEstimados || undefined,
+					kmEstimados: kmFin && kmIni ? kmFin - kmIni : v.kmEstimados || undefined,
 					observacoes: obsCompleta
-				} as any);
+				});
 
 				if (!v.iniciadaEm) {
 					await api.tfd.viagens.iniciar(v.id, { kmInicialHodometro: kmIni });
@@ -182,7 +177,7 @@
 		veiculoIdConclusao = v.veiculoId || '';
 		motoristaIdConclusao = v.motoristaId || '';
 		kmInicialConclusao = v.kmInicialHodometro ? String(v.kmInicialHodometro) : '';
-		kmFinalConclusao = v.kmFinalHodometro ? String(v.kmFinalHodometro) : (kmFinal || '');
+		kmFinalConclusao = v.kmFinalHodometro ? String(v.kmFinalHodometro) : kmFinal || '';
 		concluirAberto = true;
 	}
 
@@ -197,7 +192,8 @@
 		const kmFinalPresente = !!(v.kmFinalHodometro || kmFinalConclusao || kmFinal);
 
 		if (!veiculoPresente || !motoristaPresente || !kmInicialPresente || !kmFinalPresente) {
-			erroConclusao = '⚠ BLOQUEIO DE SEGURANÇA: Para finalizar a viagem de carro baixo, o Gestor DEVE fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial de Saída e Hodômetro Final de Chegada).';
+			erroConclusao =
+				'⚠ BLOQUEIO DE SEGURANÇA: Para finalizar a viagem de carro baixo, o Gestor DEVE fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial de Saída e Hodômetro Final de Chegada).';
 			return;
 		}
 
@@ -207,15 +203,21 @@
 			const kmIni = Number(kmInicialConclusao || v.kmInicialHodometro || 0);
 
 			// Se veículo ou motorista foram atualizados na conclusão
-			if ((veiculoIdConclusao && veiculoIdConclusao !== v.veiculoId) || (motoristaIdConclusao && motoristaIdConclusao !== v.motoristaId)) {
+			if (
+				(veiculoIdConclusao && veiculoIdConclusao !== v.veiculoId) ||
+				(motoristaIdConclusao && motoristaIdConclusao !== v.motoristaId)
+			) {
 				try {
 					await api.tfd.viagens.update(v.id, {
 						veiculoId: veiculoIdConclusao || v.veiculoId,
 						motoristaId: motoristaIdConclusao || v.motoristaId,
-						kmEstimados: kmFin > kmIni ? (kmFin - kmIni) : undefined
-					} as any);
+						kmEstimados: kmFin > kmIni ? kmFin - kmIni : undefined
+					});
 				} catch (eUpd) {
-					console.info('[UniSISM] Atualização de veículo/motorista na conclusão gravada localmente.', eUpd);
+					console.info(
+						'[UniSISM] Atualização de veículo/motorista na conclusão gravada localmente.',
+						eUpd
+					);
 				}
 			}
 
@@ -345,7 +347,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -413,38 +416,63 @@
 
 		<section class="grid grid-cols-12 gap-4">
 			<!-- Seção do Gestor: Controle e Auditoria de KM (Carro Baixo / Frota) -->
-			<div class="col-span-12 border-2 border-amber-400 bg-amber-50/70 p-3.5 font-mono text-xs flex flex-col gap-2">
+			<div
+				class="col-span-12 flex flex-col gap-2 border-2 border-amber-400 bg-amber-50/70 p-3.5 font-mono text-xs"
+			>
 				<div class="flex items-center justify-between border-b border-amber-300 pb-2">
-					<span class="font-bold text-amber-950 uppercase tracking-widest text-[11px] flex items-center gap-2">
-						<span>🚗 CONTROLE & AUDITORIA DE KM PELO GESTOR TFD (PREVENÇÃO DE IRREGULARIDADES)</span>
+					<span
+						class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-amber-950 uppercase"
+					>
+						<span>🚗 CONTROLE & AUDITORIA DE KM PELO GESTOR TFD (PREVENÇÃO DE IRREGULARIDADES)</span
+						>
 					</span>
-					<span class="bg-amber-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Lançamento Direto pelo Gestor</span>
+					<span class="bg-amber-900 px-2 py-0.5 text-[9px] font-bold text-white uppercase"
+						>Lançamento Direto pelo Gestor</span
+					>
 				</div>
 
 				<p class="font-sans text-xs text-amber-950">
-					Devido à diretriz de prevenção de irregularidades no uso de carros baixos/ambulâncias, <strong>o Gestor TFD registra a quilometragem diretamente no sistema</strong> sem esperar lançamento pelo motorista.
+					Devido à diretriz de prevenção de irregularidades no uso de carros baixos/ambulâncias, <strong
+						>o Gestor TFD registra a quilometragem diretamente no sistema</strong
+					> sem esperar lançamento pelo motorista.
 				</p>
 
 				<div class="grid grid-cols-12 gap-3 pt-1">
-					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
-						<span class="text-[9px] font-bold text-amber-900 uppercase block">Hodômetro Inicial (Saída)</span>
-						<span class="text-sm font-bold text-slate-900">{v.kmInicialHodometro ? `${v.kmInicialHodometro.toLocaleString('pt-BR')} KM` : 'Não lançado'}</span>
+					<div class="col-span-3 border border-amber-300 bg-white p-2 text-center">
+						<span class="block text-[9px] font-bold text-amber-900 uppercase"
+							>Hodômetro Inicial (Saída)</span
+						>
+						<span class="text-sm font-bold text-slate-900"
+							>{v.kmInicialHodometro
+								? `${v.kmInicialHodometro.toLocaleString('pt-BR')} KM`
+								: 'Não lançado'}</span
+						>
 					</div>
-					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
-						<span class="text-[9px] font-bold text-amber-900 uppercase block">Hodômetro Final (Chegada)</span>
-						<span class="text-sm font-bold text-slate-900">{v.kmFinalHodometro ? `${v.kmFinalHodometro.toLocaleString('pt-BR')} KM` : 'Não lançado'}</span>
+					<div class="col-span-3 border border-amber-300 bg-white p-2 text-center">
+						<span class="block text-[9px] font-bold text-amber-900 uppercase"
+							>Hodômetro Final (Chegada)</span
+						>
+						<span class="text-sm font-bold text-slate-900"
+							>{v.kmFinalHodometro
+								? `${v.kmFinalHodometro.toLocaleString('pt-BR')} KM`
+								: 'Não lançado'}</span
+						>
 					</div>
-					<div class="col-span-3 bg-white border border-amber-300 p-2 text-center">
-						<span class="text-[9px] font-bold text-amber-900 uppercase block">Total Rodado (Calculado)</span>
+					<div class="col-span-3 border border-amber-300 bg-white p-2 text-center">
+						<span class="block text-[9px] font-bold text-amber-900 uppercase"
+							>Total Rodado (Calculado)</span
+						>
 						<span class="text-sm font-bold text-blue-900">
-							{v.kmFinalHodometro && v.kmInicialHodometro ? `${(v.kmFinalHodometro - v.kmInicialHodometro).toLocaleString('pt-BR')} KM` : '—'}
+							{v.kmFinalHodometro && v.kmInicialHodometro
+								? `${(v.kmFinalHodometro - v.kmInicialHodometro).toLocaleString('pt-BR')} KM`
+								: '—'}
 						</span>
 					</div>
 					<div class="col-span-3 flex items-center justify-end">
 						<button
 							type="button"
 							onclick={abrirModalKmGestor}
-							class="w-full h-full border-2 border-amber-950 bg-amber-900 text-white font-mono text-[11px] font-bold uppercase px-3 py-2 hover:bg-amber-950 transition-colors"
+							class="h-full w-full border-2 border-amber-950 bg-amber-900 px-3 py-2 font-mono text-[11px] font-bold text-white uppercase transition-colors hover:bg-amber-950"
 						>
 							✏ Lançar KM (Gestor)
 						</button>
@@ -728,11 +756,7 @@
 			bind:value={kmInicial}
 		/>
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (iniciarAberto = false)}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (iniciarAberto = false)} />
 			<PrimaryButton
 				label="Iniciar"
 				onclick={iniciar}
@@ -752,12 +776,13 @@
 	maxWidth="lg"
 >
 	<div class="flex flex-col gap-4 font-mono text-slate-900">
-		<div class="border border-amber-300 bg-amber-50 p-3 text-xs font-sans text-amber-950">
-			<strong>🔒 Trava de Segurança Antifraude:</strong> Antes de concluir a viagem, o Gestor deve obrigatoriamente fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial e Final).
+		<div class="border border-amber-300 bg-amber-50 p-3 font-sans text-xs text-amber-950">
+			<strong>🔒 Trava de Segurança Antifraude:</strong> Antes de concluir a viagem, o Gestor deve obrigatoriamente
+			fornecer o Veículo, o Motorista e a Quilometragem (Hodômetro Inicial e Final).
 		</div>
 
 		{#if erroConclusao}
-			<div class="border border-red-700 bg-red-50 p-3 text-xs font-mono text-red-900 font-bold">
+			<div class="border border-red-700 bg-red-50 p-3 font-mono text-xs font-bold text-red-900">
 				{erroConclusao}
 			</div>
 		{/if}
@@ -774,7 +799,7 @@
 					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
 				>
 					<option value="">— Selecione o Veículo —</option>
-					{#each veiculosList as veic}
+					{#each veiculosList as veic (veic.id)}
 						<option value={veic.id}>{veic.placa} {veic.modelo ? `· ${veic.modelo}` : ''}</option>
 					{/each}
 				</select>
@@ -791,7 +816,7 @@
 					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
 				>
 					<option value="">— Selecione o Motorista —</option>
-					{#each motoristasList as mot}
+					{#each motoristasList as mot (mot.id)}
 						<option value={mot.id}>{mot.nome}</option>
 					{/each}
 				</select>
@@ -827,9 +852,11 @@
 		</div>
 
 		{#if kmInicialConclusao && kmFinalConclusao && Number(kmFinalConclusao) >= Number(kmInicialConclusao)}
-			<div class="flex items-center justify-between border border-blue-300 bg-blue-50 p-2.5 text-xs font-mono">
+			<div
+				class="flex items-center justify-between border border-blue-300 bg-blue-50 p-2.5 font-mono text-xs"
+			>
 				<span class="font-bold text-blue-900 uppercase">Total Percorrido:</span>
-				<span class="font-bold text-blue-900 text-sm">
+				<span class="text-sm font-bold text-blue-900">
 					{(Number(kmFinalConclusao) - Number(kmInicialConclusao)).toLocaleString('pt-BR')} KM
 				</span>
 			</div>
@@ -942,9 +969,7 @@
 									<div class="flex items-center gap-3">
 										<span
 											class="flex h-5 w-5 shrink-0 items-center justify-center border-2 font-mono text-[10px] font-bold
-												{sel
-												? 'border-blue-900 bg-blue-900 text-white'
-												: 'border-slate-400 bg-white text-transparent'}"
+												{sel ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-400 bg-white text-transparent'}"
 										>
 											✓
 										</span>
@@ -978,15 +1003,15 @@
 					</ul>
 				</div>
 
-				<div class="border-t border-slate-200 pt-3 flex flex-col gap-2">
+				<div class="flex flex-col gap-2 border-t border-slate-200 pt-3">
 					<div class="flex items-center justify-between">
 						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 							Escolha o assento (opcional para Carro Baixo)
 						</div>
 						<button
 							type="button"
-							onclick={() => assentoEscolhido = (v ? v.passageiros.length + 1 : 1)}
-							class="text-[10px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 uppercase"
+							onclick={() => (assentoEscolhido = v ? v.passageiros.length + 1 : 1)}
+							class="border border-amber-300 bg-amber-100 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-900 uppercase"
 						>
 							🚗 Alocação Manual (Próxima Vaga)
 						</button>
@@ -1049,8 +1074,9 @@
 		onClose={() => (modalKmGestorAberto = false)}
 	>
 		<div class="flex flex-col gap-4 font-mono text-slate-900">
-			<div class="border border-amber-300 bg-amber-50 p-3 text-xs font-sans text-amber-950">
-				<strong>💡 Diretriz Antifraude TFD:</strong> O lançamento de hodômetro é efetuado diretamente pela Gestão TFD para evitar inconsistências ou atrasos de motoristas.
+			<div class="border border-amber-300 bg-amber-50 p-3 font-sans text-xs text-amber-950">
+				<strong>💡 Diretriz Antifraude TFD:</strong> O lançamento de hodômetro é efetuado diretamente
+				pela Gestão TFD para evitar inconsistências ou atrasos de motoristas.
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
@@ -1082,9 +1108,11 @@
 			</div>
 
 			{#if kmInicialGestor && kmFinalGestor && Number(kmFinalGestor) >= Number(kmInicialGestor)}
-				<div class="flex items-center justify-between border border-blue-200 bg-blue-50 p-2.5 text-xs">
+				<div
+					class="flex items-center justify-between border border-blue-200 bg-blue-50 p-2.5 text-xs"
+				>
 					<span class="font-bold text-blue-950 uppercase">Total de KM Rodado:</span>
-					<span class="font-mono text-sm font-bold text-blue-900 font-bold">
+					<span class="font-mono text-sm font-bold text-blue-900">
 						{(Number(kmFinalGestor) - Number(kmInicialGestor)).toLocaleString('pt-BR')} KM
 					</span>
 				</div>
@@ -1098,7 +1126,7 @@
 					id="just-km-gestor"
 					rows="2"
 					bind:value={justificativaKmGestor}
-					class="border border-slate-300 bg-white p-2 font-sans text-xs text-slate-900 outline-none resize-none"
+					class="resize-none border border-slate-300 bg-white p-2 font-sans text-xs text-slate-900 outline-none"
 				></textarea>
 			</div>
 

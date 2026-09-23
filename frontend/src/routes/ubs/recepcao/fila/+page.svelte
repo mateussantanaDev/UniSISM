@@ -10,10 +10,7 @@
 		TipoAtendimentoUbs,
 		UsuarioListado
 	} from '$lib/api/types';
-	import {
-		PRIORIDADE_LABEL,
-		TIPO_ATENDIMENTO_LABEL
-	} from '$lib/api/types';
+	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
 	import { onMount } from 'svelte';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
@@ -165,7 +162,9 @@
 				pacienteNome = res.paciente.nome;
 				pacienteCpf = res.paciente.cpf;
 				pacienteCartaoSus = res.paciente.cartaoSus || '';
-				pacienteDataNasc = res.paciente.dataNascimento ? res.paciente.dataNascimento.slice(0, 10) : '';
+				pacienteDataNasc = res.paciente.dataNascimento
+					? res.paciente.dataNascimento.slice(0, 10)
+					: '';
 				pacienteSexo = (res.paciente.sexo as any) || 'M';
 				pacienteTelefone = res.paciente.telefone || '';
 				pacienteEndereco = res.paciente.endereco || '';
@@ -385,7 +384,9 @@
 		<div class="overflow-x-auto">
 			<table class="w-full border-collapse text-left text-xs">
 				<thead>
-					<tr class="border-b border-slate-200 bg-slate-100 text-[10px] tracking-wider text-slate-600 uppercase">
+					<tr
+						class="border-b border-slate-200 bg-slate-100 text-[10px] tracking-wider text-slate-600 uppercase"
+					>
 						<th class="px-3 py-2.5">Senha</th>
 						<th class="px-3 py-2.5">Prioridade SUS</th>
 						<th class="px-3 py-2.5">Paciente</th>
@@ -412,7 +413,8 @@
 					{:else}
 						{#each listaFiltrada as item (item.id)}
 							<tr
-								class="hover:bg-blue-50/40 transition-colors {prioridadeCores[item.prioridade].border}"
+								class="transition-colors hover:bg-blue-50/40 {prioridadeCores[item.prioridade]
+									.border}"
 							>
 								<!-- Senha -->
 								<td class="px-3 py-2.5 font-mono text-sm font-black text-slate-900">
@@ -422,7 +424,9 @@
 								<!-- Prioridade -->
 								<td class="px-3 py-2.5">
 									<span
-										class="inline-block px-2 py-0.5 text-[10px] tracking-wider uppercase {prioridadeCores[item.prioridade].badge}"
+										class="inline-block px-2 py-0.5 text-[10px] tracking-wider uppercase {prioridadeCores[
+											item.prioridade
+										].badge}"
 									>
 										{PRIORIDADE_LABEL[item.prioridade]}
 									</span>
@@ -453,7 +457,7 @@
 										{TIPO_ATENDIMENTO_LABEL[item.tipoAtendimento]}
 									</div>
 									{#if item.queixaBreve}
-										<div class="truncate text-[10px] text-slate-500 italic max-w-xs">
+										<div class="max-w-xs truncate text-[10px] text-slate-500 italic">
 											"{item.queixaBreve}"
 										</div>
 									{/if}
@@ -470,7 +474,9 @@
 								<!-- Status -->
 								<td class="px-3 py-2.5 text-center">
 									<span
-										class="inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase {statusCores[item.status]}"
+										class="inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase {statusCores[
+											item.status
+										]}"
 									>
 										{item.status}
 									</span>
@@ -484,7 +490,7 @@
 												type="button"
 												onclick={() => chamarPaciente(item)}
 												title="Disparar chamada no Painel de TV da Sala de Espera"
-												class="border border-blue-800 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-900 hover:bg-blue-900 hover:text-white transition"
+												class="border border-blue-800 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-900 transition hover:bg-blue-900 hover:text-white"
 											>
 												📢 Chamar TV
 											</button>
@@ -494,7 +500,7 @@
 											<button
 												type="button"
 												onclick={() => alterarStatus(item.id, 'EM_ATENDIMENTO')}
-												class="border border-emerald-700 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-900 hover:bg-emerald-700 hover:text-white transition"
+												class="border border-emerald-700 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-900 transition hover:bg-emerald-700 hover:text-white"
 											>
 												▶ Iniciar
 											</button>
@@ -504,7 +510,7 @@
 											<button
 												type="button"
 												onclick={() => alterarStatus(item.id, 'CONCLUIDO')}
-												class="border border-slate-700 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-900 hover:bg-slate-800 hover:text-white transition"
+												class="border border-slate-700 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-900 transition hover:bg-slate-800 hover:text-white"
 											>
 												✓ Concluir
 											</button>
@@ -533,15 +539,32 @@
 
 <!-- Modal de Acolhimento / Entrada na Fila -->
 {#if modalAberto}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">Acolhimento & Entrada na Fila Diária (UBS)</div>
-				<button onclick={() => (modalAberto = false)} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+		>
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
+			>
+				<div class="text-xs font-bold tracking-wider uppercase">
+					Acolhimento & Entrada na Fila Diária (UBS)
+				</div>
+				<button
+					onclick={() => (modalAberto = false)}
+					class="text-sm font-bold text-slate-400 hover:text-white">✕</button
+				>
 			</div>
 
 			<div class="p-5">
-				<form onsubmit={(e) => { e.preventDefault(); salvarEntradaFila(); }} class="flex flex-col gap-4 font-mono text-xs">
+				<form
+					onsubmit={(e) => {
+						e.preventDefault();
+						salvarEntradaFila();
+					}}
+					class="flex flex-col gap-4 font-mono text-xs"
+				>
 					{#if erro}
 						<div class="border border-red-700 bg-red-50 p-2 text-xs font-bold text-red-900">
 							⚠ {erro}
@@ -636,7 +659,10 @@
 
 						<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 							<div>
-								<label for="f-tipo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								<label
+									for="f-tipo"
+									class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+								>
 									Tipo de Atendimento *
 								</label>
 								<select
@@ -657,7 +683,10 @@
 							</div>
 
 							<div>
-								<label for="f-prioridade" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								<label
+									for="f-prioridade"
+									class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+								>
 									Prioridade Legal / SUS *
 								</label>
 								<select
@@ -668,7 +697,8 @@
 									<option value="NORMAL">🔵 Normal (Ordem de Chegada)</option>
 									<option value="SUPER_PRIORIDADE_80">🟣 Superprioridade (Idoso 80+ Anos)</option>
 									<option value="IDOSO_60">🟠 Idoso (60 a 79 anos)</option>
-									<option value="GESTANTE_LACTANTE">🌸 Gestante / Lactante / Criança de Colo</option>
+									<option value="GESTANTE_LACTANTE">🌸 Gestante / Lactante / Criança de Colo</option
+									>
 									<option value="PCD">♿ Pessoa com Deficiência (PCD)</option>
 									<option value="TEA">🧩 Autismo (Lei Romeo Mion - TEA)</option>
 									<option value="URGENCIA">🔴 Urgência / Triagem com Risco Imediato</option>
@@ -676,7 +706,10 @@
 							</div>
 
 							<div>
-								<label for="f-medico" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								<label
+									for="f-medico"
+									class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+								>
 									Médico / Profissional Designado
 								</label>
 								<select
@@ -694,7 +727,10 @@
 							</div>
 
 							<div>
-								<label for="f-sala" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+								<label
+									for="f-sala"
+									class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+								>
 									Consultório / Sala *
 								</label>
 								<select
@@ -714,7 +750,10 @@
 						</div>
 
 						<div class="mt-3">
-							<label for="f-queixa" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+							<label
+								for="f-queixa"
+								class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+							>
 								Queixa Principal / Motivo Breve
 							</label>
 							<input

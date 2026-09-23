@@ -87,11 +87,7 @@
 
 	<section class="grid grid-cols-12 gap-4">
 		<div class="col-span-12 border border-slate-200 bg-white xl:col-span-9">
-			<PanelHeader
-				title="Últimos Encaminhamentos"
-				subtitle="6 ingestões mais recentes"
-				index="01"
-			>
+			<PanelHeader title="Últimos Encaminhamentos" subtitle="6 ingestões mais recentes" index="01">
 				<PrimaryButton
 					label="Ver Histórico Completo"
 					variant="secondary"
@@ -137,7 +133,9 @@
 									>
 										{e.protocolo}
 									</td>
-									<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+									>
 										{e.paciente.nome}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">

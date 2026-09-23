@@ -2,7 +2,7 @@
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
-	import { api, ApiError } from '$lib/api';
+	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarCpf, formatarDataHora } from '$lib/presentation/utils/tfdFormat';
 	import type {
@@ -164,7 +164,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-800'
 				: 'border-red-700 bg-red-50 text-red-800'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -173,7 +174,9 @@
 			Carregando...
 		</div>
 	{:else if erro || !aj}
-		<div class="border border-red-700 bg-red-50 p-6 text-center font-mono text-sm font-bold text-red-800 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 p-6 text-center font-mono text-sm font-bold text-red-800 uppercase"
+		>
 			{erro ?? 'Ajuda de custo não encontrada'}
 		</div>
 	{:else}
@@ -202,10 +205,16 @@
 			<div class="flex flex-col gap-4">
 				<!-- Paciente + Viagem -->
 				<div class="border border-slate-200 bg-white">
-					<PanelHeader title="Beneficiário" subtitle="Paciente designado e viagem vinculada" index="01" />
+					<PanelHeader
+						title="Beneficiário"
+						subtitle="Paciente designado e viagem vinculada"
+						index="01"
+					/>
 					<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4">
 						<div class="col-span-12 md:col-span-7">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Paciente
 							</dt>
 							<dd class="mt-0.5 text-base font-bold text-slate-900">
@@ -216,7 +225,9 @@
 							</dd>
 						</div>
 						<div class="col-span-12 md:col-span-5">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Viagem
 							</dt>
 							<dd class="mt-0.5 font-mono text-sm">
@@ -237,7 +248,8 @@
 						<span
 							class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] tracking-widest text-slate-600 uppercase"
 						>
-							{aj.itens.length} {aj.itens.length === 1 ? 'item' : 'itens'}
+							{aj.itens.length}
+							{aj.itens.length === 1 ? 'item' : 'itens'}
 						</span>
 					</PanelHeader>
 					<table class="w-full border-collapse text-xs">
@@ -263,7 +275,10 @@
 								</tr>
 							{/each}
 							<tr class="bg-slate-50">
-								<td colspan="2" class="px-3 py-2 text-right font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+								<td
+									colspan="2"
+									class="px-3 py-2 text-right font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+								>
 									Total
 								</td>
 								<td class="px-3 py-2 text-right font-mono text-sm font-bold text-blue-900">
@@ -326,9 +341,7 @@
 					<PanelHeader title="Ação" subtitle="Próximo passo" index="·" />
 					<div class="flex flex-col gap-2 px-4 py-3">
 						{#if !podeOperar}
-							<p class="text-xs text-slate-500">
-								Você não tem permissão para operar esta ajuda.
-							</p>
+							<p class="text-xs text-slate-500">Você não tem permissão para operar esta ajuda.</p>
 						{:else if aj.status === 'PENDENTE'}
 							<PrimaryButton
 								label="Autorizar"

@@ -23,7 +23,7 @@
 import { Prisma } from '../../../generated/prisma';
 import { Conflict, Forbidden, NotFound } from '../../shared/errors';
 import { prisma } from '../../infrastructure/database/prisma';
-import { ensurePrefeituraAcessivel, type AccessScope } from '../../shared/scope';
+import type { AccessScope } from '../../shared/scope';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
 import {
   LIMITES_BANNER,

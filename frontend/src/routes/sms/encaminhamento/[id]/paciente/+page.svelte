@@ -66,15 +66,11 @@
 				</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Telefone
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Telefone</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{enc.paciente.telefone}</dd>
 			</div>
 			<div class="col-span-12">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Endereço
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Endereço</dt>
 				<dd class="mt-0.5 text-xs text-slate-800">{enc.paciente.endereco}</dd>
 			</div>
 		</dl>
@@ -85,8 +81,8 @@
 		<PanelHeader title="Prontuário Eletrônico" subtitle="PEC · rede municipal" index="02" />
 		<div class="flex flex-col gap-3 px-4 py-4 text-xs text-slate-700">
 			<p>
-				Para consultar o histórico clínico completo do paciente — atendimentos, viagens TFD,
-				exames e vacinação — abra o PEC na seção Pacientes.
+				Para consultar o histórico clínico completo do paciente — atendimentos, viagens TFD, exames
+				e vacinação — abra o PEC na seção Pacientes.
 			</p>
 			<a
 				href={`/sms/pacientes?cpf=${encodeURIComponent(enc.paciente.cpf)}`}
@@ -94,7 +90,9 @@
 			>
 				Abrir PEC →
 			</a>
-			<div class="border-t border-slate-100 pt-2 text-[10px] tracking-wider text-slate-500 uppercase">
+			<div
+				class="border-t border-slate-100 pt-2 text-[10px] tracking-wider text-slate-500 uppercase"
+			>
 				⚠ Link disponível após integração da Face 2 de Pacientes com o PEC da rede.
 			</div>
 		</div>

@@ -19,9 +19,7 @@
 	const auth = useAuth();
 
 	// ─── Bloqueio de acesso ───
-	let bloqueado = $derived(
-		!auth.podeGerenciarTFD && !auth.ehReguladorTfdSimples
-	);
+	let bloqueado = $derived(!auth.podeGerenciarTFD && !auth.ehReguladorTfdSimples);
 
 	// ─── UBSs (para o vínculo) ───
 	let ubsList = $state<Ubs[]>([]);
@@ -55,7 +53,9 @@
 	// ─── Registro Tardio / Lançamento Retroativo ───
 	let isRegistroTardio = $state(false);
 	let dataRealizadaRetroativa = $state(new Date().toISOString().substring(0, 10));
-	let justificativaRegistroTardio = $state('Viagem / atendimento emergencial de TFD executado sem expedição prévia.');
+	let justificativaRegistroTardio = $state(
+		'Viagem / atendimento emergencial de TFD executado sem expedição prévia.'
+	);
 	let comprovanteHospitalDestino = $state('');
 	let medicoAtendenteDestino = $state('');
 
@@ -110,7 +110,12 @@
 	let totalAnexosEnviar = $state(0);
 	let atualAnexoEnviar = $state(0);
 	let erro = $state('');
-	let sucesso = $state<{ protocolo: string; id: string; temAnexo: boolean; isRegistroTardio: boolean } | null>(null);
+	let sucesso = $state<{
+		protocolo: string;
+		id: string;
+		temAnexo: boolean;
+		isRegistroTardio: boolean;
+	} | null>(null);
 
 	const especialidadesComuns = [
 		'CARDIOLOGIA',
@@ -187,7 +192,7 @@
 		try {
 			// Solicita acesso inicial
 			await navigator.mediaDevices.getUserMedia({ video: true });
-			
+
 			// Lista dispositivos
 			const devices = await navigator.mediaDevices.enumerateDevices();
 			cameraDispositivos = devices.filter((d) => d.kind === 'videoinput');
@@ -242,11 +247,15 @@
 			ctx.setTransform(1, 0, 0, 1, 0, 0);
 
 			fotoCapturada = canvas.toDataURL('image/jpeg');
-			canvas.toBlob((blob) => {
-				if (blob) {
-					fotoFile = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
-				}
-			}, 'image/jpeg', 0.9);
+			canvas.toBlob(
+				(blob) => {
+					if (blob) {
+						fotoFile = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+					}
+				},
+				'image/jpeg',
+				0.9
+			);
 		}
 		fecharCamera();
 	}
@@ -337,7 +346,7 @@
 		if (file) {
 			const reader = new FileReader();
 			reader.onload = (ev) => {
-				scanSourceImage = ev.target?.result as string || '';
+				scanSourceImage = (ev.target?.result as string) || '';
 				scanRotation = 0;
 				scanFilter = 'pb';
 			};
@@ -400,11 +409,15 @@
 			}
 
 			scanPreview = canvas.toDataURL('image/jpeg');
-			canvas.toBlob((blob) => {
-				if (blob) {
-					scanFile = new File([blob], `escaneado_${Date.now()}.jpg`, { type: 'image/jpeg' });
-				}
-			}, 'image/jpeg', 0.85);
+			canvas.toBlob(
+				(blob) => {
+					if (blob) {
+						scanFile = new File([blob], `escaneado_${Date.now()}.jpg`, { type: 'image/jpeg' });
+					}
+				},
+				'image/jpeg',
+				0.85
+			);
 		};
 		img.src = scanSourceImage;
 	}
@@ -442,7 +455,7 @@
 		for (const file of filesList) {
 			const reader = new FileReader();
 			reader.onload = (ev) => {
-				const previewUrl = ev.target?.result as string || '';
+				const previewUrl = (ev.target?.result as string) || '';
 				const novoAnexo: AnexoItem = {
 					id: Math.random().toString(36).substring(2, 9),
 					file,
@@ -507,8 +520,7 @@
 			return 'Descreva o motivo da viagem (mínimo 10 caracteres).';
 		if (temAcompanhante) {
 			if (!acompanhanteNome.trim()) return 'Nome do acompanhante é obrigatório.';
-			if (acompanhanteCpf.replace(/\D/g, '').length !== 11)
-				return 'CPF do acompanhante inválido.';
+			if (acompanhanteCpf.replace(/\D/g, '').length !== 11) return 'CPF do acompanhante inválido.';
 			if (!acompanhanteDataNasc) return 'Data de nascimento do acompanhante é obrigatória.';
 			if (!acompanhanteTelefone.trim()) return 'Telefone do acompanhante é obrigatório.';
 			if (!acompanhanteParentesco) return 'Selecione o parentesco do acompanhante.';
@@ -564,7 +576,9 @@
 				prioridade,
 				acompanhanteNecessario: temAcompanhante,
 				acompanhante,
-				observacoes: isRegistroTardio ? `[REGISTRO TARDIO / RETROATIVO] Justificativa: ${justificativaRegistroTardio} | Hosp: ${comprovanteHospitalDestino || 'N/A'} | Méd: ${medicoAtendenteDestino || 'N/A'} | Obs: ${observacoes.trim()}` : (observacoes.trim() || undefined),
+				observacoes: isRegistroTardio
+					? `[REGISTRO TARDIO / RETROATIVO] Justificativa: ${justificativaRegistroTardio} | Hosp: ${comprovanteHospitalDestino || 'N/A'} | Méd: ${medicoAtendenteDestino || 'N/A'} | Obs: ${observacoes.trim()}`
+					: observacoes.trim() || undefined,
 				isRegistroTardio,
 				dataRealizadaRetroativa: isRegistroTardio ? dataRealizadaRetroativa : undefined,
 				justificativaRegistroTardio: isRegistroTardio ? justificativaRegistroTardio : undefined,
@@ -694,9 +708,7 @@
 		<div class="font-mono text-sm font-bold tracking-widest text-red-900 uppercase">
 			Permissão insuficiente
 		</div>
-		<p class="mt-2 text-xs text-red-800">
-			Sua função não pode cadastrar solicitações TFD.
-		</p>
+		<p class="mt-2 text-xs text-red-800">Sua função não pode cadastrar solicitações TFD.</p>
 	</div>
 {:else if sucesso}
 	<div class="border-2 border-emerald-700 bg-emerald-50 p-6 font-mono">
@@ -705,23 +717,33 @@
 				✓ SOLICITAÇÃO CADASTRADA COM SUCESSO
 			</div>
 			{#if sucesso.isRegistroTardio}
-				<span class="bg-amber-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Lançamento Tardio / Retroativo</span>
+				<span class="bg-amber-900 px-2 py-0.5 text-[9px] font-bold text-white uppercase"
+					>Lançamento Tardio / Retroativo</span
+				>
 			{:else if sucesso.temAnexo}
-				<span class="bg-emerald-900 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Com Anexo · Alocação Automática</span>
+				<span class="bg-emerald-900 px-2 py-0.5 text-[9px] font-bold text-white uppercase"
+					>Com Anexo · Alocação Automática</span
+				>
 			{:else}
-				<span class="bg-slate-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase">Sem Anexo · Fila Regulação</span>
+				<span class="bg-slate-700 px-2 py-0.5 text-[9px] font-bold text-white uppercase"
+					>Sem Anexo · Fila Regulação</span
+				>
 			{/if}
 		</div>
 		<div class="mt-3 text-2xl font-bold text-emerald-900">
 			{sucesso.protocolo}
 		</div>
-		<p class="mt-2 font-sans text-xs text-emerald-900 leading-relaxed">
+		<p class="mt-2 font-sans text-xs leading-relaxed text-emerald-900">
 			{#if sucesso.isRegistroTardio}
-				<strong>✓ Registro Tardio:</strong> Atendimento TFD emergencial/retroativo gravado diretamente como <strong>CONCLUÍDO</strong> no histórico do paciente.
+				<strong>✓ Registro Tardio:</strong> Atendimento TFD emergencial/retroativo gravado
+				diretamente como <strong>CONCLUÍDO</strong> no histórico do paciente.
 			{:else if sucesso.temAnexo}
-				<strong>✓ Encaminhamento/Comprovante Anexado:</strong> Solicitação enviada com prioridade para <strong>alocação automática</strong> do veículo, data e número do assento!
+				<strong>✓ Encaminhamento/Comprovante Anexado:</strong> Solicitação enviada com prioridade
+				para <strong>alocação automática</strong> do veículo, data e número do assento!
 			{:else}
-				<strong>⚠ Sem Anexo de Encaminhamento:</strong> Solicitação gravada com sucesso, porém encaminhada para a <strong>Fila de Espera da Regulação TFD</strong> para aprovação e conferência manual do gestor.
+				<strong>⚠ Sem Anexo de Encaminhamento:</strong> Solicitação gravada com sucesso, porém
+				encaminhada para a <strong>Fila de Espera da Regulação TFD</strong> para aprovação e conferência
+				manual do gestor.
 			{/if}
 		</p>
 		<div class="mt-4 flex flex-wrap gap-2">
@@ -823,28 +845,38 @@
 				subtitle="Especialidade · destino · prioridade · lançamento tardio"
 				index="02"
 			/>
-			<div class="p-4 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-4">
 				<!-- Modo de Registro: Regular vs Tardio -->
-				<div class="border border-amber-300 bg-amber-50/60 p-3.5 flex flex-col gap-2 font-mono text-xs">
+				<div
+					class="flex flex-col gap-2 border border-amber-300 bg-amber-50/60 p-3.5 font-mono text-xs"
+				>
 					<div class="flex items-center justify-between">
-						<span class="font-bold text-amber-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+						<span
+							class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-amber-950 uppercase"
+						>
 							<span>⚡ MODO DE EMBARQUE / TIPO DE REGISTRO TFD</span>
 						</span>
-						<span class="text-[10px] text-amber-800 font-bold uppercase">Emergência & Retroativo</span>
+						<span class="text-[10px] font-bold text-amber-800 uppercase"
+							>Emergência & Retroativo</span
+						>
 					</div>
 
 					<div class="grid grid-cols-2 gap-2 font-mono text-xs">
 						<button
 							type="button"
-							onclick={() => isRegistroTardio = false}
-							class="px-3 py-2 font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {!isRegistroTardio ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							onclick={() => (isRegistroTardio = false)}
+							class="flex items-center justify-center gap-1.5 border px-3 py-2 font-bold uppercase transition-colors {!isRegistroTardio
+								? 'border-blue-900 bg-blue-900 text-white'
+								: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 						>
 							<span>⚡ SOLICITAÇÃO REGULAR (PRÉVIA)</span>
 						</button>
 						<button
 							type="button"
-							onclick={() => isRegistroTardio = true}
-							class="px-3 py-2 font-bold uppercase border transition-colors flex items-center justify-center gap-1.5 {isRegistroTardio ? 'border-amber-900 bg-amber-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+							onclick={() => (isRegistroTardio = true)}
+							class="flex items-center justify-center gap-1.5 border px-3 py-2 font-bold uppercase transition-colors {isRegistroTardio
+								? 'border-amber-900 bg-amber-900 text-white'
+								: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 						>
 							<span>🔙 REGISTRO TARDIO (VIAGEM JÁ REALIZADA)</span>
 						</button>
@@ -852,49 +884,60 @@
 
 					{#if isRegistroTardio}
 						<div class="flex flex-col gap-3 border-t border-amber-300 pt-3 font-sans text-xs">
-							<div class="bg-amber-100 border border-amber-300 p-2.5 text-[11px] text-amber-950">
-								<strong>💡 Registro Tardio TFD:</strong> Utilize esta funcionalidade quando o paciente já viajou para atendimento de urgência/emergência (*ex: final de semana, transporte emergencial/SAMU ou transporte próprio*) sem abertura prévia de protocolo no sistema. A solicitação será gravada diretamente como concluída no histórico do paciente.
+							<div class="border border-amber-300 bg-amber-100 p-2.5 text-[11px] text-amber-950">
+								<strong>💡 Registro Tardio TFD:</strong> Utilize esta funcionalidade quando o paciente
+								já viajou para atendimento de urgência/emergência (*ex: final de semana, transporte emergencial/SAMU
+								ou transporte próprio*) sem abertura prévia de protocolo no sistema. A solicitação será
+								gravada diretamente como concluída no histórico do paciente.
 							</div>
 
 							<div class="grid grid-cols-12 gap-3 font-mono">
 								<div class="col-span-4 flex flex-col gap-1">
-									<label for="dt-tardia" class="text-[10px] font-bold text-amber-950 uppercase">Data em que a viagem ocorreu *</label>
+									<label for="dt-tardia" class="text-[10px] font-bold text-amber-950 uppercase"
+										>Data em que a viagem ocorreu *</label
+									>
 									<input
 										id="dt-tardia"
 										type="date"
 										bind:value={dataRealizadaRetroativa}
-										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-bold"
+										class="border border-amber-400 bg-white px-2.5 py-1.5 font-bold outline-none"
 									/>
 								</div>
 								<div class="col-span-4 flex flex-col gap-1">
-									<label for="hosp-dest" class="text-[10px] font-bold text-amber-950 uppercase">Hospital / Unidade no Destino</label>
+									<label for="hosp-dest" class="text-[10px] font-bold text-amber-950 uppercase"
+										>Hospital / Unidade no Destino</label
+									>
 									<input
 										id="hosp-dest"
 										type="text"
 										bind:value={comprovanteHospitalDestino}
 										placeholder="Ex: Hospital das Clínicas Recife"
-										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-sans"
+										class="border border-amber-400 bg-white px-2.5 py-1.5 font-sans outline-none"
 									/>
 								</div>
 								<div class="col-span-4 flex flex-col gap-1">
-									<label for="med-dest" class="text-[10px] font-bold text-amber-950 uppercase">Médico Atendente no Destino</label>
+									<label for="med-dest" class="text-[10px] font-bold text-amber-950 uppercase"
+										>Médico Atendente no Destino</label
+									>
 									<input
 										id="med-dest"
 										type="text"
 										bind:value={medicoAtendenteDestino}
 										placeholder="Dr. Roberto Silva (CRM 1234)"
-										class="border border-amber-400 bg-white px-2.5 py-1.5 outline-none font-sans"
+										class="border border-amber-400 bg-white px-2.5 py-1.5 font-sans outline-none"
 									/>
 								</div>
 
 								<div class="col-span-12 flex flex-col gap-1">
-									<label for="just-tardia" class="text-[10px] font-bold text-amber-950 uppercase">Justificativa do Registro Tardio *</label>
+									<label for="just-tardia" class="text-[10px] font-bold text-amber-950 uppercase"
+										>Justificativa do Registro Tardio *</label
+									>
 									<textarea
 										id="just-tardia"
 										rows="2"
 										bind:value={justificativaRegistroTardio}
 										placeholder="Descreva o motivo do envio de emergência sem protocolo prévio..."
-										class="border border-amber-400 bg-white p-2 text-xs font-sans resize-none outline-none"
+										class="resize-none border border-amber-400 bg-white p-2 font-sans text-xs outline-none"
 									></textarea>
 								</div>
 							</div>
@@ -1038,12 +1081,7 @@
 				/>
 				<div class="p-4">
 					<div class="grid grid-cols-12 gap-3">
-						<FormField
-							label="Nome Completo"
-							name="anome"
-							span={8}
-							bind:value={acompanhanteNome}
-						/>
+						<FormField label="Nome Completo" name="anome" span={8} bind:value={acompanhanteNome} />
 						<FormField
 							label="Data de Nascimento"
 							name="adn"
@@ -1053,13 +1091,7 @@
 							bind:value={acompanhanteDataNasc}
 						/>
 						<FormField label="CPF" name="acpf" span={4} mono bind:value={acompanhanteCpf} />
-						<FormField
-							label="RG (opcional)"
-							name="arg"
-							span={4}
-							mono
-							bind:value={acompanhanteRg}
-						/>
+						<FormField label="RG (opcional)" name="arg" span={4} mono bind:value={acompanhanteRg} />
 						<FormField
 							label="Telefone"
 							name="atel"
@@ -1097,50 +1129,65 @@
 				subtitle="Anexe comprovantes de encaminhamento, laudos ou exames para a auditoria TFD"
 				index="04"
 			/>
-			<div class="p-4 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-4">
 				<!-- Tab Selector -->
 				<div class="flex border-b border-slate-200 font-mono text-xs">
 					<button
 						type="button"
-						onclick={() => tabAtiva = 'upload'}
-						class="px-4 py-2 border-b-2 font-semibold tracking-wider transition-colors
+						onclick={() => (tabAtiva = 'upload')}
+						class="border-b-2 px-4 py-2 font-semibold tracking-wider transition-colors
 							{tabAtiva === 'upload'
-							? 'border-blue-900 text-blue-900 bg-slate-50'
-							: 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'}"
+							? 'border-blue-900 bg-slate-50 text-blue-900'
+							: 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'}"
 					>
 						📁 ARQUIVO LOCAL
 					</button>
 					<button
 						type="button"
-						onclick={() => tabAtiva = 'camera'}
-						class="px-4 py-2 border-b-2 font-semibold tracking-wider transition-colors
+						onclick={() => (tabAtiva = 'camera')}
+						class="border-b-2 px-4 py-2 font-semibold tracking-wider transition-colors
 							{tabAtiva === 'camera'
-							? 'border-blue-900 text-blue-900 bg-slate-50'
-							: 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'}"
+							? 'border-blue-900 bg-slate-50 text-blue-900'
+							: 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'}"
 					>
 						📷 WEBCAM / CÂMERA
 					</button>
 					<button
 						type="button"
-						onclick={() => tabAtiva = 'scanner'}
-						class="px-4 py-2 border-b-2 font-semibold tracking-wider transition-colors
+						onclick={() => (tabAtiva = 'scanner')}
+						class="border-b-2 px-4 py-2 font-semibold tracking-wider transition-colors
 							{tabAtiva === 'scanner'
-							? 'border-blue-900 text-blue-900 bg-slate-50'
-							: 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'}"
+							? 'border-blue-900 bg-slate-50 text-blue-900'
+							: 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'}"
 					>
 						🖨️ SCANNER DE GUIA
 					</button>
 				</div>
 
 				<!-- Tab Content -->
-				<div class="bg-slate-50 p-4 border border-slate-200">
+				<div class="border border-slate-200 bg-slate-50 p-4">
 					{#if tabAtiva === 'upload'}
-						<div class="flex flex-col items-center justify-center py-6 text-center border-2 border-dashed border-slate-300 bg-white hover:border-blue-900 transition-colors">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-slate-400 mb-2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+						<div
+							class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 bg-white py-6 text-center transition-colors hover:border-blue-900"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="mb-2 h-10 w-10 text-slate-400"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
+								/>
 							</svg>
-							<span class="font-mono text-xs font-bold text-slate-700 tracking-wider">SELECIONAR DOCUMENTO</span>
-							<span class="text-[10px] text-slate-500 mt-1">PDF, JPG, PNG ou WebP até 10MB</span>
+							<span class="font-mono text-xs font-bold tracking-wider text-slate-700"
+								>SELECIONAR DOCUMENTO</span
+							>
+							<span class="mt-1 text-[10px] text-slate-500">PDF, JPG, PNG ou WebP até 10MB</span>
 							<input
 								type="file"
 								multiple
@@ -1151,63 +1198,88 @@
 							/>
 							<label
 								for="upload-file-input"
-								class="mt-3 cursor-pointer border border-blue-900 bg-blue-50 px-3 py-1 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase hover:bg-blue-100 transition-colors"
+								class="mt-3 cursor-pointer border border-blue-900 bg-blue-50 px-3 py-1 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase transition-colors hover:bg-blue-100"
 							>
 								PROCURAR ARQUIVOS
 							</label>
 						</div>
 					{:else if tabAtiva === 'camera'}
-						<div class="flex flex-col items-center gap-4 bg-white border border-slate-200 p-6">
+						<div class="flex flex-col items-center gap-4 border border-slate-200 bg-white p-6">
 							{#if cameraErro}
-								<div class="text-center py-8">
-									<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-700 font-bold text-lg mb-3">⚠</div>
-									<p class="font-mono text-xs font-bold text-red-700 uppercase tracking-wider">{cameraErro}</p>
-									<p class="text-[11px] text-slate-500 mt-1 max-w-sm">Verifique se a webcam está conectada e se você concedeu as permissões necessárias no navegador.</p>
+								<div class="py-8 text-center">
+									<div
+										class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-lg font-bold text-red-700"
+									>
+										⚠
+									</div>
+									<p class="font-mono text-xs font-bold tracking-wider text-red-700 uppercase">
+										{cameraErro}
+									</p>
+									<p class="mt-1 max-w-sm text-[11px] text-slate-500">
+										Verifique se a webcam está conectada e se você concedeu as permissões
+										necessárias no navegador.
+									</p>
 									<button
 										type="button"
 										onclick={iniciarCamera}
-										class="mt-4 border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[10px] font-bold text-blue-900 hover:bg-blue-100 uppercase tracking-widest transition-colors"
+										class="mt-4 border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase transition-colors hover:bg-blue-100"
 									>
 										Tentar Reconectar Câmera
 									</button>
 								</div>
 							{:else if fotoCapturada}
-								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-900 border-2 border-slate-800 overflow-hidden flex items-center justify-center">
-									<img src={fotoCapturada} alt="Preview da Câmera" class="w-full h-full object-cover" />
-									
+								<div
+									class="relative flex aspect-video w-full max-w-2xl items-center justify-center overflow-hidden border-2 border-slate-800 bg-slate-900 md:max-w-4xl"
+								>
+									<img
+										src={fotoCapturada}
+										alt="Preview da Câmera"
+										class="h-full w-full object-cover"
+									/>
+
 									<!-- Action overlay -->
-									<div class="absolute inset-x-0 bottom-0 bg-black/80 border-t border-slate-700 p-4 flex gap-3 justify-center">
+									<div
+										class="absolute inset-x-0 bottom-0 flex justify-center gap-3 border-t border-slate-700 bg-black/80 p-4"
+									>
 										<button
 											type="button"
 											onclick={descartarFoto}
-											class="px-5 py-2 border border-slate-500 bg-slate-800 text-white hover:bg-slate-700 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors"
+											class="border border-slate-500 bg-slate-800 px-5 py-2 font-mono text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-slate-700"
 										>
 											✕ DESCARTAR
 										</button>
 										<button
 											type="button"
 											onclick={confirmarFoto}
-											class="px-5 py-2 border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors"
+											class="border border-emerald-700 bg-emerald-700 px-5 py-2 font-mono text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-emerald-800"
 										>
 											✓ CONFIRMAR E ADICIONAR
 										</button>
 									</div>
 								</div>
 							{:else}
-								<div class="relative w-full aspect-video md:max-w-4xl max-w-2xl bg-slate-950 border-2 border-slate-800 overflow-hidden flex items-center justify-center">
+								<div
+									class="relative flex aspect-video w-full max-w-2xl items-center justify-center overflow-hidden border-2 border-slate-800 bg-slate-950 md:max-w-4xl"
+								>
 									<!-- svelte-ignore a11y_media_has_caption -->
 									<video
 										bind:this={videoEl}
 										autoplay
 										playsinline
 										muted
-										class="w-full h-full object-cover scale-x-[-1]"
+										class="h-full w-full scale-x-[-1] object-cover"
 									></video>
 
 									<!-- Document framing overlay -->
-									<div class="absolute inset-0 border-[36px] border-black/50 pointer-events-none flex items-center justify-center">
-										<div class="w-[90%] h-[90%] border-2 border-dashed border-white/50 flex items-center justify-center">
-											<div class="font-mono text-[9px] text-white bg-black/80 px-4 py-2 tracking-widest uppercase pointer-events-auto border border-white/20">
+									<div
+										class="pointer-events-none absolute inset-0 flex items-center justify-center border-[36px] border-black/50"
+									>
+										<div
+											class="flex h-[90%] w-[90%] items-center justify-center border-2 border-dashed border-white/50"
+										>
+											<div
+												class="pointer-events-auto border border-white/20 bg-black/80 px-4 py-2 font-mono text-[9px] tracking-widest text-white uppercase"
+											>
 												Centralize o documento nesta área
 											</div>
 										</div>
@@ -1215,26 +1287,30 @@
 
 									<!-- Camera selector overlay -->
 									{#if cameraDispositivos.length > 1}
-										<div class="absolute top-4 right-4 bg-slate-900 border border-slate-700 px-3 py-1.5 flex items-center gap-2 text-[9px] font-mono text-white">
+										<div
+											class="absolute top-4 right-4 flex items-center gap-2 border border-slate-700 bg-slate-900 px-3 py-1.5 font-mono text-[9px] text-white"
+										>
 											<span>CÂMERA ATIVA:</span>
 											<select
 												bind:value={cameraSelecionadaId}
 												onchange={iniciarCamera}
-												class="bg-slate-800 text-white border border-slate-700 px-2 py-0.5 outline-none cursor-pointer"
+												class="cursor-pointer border border-slate-700 bg-slate-800 px-2 py-0.5 text-white outline-none"
 											>
 												{#each cameraDispositivos as dev}
-													<option value={dev.deviceId}>{dev.label || `Câmera ${dev.deviceId.slice(0, 4)}`}</option>
+													<option value={dev.deviceId}
+														>{dev.label || `Câmera ${dev.deviceId.slice(0, 4)}`}</option
+													>
 												{/each}
 											</select>
 										</div>
 									{/if}
 
 									<!-- Shutter button overlay -->
-									<div class="absolute bottom-6 flex justify-center w-full">
+									<div class="absolute bottom-6 flex w-full justify-center">
 										<button
 											type="button"
 											onclick={tirarFoto}
-											class="border-2 border-white bg-red-700 px-6 py-2.5 font-mono text-xs font-bold text-white uppercase tracking-widest hover:bg-red-800 flex items-center gap-2"
+											class="flex items-center gap-2 border-2 border-white bg-red-700 px-6 py-2.5 font-mono text-xs font-bold tracking-widest text-white uppercase hover:bg-red-800"
 											title="Capturar Foto"
 										>
 											<span>📷 CAPTURAR FOTO</span>
@@ -1242,16 +1318,17 @@
 										</button>
 									</div>
 								</div>
-								<div class="text-[10px] text-slate-500 font-mono text-center max-w-md">
-									Certifique-se de que a iluminação esteja adequada e o documento esteja completamente legível antes de capturar.
+								<div class="max-w-md text-center font-mono text-[10px] text-slate-500">
+									Certifique-se de que a iluminação esteja adequada e o documento esteja
+									completamente legível antes de capturar.
 								</div>
 							{/if}
 						</div>
 					{:else if tabAtiva === 'scanner'}
-						<div class="flex flex-col items-center bg-white border border-slate-200 p-6">
+						<div class="flex flex-col items-center border border-slate-200 bg-white p-6">
 							{#if scanSourceImage}
 								<!-- Scanner Image Editor Workspace -->
-								<div class="w-full flex flex-col items-center gap-4">
+								<div class="flex w-full flex-col items-center gap-4">
 									<div class="text-[10px] font-bold tracking-widest text-blue-900 uppercase">
 										🖨️ PROCESSADOR DE ESCANEAMENTO DE DOCUMENTO
 									</div>
@@ -1260,47 +1337,63 @@
 									<canvas bind:this={scannerCanvasEl} class="hidden"></canvas>
 
 									<!-- Processed Image Preview Frame -->
-									<div class="relative w-full max-h-[60vh] md:max-w-2xl bg-slate-100 border border-slate-300 rounded shadow-md overflow-hidden flex items-center justify-center">
+									<div
+										class="relative flex max-h-[60vh] w-full items-center justify-center overflow-hidden rounded border border-slate-300 bg-slate-100 shadow-md md:max-w-2xl"
+									>
 										{#if scanPreview}
-											<img src={scanPreview} alt="Guia Escaneada" class="max-w-full max-h-[50vh] object-contain" />
+											<img
+												src={scanPreview}
+												alt="Guia Escaneada"
+												class="max-h-[50vh] max-w-full object-contain"
+											/>
 										{/if}
 									</div>
 
 									<!-- Scanner Controls & Filters Toolbar -->
-									<div class="w-full md:max-w-2xl flex flex-col gap-3 font-mono text-xs">
+									<div class="flex w-full flex-col gap-3 font-mono text-xs md:max-w-2xl">
 										<!-- Filters selector -->
-										<div class="flex flex-wrap items-center justify-between border-t border-slate-200 pt-3 gap-2">
+										<div
+											class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3"
+										>
 											<div class="flex items-center gap-1.5">
 												<span class="font-bold text-slate-700">FILTROS:</span>
 												<button
 													type="button"
-													onclick={() => scanFilter = 'pb'}
-													class="px-2 py-1 border rounded text-[10px] font-bold transition-all
-														{scanFilter === 'pb' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
+													onclick={() => (scanFilter = 'pb')}
+													class="rounded border px-2 py-1 text-[10px] font-bold transition-all
+														{scanFilter === 'pb'
+														? 'border-blue-900 bg-blue-900 text-white'
+														: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 												>
 													DOCUMENTO P&B
 												</button>
 												<button
 													type="button"
-													onclick={() => scanFilter = 'contrast'}
-													class="px-2 py-1 border rounded text-[10px] font-bold transition-all
-														{scanFilter === 'contrast' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
+													onclick={() => (scanFilter = 'contrast')}
+													class="rounded border px-2 py-1 text-[10px] font-bold transition-all
+														{scanFilter === 'contrast'
+														? 'border-blue-900 bg-blue-900 text-white'
+														: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 												>
 													ALTO CONTRASTE
 												</button>
 												<button
 													type="button"
-													onclick={() => scanFilter = 'grayscale'}
-													class="px-2 py-1 border rounded text-[10px] font-bold transition-all
-														{scanFilter === 'grayscale' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
+													onclick={() => (scanFilter = 'grayscale')}
+													class="rounded border px-2 py-1 text-[10px] font-bold transition-all
+														{scanFilter === 'grayscale'
+														? 'border-blue-900 bg-blue-900 text-white'
+														: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 												>
 													TONS DE CINZA
 												</button>
 												<button
 													type="button"
-													onclick={() => scanFilter = 'original'}
-													class="px-2 py-1 border rounded text-[10px] font-bold transition-all
-														{scanFilter === 'original' ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
+													onclick={() => (scanFilter = 'original')}
+													class="rounded border px-2 py-1 text-[10px] font-bold transition-all
+														{scanFilter === 'original'
+														? 'border-blue-900 bg-blue-900 text-white'
+														: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}"
 												>
 													FOTO ORIGINAL
 												</button>
@@ -1309,7 +1402,7 @@
 											<button
 												type="button"
 												onclick={rotacionarScanner}
-												class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100 rounded text-[10px] font-bold flex items-center gap-1 text-slate-700"
+												class="flex items-center gap-1 rounded border border-slate-300 bg-white px-3 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100"
 											>
 												🔄 ROTACIONAR 90°
 											</button>
@@ -1320,14 +1413,14 @@
 											<button
 												type="button"
 												onclick={descartarScanner}
-												class="flex-1 border border-slate-300 bg-white py-2 text-[10px] font-bold text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+												class="flex-1 border border-slate-300 bg-white py-2 text-[10px] font-bold text-slate-700 uppercase transition-colors hover:bg-slate-50"
 											>
 												✕ DESCARTAR
 											</button>
 											<button
 												type="button"
 												onclick={confirmarScanner}
-												class="flex-1 border border-emerald-600 bg-emerald-600 py-2 text-[10px] font-bold text-white uppercase hover:bg-emerald-500 transition-colors shadow"
+												class="flex-1 border border-emerald-600 bg-emerald-600 py-2 text-[10px] font-bold text-white uppercase shadow transition-colors hover:bg-emerald-500"
 											>
 												✓ SALVAR DOCUMENTO ESCANEADO
 											</button>
@@ -1336,20 +1429,37 @@
 								</div>
 							{:else}
 								<!-- Scanner Source Selector -->
-								<div class="w-full flex flex-col items-center gap-4">
-									<div class="text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-2">
+								<div class="flex w-full flex-col items-center gap-4">
+									<div class="mb-2 text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 										SELECIONE A ORIGEM DO DOCUMENTO PARA ESCANEAMENTO
 									</div>
 
-									<div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:max-w-2xl">
+									<div class="grid w-full grid-cols-1 gap-4 md:max-w-2xl md:grid-cols-2">
 										<!-- Option A: File upload for scanning -->
-										<div class="border border-slate-200 bg-slate-50 p-4 rounded flex flex-col items-center text-center justify-between min-h-[220px]">
-											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-slate-400">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+										<div
+											class="flex min-h-[220px] flex-col items-center justify-between rounded border border-slate-200 bg-slate-50 p-4 text-center"
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke-width="1.5"
+												stroke="currentColor"
+												class="h-10 w-10 text-slate-400"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
+												/>
 											</svg>
 											<div>
-												<span class="font-bold text-slate-700 text-xs block uppercase">IMPORTAR IMAGEM LOCAL</span>
-												<span class="text-[10px] text-slate-500 mt-1 block">Escolha uma foto salva no computador para aplicar os filtros de scanner</span>
+												<span class="block text-xs font-bold text-slate-700 uppercase"
+													>IMPORTAR IMAGEM LOCAL</span
+												>
+												<span class="mt-1 block text-[10px] text-slate-500"
+													>Escolha uma foto salva no computador para aplicar os filtros de scanner</span
+												>
 											</div>
 											<input
 												type="file"
@@ -1360,26 +1470,47 @@
 											/>
 											<label
 												for="scanner-file-input"
-												class="cursor-pointer border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[9px] font-bold text-blue-900 uppercase hover:bg-blue-100 transition-colors"
+												class="cursor-pointer border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[9px] font-bold text-blue-900 uppercase transition-colors hover:bg-blue-100"
 											>
 												PROCURAR FOTO
 											</label>
 										</div>
 
 										<!-- Option B: Webcam for scanning -->
-										<div class="border border-slate-200 bg-slate-50 p-4 rounded flex flex-col items-center text-center justify-between min-h-[220px]">
-											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-slate-400">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-												<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+										<div
+											class="flex min-h-[220px] flex-col items-center justify-between rounded border border-slate-200 bg-slate-50 p-4 text-center"
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke-width="1.5"
+												stroke="currentColor"
+												class="h-10 w-10 text-slate-400"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
+												/>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"
+												/>
 											</svg>
 											<div>
-												<span class="font-bold text-slate-700 text-xs block uppercase">CAPTURAR DA WEBCAM</span>
-												<span class="text-[10px] text-slate-500 mt-1 block">Tire uma foto do documento agora usando a câmera do computador</span>
+												<span class="block text-xs font-bold text-slate-700 uppercase"
+													>CAPTURAR DA WEBCAM</span
+												>
+												<span class="mt-1 block text-[10px] text-slate-500"
+													>Tire uma foto do documento agora usando a câmera do computador</span
+												>
 											</div>
 											<button
 												type="button"
 												onclick={iniciarCameraScanner}
-												class="border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[9px] font-bold text-blue-900 uppercase hover:bg-blue-100 transition-colors"
+												class="border border-blue-900 bg-blue-50 px-4 py-1.5 font-mono text-[9px] font-bold text-blue-900 uppercase transition-colors hover:bg-blue-100"
 											>
 												ABRIR WEBCAM
 											</button>
@@ -1388,35 +1519,47 @@
 
 									<!-- Scanner Live Webcam Feed viewport -->
 									{#if scannerStream || scannerCameraErro}
-										<div class="w-full md:max-w-2xl border border-slate-200 rounded p-4 mt-2 bg-slate-50">
+										<div
+											class="mt-2 w-full rounded border border-slate-200 bg-slate-50 p-4 md:max-w-2xl"
+										>
 											{#if scannerCameraErro}
-												<p class="font-mono text-xs text-red-700 text-center font-bold">⚠ {scannerCameraErro}</p>
+												<p class="text-center font-mono text-xs font-bold text-red-700">
+													⚠ {scannerCameraErro}
+												</p>
 											{:else}
-												<div class="relative w-full aspect-video bg-black overflow-hidden rounded flex items-center justify-center">
+												<div
+													class="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded bg-black"
+												>
 													<!-- svelte-ignore a11y_media_has_caption -->
 													<video
 														bind:this={scannerVideoEl}
 														autoplay
 														playsinline
 														muted
-														class="w-full h-full object-cover scale-x-[-1]"
+														class="h-full w-full scale-x-[-1] object-cover"
 													></video>
 
 													<!-- Guidelines overlay -->
-													<div class="absolute inset-0 border-[28px] border-black/40 pointer-events-none flex items-center justify-center">
-														<div class="w-[90%] h-[90%] border border-dashed border-white/50 rounded flex items-center justify-center">
-															<span class="font-mono text-[8px] text-white/90 bg-black/60 px-2.5 py-1 rounded tracking-wider uppercase">
+													<div
+														class="pointer-events-none absolute inset-0 flex items-center justify-center border-[28px] border-black/40"
+													>
+														<div
+															class="flex h-[90%] w-[90%] items-center justify-center rounded border border-dashed border-white/50"
+														>
+															<span
+																class="rounded bg-black/60 px-2.5 py-1 font-mono text-[8px] tracking-wider text-white/90 uppercase"
+															>
 																Alinhe a guia médica
 															</span>
 														</div>
 													</div>
 
 													<!-- Shutter Trigger -->
-													<div class="absolute bottom-4 flex justify-center w-full">
+													<div class="absolute bottom-4 flex w-full justify-center">
 														<button
 															type="button"
 															onclick={capturarFotoScanner}
-															class="h-12 w-12 rounded-full border-4 border-white bg-blue-600 shadow active:scale-95 transition-transform"
+															class="h-12 w-12 rounded-full border-4 border-white bg-blue-600 shadow transition-transform active:scale-95"
 															title="Escanear pela Webcam"
 														></button>
 													</div>
@@ -1433,14 +1576,18 @@
 				<!-- Document List -->
 				{#if anexos.length > 0}
 					<div class="border border-slate-200">
-						<div class="bg-slate-100 px-3 py-2 font-mono text-[10px] font-bold text-slate-700 tracking-widest uppercase border-b border-slate-200">
+						<div
+							class="border-b border-slate-200 bg-slate-100 px-3 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase"
+						>
 							LISTA DE ANEXOS ({anexos.length})
 						</div>
 						<ul class="divide-y divide-slate-100 bg-white font-sans">
 							{#each anexos as an, i (an.id)}
 								<li class="flex flex-wrap items-center justify-between gap-3 p-3 text-xs">
 									<div class="flex items-center gap-3">
-										<div class="flex h-8 w-8 items-center justify-center bg-slate-100 text-slate-500 font-bold border border-slate-200">
+										<div
+											class="flex h-8 w-8 items-center justify-center border border-slate-200 bg-slate-100 font-bold text-slate-500"
+										>
 											{#if an.origem === 'upload'}
 												📁
 											{:else if an.origem === 'camera'}
@@ -1450,11 +1597,15 @@
 											{/if}
 										</div>
 										<div class="leading-tight">
-											<div class="font-mono font-bold text-slate-900 truncate max-w-[240px] md:max-w-[360px]" title={an.file.name}>
+											<div
+												class="max-w-[240px] truncate font-mono font-bold text-slate-900 md:max-w-[360px]"
+												title={an.file.name}
+											>
 												{an.file.name}
 											</div>
 											<div class="text-[10px] text-slate-500">
-												{(an.file.size / 1024).toFixed(1)} KB · Origem: <span class="font-semibold">{an.origem.toUpperCase()}</span>
+												{(an.file.size / 1024).toFixed(1)} KB · Origem:
+												<span class="font-semibold">{an.origem.toUpperCase()}</span>
 											</div>
 										</div>
 									</div>
@@ -1476,7 +1627,7 @@
 										{#if an.previewUrl}
 											<button
 												type="button"
-												onclick={() => anexoVisualizar = an}
+												onclick={() => (anexoVisualizar = an)}
 												class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:bg-slate-50"
 											>
 												Ver
@@ -1496,7 +1647,9 @@
 						</ul>
 					</div>
 				{:else}
-					<div class="border-2 border-dashed border-slate-200 p-4 text-center text-xs font-mono text-slate-500 bg-white">
+					<div
+						class="border-2 border-dashed border-slate-200 bg-white p-4 text-center font-mono text-xs text-slate-500"
+					>
 						Nenhum documento anexado ainda. Utilize uma das opções acima para adicionar.
 					</div>
 				{/if}
@@ -1504,16 +1657,21 @@
 		</div>
 
 		<!-- Box de auditoria -->
-		<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900">
+		<div
+			class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900"
+		>
 			<strong class="font-mono tracking-widest uppercase">Próximo passo:</strong>
-			a gestão TFD valida o cadastro, decide pela aprovação e aloca o paciente em uma viagem.
-			Você acompanha tudo pelo Dashboard.
+			a gestão TFD valida o cadastro, decide pela aprovação e aloca o paciente em uma viagem. Você acompanha
+			tudo pelo Dashboard.
 		</div>
 
 		{#if enviando}
-			<div class="border border-blue-900 bg-blue-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-blue-955 uppercase animate-pulse">
+			<div
+				class="text-blue-955 animate-pulse border border-blue-900 bg-blue-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider uppercase"
+			>
 				{#if enviandoAnexos}
-					⟳ ENVIANDO ANEXOS DO PACIENTE ({atualAnexoEnviar} DE {totalAnexosEnviar})... POR FAVOR AGUARDE.
+					⟳ ENVIANDO ANEXOS DO PACIENTE ({atualAnexoEnviar} DE {totalAnexosEnviar})... POR FAVOR
+					AGUARDE.
 				{:else}
 					⟳ CRIANDO SOLICITAÇÃO CLÍNICA NO SISTEMA...
 				{/if}
@@ -1535,7 +1693,12 @@
 				onclick={() => goto('/tfd/dashboard')}
 				disabled={enviando}
 			/>
-			<PrimaryButton label="Cadastrar Solicitação" type="submit" loading={enviando} disabled={enviando} />
+			<PrimaryButton
+				label="Cadastrar Solicitação"
+				type="submit"
+				loading={enviando}
+				disabled={enviando}
+			/>
 		</div>
 	</form>
 {/if}
@@ -1544,7 +1707,7 @@
 {#if anexoVisualizar}
 	<Modal
 		isOpen={!!anexoVisualizar}
-		onClose={() => anexoVisualizar = null}
+		onClose={() => (anexoVisualizar = null)}
 		title="Visualização do Documento"
 		subtitle={anexoVisualizar.file.name}
 		maxWidth="lg"
@@ -1554,19 +1717,23 @@
 				<img
 					src={anexoVisualizar.previewUrl}
 					alt={anexoVisualizar.file.name}
-					class="max-h-[70vh] object-contain border border-slate-300 shadow-md"
+					class="max-h-[70vh] border border-slate-300 object-contain shadow-md"
 				/>
 			{:else}
-				<div class="p-8 text-center bg-slate-50 border border-slate-200 w-full text-slate-600 font-mono text-sm">
-					Visualização indisponível para este tipo de arquivo.<br/>
-					<span class="text-xs text-slate-400">Tipo: {anexoVisualizar.file.type || 'Desconhecido'}</span>
+				<div
+					class="w-full border border-slate-200 bg-slate-50 p-8 text-center font-mono text-sm text-slate-600"
+				>
+					Visualização indisponível para este tipo de arquivo.<br />
+					<span class="text-xs text-slate-400"
+						>Tipo: {anexoVisualizar.file.type || 'Desconhecido'}</span
+					>
 				</div>
 			{/if}
-			<div class="mt-4 flex justify-end w-full">
+			<div class="mt-4 flex w-full justify-end">
 				<PrimaryButton
 					label="Fechar"
 					variant="secondary"
-					onclick={() => anexoVisualizar = null}
+					onclick={() => (anexoVisualizar = null)}
 				/>
 			</div>
 		</div>

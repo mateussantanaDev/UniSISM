@@ -13,11 +13,7 @@
 html,
 body {
 	font-family: var(--font-sans);
-	font-feature-settings:
-		'cv02',
-		'cv03',
-		'cv04',
-		'cv11';
+	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 	-webkit-font-smoothing: antialiased;
 	background-color: rgb(248 250 252);
 	color: rgb(15 23 42);

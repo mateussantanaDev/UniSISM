@@ -158,250 +158,247 @@
 </script>
 
 {#if auth.me?.role === 'DESENVOLVEDOR'}
-<div class="flex flex-col gap-4">
-	{#if mensagem}
-		<div
-			class="border px-3 py-2 font-mono text-[11px] font-bold tracking-wider uppercase
-				{mensagem.tipo === 'ok'
-				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
-				: 'border-red-700 bg-red-50 text-red-900'}"
-		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
-		</div>
-	{/if}
-
-	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard
-			label="Prefeituras"
-			value={carregando ? '—' : lista.length}
-			sublabel="Cadastradas na plataforma"
-		/>
-		<MetricCard
-			label="Ativas"
-			value={carregando ? '—' : lista.filter((p) => p.ativa).length}
-			sublabel="Em operação"
-			accent="success"
-		/>
-		<MetricCard
-			label="Inativas"
-			value={carregando ? '—' : lista.filter((p) => !p.ativa).length}
-			sublabel="Desabilitadas"
-			accent="critical"
-		/>
-		<MetricCard
-			label="UFs Cobertas"
-			value={carregando ? '—' : new Set(lista.map((p) => p.uf)).size}
-			sublabel="Estados diferentes"
-		/>
-	</section>
-
-	<div class="border border-slate-200 bg-white">
-		<PanelHeader
-			title="Prefeituras"
-			subtitle="Cadastro de clientes institucionais · edição restrita a Admin/Dev · exclusão só Dev"
-			index="01"
-		>
-			<span
-				class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] tracking-widest text-slate-600 uppercase"
-			>
-				{lista.length} REGISTROS
-			</span>
-			{#if auth.podeCriarPrefeitura}
-				<PrimaryButton label="+ Nova Prefeitura" onclick={abrirModal} />
-			{/if}
-		</PanelHeader>
-
-		<div class="overflow-x-auto">
-			<table class="w-full border-collapse text-xs">
-				<thead>
-					<tr
-						class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
-					>
-						<th class="border-r border-slate-200 px-3 py-2">Nome</th>
-						<th class="border-r border-slate-200 px-3 py-2">Município</th>
-						<th class="border-r border-slate-200 px-3 py-2">UF</th>
-						<th class="border-r border-slate-200 px-3 py-2">CNPJ</th>
-						<th class="border-r border-slate-200 px-3 py-2">Cadastrada</th>
-						<th class="border-r border-slate-200 px-3 py-2">Status</th>
-						{#if auth.ehAdminOuDev}
-							<th class="px-3 py-2">Ações</th>
-						{/if}
-					</tr>
-				</thead>
-				<tbody class="font-mono">
-					{#if carregando}
-						{#each Array(3) as _, i (i)}
-							<tr class="border-b border-slate-100">
-								<td colspan={auth.ehAdminOuDev ? 7 : 6} class="px-3 py-3">
-									<div class="h-3 w-full animate-pulse bg-slate-100"></div>
-								</td>
-							</tr>
-						{/each}
-					{:else if lista.length === 0}
-						<tr>
-							<td
-								colspan={auth.ehAdminOuDev ? 7 : 6}
-								class="px-3 py-12 text-center font-sans text-sm text-slate-500"
-							>
-								Nenhuma prefeitura cadastrada.
-							</td>
-						</tr>
-					{:else}
-						{#each lista as p (p.id)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50">
-								<td class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900">
-									{p.nome}
-								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
-									{p.municipio}
-								</td>
-								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">{p.uf}</td>
-								<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
-									{p.cnpj ?? '—'}
-								</td>
-								<td class="border-r border-slate-100 px-3 py-2 text-slate-600">
-									{formatarData(p.criadoEm)}
-								</td>
-								<td class="border-r border-slate-100 px-3 py-2">
-									{#if p.ativa}
-										<span
-											class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-emerald-800 uppercase"
-										>
-											ATIVA
-										</span>
-									{:else}
-										<span
-											class="border border-red-700 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-red-800 uppercase"
-										>
-											INATIVA
-										</span>
-									{/if}
-								</td>
-								{#if auth.ehAdminOuDev}
-									<td class="flex gap-1.5 px-3 py-2">
-										<button
-											type="button"
-											onclick={() => abrirEditar(p)}
-											class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
-										>
-											Editar
-										</button>
-										{#if podeDeletar}
-											<button
-												type="button"
-												onclick={() => abrirExcluir(p)}
-												class="border border-red-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest text-red-700 uppercase hover:border-red-700 hover:bg-red-50"
-											>
-												Excluir
-											</button>
-										{/if}
-									</td>
-								{/if}
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
-		</div>
-	</div>
-</div>
-
-<!-- Modal criar -->
-<Modal
-	isOpen={modalAberto}
-	onClose={() => (modalAberto = false)}
-	title="Nova Prefeitura"
-	subtitle="Cadastro institucional na plataforma UNISISM"
-	maxWidth="md"
->
-	<div class="flex flex-col gap-4 font-mono text-slate-900">
-		<div class="grid grid-cols-12 gap-3">
-			<FormField label="Nome da Prefeitura" name="nome" span={12} bind:value={nome} />
-			<FormField label="Município" name="municipio" span={8} bind:value={municipio} />
-			<FormField label="UF" name="uf" span={4} mono bind:value={uf} />
-			<FormField label="CNPJ (opcional)" name="cnpj" span={12} mono bind:value={cnpj} />
-		</div>
-
-		{#if erro}
+	<div class="flex flex-col gap-4">
+		{#if mensagem}
 			<div
-				class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+				class="border px-3 py-2 font-mono text-[11px] font-bold tracking-wider uppercase
+				{mensagem.tipo === 'ok'
+					? 'border-emerald-700 bg-emerald-50 text-emerald-900'
+					: 'border-red-700 bg-red-50 text-red-900'}"
 			>
-				⚠ {erro}
+				{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+				{mensagem.texto}
 			</div>
 		{/if}
 
-		<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (modalAberto = false)}
+		<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
+			<MetricCard
+				label="Prefeituras"
+				value={carregando ? '—' : lista.length}
+				sublabel="Cadastradas na plataforma"
 			/>
-			<PrimaryButton label="Cadastrar Prefeitura" onclick={criar} loading={enviando} />
+			<MetricCard
+				label="Ativas"
+				value={carregando ? '—' : lista.filter((p) => p.ativa).length}
+				sublabel="Em operação"
+				accent="success"
+			/>
+			<MetricCard
+				label="Inativas"
+				value={carregando ? '—' : lista.filter((p) => !p.ativa).length}
+				sublabel="Desabilitadas"
+				accent="critical"
+			/>
+			<MetricCard
+				label="UFs Cobertas"
+				value={carregando ? '—' : new Set(lista.map((p) => p.uf)).size}
+				sublabel="Estados diferentes"
+			/>
+		</section>
+
+		<div class="border border-slate-200 bg-white">
+			<PanelHeader
+				title="Prefeituras"
+				subtitle="Cadastro de clientes institucionais · edição restrita a Admin/Dev · exclusão só Dev"
+				index="01"
+			>
+				<span
+					class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+				>
+					{lista.length} REGISTROS
+				</span>
+				{#if auth.podeCriarPrefeitura}
+					<PrimaryButton label="+ Nova Prefeitura" onclick={abrirModal} />
+				{/if}
+			</PanelHeader>
+
+			<div class="overflow-x-auto">
+				<table class="w-full border-collapse text-xs">
+					<thead>
+						<tr
+							class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+						>
+							<th class="border-r border-slate-200 px-3 py-2">Nome</th>
+							<th class="border-r border-slate-200 px-3 py-2">Município</th>
+							<th class="border-r border-slate-200 px-3 py-2">UF</th>
+							<th class="border-r border-slate-200 px-3 py-2">CNPJ</th>
+							<th class="border-r border-slate-200 px-3 py-2">Cadastrada</th>
+							<th class="border-r border-slate-200 px-3 py-2">Status</th>
+							{#if auth.ehAdminOuDev}
+								<th class="px-3 py-2">Ações</th>
+							{/if}
+						</tr>
+					</thead>
+					<tbody class="font-mono">
+						{#if carregando}
+							{#each Array(3) as _, i (i)}
+								<tr class="border-b border-slate-100">
+									<td colspan={auth.ehAdminOuDev ? 7 : 6} class="px-3 py-3">
+										<div class="h-3 w-full animate-pulse bg-slate-100"></div>
+									</td>
+								</tr>
+							{/each}
+						{:else if lista.length === 0}
+							<tr>
+								<td
+									colspan={auth.ehAdminOuDev ? 7 : 6}
+									class="px-3 py-12 text-center font-sans text-sm text-slate-500"
+								>
+									Nenhuma prefeitura cadastrada.
+								</td>
+							</tr>
+						{:else}
+							{#each lista as p (p.id)}
+								<tr class="border-b border-slate-100 hover:bg-slate-50">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900"
+									>
+										{p.nome}
+									</td>
+									<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-700">
+										{p.municipio}
+									</td>
+									<td class="border-r border-slate-100 px-3 py-2 text-slate-700">{p.uf}</td>
+									<td class="border-r border-slate-100 px-3 py-2 text-slate-700">
+										{p.cnpj ?? '—'}
+									</td>
+									<td class="border-r border-slate-100 px-3 py-2 text-slate-600">
+										{formatarData(p.criadoEm)}
+									</td>
+									<td class="border-r border-slate-100 px-3 py-2">
+										{#if p.ativa}
+											<span
+												class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-emerald-800 uppercase"
+											>
+												ATIVA
+											</span>
+										{:else}
+											<span
+												class="border border-red-700 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-red-800 uppercase"
+											>
+												INATIVA
+											</span>
+										{/if}
+									</td>
+									{#if auth.ehAdminOuDev}
+										<td class="flex gap-1.5 px-3 py-2">
+											<button
+												type="button"
+												onclick={() => abrirEditar(p)}
+												class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase hover:border-blue-900 hover:text-blue-900"
+											>
+												Editar
+											</button>
+											{#if podeDeletar}
+												<button
+													type="button"
+													onclick={() => abrirExcluir(p)}
+													class="border border-red-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest text-red-700 uppercase hover:border-red-700 hover:bg-red-50"
+												>
+													Excluir
+												</button>
+											{/if}
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						{/if}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
-</Modal>
 
-<!-- Modal editar -->
-{#if prefeituraSelecionada}
+	<!-- Modal criar -->
 	<Modal
-		isOpen={editarAberto}
-		onClose={() => {
-			editarAberto = false;
-			prefeituraSelecionada = null;
-		}}
-		title="Editar Prefeitura"
-		subtitle="Atualizar dados cadastrais"
-		maxWidth="md"
-	>
-		<EditarPrefeitura
-			prefeitura={prefeituraSelecionada}
-			onCancel={() => {
-				editarAberto = false;
-				prefeituraSelecionada = null;
-			}}
-			onSaved={handleSalvo}
-		/>
-	</Modal>
-{/if}
-
-<!-- Modal excluir -->
-{#if prefeituraParaExcluir}
-	<Modal
-		isOpen={excluirAberto}
-		onClose={() => {
-			excluirAberto = false;
-			prefeituraParaExcluir = null;
-		}}
-		title="Confirmar Exclusão"
-		subtitle="Ação irreversível · auditada"
+		isOpen={modalAberto}
+		onClose={() => (modalAberto = false)}
+		title="Nova Prefeitura"
+		subtitle="Cadastro institucional na plataforma UNISISM"
 		maxWidth="md"
 	>
 		<div class="flex flex-col gap-4 font-mono text-slate-900">
-			<div
-				class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900"
-			>
-				<strong>Atenção:</strong> excluir <strong>{prefeituraParaExcluir.nome}</strong>
-				remove o cliente institucional da plataforma. Esta operação <strong
-					>afeta todos os usuários, UBSs e encaminhamentos</strong
-				> vinculados — só conclui se a prefeitura estiver sem vínculos ativos.
+			<div class="grid grid-cols-12 gap-3">
+				<FormField label="Nome da Prefeitura" name="nome" span={12} bind:value={nome} />
+				<FormField label="Município" name="municipio" span={8} bind:value={municipio} />
+				<FormField label="UF" name="uf" span={4} mono bind:value={uf} />
+				<FormField label="CNPJ (opcional)" name="cnpj" span={12} mono bind:value={cnpj} />
 			</div>
-			<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-				<PrimaryButton
-					label="Cancelar"
-					variant="secondary"
-					onclick={() => {
-						excluirAberto = false;
-						prefeituraParaExcluir = null;
-					}}
-				/>
-				<PrimaryButton
-					label="Sim, Excluir"
-					variant="danger"
-					loading={excluindo}
-					onclick={confirmarExcluir}
-				/>
+
+			{#if erro}
+				<div
+					class="border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+				>
+					⚠ {erro}
+				</div>
+			{/if}
+
+			<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
+				<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (modalAberto = false)} />
+				<PrimaryButton label="Cadastrar Prefeitura" onclick={criar} loading={enviando} />
 			</div>
 		</div>
 	</Modal>
-{/if}
+
+	<!-- Modal editar -->
+	{#if prefeituraSelecionada}
+		<Modal
+			isOpen={editarAberto}
+			onClose={() => {
+				editarAberto = false;
+				prefeituraSelecionada = null;
+			}}
+			title="Editar Prefeitura"
+			subtitle="Atualizar dados cadastrais"
+			maxWidth="md"
+		>
+			<EditarPrefeitura
+				prefeitura={prefeituraSelecionada}
+				onCancel={() => {
+					editarAberto = false;
+					prefeituraSelecionada = null;
+				}}
+				onSaved={handleSalvo}
+			/>
+		</Modal>
+	{/if}
+
+	<!-- Modal excluir -->
+	{#if prefeituraParaExcluir}
+		<Modal
+			isOpen={excluirAberto}
+			onClose={() => {
+				excluirAberto = false;
+				prefeituraParaExcluir = null;
+			}}
+			title="Confirmar Exclusão"
+			subtitle="Ação irreversível · auditada"
+			maxWidth="md"
+		>
+			<div class="flex flex-col gap-4 font-mono text-slate-900">
+				<div class="border-2 border-red-700 bg-red-50 px-3 py-2 font-sans text-[12px] text-red-900">
+					<strong>Atenção:</strong> excluir <strong>{prefeituraParaExcluir.nome}</strong>
+					remove o cliente institucional da plataforma. Esta operação
+					<strong>afeta todos os usuários, UBSs e encaminhamentos</strong> vinculados — só conclui se
+					a prefeitura estiver sem vínculos ativos.
+				</div>
+				<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
+					<PrimaryButton
+						label="Cancelar"
+						variant="secondary"
+						onclick={() => {
+							excluirAberto = false;
+							prefeituraParaExcluir = null;
+						}}
+					/>
+					<PrimaryButton
+						label="Sim, Excluir"
+						variant="danger"
+						loading={excluindo}
+						onclick={confirmarExcluir}
+					/>
+				</div>
+			</div>
+		</Modal>
+	{/if}
 {/if}

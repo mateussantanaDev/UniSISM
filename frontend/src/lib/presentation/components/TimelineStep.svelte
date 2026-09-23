@@ -45,15 +45,10 @@
 
 <li class="relative flex gap-4 pb-5">
 	{#if !isLast}
-		<span
-			aria-hidden="true"
-			class="absolute top-5 left-[7px] h-full w-px bg-slate-200"
-		></span>
+		<span aria-hidden="true" class="absolute top-5 left-[7px] h-full w-px bg-slate-200"></span>
 	{/if}
 
-	<span
-		class="relative mt-1.5 h-[14px] w-[14px] shrink-0 {cfg.dot} ring-4 {cfg.ring}"
-	></span>
+	<span class="relative mt-1.5 h-[14px] w-[14px] shrink-0 {cfg.dot} ring-4 {cfg.ring}"></span>
 
 	<div class="flex-1 border border-slate-200 bg-white">
 		<div

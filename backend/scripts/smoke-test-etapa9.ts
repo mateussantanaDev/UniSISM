@@ -46,6 +46,11 @@ async function cleanup() {
   // Não pode deletar audit (trigger imutável) — só os outros
   const conta = await prisma.pacienteConta.findUnique({ where: { cpf: CPF_TESTE } });
   if (conta) {
+    await prisma.tfdPacienteSolicitacao.deleteMany({ where: { contaId: conta.id } });
+    await prisma.notificacaoPaciente.deleteMany({ where: { contaId: conta.id } });
+    await prisma.pacienteDispositivo.deleteMany({ where: { contaId: conta.id } });
+    await prisma.smsBannerView.deleteMany({ where: { contaId: conta.id } });
+    await prisma.pacienteRecoveryToken.deleteMany({ where: { contaId: conta.id } });
     await prisma.sessaoPaciente.deleteMany({ where: { contaId: conta.id } });
     await prisma.pacienteRefreshToken.deleteMany({ where: { contaId: conta.id } });
     await prisma.pacienteConta.delete({ where: { id: conta.id } });

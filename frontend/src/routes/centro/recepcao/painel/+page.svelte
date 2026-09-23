@@ -16,7 +16,11 @@
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
 
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let senhaPareamento = $derived(ehCeo ? 'CEO-2026' : 'CEM-2026');
 	let tipoLocal = $derived(ehCeo ? 'Cadeira Odontológica' : 'Consultório');
 
@@ -33,10 +37,14 @@
 			navigator.clipboard.writeText(texto);
 			if (tipo === 'link') {
 				copiadoLink = true;
-				setTimeout(() => { copiadoLink = false; }, 2000);
+				setTimeout(() => {
+					copiadoLink = false;
+				}, 2000);
 			} else {
 				copiadoSenha = true;
-				setTimeout(() => { copiadoSenha = false; }, 2000);
+				setTimeout(() => {
+					copiadoSenha = false;
+				}, 2000);
 			}
 		}
 	}
@@ -82,18 +90,32 @@
 
 			if ('speechSynthesis' in window) {
 				window.speechSynthesis.cancel();
-				const msg = new SpeechSynthesisUtterance(`Atenção. Teste de áudio e chamada do ${nomeOrgao}. Sistema operando normalmente.`);
+				const msg = new SpeechSynthesisUtterance(
+					`Atenção. Teste de áudio e chamada do ${nomeOrgao}. Sistema operando normalmente.`
+				);
 				msg.lang = 'pt-BR';
 				msg.rate = 0.92;
 				msg.pitch = 1.08;
 				msg.volume = 1.0;
 
 				const vozes = window.speechSynthesis.getVoices();
-				const nomesFemininos = ['francisca', 'thalita', 'leticia', 'vitória', 'luciana', 'fernanda', 'maria', 'helena', 'camila', 'bia', 'google português do brasil'];
-				const vozesPtBr = vozes.filter(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+				const nomesFemininos = [
+					'francisca',
+					'thalita',
+					'leticia',
+					'vitória',
+					'luciana',
+					'fernanda',
+					'maria',
+					'helena',
+					'camila',
+					'bia',
+					'google português do brasil'
+				];
+				const vozesPtBr = vozes.filter((v) => v.lang === 'pt-BR' || v.lang === 'pt_BR');
 				let melhorVoz: SpeechSynthesisVoice | undefined;
 				for (const nome of nomesFemininos) {
-					melhorVoz = vozesPtBr.find(v => v.name.toLowerCase().includes(nome));
+					melhorVoz = vozesPtBr.find((v) => v.name.toLowerCase().includes(nome));
 					if (melhorVoz) break;
 				}
 				if (melhorVoz) msg.voice = melhorVoz;
@@ -105,7 +127,9 @@
 		} catch (e) {
 			console.error(e);
 		} finally {
-			setTimeout(() => { testandoAudio = false; }, 3500);
+			setTimeout(() => {
+				testandoAudio = false;
+			}, 3500);
 		}
 	}
 
@@ -116,7 +140,12 @@
 			chamadasAtivas = res
 				.filter((e: any) => {
 					const esp = (e.solicitacao?.especialidadeSolicitada || '').toLowerCase();
-					const eOdonto = esp.includes('odonto') || esp.includes('bucal') || esp.includes('canal') || esp.includes('periodontia') || esp.includes('bucomaxilo');
+					const eOdonto =
+						esp.includes('odonto') ||
+						esp.includes('bucal') ||
+						esp.includes('canal') ||
+						esp.includes('periodontia') ||
+						esp.includes('bucomaxilo');
 					return ehCeo ? eOdonto : !eOdonto;
 				})
 				.slice(0, 8)
@@ -126,9 +155,15 @@
 						id: e.id,
 						pacienteNome: e.paciente?.nome || 'Paciente Identificado',
 						consultorio: ehCeo ? `Cadeira Odonto ${num}` : `Consultório ${num}`,
-						medicoNome: e.profissionalAtribuido || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
-						especialidade: e.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia' : 'Especialidades'),
-						horario: new Date(e.atualizadoEm || e.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+						medicoNome:
+							e.profissionalAtribuido ||
+							(ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
+						especialidade:
+							e.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia' : 'Especialidades'),
+						horario: new Date(e.atualizadoEm || e.criadoEm).toLocaleTimeString('pt-BR', {
+							hour: '2-digit',
+							minute: '2-digit'
+						}),
 						status: e.statusAtendimentoCentro || 'AGUARDANDO_ATENDIMENTO'
 					};
 				});
@@ -173,7 +208,8 @@
 					Painel de Chamada TV · {centroAtivo}
 				</h1>
 				<p class="mt-1 text-xs text-slate-600">
-					Gerenciamento da conexão de Smart TVs e transmissão de chamadas em tempo real para a sala de espera do <strong>{nomeOrgao}</strong>.
+					Gerenciamento da conexão de Smart TVs e transmissão de chamadas em tempo real para a sala
+					de espera do <strong>{nomeOrgao}</strong>.
 				</p>
 			</div>
 
@@ -181,14 +217,14 @@
 				<button
 					onclick={testarSomLocal}
 					disabled={testandoAudio}
-					class="inline-flex items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 transition-colors"
+					class="inline-flex items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase transition-colors hover:bg-slate-50"
 				>
 					<span>{testandoAudio ? '🔊 Emitindo Teste...' : '🔊 Testar Som Local'}</span>
 				</button>
 
 				<button
 					onclick={abrirPainelNovaAba}
-					class="inline-flex items-center justify-center gap-2 border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+					class="inline-flex items-center justify-center gap-2 border border-blue-900 bg-blue-900 px-4 py-2 font-mono text-xs font-bold tracking-widest text-white uppercase transition-colors hover:bg-blue-950"
 				>
 					<span>Abrir Painel TV Nesta Tela</span>
 					<kbd class="border border-white/40 px-1 py-0.5 text-[9px]">↗</kbd>
@@ -200,10 +236,9 @@
 	<!-- ═══════════════════════════════════════════════════════════════
 	     CARDS DE CONEXÃO & PAREAMENTO DA TV
 	     ═══════════════════════════════════════════════════════════════ -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-		
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 		<!-- CARD 1: URL DA TV -->
-		<div class="border border-slate-200 bg-white p-5 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-white p-5">
 			<div>
 				<div class="flex items-center justify-between">
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
@@ -211,7 +246,9 @@
 					</span>
 					<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
 				</div>
-				<div class="mt-2 font-mono text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 p-2.5 break-all select-all">
+				<div
+					class="mt-2 border border-slate-200 bg-slate-50 p-2.5 font-mono text-sm font-bold break-all text-slate-900 select-all"
+				>
 					{urlTv}
 				</div>
 				<p class="mt-2 text-[11px] text-slate-600">
@@ -221,24 +258,28 @@
 
 			<button
 				onclick={() => copiarTexto(urlTv, 'link')}
-				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase transition-colors hover:bg-slate-50"
 			>
 				{copiadoLink ? '✓ Link Copiado!' : 'Copiar URL da TV'}
 			</button>
 		</div>
 
 		<!-- CARD 2: SENHA DO CENTRO -->
-		<div class="border border-slate-200 bg-white p-5 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-white p-5">
 			<div>
 				<div class="flex items-center justify-between">
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						2. SENHA DE PAREAMENTO
 					</span>
-					<span class="border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue-900 uppercase">
+					<span
+						class="border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue-900 uppercase"
+					>
 						CENTRO ATIVO
 					</span>
 				</div>
-				<div class="mt-2 font-mono text-2xl font-bold text-blue-900 bg-blue-50 border border-blue-200 p-2 text-center tracking-widest select-all">
+				<div
+					class="mt-2 border border-blue-200 bg-blue-50 p-2 text-center font-mono text-2xl font-bold tracking-widest text-blue-900 select-all"
+				>
 					{senhaPareamento}
 				</div>
 				<p class="mt-2 text-[11px] text-slate-600">
@@ -248,25 +289,27 @@
 
 			<button
 				onclick={() => copiarTexto(senhaPareamento, 'senha')}
-				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+				class="mt-4 w-full border border-slate-300 bg-white py-2 font-mono text-xs font-bold tracking-wider text-slate-700 uppercase transition-colors hover:bg-slate-50"
 			>
 				{copiadoSenha ? '✓ Senha Copiada!' : 'Copiar Senha do Centro'}
 			</button>
 		</div>
 
 		<!-- CARD 3: STATUS & ABERTURA DIRETA -->
-		<div class="border border-slate-200 bg-slate-50 p-5 flex flex-col justify-between">
+		<div class="flex flex-col justify-between border border-slate-200 bg-slate-50 p-5">
 			<div>
 				<div class="flex items-center justify-between">
 					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 						3. TRANSMISSÃO EM TEMPO REAL
 					</span>
-					<span class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-emerald-800 uppercase">
+					<span
+						class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-emerald-800 uppercase"
+					>
 						<span class="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-600"></span>
 						ONLINE
 					</span>
 				</div>
-				<div class="mt-3 space-y-1.5 text-xs text-slate-700 font-mono">
+				<div class="mt-3 space-y-1.5 font-mono text-xs text-slate-700">
 					<div class="flex justify-between border-b border-slate-200 pb-1">
 						<span class="text-slate-500">Órgão Vinculado:</span>
 						<strong>{centroAtivo}</strong>
@@ -284,7 +327,7 @@
 
 			<button
 				onclick={abrirPainelNovaAba}
-				class="mt-4 w-full border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white py-2 font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+				class="mt-4 w-full border border-blue-900 bg-blue-900 py-2 font-mono text-xs font-bold tracking-widest text-white uppercase transition-colors hover:bg-blue-950"
 			>
 				Abrir Painel em Nova Aba ↗
 			</button>
@@ -295,39 +338,44 @@
 	     GUIA RÁPIDO DE INSTALAÇÃO NA SMART TV
 	     ═══════════════════════════════════════════════════════════════ -->
 	<div class="border border-slate-200 bg-white p-6">
-		<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-3">
+		<div class="mb-3 font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 			INSTRUÇÕES PARA A EQUIPE DA RECEPÇÃO
 		</div>
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 			<div class="border border-slate-100 bg-slate-50 p-4">
 				<div class="font-mono text-lg font-bold text-blue-900">01</div>
-				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Ligue a Smart TV</h3>
-				<p class="text-[11px] text-slate-600 mt-1">
-					Abra o navegador de internet integrado na TV da recepção ou no computador conectado via HDMI.
+				<h3 class="mt-1 font-mono text-xs font-bold text-slate-900 uppercase">Ligue a Smart TV</h3>
+				<p class="mt-1 text-[11px] text-slate-600">
+					Abra o navegador de internet integrado na TV da recepção ou no computador conectado via
+					HDMI.
 				</p>
 			</div>
 
 			<div class="border border-slate-100 bg-slate-50 p-4">
 				<div class="font-mono text-lg font-bold text-blue-900">02</div>
-				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Acesse a URL</h3>
-				<p class="text-[11px] text-slate-600 mt-1">
+				<h3 class="mt-1 font-mono text-xs font-bold text-slate-900 uppercase">Acesse a URL</h3>
+				<p class="mt-1 text-[11px] text-slate-600">
 					Digite o endereço <strong>unisism.vercel.app/tv</strong> na barra de navegação da TV.
 				</p>
 			</div>
 
 			<div class="border border-slate-100 bg-slate-50 p-4">
 				<div class="font-mono text-lg font-bold text-blue-900">03</div>
-				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Digite a Senha</h3>
-				<p class="text-[11px] text-slate-600 mt-1">
-					Insira o código <strong>{senhaPareamento}</strong>. O painel conectará e salvará o pareamento automaticamente.
+				<h3 class="mt-1 font-mono text-xs font-bold text-slate-900 uppercase">Digite a Senha</h3>
+				<p class="mt-1 text-[11px] text-slate-600">
+					Insira o código <strong>{senhaPareamento}</strong>. O painel conectará e salvará o
+					pareamento automaticamente.
 				</p>
 			</div>
 
 			<div class="border border-slate-100 bg-slate-50 p-4">
 				<div class="font-mono text-lg font-bold text-blue-900">04</div>
-				<h3 class="font-mono text-xs font-bold text-slate-900 uppercase mt-1">Coloque em Tela Cheia</h3>
-				<p class="text-[11px] text-slate-600 mt-1">
-					Clique no botão "Tela Cheia" (ou F11) e ajuste o volume dos alto-falantes da sala de espera.
+				<h3 class="mt-1 font-mono text-xs font-bold text-slate-900 uppercase">
+					Coloque em Tela Cheia
+				</h3>
+				<p class="mt-1 text-[11px] text-slate-600">
+					Clique no botão "Tela Cheia" (ou F11) e ajuste o volume dos alto-falantes da sala de
+					espera.
 				</p>
 			</div>
 		</div>
@@ -337,7 +385,7 @@
 	     MONITORAMENTO EM TEMPO REAL DAS CHAMADAS
 	     ═══════════════════════════════════════════════════════════════ -->
 	<div class="border border-slate-200 bg-white">
-		<div class="border-b border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
+		<div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
 			<div>
 				<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
 					MONITORAMENTO DE TRANSMISSÃO
@@ -349,7 +397,7 @@
 
 			<button
 				onclick={carregarChamadasRecentes}
-				class="border border-slate-300 bg-white px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase hover:bg-slate-50 transition-colors"
+				class="border border-slate-300 bg-white px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase transition-colors hover:bg-slate-50"
 			>
 				{carregandoChamadas ? 'Atualizando...' : '↻ Atualizar Fila'}
 			</button>
@@ -357,7 +405,9 @@
 
 		<div class="overflow-x-auto">
 			<table class="w-full text-left font-mono text-xs">
-				<thead class="border-b border-slate-200 bg-slate-100/70 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+				<thead
+					class="border-b border-slate-200 bg-slate-100/70 text-[10px] font-bold tracking-wider text-slate-600 uppercase"
+				>
 					<tr>
 						<th class="px-6 py-3">Paciente</th>
 						<th class="px-6 py-3">Local Designado</th>
@@ -371,12 +421,13 @@
 					{#if chamadasAtivas.length === 0}
 						<tr>
 							<td colspan="6" class="px-6 py-8 text-center text-slate-500">
-								Nenhum paciente em chamada no momento. Os atendimentos chamados pelos consultórios aparecerão aqui automaticamente.
+								Nenhum paciente em chamada no momento. Os atendimentos chamados pelos consultórios
+								aparecerão aqui automaticamente.
 							</td>
 						</tr>
 					{:else}
 						{#each chamadasAtivas as c}
-							<tr class="hover:bg-slate-50 transition-colors">
+							<tr class="transition-colors hover:bg-slate-50">
 								<td class="px-6 py-3 font-bold text-slate-900">
 									{c.pacienteNome}
 								</td>
@@ -389,11 +440,13 @@
 								<td class="px-6 py-3 text-slate-600">
 									{c.especialidade}
 								</td>
-								<td class="px-6 py-3 text-slate-500 font-bold">
+								<td class="px-6 py-3 font-bold text-slate-500">
 									{c.horario}
 								</td>
 								<td class="px-6 py-3 text-right">
-									<span class="inline-flex items-center gap-1 border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800 uppercase">
+									<span
+										class="inline-flex items-center gap-1 border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800 uppercase"
+									>
 										<span class="inline-block h-1 w-1 rounded-full bg-emerald-600"></span>
 										TRANSMITIDO
 									</span>

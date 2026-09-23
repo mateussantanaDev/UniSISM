@@ -10,17 +10,19 @@ Gerado a partir do frontend SvelteKit (`src/routes/tfd/*`, `src/lib/api/tfd-type
 **Objetivo**: implementar o módulo TFD respeitando a UI já consumida — endpoints, schema, máquinas de estado, RBAC, auditoria e regras de negócio.
 
 > **Atualização v0.10 (2026-04-29)** — duas mudanças importantes:
+>
 > 1. Nova role **`REGULADOR_TFD`** com UI minimalista (Dashboard + Cadastro
 >    de Solicitação). A versão completa do TFD passa a ser exclusiva de
 >    `GESTOR_TFD` / `ADMIN` / `DESENVOLVEDOR`.
 > 2. `POST /tfd/solicitacoes` aceita **paciente inline** (com `paciente:
->    DadosPacienteInline`) para fluxo de cadastro presencial pelo regulador,
+DadosPacienteInline`) para fluxo de cadastro presencial pelo regulador,
 >    e ganha campo `acompanhante`.
 > 3. Novo endpoint `GET /tfd/relatorios/especialidades` (gestor) para
 >    fundamentar a decisão "contratar especialista local vs. mandar fora".
-> Veja [§14](#14-modo-simplificado-v010) para o contrato completo.
+>    Veja [§14](#14-modo-simplificado-v010) para o contrato completo.
 
 > Convenções globais herdadas do projeto:
+>
 > - Datas e horários em ISO 8601. Datas isoladas em `YYYY-MM-DD`. Mês em `YYYY-MM`.
 > - Valores monetários em `number` (BRL, em reais — não centavos).
 > - Erros sempre `{ "error": { "code": "...", "message": "...", "details": { ... } } }`.
@@ -104,14 +106,14 @@ Princípios não-negociáveis:
 
 Roles relevantes para TFD (conforme `rbac.podeAcessarFace4TFD`):
 
-| Role                  | Acessa Face 4 | Cadastros/CRUD | Ajusta Saldo | Operações diárias | Aporta Saldo | Exporta TCM |
-|-----------------------|:-------------:|:--------------:|:------------:|:-----------------:|:------------:|:-----------:|
-| `DESENVOLVEDOR`       | ✓             | ✓              | ✓            | ✓                 | ✓            | ✓           |
-| `ADMIN_GLOBAL`        | ✓             | ✓              | ✓            | ✓                 | ✓            | ✓           |
-| `ADMIN_PREFEITURA`    | ✓             | ✓              | ✓            | ✓                 | ✓            | ✓           |
-| `GESTOR_TFD`          | ✓             | ✓ (frota/motoristas/viagens) | —  | ✓ | ✓ (frota) | —     |
-| `OPERADOR_TFD`        | ✓             | —              | —            | ✓ (somente registro) | — | —             |
-| Demais (UBS, médico)  | —             | —              | —            | —                 | —            | —           |
+| Role                 | Acessa Face 4 |        Cadastros/CRUD        | Ajusta Saldo |  Operações diárias   | Aporta Saldo | Exporta TCM |
+| -------------------- | :-----------: | :--------------------------: | :----------: | :------------------: | :----------: | :---------: |
+| `DESENVOLVEDOR`      |       ✓       |              ✓               |      ✓       |          ✓           |      ✓       |      ✓      |
+| `ADMIN_GLOBAL`       |       ✓       |              ✓               |      ✓       |          ✓           |      ✓       |      ✓      |
+| `ADMIN_PREFEITURA`   |       ✓       |              ✓               |      ✓       |          ✓           |      ✓       |      ✓      |
+| `GESTOR_TFD`         |       ✓       | ✓ (frota/motoristas/viagens) |      —       |          ✓           |  ✓ (frota)   |      —      |
+| `OPERADOR_TFD`       |       ✓       |              —               |      —       | ✓ (somente registro) |      —       |      —      |
+| Demais (UBS, médico) |       —       |              —               |      —       |          —           |      —       |      —      |
 
 **Regras práticas:**
 
@@ -121,6 +123,7 @@ Roles relevantes para TFD (conforme `rbac.podeAcessarFace4TFD`):
 - Exportação TCM (`/tfd/auditoria`) exige `ehAdminGlobalOuPrefeitura`.
 
 Resposta padrão:
+
 - `403 ROLE_NAO_PERMITIDO` quando autenticado mas sem permissão.
 - `404` se o recurso é de outra prefeitura (jamais 403, para não revelar existência).
 
@@ -460,29 +463,30 @@ CREATE INDEX idx_auditoria_recurso ON auditoria_tfd (prefeitura_id, recurso_tipo
 
 ### 7.1. Veículos
 
-| Método | Caminho                              | Body / Query                          | Retorna     | RBAC |
-|--------|--------------------------------------|---------------------------------------|-------------|------|
-| GET    | `/tfd/veiculos`                      | —                                     | `Veiculo[]` | gerenciar |
-| POST   | `/tfd/veiculos`                      | `CriarVeiculoRequest`                 | `Veiculo`   | gerenciar |
-| GET    | `/tfd/veiculos/:id`                  | —                                     | `Veiculo`   | gerenciar |
-| PATCH  | `/tfd/veiculos/:id`                  | `AtualizarVeiculoRequest`             | `Veiculo`   | gerenciar |
-| POST   | `/tfd/veiculos/:id/manutencao`       | —                                     | `Veiculo`   | gerenciar |
-| POST   | `/tfd/veiculos/:id/reativar`         | —                                     | `Veiculo`   | gerenciar |
-| DELETE | `/tfd/veiculos/:id`                  | —                                     | 204         | DESENVOLVEDOR |
+| Método | Caminho                        | Body / Query              | Retorna     | RBAC          |
+| ------ | ------------------------------ | ------------------------- | ----------- | ------------- |
+| GET    | `/tfd/veiculos`                | —                         | `Veiculo[]` | gerenciar     |
+| POST   | `/tfd/veiculos`                | `CriarVeiculoRequest`     | `Veiculo`   | gerenciar     |
+| GET    | `/tfd/veiculos/:id`            | —                         | `Veiculo`   | gerenciar     |
+| PATCH  | `/tfd/veiculos/:id`            | `AtualizarVeiculoRequest` | `Veiculo`   | gerenciar     |
+| POST   | `/tfd/veiculos/:id/manutencao` | —                         | `Veiculo`   | gerenciar     |
+| POST   | `/tfd/veiculos/:id/reativar`   | —                         | `Veiculo`   | gerenciar     |
+| DELETE | `/tfd/veiculos/:id`            | —                         | 204         | DESENVOLVEDOR |
 
 `CriarVeiculoRequest`:
+
 ```json
 {
-  "placa": "ABC-1D23",
-  "modelo": "Mercedes Sprinter 415",
-  "tipo": "VAN",
-  "capacidade": 14,
-  "ano": 2024,
-  "combustivel": "DIESEL",
-  "consumoMedioKml": 9.8,
-  "hodometroAtualKm": 12450,
-  "proximaRevisaoKm": 30000,
-  "proximaRevisaoEm": "2026-08-15"
+	"placa": "ABC-1D23",
+	"modelo": "Mercedes Sprinter 415",
+	"tipo": "VAN",
+	"capacidade": 14,
+	"ano": 2024,
+	"combustivel": "DIESEL",
+	"consumoMedioKml": 9.8,
+	"hodometroAtualKm": 12450,
+	"proximaRevisaoKm": 30000,
+	"proximaRevisaoEm": "2026-08-15"
 }
 ```
 
@@ -490,15 +494,15 @@ Erros: `PLACA_DUPLICADA`, `VEICULO_EM_USO` (no DELETE).
 
 ### 7.2. Motoristas
 
-| Método | Caminho                                | Body / Query                  | Retorna       | RBAC |
-|--------|----------------------------------------|-------------------------------|---------------|------|
-| GET    | `/tfd/motoristas`                      | —                             | `Motorista[]` | gerenciar |
-| POST   | `/tfd/motoristas`                      | `CriarMotoristaRequest`       | `Motorista`   | gerenciar |
-| GET    | `/tfd/motoristas/:id`                  | —                             | `Motorista`   | gerenciar |
-| PATCH  | `/tfd/motoristas/:id`                  | `AtualizarMotoristaRequest`   | `Motorista`   | gerenciar |
-| POST   | `/tfd/motoristas/:id/afastar`          | —                             | `Motorista`   | gerenciar |
-| POST   | `/tfd/motoristas/:id/reativar`         | —                             | `Motorista`   | gerenciar |
-| DELETE | `/tfd/motoristas/:id`                  | —                             | 204           | DESENVOLVEDOR |
+| Método | Caminho                        | Body / Query                | Retorna       | RBAC          |
+| ------ | ------------------------------ | --------------------------- | ------------- | ------------- |
+| GET    | `/tfd/motoristas`              | —                           | `Motorista[]` | gerenciar     |
+| POST   | `/tfd/motoristas`              | `CriarMotoristaRequest`     | `Motorista`   | gerenciar     |
+| GET    | `/tfd/motoristas/:id`          | —                           | `Motorista`   | gerenciar     |
+| PATCH  | `/tfd/motoristas/:id`          | `AtualizarMotoristaRequest` | `Motorista`   | gerenciar     |
+| POST   | `/tfd/motoristas/:id/afastar`  | —                           | `Motorista`   | gerenciar     |
+| POST   | `/tfd/motoristas/:id/reativar` | —                           | `Motorista`   | gerenciar     |
+| DELETE | `/tfd/motoristas/:id`          | —                           | 204           | DESENVOLVEDOR |
 
 Cálculo: `cnhVencidaEm` = `floor((validadeCnh - hoje) / dia)` — negativo se vencida.
 
@@ -506,15 +510,15 @@ Erros: `CPF_DUPLICADO`, `CPF_INVALIDO`, `VALIDADE_CNH_INVALIDA`, `MOTORISTA_EM_U
 
 ### 7.3. Solicitações TFD
 
-| Método | Caminho                              | Body / Query                          | Retorna           | RBAC |
-|--------|--------------------------------------|---------------------------------------|-------------------|------|
-| GET    | `/tfd/solicitacoes`                  | `ListSolicitacoesQuery`               | `SolicitacaoTFD[]`| gerenciar |
-| POST   | `/tfd/solicitacoes`                  | `CriarSolicitacaoRequest`             | `SolicitacaoTFD`  | gerenciar |
-| GET    | `/tfd/solicitacoes/:id`              | —                                     | `SolicitacaoTFD`  | gerenciar |
-| POST   | `/tfd/solicitacoes/:id/aprovar`      | `AprovarSolicitacaoRequest`           | `SolicitacaoTFD`  | gerenciar |
-| POST   | `/tfd/solicitacoes/:id/negar`        | `{ "motivo": "≥10 chars" }`           | `SolicitacaoTFD`  | gerenciar |
-| POST   | `/tfd/solicitacoes/:id/anexos`       | multipart `file` + `tipo`             | `AnexoSolicitacaoTFD` | gerenciar |
-| GET    | `/tfd/anexos/:anexoId/download`      | —                                     | binary            | gerenciar |
+| Método | Caminho                         | Body / Query                | Retorna               | RBAC      |
+| ------ | ------------------------------- | --------------------------- | --------------------- | --------- |
+| GET    | `/tfd/solicitacoes`             | `ListSolicitacoesQuery`     | `SolicitacaoTFD[]`    | gerenciar |
+| POST   | `/tfd/solicitacoes`             | `CriarSolicitacaoRequest`   | `SolicitacaoTFD`      | gerenciar |
+| GET    | `/tfd/solicitacoes/:id`         | —                           | `SolicitacaoTFD`      | gerenciar |
+| POST   | `/tfd/solicitacoes/:id/aprovar` | `AprovarSolicitacaoRequest` | `SolicitacaoTFD`      | gerenciar |
+| POST   | `/tfd/solicitacoes/:id/negar`   | `{ "motivo": "≥10 chars" }` | `SolicitacaoTFD`      | gerenciar |
+| POST   | `/tfd/solicitacoes/:id/anexos`  | multipart `file` + `tipo`   | `AnexoSolicitacaoTFD` | gerenciar |
+| GET    | `/tfd/anexos/:anexoId/download` | —                           | binary                | gerenciar |
 
 `AprovarSolicitacaoRequest` — quando vier `alocacao`, é **atomico**: `aprova + cria PassageiroViagem`. Para isso, validar `alocacao.viagemId` no mesmo `prefeituraId`, status `AGENDADA`, capacidade.
 
@@ -522,18 +526,18 @@ Erros: `SOLICITACAO_NAO_APROVADA`, `STATUS_INVALIDO`, `MOTIVO_OBRIGATORIO`, `VIA
 
 ### 7.4. Viagens
 
-| Método | Caminho                                        | Body                                    | Retorna       | RBAC |
-|--------|------------------------------------------------|-----------------------------------------|---------------|------|
-| GET    | `/tfd/viagens`                                 | `ListViagensQuery`                      | `ViagemFrota[]` | gerenciar |
-| POST   | `/tfd/viagens`                                 | `CriarViagemRequest`                    | `ViagemFrota`   | gerenciar |
-| GET    | `/tfd/viagens/:id`                             | —                                       | `ViagemFrota`   | gerenciar |
-| PATCH  | `/tfd/viagens/:id`                             | `AtualizarViagemRequest`                | `ViagemFrota`   | gerenciar |
-| POST   | `/tfd/viagens/:id/iniciar`                     | `{ "kmInicialHodometro": 12500 }`       | `ViagemFrota`   | gerenciar |
-| POST   | `/tfd/viagens/:id/concluir`                    | `{ "kmFinalHodometro": 12780, "observacoes": "" }` | `ViagemFrota` | gerenciar |
-| POST   | `/tfd/viagens/:id/cancelar`                    | `{ "motivo": "≥10 chars" }`             | `ViagemFrota`   | gerenciar |
-| POST   | `/tfd/viagens/:id/passageiros`                 | `AlocarPassageiroRequest`               | `ViagemFrota`   | gerenciar |
-| DELETE | `/tfd/viagens/:id/passageiros/:passageiroId`   | —                                       | `ViagemFrota`   | gerenciar |
-| POST   | `/tfd/viagens/:id/passageiros/:pid/presenca`   | `MarcarPresencaRequest`                 | `ViagemFrota`   | gerenciar |
+| Método | Caminho                                      | Body                                               | Retorna         | RBAC      |
+| ------ | -------------------------------------------- | -------------------------------------------------- | --------------- | --------- |
+| GET    | `/tfd/viagens`                               | `ListViagensQuery`                                 | `ViagemFrota[]` | gerenciar |
+| POST   | `/tfd/viagens`                               | `CriarViagemRequest`                               | `ViagemFrota`   | gerenciar |
+| GET    | `/tfd/viagens/:id`                           | —                                                  | `ViagemFrota`   | gerenciar |
+| PATCH  | `/tfd/viagens/:id`                           | `AtualizarViagemRequest`                           | `ViagemFrota`   | gerenciar |
+| POST   | `/tfd/viagens/:id/iniciar`                   | `{ "kmInicialHodometro": 12500 }`                  | `ViagemFrota`   | gerenciar |
+| POST   | `/tfd/viagens/:id/concluir`                  | `{ "kmFinalHodometro": 12780, "observacoes": "" }` | `ViagemFrota`   | gerenciar |
+| POST   | `/tfd/viagens/:id/cancelar`                  | `{ "motivo": "≥10 chars" }`                        | `ViagemFrota`   | gerenciar |
+| POST   | `/tfd/viagens/:id/passageiros`               | `AlocarPassageiroRequest`                          | `ViagemFrota`   | gerenciar |
+| DELETE | `/tfd/viagens/:id/passageiros/:passageiroId` | —                                                  | `ViagemFrota`   | gerenciar |
+| POST   | `/tfd/viagens/:id/passageiros/:pid/presenca` | `MarcarPresencaRequest`                            | `ViagemFrota`   | gerenciar |
 
 Regras:
 
@@ -545,14 +549,14 @@ Regras:
 
 ### 7.5. Abastecimento
 
-| Método | Caminho                                              | Body                                         | Retorna         | RBAC |
-|--------|------------------------------------------------------|----------------------------------------------|-----------------|------|
-| GET    | `/tfd/abastecimentos`                                | `ListAbastecimentosQuery`                    | `Abastecimento[]` | gerenciar |
-| POST   | `/tfd/abastecimentos`                                | `SolicitarAbastecimentoRequest`              | `Abastecimento` | gerenciar |
-| POST   | `/tfd/abastecimentos/:id/liberar`                    | `{ "observacao"?: "..." }`                   | `Abastecimento` | gerenciar |
-| POST   | `/tfd/abastecimentos/:id/negar`                      | `{ "motivo": "≥10 chars" }`                  | `Abastecimento` | gerenciar |
-| POST   | `/tfd/abastecimentos/:id/comprovante`                | multipart (`file` + `litros` + `valorPorLitro` + `valorTotal` + `hodometroKm`) | `Abastecimento` | gerenciar |
-| GET    | `/tfd/abastecimentos/:id/comprovante`                | —                                            | binary          | gerenciar |
+| Método | Caminho                               | Body                                                                           | Retorna           | RBAC      |
+| ------ | ------------------------------------- | ------------------------------------------------------------------------------ | ----------------- | --------- |
+| GET    | `/tfd/abastecimentos`                 | `ListAbastecimentosQuery`                                                      | `Abastecimento[]` | gerenciar |
+| POST   | `/tfd/abastecimentos`                 | `SolicitarAbastecimentoRequest`                                                | `Abastecimento`   | gerenciar |
+| POST   | `/tfd/abastecimentos/:id/liberar`     | `{ "observacao"?: "..." }`                                                     | `Abastecimento`   | gerenciar |
+| POST   | `/tfd/abastecimentos/:id/negar`       | `{ "motivo": "≥10 chars" }`                                                    | `Abastecimento`   | gerenciar |
+| POST   | `/tfd/abastecimentos/:id/comprovante` | multipart (`file` + `litros` + `valorPorLitro` + `valorTotal` + `hodometroKm`) | `Abastecimento`   | gerenciar |
+| GET    | `/tfd/abastecimentos/:id/comprovante` | —                                                                              | binary            | gerenciar |
 
 `SolicitarAbastecimentoRequest` — dois modos:
 
@@ -568,12 +572,15 @@ Validações no `solicitar`:
 - **Reservar saldo**: `saldo_reservado += valorEstimado`. Se `saldo_disponivel < valorEstimado` → `SALDO_INSUFICIENTE`.
 
 `liberar`:
+
 - Só de `SOLICITADO`. Erro `STATUS_INVALIDO`.
 
 `negar`:
+
 - Só de `SOLICITADO`. Libera reserva (`saldo_reservado -= valorEstimado`).
 
 `comprovante` (registrar realizado):
+
 - Só de `LIBERADO`.
 - `valorTotal` não pode exceder `valorEstimado * 1.05` → erro `VALOR_EXCEDE_LIMITE`.
 - Atualiza `veiculo.hodometroAtualKm = max(atual, hodometroKm)`.
@@ -583,12 +590,12 @@ Validações no `solicitar`:
 
 ### 7.6. Saldo da Frota
 
-| Método | Caminho                       | Body / Query                                  | Retorna                |
-|--------|-------------------------------|-----------------------------------------------|------------------------|
-| GET    | `/tfd/saldo`                  | `?mes=YYYY-MM` (opcional → mês atual)         | `SaldoVeiculo[]`       |
-| POST   | `/tfd/saldo/ajustar`          | `AjustarSaldoRequest`                         | `SaldoVeiculo`         |
-| POST   | `/tfd/saldo/aportar`          | `AporteSaldoFrotaRequest`                     | `AporteSaldoFrota`     |
-| GET    | `/tfd/saldo/aportes`          | `?mes=YYYY-MM` (opcional)                     | `AporteSaldoFrota[]`   |
+| Método | Caminho              | Body / Query                          | Retorna              |
+| ------ | -------------------- | ------------------------------------- | -------------------- |
+| GET    | `/tfd/saldo`         | `?mes=YYYY-MM` (opcional → mês atual) | `SaldoVeiculo[]`     |
+| POST   | `/tfd/saldo/ajustar` | `AjustarSaldoRequest`                 | `SaldoVeiculo`       |
+| POST   | `/tfd/saldo/aportar` | `AporteSaldoFrotaRequest`             | `AporteSaldoFrota`   |
+| GET    | `/tfd/saldo/aportes` | `?mes=YYYY-MM` (opcional)             | `AporteSaldoFrota[]` |
 
 **Diferença `ajustar` × `aportar`:**
 
@@ -599,14 +606,14 @@ Validações no `solicitar`:
 
 ```json
 {
-  "veiculoId": "uuid",
-  "rateioGeral": false,
-  "mes": "2026-04",
-  "valorBRL": 5000.00,
-  "fonte": "EMPENHO",
-  "numeroDocumento": "2026NE000123",
-  "descricaoFonte": null,
-  "justificativa": "aporte mensal regular para combustível"
+	"veiculoId": "uuid",
+	"rateioGeral": false,
+	"mes": "2026-04",
+	"valorBRL": 5000.0,
+	"fonte": "EMPENHO",
+	"numeroDocumento": "2026NE000123",
+	"descricaoFonte": null,
+	"justificativa": "aporte mensal regular para combustível"
 }
 ```
 
@@ -623,32 +630,32 @@ Validações:
 `AjustarSaldoRequest` — sobrescreve:
 
 ```json
-{ "veiculoId": "uuid", "mes": "2026-04", "novoSaldoMensal": 12500.00, "justificativa": "..." }
+{ "veiculoId": "uuid", "mes": "2026-04", "novoSaldoMensal": 12500.0, "justificativa": "..." }
 ```
 
 ### 7.7. Saldo de Ajuda de Custo
 
-| Método | Caminho                                | Body / Query                              | Retorna                       |
-|--------|----------------------------------------|-------------------------------------------|-------------------------------|
-| GET    | `/tfd/saldo-ajuda-custo`               | `?mes=YYYY-MM` (opcional)                 | `SaldoAjudaCusto`             |
-| POST   | `/tfd/saldo-ajuda-custo/ajustar`       | `AjustarSaldoAjudaCustoRequest`           | `SaldoAjudaCusto`             |
-| POST   | `/tfd/saldo-ajuda-custo/aportar`       | `AporteSaldoAjudaCustoRequest`            | `AporteSaldoAjudaCusto`       |
-| GET    | `/tfd/saldo-ajuda-custo/aportes`       | `?mes=YYYY-MM` (opcional)                 | `AporteSaldoAjudaCusto[]`     |
+| Método | Caminho                          | Body / Query                    | Retorna                   |
+| ------ | -------------------------------- | ------------------------------- | ------------------------- |
+| GET    | `/tfd/saldo-ajuda-custo`         | `?mes=YYYY-MM` (opcional)       | `SaldoAjudaCusto`         |
+| POST   | `/tfd/saldo-ajuda-custo/ajustar` | `AjustarSaldoAjudaCustoRequest` | `SaldoAjudaCusto`         |
+| POST   | `/tfd/saldo-ajuda-custo/aportar` | `AporteSaldoAjudaCustoRequest`  | `AporteSaldoAjudaCusto`   |
+| GET    | `/tfd/saldo-ajuda-custo/aportes` | `?mes=YYYY-MM` (opcional)       | `AporteSaldoAjudaCusto[]` |
 
 `SaldoAjudaCusto` — **um único registro por (prefeitura, mês)**.
 
 ```json
 {
-  "prefeituraId": "uuid",
-  "mes": "2026-04",
-  "saldoMensal": 25000.00,
-  "saldoConsumido": 8400.00,
-  "saldoReservado": 1200.00,
-  "saldoDisponivel": 15400.00,
-  "tetoAlimentacao": 80.00,
-  "tetoHospedagem": 250.00,
-  "tetoDeslocamento": 60.00,
-  "atualizadoEm": "2026-04-25T14:30:00Z"
+	"prefeituraId": "uuid",
+	"mes": "2026-04",
+	"saldoMensal": 25000.0,
+	"saldoConsumido": 8400.0,
+	"saldoReservado": 1200.0,
+	"saldoDisponivel": 15400.0,
+	"tetoAlimentacao": 80.0,
+	"tetoHospedagem": 250.0,
+	"tetoDeslocamento": 60.0,
+	"atualizadoEm": "2026-04-25T14:30:00Z"
 }
 ```
 
@@ -656,12 +663,12 @@ Validações:
 
 ```json
 {
-  "mes": "2026-04",
-  "novoSaldoMensal": 30000,
-  "tetoAlimentacao": 90,
-  "tetoHospedagem": 250,
-  "tetoDeslocamento": 60,
-  "justificativa": "revisão dos tetos conforme Portaria SMS 047/2026"
+	"mes": "2026-04",
+	"novoSaldoMensal": 30000,
+	"tetoAlimentacao": 90,
+	"tetoHospedagem": 250,
+	"tetoDeslocamento": 60,
+	"justificativa": "revisão dos tetos conforme Portaria SMS 047/2026"
 }
 ```
 
@@ -671,11 +678,11 @@ Tetos `0` significam **sem teto**. Validar `novoSaldoMensal ≥ 0`. RBAC: `ehAdm
 
 ```json
 {
-  "mes": "2026-04",
-  "valorBRL": 10000,
-  "fonte": "REPASSE_FEDERAL",
-  "numeroDocumento": "FNS-2026-12345",
-  "justificativa": "repasse FNS componente TFD abril/2026"
+	"mes": "2026-04",
+	"valorBRL": 10000,
+	"fonte": "REPASSE_FEDERAL",
+	"numeroDocumento": "FNS-2026-12345",
+	"justificativa": "repasse FNS componente TFD abril/2026"
 }
 ```
 
@@ -683,25 +690,25 @@ Mesma validação de fontes/documento que aporte de frota. Auditoria: `SALDO_AJU
 
 ### 7.8. Ajuda de Custo
 
-| Método | Caminho                                  | Body                              | Retorna       | RBAC |
-|--------|------------------------------------------|-----------------------------------|---------------|------|
-| GET    | `/tfd/ajudas-custo`                      | `ListAjudasCustoQuery`            | `AjudaCusto[]`| gerenciar |
-| POST   | `/tfd/ajudas-custo`                      | `SolicitarAjudaCustoRequest`      | `AjudaCusto`  | gerenciar |
-| GET    | `/tfd/ajudas-custo/:id`                  | —                                 | `AjudaCusto`  | gerenciar |
-| POST   | `/tfd/ajudas-custo/:id/autorizar`        | —                                 | `AjudaCusto`  | gerenciar |
-| POST   | `/tfd/ajudas-custo/:id/negar`            | `{ "motivo": "≥10" }`             | `AjudaCusto`  | gerenciar |
-| POST   | `/tfd/ajudas-custo/:id/pagar`            | multipart `file` + `metodoPagamento` | `AjudaCusto` | gerenciar |
+| Método | Caminho                           | Body                                 | Retorna        | RBAC      |
+| ------ | --------------------------------- | ------------------------------------ | -------------- | --------- |
+| GET    | `/tfd/ajudas-custo`               | `ListAjudasCustoQuery`               | `AjudaCusto[]` | gerenciar |
+| POST   | `/tfd/ajudas-custo`               | `SolicitarAjudaCustoRequest`         | `AjudaCusto`   | gerenciar |
+| GET    | `/tfd/ajudas-custo/:id`           | —                                    | `AjudaCusto`   | gerenciar |
+| POST   | `/tfd/ajudas-custo/:id/autorizar` | —                                    | `AjudaCusto`   | gerenciar |
+| POST   | `/tfd/ajudas-custo/:id/negar`     | `{ "motivo": "≥10" }`                | `AjudaCusto`   | gerenciar |
+| POST   | `/tfd/ajudas-custo/:id/pagar`     | multipart `file` + `metodoPagamento` | `AjudaCusto`   | gerenciar |
 
 `SolicitarAjudaCustoRequest`:
 
 ```json
 {
-  "viagemId": "uuid",
-  "pacienteId": "uuid",
-  "itens": [
-    { "categoria": "ALIMENTACAO", "descricao": "2 refeições no dia da consulta", "valorBRL": 70.00 },
-    { "categoria": "DESLOCAMENTO_LOCAL", "descricao": "Táxi UBS↔hospital", "valorBRL": 50.00 }
-  ]
+	"viagemId": "uuid",
+	"pacienteId": "uuid",
+	"itens": [
+		{ "categoria": "ALIMENTACAO", "descricao": "2 refeições no dia da consulta", "valorBRL": 70.0 },
+		{ "categoria": "DESLOCAMENTO_LOCAL", "descricao": "Táxi UBS↔hospital", "valorBRL": 50.0 }
+	]
 }
 ```
 
@@ -716,13 +723,16 @@ Validações:
 - **Reservar saldo**: `saldo_ajuda_custo.saldo_reservado += valor_total`. Se `saldo_disponivel < valor_total` → `SALDO_AJUDA_INSUFICIENTE`.
 
 `autorizar` (PENDENTE → AUTORIZADA):
+
 - Mantém reserva.
 - Auditoria: `AJUDA_CUSTO_AUTORIZADA`.
 
 `negar` (PENDENTE → NEGADA):
+
 - **Libera reserva**: `saldo_reservado -= valor_total`.
 
 `pagar` (AUTORIZADA → PAGA):
+
 - Anexa comprovante (multipart, scan antimalware).
 - **Liquida saldo**: `saldo_reservado -= valor_total`, `saldo_consumido += valor_total`.
 - Auditoria: `AJUDA_CUSTO_PAGA` + storage do comprovante.
@@ -731,12 +741,12 @@ Estados terminais: `PAGA`, `NEGADA`, `CANCELADA` (apenas via admin, fora do flux
 
 ### 7.9. Auditoria
 
-| Método | Caminho                          | Query                          | Retorna                                    |
-|--------|----------------------------------|--------------------------------|--------------------------------------------|
-| GET    | `/tfd/auditoria`                 | `ListAuditoriaQuery`           | `RegistroAuditoriaTFD[]`                   |
-| GET    | `/tfd/auditoria/:id`             | —                              | `RegistroAuditoriaTFD`                     |
-| GET    | `/tfd/auditoria/verificar`       | —                              | `{ total, corrompidos: string[] }`         |
-| GET    | `/tfd/auditoria/exportar-tj?mes=YYYY-MM` | —                      | `ZIP` (`Content-Disposition: filename=...`)|
+| Método | Caminho                                  | Query                | Retorna                                     |
+| ------ | ---------------------------------------- | -------------------- | ------------------------------------------- |
+| GET    | `/tfd/auditoria`                         | `ListAuditoriaQuery` | `RegistroAuditoriaTFD[]`                    |
+| GET    | `/tfd/auditoria/:id`                     | —                    | `RegistroAuditoriaTFD`                      |
+| GET    | `/tfd/auditoria/verificar`               | —                    | `{ total, corrompidos: string[] }`          |
+| GET    | `/tfd/auditoria/exportar-tj?mes=YYYY-MM` | —                    | `ZIP` (`Content-Disposition: filename=...`) |
 
 ZIP contém:
 
@@ -896,72 +906,72 @@ AJUDA_CUSTO_CRIADA | AJUDA_CUSTO_AUTORIZADA | AJUDA_CUSTO_PAGA | AJUDA_CUSTO_NEG
 
 Catálogo canônico — frontend traduz pelo `code` (estável), nunca pela `message`:
 
-| Code                            | HTTP | Significado                                                  |
-|---------------------------------|:----:|--------------------------------------------------------------|
-| `PAYLOAD_INVALIDO`              | 400  | Schema do body inválido / tipos errados.                     |
-| `ROLE_NAO_PERMITIDO`            | 403  | Role autenticada sem permissão.                              |
-| `NAO_AUTENTICADO`               | 401  | Sem token / token inválido.                                  |
-| `TOKEN_EXPIRADO`                | 401  | Token expirado.                                              |
-| `VEICULO_NAO_ENCONTRADO`        | 404  | Veículo inexistente ou outra prefeitura.                     |
-| `MOTORISTA_NAO_ENCONTRADO`      | 404  | Motorista inexistente ou outra prefeitura.                   |
-| `SOLICITACAO_NAO_ENCONTRADA`    | 404  | —                                                            |
-| `VIAGEM_NAO_ENCONTRADA`         | 404  | —                                                            |
-| `ABASTECIMENTO_NAO_ENCONTRADO`  | 404  | —                                                            |
-| `AJUDA_NAO_ENCONTRADA`          | 404  | —                                                            |
-| `ANEXO_NAO_ENCONTRADO`          | 404  | —                                                            |
-| `COMPROVANTE_AUSENTE`           | 422  | Pagar/realizar sem ter feito upload.                         |
-| `PLACA_DUPLICADA`               | 409  | Placa já existe (status ≠ INATIVO).                          |
-| `CPF_DUPLICADO`                 | 409  | CPF já existe.                                               |
-| `STATUS_INVALIDO`               | 409  | Operação no status atual não permitida.                      |
-| `STATUS_TERMINAL`               | 409  | Recurso já em estado terminal.                               |
-| `VIAGEM_STATUS_INVALIDO`        | 409  | Viagem cancelada/concluída — não aceita passageiros.         |
-| `ASSENTO_OCUPADO`               | 409  | Assento já alocado.                                          |
-| `CAPACIDADE_EXCEDIDA`           | 409  | Viagem cheia.                                                |
-| `ANEXO_NAO_LIBERADO`            | 409  | Anexo ainda em scan antimalware.                             |
-| `AJUDA_DUPLICADA`               | 409  | Já existe ajuda ativa para (viagem, paciente).               |
-| `VEICULO_EM_USO`                | 409  | DELETE veículo com viagens ativas.                           |
-| `MOTORISTA_EM_USO`              | 409  | DELETE motorista com viagens ativas.                         |
-| `VEICULO_REQUERIDO`             | 422  | Faltou veiculoId/placa.                                      |
-| `VALOR_REQUERIDO`               | 422  | Faltou valor estimado.                                       |
-| `VALOR_INVALIDO`                | 422  | Valor ≤ 0.                                                   |
-| `ASSENTO_INVALIDO`              | 422  | Fora do range 1..vagasTotais.                                |
-| `VAGAS_INVALIDAS`               | 422  | Vagas ≤ 0.                                                   |
-| `VAGAS_EXCEDEM_CAPACIDADE`      | 422  | Vagas > capacidade do veículo.                               |
-| `CNH_VENCIDA`                   | 422  | Motorista com CNH vencida.                                   |
-| `MOTORISTA_INDISPONIVEL`        | 422  | Motorista AFASTADO ou INATIVO.                               |
-| `VEICULO_INDISPONIVEL`          | 422  | Veículo EM_MANUTENCAO ou INATIVO.                            |
-| `HODOMETRO_INVALIDO`            | 422  | Hodômetro retroativo.                                        |
-| `SALDO_INSUFICIENTE`            | 422  | Saldo da frota insuficiente.                                 |
-| `SALDO_AJUDA_INSUFICIENTE`      | 422  | Saldo de ajuda de custo insuficiente.                        |
-| `APORTE_INVALIDO`               | 422  | valorBRL ≤ 0 no aporte.                                      |
-| `APORTE_FONTE_INVALIDA`         | 422  | Fonte = OUTRO sem `descricaoFonte`.                          |
-| `APORTE_DOCUMENTO_OBRIGATORIO`  | 422  | Fonte = EMPENHO/PORTARIA sem `numeroDocumento`.              |
-| `TETO_CATEGORIA_EXCEDIDO`       | 422  | Item de ajuda excede teto da categoria.                      |
-| `VALOR_EXCEDE_LIMITE`           | 422  | Comprovante > 105% do estimado.                              |
-| `MOTIVO_OBRIGATORIO`            | 422  | Motivo < 10 chars.                                           |
-| `JUSTIFICATIVA_OBRIGATORIA`     | 422  | Justificativa < 10 chars.                                    |
-| `SOLICITACAO_NAO_APROVADA`      | 422  | Tentativa de alocar PENDENTE.                                |
-| `DATA_INVALIDA`                 | 422  | Data fora do formato/intervalo.                              |
-| `CPF_INVALIDO`                  | 422  | CPF != 11 dígitos.                                           |
-| `VALIDADE_CNH_INVALIDA`         | 422  | Validade CNH inválida.                                       |
-| `ITENS_OBRIGATORIOS`            | 422  | Ajuda sem itens.                                             |
-| `VIAGEM_REALIZADA_IMUTAVEL`     | 422  | Cancelar viagem CONCLUIDA.                                   |
-| `TRANSICAO_INVALIDA`            | 422  | Transição não permitida na máquina de estado.                |
-| `ERRO_INTERNO`                  | 500  | Genérico.                                                    |
+| Code                           | HTTP | Significado                                          |
+| ------------------------------ | :--: | ---------------------------------------------------- |
+| `PAYLOAD_INVALIDO`             | 400  | Schema do body inválido / tipos errados.             |
+| `ROLE_NAO_PERMITIDO`           | 403  | Role autenticada sem permissão.                      |
+| `NAO_AUTENTICADO`              | 401  | Sem token / token inválido.                          |
+| `TOKEN_EXPIRADO`               | 401  | Token expirado.                                      |
+| `VEICULO_NAO_ENCONTRADO`       | 404  | Veículo inexistente ou outra prefeitura.             |
+| `MOTORISTA_NAO_ENCONTRADO`     | 404  | Motorista inexistente ou outra prefeitura.           |
+| `SOLICITACAO_NAO_ENCONTRADA`   | 404  | —                                                    |
+| `VIAGEM_NAO_ENCONTRADA`        | 404  | —                                                    |
+| `ABASTECIMENTO_NAO_ENCONTRADO` | 404  | —                                                    |
+| `AJUDA_NAO_ENCONTRADA`         | 404  | —                                                    |
+| `ANEXO_NAO_ENCONTRADO`         | 404  | —                                                    |
+| `COMPROVANTE_AUSENTE`          | 422  | Pagar/realizar sem ter feito upload.                 |
+| `PLACA_DUPLICADA`              | 409  | Placa já existe (status ≠ INATIVO).                  |
+| `CPF_DUPLICADO`                | 409  | CPF já existe.                                       |
+| `STATUS_INVALIDO`              | 409  | Operação no status atual não permitida.              |
+| `STATUS_TERMINAL`              | 409  | Recurso já em estado terminal.                       |
+| `VIAGEM_STATUS_INVALIDO`       | 409  | Viagem cancelada/concluída — não aceita passageiros. |
+| `ASSENTO_OCUPADO`              | 409  | Assento já alocado.                                  |
+| `CAPACIDADE_EXCEDIDA`          | 409  | Viagem cheia.                                        |
+| `ANEXO_NAO_LIBERADO`           | 409  | Anexo ainda em scan antimalware.                     |
+| `AJUDA_DUPLICADA`              | 409  | Já existe ajuda ativa para (viagem, paciente).       |
+| `VEICULO_EM_USO`               | 409  | DELETE veículo com viagens ativas.                   |
+| `MOTORISTA_EM_USO`             | 409  | DELETE motorista com viagens ativas.                 |
+| `VEICULO_REQUERIDO`            | 422  | Faltou veiculoId/placa.                              |
+| `VALOR_REQUERIDO`              | 422  | Faltou valor estimado.                               |
+| `VALOR_INVALIDO`               | 422  | Valor ≤ 0.                                           |
+| `ASSENTO_INVALIDO`             | 422  | Fora do range 1..vagasTotais.                        |
+| `VAGAS_INVALIDAS`              | 422  | Vagas ≤ 0.                                           |
+| `VAGAS_EXCEDEM_CAPACIDADE`     | 422  | Vagas > capacidade do veículo.                       |
+| `CNH_VENCIDA`                  | 422  | Motorista com CNH vencida.                           |
+| `MOTORISTA_INDISPONIVEL`       | 422  | Motorista AFASTADO ou INATIVO.                       |
+| `VEICULO_INDISPONIVEL`         | 422  | Veículo EM_MANUTENCAO ou INATIVO.                    |
+| `HODOMETRO_INVALIDO`           | 422  | Hodômetro retroativo.                                |
+| `SALDO_INSUFICIENTE`           | 422  | Saldo da frota insuficiente.                         |
+| `SALDO_AJUDA_INSUFICIENTE`     | 422  | Saldo de ajuda de custo insuficiente.                |
+| `APORTE_INVALIDO`              | 422  | valorBRL ≤ 0 no aporte.                              |
+| `APORTE_FONTE_INVALIDA`        | 422  | Fonte = OUTRO sem `descricaoFonte`.                  |
+| `APORTE_DOCUMENTO_OBRIGATORIO` | 422  | Fonte = EMPENHO/PORTARIA sem `numeroDocumento`.      |
+| `TETO_CATEGORIA_EXCEDIDO`      | 422  | Item de ajuda excede teto da categoria.              |
+| `VALOR_EXCEDE_LIMITE`          | 422  | Comprovante > 105% do estimado.                      |
+| `MOTIVO_OBRIGATORIO`           | 422  | Motivo < 10 chars.                                   |
+| `JUSTIFICATIVA_OBRIGATORIA`    | 422  | Justificativa < 10 chars.                            |
+| `SOLICITACAO_NAO_APROVADA`     | 422  | Tentativa de alocar PENDENTE.                        |
+| `DATA_INVALIDA`                | 422  | Data fora do formato/intervalo.                      |
+| `CPF_INVALIDO`                 | 422  | CPF != 11 dígitos.                                   |
+| `VALIDADE_CNH_INVALIDA`        | 422  | Validade CNH inválida.                               |
+| `ITENS_OBRIGATORIOS`           | 422  | Ajuda sem itens.                                     |
+| `VIAGEM_REALIZADA_IMUTAVEL`    | 422  | Cancelar viagem CONCLUIDA.                           |
+| `TRANSICAO_INVALIDA`           | 422  | Transição não permitida na máquina de estado.        |
+| `ERRO_INTERNO`                 | 500  | Genérico.                                            |
 
 Formato HTTP:
 
 ```json
 {
-  "error": {
-    "code": "SALDO_INSUFICIENTE",
-    "message": "Saldo do mês insuficiente para reservar R$ 850,00.",
-    "details": {
-      "veiculoId": "...",
-      "saldoDisponivel": 300.00,
-      "valorSolicitado": 850.00
-    }
-  }
+	"error": {
+		"code": "SALDO_INSUFICIENTE",
+		"message": "Saldo do mês insuficiente para reservar R$ 850,00.",
+		"details": {
+			"veiculoId": "...",
+			"saldoDisponivel": 300.0,
+			"valorSolicitado": 850.0
+		}
+	}
 }
 ```
 
@@ -1002,53 +1012,53 @@ Fonte: `frontend/src/lib/api/tfd-types.ts`. Reproduzidos abaixo para referência
 
 ```ts
 export type FonteRecurso =
-  | 'EMPENHO'
-  | 'PORTARIA'
-  | 'REPASSE_FEDERAL'
-  | 'REPASSE_ESTADUAL'
-  | 'REMANEJAMENTO'
-  | 'OUTRO';
+	| 'EMPENHO'
+	| 'PORTARIA'
+	| 'REPASSE_FEDERAL'
+	| 'REPASSE_ESTADUAL'
+	| 'REMANEJAMENTO'
+	| 'OUTRO';
 
 export interface AporteSaldoFrotaRequest {
-  veiculoId?: string;        // requerido se rateioGeral=false
-  rateioGeral?: boolean;     // se true, rateia entre veículos ATIVOS
-  mes: string;               // YYYY-MM
-  valorBRL: number;          // > 0
-  fonte: FonteRecurso;
-  numeroDocumento?: string;  // obrigatório se fonte ∈ EMPENHO|PORTARIA
-  descricaoFonte?: string;   // obrigatório se fonte=OUTRO
-  justificativa: string;     // ≥ 10 chars
+	veiculoId?: string; // requerido se rateioGeral=false
+	rateioGeral?: boolean; // se true, rateia entre veículos ATIVOS
+	mes: string; // YYYY-MM
+	valorBRL: number; // > 0
+	fonte: FonteRecurso;
+	numeroDocumento?: string; // obrigatório se fonte ∈ EMPENHO|PORTARIA
+	descricaoFonte?: string; // obrigatório se fonte=OUTRO
+	justificativa: string; // ≥ 10 chars
 }
 
 export interface SaldoAjudaCusto {
-  prefeituraId: string;
-  mes: string;
-  saldoMensal: number;
-  saldoConsumido: number;
-  saldoReservado: number;
-  saldoDisponivel: number;
-  tetoAlimentacao: number;     // 0 = sem teto
-  tetoHospedagem: number;
-  tetoDeslocamento: number;
-  atualizadoEm: string;
+	prefeituraId: string;
+	mes: string;
+	saldoMensal: number;
+	saldoConsumido: number;
+	saldoReservado: number;
+	saldoDisponivel: number;
+	tetoAlimentacao: number; // 0 = sem teto
+	tetoHospedagem: number;
+	tetoDeslocamento: number;
+	atualizadoEm: string;
 }
 
 export interface AjustarSaldoAjudaCustoRequest {
-  mes: string;
-  novoSaldoMensal: number;
-  tetoAlimentacao?: number;
-  tetoHospedagem?: number;
-  tetoDeslocamento?: number;
-  justificativa: string;
+	mes: string;
+	novoSaldoMensal: number;
+	tetoAlimentacao?: number;
+	tetoHospedagem?: number;
+	tetoDeslocamento?: number;
+	justificativa: string;
 }
 
 export interface AporteSaldoAjudaCustoRequest {
-  mes: string;
-  valorBRL: number;
-  fonte: FonteRecurso;
-  numeroDocumento?: string;
-  descricaoFonte?: string;
-  justificativa: string;
+	mes: string;
+	valorBRL: number;
+	fonte: FonteRecurso;
+	numeroDocumento?: string;
+	descricaoFonte?: string;
+	justificativa: string;
 }
 ```
 
@@ -1103,16 +1113,16 @@ Adicionar ao enum `Role`:
 +  | 'REGULADOR_TFD';
 ```
 
-| Aspecto                              | `GESTOR_TFD`                    | `REGULADOR_TFD`                |
-|--------------------------------------|---------------------------------|--------------------------------|
-| UI                                   | TFD completo                    | Dashboard + Nova Solicitação   |
-| Cadastra solicitação?                | Sim                             | Sim (use case principal)       |
-| Aprova / aloca em viagem?            | Sim                             | **Não** — é da gestão          |
-| Cria/edita frota / motoristas?       | Sim                             | Não                            |
-| Aporta saldo / paga ajuda de custo?  | Sim                             | Não                            |
-| Cria usuários TFD?                   | **Sim — só REGULADOR_TFD**      | Não                            |
-| Vê relatórios analíticos?            | Sim                             | Não (vê só "minhas solicitações") |
-| Acessa auditoria?                    | Não (apenas ADMIN/DEV)          | Não                            |
+| Aspecto                             | `GESTOR_TFD`               | `REGULADOR_TFD`                   |
+| ----------------------------------- | -------------------------- | --------------------------------- |
+| UI                                  | TFD completo               | Dashboard + Nova Solicitação      |
+| Cadastra solicitação?               | Sim                        | Sim (use case principal)          |
+| Aprova / aloca em viagem?           | Sim                        | **Não** — é da gestão             |
+| Cria/edita frota / motoristas?      | Sim                        | Não                               |
+| Aporta saldo / paga ajuda de custo? | Sim                        | Não                               |
+| Cria usuários TFD?                  | **Sim — só REGULADOR_TFD** | Não                               |
+| Vê relatórios analíticos?           | Sim                        | Não (vê só "minhas solicitações") |
+| Acessa auditoria?                   | Não (apenas ADMIN/DEV)     | Não                               |
 
 **Escopo:** PREFEITURA. JWT injeta `prefeituraId`; multi-tenancy aplicado em
 todas as queries.
@@ -1137,6 +1147,7 @@ Endpoint reaproveita `POST /v1/admin/usuarios` (existente). Mudanças:
   para sua própria prefeitura, com filtro implícito `prefeituraId = jwt.prefeituraId`.
 
 UI no frontend:
+
 - `/tfd/usuarios` — lista equipe TFD.
 - `/tfd/usuarios/novo` — form de cadastro (apenas `GESTOR_TFD`/`ADMIN`/`DEV`).
 
@@ -1148,47 +1159,47 @@ ganhou três caminhos de uso:
 ```ts
 // Tipo Compartilhado
 interface DadosPacienteInline {
-  nome: string;
-  cpf: string;                  // 11 dígitos sem máscara
-  dataNascimento: string;       // YYYY-MM-DD
-  sexo: 'M' | 'F' | 'OUTRO';
-  telefone: string;
-  endereco: string;
-  cartaoSus?: string;
-  nomeMae?: string;
-  rg?: string;
-  bairro?: string;
-  municipio?: string;
-  uf?: string;
-  cep?: string;
+	nome: string;
+	cpf: string; // 11 dígitos sem máscara
+	dataNascimento: string; // YYYY-MM-DD
+	sexo: 'M' | 'F' | 'OUTRO';
+	telefone: string;
+	endereco: string;
+	cartaoSus?: string;
+	nomeMae?: string;
+	rg?: string;
+	bairro?: string;
+	municipio?: string;
+	uf?: string;
+	cep?: string;
 }
 
 interface DadosAcompanhante {
-  nome: string;
-  cpf: string;
-  dataNascimento: string;
-  telefone: string;
-  parentesco: string;            // CONJUGE | FILHO_A | PAI | MAE | IRMAO_A | AVO | NETO_A | TIO_A | SOBRINHO_A | CUIDADOR | OUTRO
-  rg?: string;
+	nome: string;
+	cpf: string;
+	dataNascimento: string;
+	telefone: string;
+	parentesco: string; // CONJUGE | FILHO_A | PAI | MAE | IRMAO_A | AVO | NETO_A | TIO_A | SOBRINHO_A | CUIDADOR | OUTRO
+	rg?: string;
 }
 
 interface CriarSolicitacaoRequest {
-  // Paciente — UM dos dois é obrigatório
-  pacienteId?: string;          // existente (UBS / encaminhamento)
-  paciente?: DadosPacienteInline; // cadastro inline (REGULADOR_TFD)
+	// Paciente — UM dos dois é obrigatório
+	pacienteId?: string; // existente (UBS / encaminhamento)
+	paciente?: DadosPacienteInline; // cadastro inline (REGULADOR_TFD)
 
-  ubsId?: string;               // opcional p/ REGULADOR_TFD se não houver UBS
-  encaminhamentoOrigemId?: string;
-  destino: string;              // município destino
-  unidadeDestino?: string;
-  especialidade: string;        // texto livre + lista de sugestões na UI
-  motivo: string;               // ≥ 10 caracteres
-  dataDesejada: string;         // YYYY-MM-DD
-  prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
-  acompanhanteNecessario?: boolean;
-  acompanhante?: DadosAcompanhante;  // obrigatório se acompanhanteNecessario=true
-  observacoes?: string;
-  prefeituraId?: string;
+	ubsId?: string; // opcional p/ REGULADOR_TFD se não houver UBS
+	encaminhamentoOrigemId?: string;
+	destino: string; // município destino
+	unidadeDestino?: string;
+	especialidade: string; // texto livre + lista de sugestões na UI
+	motivo: string; // ≥ 10 caracteres
+	dataDesejada: string; // YYYY-MM-DD
+	prioridade: 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
+	acompanhanteNecessario?: boolean;
+	acompanhante?: DadosAcompanhante; // obrigatório se acompanhanteNecessario=true
+	observacoes?: string;
+	prefeituraId?: string;
 }
 ```
 
@@ -1244,11 +1255,11 @@ Novo endpoint **agregador** que alimenta a decisão estratégica
 
 **Query params:**
 
-| Param         | Tipo               | Descrição                                                |
-|---------------|--------------------|----------------------------------------------------------|
-| `desde`       | `YYYY-MM-DD`       | Início da janela. Default: `hoje - 12 meses`.            |
-| `ate`         | `YYYY-MM-DD`       | Fim da janela. Default: hoje.                            |
-| `prefeituraId`| string (DEV/ADMIN) | Forçar escopo. Senão, JWT.                               |
+| Param          | Tipo               | Descrição                                     |
+| -------------- | ------------------ | --------------------------------------------- |
+| `desde`        | `YYYY-MM-DD`       | Início da janela. Default: `hoje - 12 meses`. |
+| `ate`          | `YYYY-MM-DD`       | Fim da janela. Default: hoje.                 |
+| `prefeituraId` | string (DEV/ADMIN) | Forçar escopo. Senão, JWT.                    |
 
 **Response 200:**
 
@@ -1298,13 +1309,13 @@ Ordenar `itens` desc por `totalSolicitacoes`.
 
 ### 14.6. Códigos de erro novos / relevantes
 
-| Code                          | HTTP | Quando                                                       |
-|-------------------------------|:----:|---------------------------------------------------------------|
-| `PACIENTE_OU_ID_OBRIGATORIO`  | 400  | `POST /tfd/solicitacoes` sem `paciente` nem `pacienteId`.    |
-| `PACIENTE_E_ID_CONFLITAM`     | 400  | Os dois informados ao mesmo tempo.                           |
-| `ACOMPANHANTE_OBRIGATORIO`    | 400  | `acompanhanteNecessario=true` sem `acompanhante`.            |
-| `ROLE_INVALIDA_TFD`           | 422  | GESTOR_TFD tentando criar role ≠ REGULADOR_TFD.              |
-| `JANELA_INVALIDA`             | 400  | `desde > ate` no relatório.                                  |
+| Code                         | HTTP | Quando                                                    |
+| ---------------------------- | :--: | --------------------------------------------------------- |
+| `PACIENTE_OU_ID_OBRIGATORIO` | 400  | `POST /tfd/solicitacoes` sem `paciente` nem `pacienteId`. |
+| `PACIENTE_E_ID_CONFLITAM`    | 400  | Os dois informados ao mesmo tempo.                        |
+| `ACOMPANHANTE_OBRIGATORIO`   | 400  | `acompanhanteNecessario=true` sem `acompanhante`.         |
+| `ROLE_INVALIDA_TFD`          | 422  | GESTOR_TFD tentando criar role ≠ REGULADOR_TFD.           |
+| `JANELA_INVALIDA`            | 400  | `desde > ate` no relatório.                               |
 
 ### 14.7. Endpoints — referência completa da v0.10
 
@@ -1360,7 +1371,6 @@ status IN ('NEGADA', 'CANCELADA')
 
 Não há mudança de máquina de estado — a UI só rotula diferente.
 
-
 ---
 
 ## 13. Alinhamento frontend ↔ backend v0.9
@@ -1375,18 +1385,18 @@ O backend implementa idempotência TTL 24h em 4 endpoints. O frontend gera
 toda a sessão dele — clicar duas vezes no botão de confirmar devolve o mesmo
 resultado em vez de duplicar.
 
-| Endpoint                                          | Modal frontend                              |
-|---------------------------------------------------|---------------------------------------------|
-| `POST /tfd/saldo/aportar`                         | `/tfd/saldo` → "+ Aportar Saldo"            |
-| `POST /tfd/saldo-ajuda-custo/aportar`             | `/tfd/saldo-ajuda-custo` → "+ Aportar"      |
-| `POST /tfd/ajudas-custo/:id/pagar`                | `/tfd/ajuda-custo` → botão "Pagar"          |
-| `POST /tfd/abastecimentos/:id/comprovante`        | `/tfd/abastecimento` → "Registrar Comprovante" |
+| Endpoint                                   | Modal frontend                                 |
+| ------------------------------------------ | ---------------------------------------------- |
+| `POST /tfd/saldo/aportar`                  | `/tfd/saldo` → "+ Aportar Saldo"               |
+| `POST /tfd/saldo-ajuda-custo/aportar`      | `/tfd/saldo-ajuda-custo` → "+ Aportar"         |
+| `POST /tfd/ajudas-custo/:id/pagar`         | `/tfd/ajuda-custo` → botão "Pagar"             |
+| `POST /tfd/abastecimentos/:id/comprovante` | `/tfd/abastecimento` → "Registrar Comprovante" |
 
 Implementação no client (`src/lib/api/client.ts`):
 
 ```ts
-api.post(path, body, { idempotencyKey });           // adiciona X-Idempotency-Key
-api.postMultipart(path, form, { idempotencyKey });  // idem para upload
+api.post(path, body, { idempotencyKey }); // adiciona X-Idempotency-Key
+api.postMultipart(path, form, { idempotencyKey }); // idem para upload
 ```
 
 ### 13.2. Combustível FLEX

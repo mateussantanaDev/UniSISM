@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type APIRequestContext, type Page } from 'playwright';
-import { PEC, PACIENTES_DIR, sleep, log, getLaunchOptions } from './pec-common';
+import { PEC, PACIENTES_DIR, sleep, log } from './pec-common';
 
 const INPUT = path.join(PACIENTES_DIR, 'pacientes.jsonl');
 const OUTPUT = path.join(PACIENTES_DIR, 'cidadaos-detalhados.jsonl');
@@ -191,7 +191,7 @@ async function main() {
     return;
   }
 
-  const browser = await chromium.launch(getLaunchOptions());
+  const browser = await chromium.launch({ headless: process.env.PEC_HEADLESS !== 'false', channel: 'chrome' });
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await ctx.newPage();
 

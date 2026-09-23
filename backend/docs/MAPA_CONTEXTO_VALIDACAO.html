@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UNISISM · Mapa de Contexto da Validacao</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #637083;
+      --line: #dce3ec;
+      --ok: #147d64;
+      --ok-soft: #e7f6f1;
+      --warn: #a05a00;
+      --warn-soft: #fff3dc;
+      --todo: #4d5b72;
+      --todo-soft: #edf1f7;
+      --fix: #255faa;
+      --fix-soft: #e8f0fb;
+      --bad: #b42318;
+      --bad-soft: #fff0ed;
+      --shadow: 0 16px 40px rgba(20, 31, 48, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.6), rgba(246,248,251,0.95)),
+        radial-gradient(circle at 12% 8%, rgba(37,95,170,0.14), transparent 32%),
+        radial-gradient(circle at 92% 0%, rgba(20,125,100,0.12), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.84);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: clamp(1.7rem, 3vw, 2.35rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+      max-width: 840px;
+    }
+
+    h2 {
+      font-size: 1.08rem;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 0.96rem;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 8px;
+      min-width: 260px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9fbfe;
+    }
+
+    .meta div {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 0.9rem;
+    }
+
+    .meta span:first-child { color: var(--muted); }
+    .meta strong { font-weight: 700; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      grid-column: span 12;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(20, 31, 48, 0.05);
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 106px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcfe;
+    }
+
+    .stat .number {
+      display: block;
+      font-size: 1.9rem;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .stat .label {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .pill.ok { color: var(--ok); background: var(--ok-soft); }
+    .pill.warn { color: var(--warn); background: var(--warn-soft); }
+    .pill.todo { color: var(--todo); background: var(--todo-soft); }
+    .pill.fix { color: var(--fix); background: var(--fix-soft); }
+    .pill.bad { color: var(--bad); background: var(--bad-soft); }
+
+    .flow {
+      position: relative;
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 46px 150px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .step-number {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: var(--todo-soft);
+      color: var(--todo);
+      font-weight: 800;
+    }
+
+    .step.done .step-number { background: var(--ok-soft); color: var(--ok); }
+    .step.next .step-number { background: var(--fix-soft); color: var(--fix); }
+    .step.risk .step-number { background: var(--warn-soft); color: var(--warn); }
+
+    .step-title {
+      display: grid;
+      gap: 6px;
+    }
+
+    .step-title strong {
+      font-size: 0.95rem;
+      line-height: 1.25;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      padding-left: 18px;
+      position: relative;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.68em;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--fix);
+    }
+
+    .list.ok li::before { background: var(--ok); }
+    .list.warn li::before { background: var(--warn); }
+    .list.bad li::before { background: var(--bad); }
+
+    code {
+      padding: 2px 5px;
+      border: 1px solid #d8e0ea;
+      border-radius: 6px;
+      background: #f4f7fb;
+      color: #24364f;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+
+    th {
+      color: #344054;
+      background: #f8fafc;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td { color: var(--muted); }
+
+    .map {
+      width: 100%;
+      min-height: 260px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f8fbff);
+      padding: 16px;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .node {
+      display: grid;
+      align-content: center;
+      min-height: 76px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .node strong {
+      display: block;
+      font-size: 0.9rem;
+      line-height: 1.2;
+    }
+
+    .node span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .node.done { border-color: rgba(20,125,100,0.35); background: var(--ok-soft); }
+    .node.next { border-color: rgba(37,95,170,0.35); background: var(--fix-soft); }
+    .node.risk { border-color: rgba(160,90,0,0.35); background: var(--warn-soft); }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 900px) {
+      header { grid-template-columns: 1fr; }
+      .span-4, .span-5, .span-7, .span-8 { grid-column: span 12; }
+      .status-strip { grid-template-columns: repeat(2, 1fr); }
+      .step { grid-template-columns: 42px 1fr; }
+      .step p { grid-column: 2; }
+      .map-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 560px) {
+      main { width: min(100% - 20px, 1180px); padding-top: 16px; }
+      header, .card { padding: 16px; }
+      .status-strip, .map-grid { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; }
+      .step p { grid-column: auto; }
+      .meta { min-width: 0; }
+      th, td { padding: 10px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      main { width: 100%; padding: 0; }
+      header, .card, .stat, .step, .node, .map {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Mapa de Contexto da Validacao do UNISISM</h1>
+        <p class="subtitle">
+          Resumo vivo do que ja foi analisado, corrigido, validado e do que ainda falta
+          olhar antes de considerar backend e frontend prontos para uma revisao final.
+        </p>
+      </div>
+      <section class="meta" aria-label="Resumo do contexto">
+        <div><span>Atualizado em</span><strong>23/09/2026</strong></div>
+        <div><span>Escopo</span><strong>backend + frontend</strong></div>
+        <div><span>Etapa atual</span><strong>14.10 · escopo saneado</strong></div>
+        <div><span>Proxima atividade</span><strong>decidir revisão ou baseline</strong></div>
+      </section>
+    </header>
+
+    <section class="grid">
+      <article class="card span-8">
+        <h2>Visao Geral</h2>
+        <div class="status-strip">
+          <div class="stat">
+            <span class="number">14.8</span>
+            <span class="label">retomada da etapa 14 em branch isolada, com escopo separado</span>
+          </div>
+          <div class="stat">
+            <span class="number">38/38</span>
+            <span class="label">checks do contrato HTTP e infra API passaram</span>
+          </div>
+          <div class="stat">
+            <span class="number">40/40</span>
+            <span class="label">checks de fluxos criticos HTTP passaram</span>
+          </div>
+          <div class="stat">
+            <span class="number">462</span>
+            <span class="label">supressoes ESLint no estado retomado pos-merge</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span-4">
+        <h2>Stack Identificada</h2>
+        <ul class="list">
+          <li>Node.js, TypeScript, Express e Prisma.</li>
+          <li>PostgreSQL, Redis, MinIO, ntfy e storage local/S3.</li>
+          <li>Autenticacao JWT, refresh token rotativo e API key opcional.</li>
+          <li>Modulos principais: paciente app, TFD, prontuario, centro, relatorios e admin.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Mapa das Etapas</h2>
+        <div class="map" aria-label="Mapa visual das etapas">
+          <div class="map-grid">
+            <div class="node done"><strong>1 · Inventario</strong><span>concluido e corrigido</span></div>
+            <div class="node done"><strong>2 · Git</strong><span>estado mapeado</span></div>
+            <div class="node done"><strong>3 · Dependencias</strong><span>audit runtime zerado</span></div>
+            <div class="node done"><strong>4 · Boot</strong><span>build e servidor OK</span></div>
+            <div class="node done"><strong>5 · Testes</strong><span>unit + smokes OK</span></div>
+            <div class="node done"><strong>6 · Qualidade</strong><span>unused zerado</span></div>
+            <div class="node done"><strong>7 · API</strong><span>contratos OK</span></div>
+            <div class="node done"><strong>8 · Banco</strong><span>migrations e dados OK</span></div>
+            <div class="node done"><strong>9 · Fluxos</strong><span>jornadas criticas OK</span></div>
+            <div class="node done"><strong>10 · Seguranca</strong><span>secrets, auth, LGPD</span></div>
+            <div class="node done"><strong>11 · Performance</strong><span>carga e confiabilidade</span></div>
+            <div class="node done"><strong>12 · Producao</strong><span>deploy e operacao</span></div>
+            <div class="node done"><strong>13 · Cobertura</strong><span>lint e browser OK</span></div>
+            <div class="node next"><strong>14 · Retomada</strong><span>gates estabilizados</span></div>
+            <div class="node done"><strong>15 · Relatorio</strong><span>fechamento documentado</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span-7">
+        <h2>Etapas Concluidas</h2>
+        <div class="flow">
+          <section class="step done">
+            <div class="step-number">1</div>
+            <div class="step-title">
+              <strong>Inventario do projeto</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Backend mapeado como Node/TypeScript/Express/Prisma. Foram adicionados scripts de validacao, exemplos de ambiente, docs de deploy e protecao para seed demo apenas quando habilitado.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">2</div>
+            <div class="step-title">
+              <strong>Estado do Git</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Repositorio em <code>main</code>, remoto GitHub identificado, um commit local ja criado e diversas mudancas externas mapeadas para nao misturar responsabilidades.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">3</div>
+            <div class="step-title">
+              <strong>Dependencias</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p><code>npm ls</code>, <code>npm ci --dry-run</code> e <code>npm audit --omit=dev</code> passaram. Dependencias runtime vulneraveis foram saneadas com upgrades seguros e override de <code>uuid</code>.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">4</div>
+            <div class="step-title">
+              <strong>Build e execucao basica</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p><code>npm run build</code>, health check e metrics passaram. Redis foi alinhado no ambiente local, o boot espera readiness curta e o shutdown ficou idempotente. Pendencia residual registrada para fechamento: repetir a validacao de boot no ambiente real da VPS apos o proximo deploy, confirmando variaveis reais, Redis, health, metrics e logs de inicializacao.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">5</div>
+            <div class="step-title">
+              <strong>Testes automatizados existentes</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p><code>npm test</code>, <code>npm run validate</code>, smokes 1 a 9, contrato HTTP do app paciente e smokes HTTP por modulo passaram. Scripts de smoke foram ajustados para ficarem repetiveis.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">6</div>
+            <div class="step-title">
+              <strong>Analise estatica e qualidade</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Imports, constantes, parametros e campos privados sem uso foram removidos ou normalizados. Foram criados <code>npm run lint:ts</code> e <code>npm run lint</code>, ambos integrados ao <code>validate</code>.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">7</div>
+            <div class="step-title">
+              <strong>Validacao API/backend</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Rotas, API key, auth, status codes, DTOs e erro padronizado foram revisados. O smoke HTTP passou de 34 para 38 checks no contrato app e ganhou 20 checks reais para admin, TFD gestao, centro, prontuario e app motorista.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">8</div>
+            <div class="step-title">
+              <strong>Banco e migrations</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>O <code>schema.prisma</code> foi sincronizado com migrations versionadas. Foi criado deploy testavel do zero com <code>npm run db:validate-migrations</code>, incluindo migrations, triggers, seed e checagem de drift.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">9</div>
+            <div class="step-title">
+              <strong>Fluxos criticos</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Foi criada uma suite HTTP de jornadas criticas com 40 checks: paciente, push, UBS, encaminhamentos, anexos, notificacoes, dossie, centro, TFD paciente/gestao, app motorista e relatorios.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">10</div>
+            <div class="step-title">
+              <strong>Seguranca</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>CORS, API key, logs sensiveis e auditoria foram endurecidos. A etapa ganhou smoke dedicado com 29 asserts e entrou no comando unico de smokes.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">11</div>
+            <div class="step-title">
+              <strong>Performance/confiabilidade</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Shutdown, outbox, cron de expiracao e dispatcher de push foram reforcados. A etapa ganhou smoke dedicado com 7 asserts para backoff sem starvation e parada graceful do outbox.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">12</div>
+            <div class="step-title">
+              <strong>Configuracao de producao</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Dockerfile, Compose, overlay de producao, env fail-fast e documentacao de deploy foram alinhados. A etapa ganhou smoke dedicado para validar compose, healthchecks, variaveis criticas e boot seguro.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">13</div>
+            <div class="step-title">
+              <strong>Cobertura e lacunas de testes</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Foram inventariados 258 arquivos TypeScript no backend, 95 use cases, 272 definicoes de rotas Express, 242 arquivos no frontend, 147 paginas Svelte e 47 componentes. O diagnostico apontou boa cobertura por smokes/contratos, mas baixa cobertura unitario/componentizada granular. As atividades 1 e 2 adicionaram testes formais para seguranca, LGPD/prontuario, TFD financeiro e auditoria; a atividade 3 removeu specs de exemplo do frontend e adicionou 18 testes reais server-side; a atividade 4 zerou os warnings Svelte conhecidos; a atividade 5 criou cobertura numerica com thresholds progressivos; a atividade 6 separou lint incremental, baseline ESLint e teste browser reproduzivel; a atividade 7 levou coverage, migrations, smokes e browser tests para o CI.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">14</div>
+            <div class="step-title">
+              <strong>Correcoes residuais aprovadas</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>A atividade 1 corrigiu a vulnerabilidade runtime moderada do frontend atualizando a dependencia transitiva <code>dompurify</code> de 3.4.12 para 3.4.15 no lockfile. A atividade 2 atualizou o tooling dentro dos ranges permitidos, fixou <code>cookie</code> em 0.7.2 via override enquanto o SvelteKit ainda declara <code>^0.6.0</code>, e zerou o <code>frontend · npm audit</code> completo. A atividade 3 aplicou Prettier em lote no frontend e fez <code>frontend · npm run lint:format</code> passar. A atividade 4 reduziu a baseline ESLint de 471 para 214 problemas, podou suppressions obsoletas e manteve <code>npm run lint</code> como gate incremental. As atividades 5 e 6 zeraram a baseline ESLint, adicionaram spec browser real de componentes e validaram lint, formato, check, testes, cobertura, build e audit. Depois de uma tentativa de estabilizar um merge posterior, foi feito rollback seguro para <code>b82019c</code>. A retomada em <code>codex/retomar-etapa14</code> reabriu o estado pos-merge em branch isolada; a atividade 14.9 estabilizou os gates e a 14.10 separou/remocou PEC, motorista, landing/SEO/favicons, auditorias auxiliares e configuracao raiz de Vercel do lote principal. A baseline ESLint retomada ficou em 439 supressoes em 41 arquivos.</p>
+          </section>
+          <section class="step done">
+            <div class="step-number">15</div>
+            <div class="step-title">
+              <strong>Relatorio final</strong>
+              <span class="pill ok">concluida</span>
+            </div>
+            <p>Fechamento documentado com o estado funcional atual em <code>b82019c</code>, validacoes finais aprovadas, pendencias residuais da etapa 4 e da etapa 14, riscos restantes e recomendacao de nao reaplicar o merge posterior sem nova rodada explicita de estabilizacao.</p>
+          </section>
+        </div>
+      </article>
+
+      <article class="card span-5">
+        <h2>Correcoes Aplicadas</h2>
+        <ul class="list ok">
+          <li><code>.env.example</code> recebeu <code>REDIS_URL=redis://localhost:6379</code>.</li>
+          <li><code>src/main/server.ts</code> agora espera readiness do cache e mostra <code>redis: true</code> quando conectado.</li>
+          <li>Shutdown do backend ficou idempotente e fecha cache/Prisma sem erro duplicado.</li>
+          <li><code>scripts/smoke-test-etapa3.ts</code> deixou o atendente fixture idempotente.</li>
+          <li><code>scripts/smoke-test-etapa9.ts</code> limpa dependencias antes de remover <code>PacienteConta</code>.</li>
+          <li><code>scripts/smoke-test-app-contract.sh</code> passou a carregar API key, garantir fixture paciente e validar WhatsApp corretamente.</li>
+          <li><code>package.json</code> agora tem <code>lint:ts</code>, <code>lint</code> e <code>validate</code> inclui as duas checagens.</li>
+          <li>Foram corrigidas sobras de qualidade em 18 arquivos de <code>src</code>.</li>
+          <li><code>eslint.config.mjs</code> foi criado para fiscalizar <code>src</code> e <code>tests</code>.</li>
+          <li>Os TODOs reais em <code>src</code> foram reduzidos para 0.</li>
+          <li>Relatorios expirados agora removem arquivos tambem em S3 via contrato <code>IFileStorage.apagar</code>.</li>
+          <li>Variaveis <code>S3_*</code>, crons, push, cache, TFD e reset de senha foram centralizadas em <code>shared/env.ts</code>.</li>
+          <li>Ocorrencias tipo <code>any</code>/<code>as any</code>/<code>unknown as</code> em <code>src</code> foram reduzidas para 0.</li>
+          <li>Acessos diretos a <code>process.env</code> fora de <code>src/shared/env.ts</code> foram reduzidos para 0.</li>
+          <li>Backend: <code>npm audit</code> e <code>npm audit --omit=dev</code> agora retornam 0 vulnerabilidades.</li>
+          <li>Rotas inexistentes agora retornam <code>404 ROTA_NAO_ENCONTRADA</code> no formato JSON padrao.</li>
+          <li><code>scripts/smoke-test-app-contract.sh</code> agora valida health publico, API key, <code>PAYLOAD_INVALIDO</code> e fallback 404.</li>
+          <li><code>docs/API.md</code>, <code>ROTAS.md</code>, <code>PACIENTE_APP_API.md</code>, <code>MOTORISTA_APP_API.md</code> e <code>TFD_API.md</code> foram alinhados ao contrato real.</li>
+          <li>Foi criado modo smoke isolado com <code>.env.smoke.example</code>, guard de banco e runner em <code>scripts/smoke/</code>.</li>
+          <li>Foram adicionados smokes HTTP para admin, TFD gestao, centro, prontuario e app motorista.</li>
+          <li>Foi adicionada a suite <code>scripts/smoke/smoke-critical-flows.ts</code> para validar jornadas criticas fim a fim.</li>
+          <li><code>npm run test:smoke:http</code>, <code>npm run test:smoke:critical</code> e <code>npm run test:smoke:all</code> ficaram disponiveis como comandos de smoke.</li>
+          <li>Filtros de centro/gestao deixaram de usar valores legados invalidos em <code>destinoRegulacao</code>, corrigindo 500 em <code>/centro/recepcao/fila-espera</code>.</li>
+          <li><code>scripts/smoke-test-etapa1.ts</code> e <code>scripts/smoke-test-etapa7.ts</code> ficaram autossuficientes no banco smoke; a etapa 7 agora isola notificacoes pendentes externas antes de medir o worker.</li>
+          <li>Foi criada a migration <code>20260921151000_stage8_schema_sync</code> para alinhar Prisma schema e migrations.</li>
+          <li>O enum historico <code>SALDO_APORTADO</code> foi preservado em <code>AcaoAuditoriaTFD</code> para evitar perda de compatibilidade em auditoria.</li>
+          <li>A migration de anexos TFD preserva <code>tipoLegado</code> antes de migrar para <code>TipoAnexoTFD</code>.</li>
+          <li>Foi criado <code>npm run db:validate-migrations</code> para testar deploy de banco do zero em <code>unisism_ubs_migrate_test</code>.</li>
+          <li>O CORS deixou de aceitar qualquer <code>*.vercel.app</code> em producao por default; previews agora dependem de <code>CORS_ALLOW_VERCEL_PREVIEW=true</code>.</li>
+          <li>Previews Vercel agora tambem ficam restritos ao projeto configurado em <code>CORS_VERCEL_PROJECT=unisism</code>.</li>
+          <li>A API key passou a usar comparacao segura com <code>timingSafeEqual</code>.</li>
+          <li>O logger ganhou redaction para headers e campos sensiveis comuns.</li>
+          <li>A auditoria passou a mascarar payloads sensiveis de forma recursiva, preservando contadores operacionais.</li>
+          <li>Foi criado <code>npm run test:smoke:security</code> e a etapa 10 entrou no <code>npm run test:smoke:all</code>.</li>
+          <li>O shutdown HTTP agora tem timeouts configuraveis, encerra conexoes abertas no limite e aguarda outbox/push pararem.</li>
+          <li>O outbox ganhou tick imediato, captura de erro de batch e <code>stop()</code> assincrono que espera o batch atual.</li>
+          <li>O cron de expiracao de relatorios nao dispara mais o catch-up apos <code>stop()</code> e evita sobreposicao de execucoes.</li>
+          <li>O dispatcher de push filtra backoff no banco, evitando starvation quando notificacoes antigas inelegiveis ocupam o inicio da fila.</li>
+          <li>Foi criado <code>npm run test:smoke:reliability</code> e a etapa 11 entrou no <code>npm run test:smoke:all</code>.</li>
+          <li>O <code>Dockerfile</code> passou a usar <code>npm ci</code> e healthcheck em <code>/v1/health</code> sem depender de <code>curl</code>.</li>
+          <li>O runtime Docker passou a rodar como usuario nao-root <code>app</code> (<code>uid=10001</code>).</li>
+          <li>O <code>docker-compose.yml</code> deixou de depender de <code>nc</code> no boot do backend e passou a usar <code>npm run start:container</code>.</li>
+          <li>O overlay de producao recebeu timeouts HTTP, CORS de preview, API key, cache, OTEL, workers, ntfy e URL publica de reset de senha.</li>
+          <li>Foi criado overlay opcional <code>docker-compose.observability.yml</code> com Prometheus, Tempo e Grafana presos em localhost.</li>
+          <li>O frontend removeu chave fixa do bundle, exige <code>VITE_API_BASE_URL</code> em producao e documenta Vercel project <code>unisism</code>.</li>
+          <li>Foi adicionado <code>frontend/vercel.json</code> com headers de seguranca para o deploy Vercel.</li>
+          <li>Foi criado workflow GitHub Actions para validar backend e frontend em pull requests/push na <code>main</code>.</li>
+          <li><code>src/shared/env.ts</code> agora falha cedo em producao para SMTP, S3, ntfy e timeouts HTTP incoerentes.</li>
+          <li>Foi criado <code>npm run test:smoke:production</code> e a etapa 12 entrou no <code>npm run test:smoke:all</code>.</li>
+          <li><code>docs/DEPLOY_PRODUCAO.md</code> foi alinhado ao compose real e documenta observabilidade por overlay local opcional via <code>/metrics</code> e OTEL.</li>
+          <li>Foi criado <code>docs/COBERTURA_LACUNAS_ETAPA13.md</code> com inventario de cobertura, lacunas P0/P1 e roadmap restante da etapa 13.</li>
+          <li>Foi criado <code>tests/security.test.js</code> com testes formais para CORS, API key, auth Bearer, RBAC e schemas basicos de autenticacao.</li>
+          <li>Foi criado <code>tests/priority-use-cases.test.js</code> com testes formais para escopo LGPD/prontuario, TFD financeiro, isolamento por prefeitura/UBS e cadeia de auditoria TFD.</li>
+          <li>Os exemplos do template em <code>frontend/src/lib/vitest-examples</code> foram removidos.</li>
+          <li><code>frontend/src/lib/api/client.spec.ts</code> foi expandido e foram criados <code>erros.spec.ts</code> e <code>tfd-client.spec.ts</code>, totalizando 18 testes reais para API client, TFD, Centro, Paciente App e mensagens SMS/TFD.</li>
+          <li><code>frontend/src/lib/presentation/components/RemarcarEncaminhamento.svelte</code> agora inicializa a data com <code>untrack</code> e sincroniza mudancas reais do encaminhamento via <code>$effect</code>, zerando os warnings Svelte.</li>
+          <li>Backend ganhou <code>npm run test:coverage</code> com coverage nativo do Node e thresholds de 60% linhas, 50% funcoes e 50% branches.</li>
+          <li>Frontend ganhou <code>npm run test:coverage</code> com Vitest V8 e thresholds de 30% statements, 30% linhas, 15% funcoes e 35% branches.</li>
+          <li>Foi criado <code>docs/COBERTURA_THRESHOLDS_ETAPA13.md</code> com baseline, comandos e plano de subida dos thresholds.</li>
+          <li>Frontend ganhou <code>lint:eslint</code>, <code>lint:eslint:baseline</code>, <code>lint:eslint:refresh</code>, <code>lint:format</code>, <code>test:server</code>, <code>test:browser</code> e <code>playwright:install</code>.</li>
+          <li>Foi criada <code>frontend/.eslint-suppressions.json</code> com 471 problemas legados de ESLint em 110 arquivos, permitindo <code>npm run lint</code> como gate incremental.</li>
+          <li><code>frontend/PRONTUARIO_PACIENTE.md</code> deixou de quebrar o parser do Prettier em um exemplo pseudo-Svelte.</li>
+          <li><code>.github/workflows/validate.yml</code> agora roda coverage backend/frontend, migrations, smokes completos, lint frontend e teste browser.</li>
+          <li><code>scripts/smoke/env.sh</code> e <code>scripts/db/validate-migrations.sh</code> agora criam bancos descartaveis via Docker local ou <code>psql</code> no CI.</li>
+          <li><code>frontend/README.md</code> foi alinhado ao novo fluxo de validacao local e gate incremental de ESLint.</li>
+          <li><code>frontend/package-lock.json</code> atualizou <code>dompurify</code> para 3.4.15, corrigindo a vulnerabilidade runtime moderada apontada pelo audit do frontend.</li>
+          <li><code>frontend/package-lock.json</code> atualizou SvelteKit, Vitest, Vite, PostCSS e dependencias transitivas de ferramenta para versoes corrigidas dentro dos ranges ja permitidos.</li>
+          <li><code>frontend/package.json</code> recebeu override minimo para <code>cookie@0.7.2</code>, zerando o audit completo enquanto o release atual do SvelteKit ainda depende de <code>cookie@^0.6.0</code>.</li>
+          <li>Prettier foi aplicado em lote no frontend, normalizando 188 arquivos entre docs, configuracoes, componentes, rotas Svelte, API client e CSS.</li>
+          <li>A baseline ESLint do frontend caiu de 471 problemas em 110 arquivos para 214 problemas em 40 arquivos.</li>
+          <li><code>frontend/eslint.config.js</code> agora trata variaveis prefixadas com <code>_</code> como descartes intencionais e desativa a regra de navegacao que nao se aplica ao deploy atual sem <code>paths.base</code>.</li>
+          <li><code>frontend/package.json</code> atualizou <code>lint:eslint:refresh</code> para atualizar, podar, formatar e validar a baseline de suppressions em um unico fluxo.</li>
+          <li>Foram removidos suppressions obsoletos em <code>html2pdf.js</code>, comentarios <code>svelte-ignore</code> sem efeito, import inutil e um estado Svelte substituivel por <code>$derived</code>.</li>
+          <li>A baseline ESLint do frontend foi zerada; <code>frontend/.eslint-suppressions.json</code> agora fica vazio e <code>npm run lint:eslint:baseline</code> passa sem supressoes.</li>
+          <li>Rotas de Centro, SMS e TFD tiveram imports sem uso, callbacks, chaves de loops Svelte, casts inseguros e contratos de API ajustados para remover a divida ESLint restante.</li>
+          <li><code>frontend/src/lib/presentation/components/StatusBadge.svelte.spec.ts</code> adicionou 3 testes browser reais para <code>StatusBadge</code>, <code>ScanBadge</code> e <code>PrimaryButton</code>.</li>
+          <li><code>frontend/vite.config.ts</code> agora aceita <code>VITEST_BROWSER_CHANNEL</code> para usar Chrome local quando o download do Chromium Playwright estiver instavel, mantendo o comportamento padrao para CI.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Resultados de Validacao</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Comando / Validacao</th>
+              <th>Resultado</th>
+              <th>Observacao</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>npm run typecheck</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>TypeScript sem erros no backend.</td>
+            </tr>
+            <tr>
+              <td><code>npm run lint:ts</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Checa TypeScript com <code>noUnusedLocals</code> e <code>noUnusedParameters</code>.</td>
+            </tr>
+            <tr>
+              <td><code>npm run lint</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Executa ESLint em <code>src</code> e <code>tests</code>.</td>
+            </tr>
+            <tr>
+              <td><code>npm test</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Testes formais de backend e testes do centro executados.</td>
+            </tr>
+            <tr>
+              <td><code>npm run validate</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Combina typecheck, lint TypeScript, ESLint, build e 17 testes <code>node:test</code> mais a suite do Centro.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:coverage</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Backend: 75.48% linhas, 72.16% branches e 68.97% funcoes nos testes formais carregados pelo <code>node --test</code>.</td>
+            </tr>
+            <tr>
+              <td><code>npm run db:validate-migrations</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Recria banco descartavel, aplica 6 migrations, aplica triggers, roda seed e confirma schema sem drift.</td>
+            </tr>
+            <tr>
+              <td><code>prisma migrate diff</code></td>
+              <td><span class="pill ok">sem drift</span></td>
+              <td>Migrations versionadas e <code>schema.prisma</code> ficaram equivalentes.</td>
+            </tr>
+            <tr>
+              <td><code>smoke-test-etapa1.ts</code> a <code>smoke-test-etapa12.ts</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Todos executados no banco <code>unisism_ubs_smoke</code> pelo comando unico, incluindo checks de producao/deploy.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:security</code></td>
+              <td><span class="pill ok">29/29</span></td>
+              <td>Valida CORS, preview Vercel restrito ao projeto, API key, logger com redaction e mascara recursiva em auditoria.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:reliability</code></td>
+              <td><span class="pill ok">7/7</span></td>
+              <td>Valida dispatcher de push sem starvation por backoff e stop graceful do outbox.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:production</code></td>
+              <td><span class="pill ok">41/41</span></td>
+              <td>Valida Dockerfile nao-root, compose base/prod/observability, fail-fast de env em producao, docs e runner unico.</td>
+            </tr>
+            <tr>
+              <td><code>docker compose ... -f docker-compose.observability.yml config</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Overlay opcional renderizado com 420 linhas, incluindo Prometheus, Tempo e Grafana.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm run check</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>0 erros e 0 warnings Svelte.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm run lint</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>ESLint passa com <code>.eslint-suppressions.json</code> vazio e baseline real zerada.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm test</code></td>
+              <td><span class="pill ok">18/18</span></td>
+              <td>3 specs reais server-side do Vitest passaram sem depender do Chromium local.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · VITEST_BROWSER_CHANNEL=chrome npm run test:browser</code></td>
+              <td><span class="pill ok">3/3</span></td>
+              <td>1 spec browser real passou cobrindo componentes compartilhados; o fallback usa Chrome local quando o CDN do Playwright falha.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm run test:coverage</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>37.30% statements, 36.99% linhas, 43.38% branches e 17.88% funcoes no recorte server-side/API.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm run build</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Build de producao passou com <code>VITE_API_BASE_URL</code> configurado para API externa.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm audit</code> / <code>npm audit --omit=dev</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>0 vulnerabilidades no audit completo e no recorte runtime apos atualizar tooling e aplicar override de <code>cookie@0.7.2</code>.</td>
+            </tr>
+            <tr>
+              <td><code>frontend · npm run lint:format</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Todos os arquivos cobertos pelo Prettier passam apos a limpeza em lote de 188 arquivos do frontend.</td>
+            </tr>
+            <tr>
+              <td><code>etapa 13 · inventario de cobertura</code></td>
+              <td><span class="pill ok">concluido</span></td>
+              <td>Mapeados use cases, rotas, paginas, componentes, specs existentes e lacunas prioritarias.</td>
+            </tr>
+            <tr>
+              <td><code>tests/security.test.js</code></td>
+              <td><span class="pill ok">8 testes</span></td>
+              <td>Cobre CORS Vercel, wildcard, API key, guard, auth Bearer, token invalido, RBAC e schemas de auth.</td>
+            </tr>
+            <tr>
+              <td><code>tests/priority-use-cases.test.js</code></td>
+              <td><span class="pill ok">8 testes</span></td>
+              <td>Cobre escopo LGPD/prontuario, datas obrigatorias, isolamento TFD por prefeitura, saldo invalido e integridade da cadeia de auditoria.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/src/lib/api/*.spec.ts</code></td>
+              <td><span class="pill ok">18 testes</span></td>
+              <td>Cobre contrato HTTP do client, headers, querystring, idempotencia, logout, erros, downloads, TFD, Centro e Paciente App.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/src/lib/presentation/components/*.svelte.spec.ts</code></td>
+              <td><span class="pill ok">3 testes</span></td>
+              <td>Cobre renderizacao e clique em <code>StatusBadge</code>, <code>ScanBadge</code> e <code>PrimaryButton</code> no browser.</td>
+            </tr>
+            <tr>
+              <td><code>docker build -t unisism-backend:etapa12-smoke .</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Imagem final montada com <code>npm ci</code>, <code>prisma generate</code>, build TypeScript e runtime com healthcheck.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:app</code></td>
+              <td><span class="pill ok">38/38</span></td>
+              <td>Contrato HTTP do app paciente e checks de infra API em conformidade com o smoke.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:http</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Runner HTTP isolado passou com contrato app 38/38, 20/20 checks para modulos HTTP e 40/40 checks de fluxos criticos.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:critical</code></td>
+              <td><span class="pill ok">40/40</span></td>
+              <td>Paciente, push, UBS, encaminhamentos, anexos, notificacoes, dossie, centro, TFD, motorista e relatorios passaram em HTTP real.</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:smoke:all</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Comando unico executou smokes das etapas 1 a 12, contrato app 38/38, suite HTTP 20/20 e fluxos criticos 40/40 em banco de smoke.</td>
+            </tr>
+            <tr>
+              <td><code>backend · npm audit</code> / <code>npm audit --omit=dev</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>0 vulnerabilidades encontradas no audit completo e no recorte runtime.</td>
+            </tr>
+            <tr>
+              <td><code>rg any-like em src</code></td>
+              <td><span class="pill ok">0</span></td>
+              <td>Sem ocorrencias de <code>any</code>, <code>as any</code>, <code>Record&lt;string, any&gt;</code> ou <code>unknown as</code>.</td>
+            </tr>
+            <tr>
+              <td><code>rg process.env fora de shared/env.ts</code></td>
+              <td><span class="pill ok">0</span></td>
+              <td>Leituras de ambiente centralizadas em <code>src/shared/env.ts</code>.</td>
+            </tr>
+            <tr>
+              <td><code>XlsxRenderer smoke</code></td>
+              <td><span class="pill ok">passou</span></td>
+              <td>Arquivo <code>/tmp/unisism-smoke.xlsx</code> gerado com 7330 bytes e hash SHA-256.</td>
+            </tr>
+            <tr>
+              <td><code>GitHub Actions · Validate</code></td>
+              <td><span class="pill ok">atualizado</span></td>
+              <td>Workflow passa a executar coverage, migrations, smokes completos, lint frontend, browser test e build.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card span-5">
+        <h2>Falta Corrigir ou Decidir</h2>
+        <ul class="list warn">
+          <li><strong>Etapa 4:</strong> apesar de build, health e metrics terem passado localmente, ainda falta repetir a validacao de boot diretamente na VPS depois do proximo deploy, usando variaveis reais e conferindo Redis, health, metrics e logs.</li>
+          <li><strong>Etapa 14:</strong> o ponto funcional atual e <code>b82019c</code>. O merge posterior <code>e1ea564</code> foi retirado da linha principal por rollback seguro; qualquer retomada dele precisa ser uma atividade separada, com nova rodada de check, lint, testes, cobertura, audit e build.</li>
+          <li><strong>Retomada 14.10:</strong> os gates de backend/frontend passaram em <code>codex/retomar-etapa14</code> depois da limpeza de escopo. Ainda restam 439 supressoes ESLint em 41 arquivos; limpar isso fica como melhoria residual, se aprovado.</li>
+          <li>Monitorar upgrades maiores que podem quebrar contrato mesmo sem vulnerabilidade runtime atual.</li>
+          <li>Aprovar ou bloquear scripts de instalacao do npm 11 quando necessario.</li>
+          <li>Ampliar a cobertura formal dos 95 use cases; a atividade 2 cobre a primeira fatia P0, mas ainda faltam ajuda de custo, abastecimento, autorizacao, pagamento, negacao e comprovantes.</li>
+          <li>Ampliar specs browser/componentizadas para formularios criticos, fluxos de tela e estados de erro, alem da primeira spec de componentes compartilhados.</li>
+          <li>Manter <code>.eslint-suppressions.json</code> vazio e tratar qualquer nova supressao como regressao.</li>
+          <li>Monitorar o download do Chromium gerenciado pelo Playwright no ambiente local/CI; quando a CDN falhar, usar <code>VITEST_BROWSER_CHANNEL=chrome</code> localmente.</li>
+        </ul>
+      </article>
+
+      <article class="card span-7">
+        <h2>Mudancas Pendentes no Backend e Frontend</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Arquivo</th>
+              <th>Contexto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>backend/.env.example</code></td>
+              <td>Redis local documentado.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/main/server.ts</code></td>
+              <td>Boot/shutdown melhorados, timeouts HTTP configuraveis e parada graceful de workers.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/main/app.ts</code></td>
+              <td>Fallback 404 padronizado para rotas inexistentes.</td>
+            </tr>
+            <tr>
+              <td><code>backend/package.json</code></td>
+              <td>Adicionado <code>lint:ts</code>, <code>start:container</code>, <code>test:smoke:http</code>, <code>test:smoke:critical</code>, <code>test:smoke:security</code>, <code>test:smoke:reliability</code>, <code>test:smoke:production</code>, <code>test:smoke:all</code>, <code>db:validate-migrations</code> e integrado ao <code>validate</code>.</td>
+            </tr>
+            <tr>
+              <td><code>backend/Dockerfile</code>, <code>docker-compose.yml</code>, <code>docker-compose.prod.yml</code></td>
+              <td>Build deterministico com <code>npm ci</code>, healthcheck real do backend, boot sem <code>nc</code> e overlay de producao alinhado as envs criticas.</td>
+            </tr>
+            <tr>
+              <td><code>backend/.env.prod.example</code></td>
+              <td>Template de producao documenta timeouts HTTP, CORS de preview e variaveis obrigatorias de operacao.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/shared/env.ts</code></td>
+              <td>Fail-fast de producao para SMTP, S3, ntfy, providers invalidos e timeouts HTTP incoerentes.</td>
+            </tr>
+            <tr>
+              <td><code>backend/prisma/schema.prisma</code></td>
+              <td><code>SALDO_APORTADO</code> preservado em <code>AcaoAuditoriaTFD</code> para manter compatibilidade com migrations e auditoria historica.</td>
+            </tr>
+            <tr>
+              <td><code>backend/prisma/migrations/20260921151000_stage8_schema_sync/migration.sql</code></td>
+              <td>Migration de sincronizacao para Centro/ERP, campos TFD retroativos, anexos TFD e relacoes novas.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/db/validate-migrations.sh</code></td>
+              <td>Valida migrations do zero, triggers, seed e drift em banco descartavel.</td>
+            </tr>
+            <tr>
+              <td><code>backend/.env.smoke.example</code></td>
+              <td>Exemplo de ambiente isolado para smokes HTTP e smokes completos.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke/*</code></td>
+              <td>Guard de banco smoke, fixture HTTP, suite HTTP, suite de fluxos criticos, smoke de seguranca, smoke de confiabilidade e runners unificados.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/README.md</code></td>
+              <td>Documentado como rodar smokes isolados e smokes completos.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-app-contract.sh</code></td>
+              <td>Smoke HTTP tornado repetivel com API key, fixture e checks de erro padrao.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/API.md</code>, <code>ROTAS.md</code>, <code>PACIENTE_APP_API.md</code>, <code>MOTORISTA_APP_API.md</code>, <code>TFD_API.md</code></td>
+              <td>Contratos documentados alinhados com API key, status codes e rotas implementadas.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/MAPA_CONTEXTO_VALIDACAO.html</code></td>
+              <td>Mapa vivo atualizado com banco smoke isolado, smokes HTTP, seguranca, confiabilidade, producao VPS/Vercel e comando unico.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/COBERTURA_LACUNAS_ETAPA13.md</code></td>
+              <td>Relatorio da etapa 13 com inventario de cobertura, atividades 1 a 6, lacunas P0/P1 e roadmap restante.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/COBERTURA_THRESHOLDS_ETAPA13.md</code></td>
+              <td>Baseline, thresholds progressivos e gates de CI para cobertura backend/frontend.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/RELATORIO_FINAL_ETAPA15.md</code></td>
+              <td>Fechamento da validacao com estado recomendado em <code>b82019c</code>, validacoes finais, pendencias registradas da etapa 4 e da etapa 14, riscos restantes e recomendacao de deploy/retomada.</td>
+            </tr>
+            <tr>
+              <td><code>backend/docs/RETOMADA_ETAPA14_ESCOPO.md</code></td>
+              <td>Separacao da retomada da etapa 14 entre produto principal, itens fora de escopo imediato, stash aplicado, gates estabilizados na atividade 14.9 e riscos residuais.</td>
+            </tr>
+            <tr>
+              <td><code>.github/workflows/validate.yml</code></td>
+              <td>Workflow agora roda validate, coverage, migrations, smokes completos, lint frontend, browser test e build.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke/env.sh</code></td>
+              <td>Helpers de banco descartavel funcionam com container Docker local ou <code>psql</code> no CI.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/db/validate-migrations.sh</code></td>
+              <td>Recriacao do banco de migration passou a reutilizar o helper compativel com CI.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/package.json</code></td>
+              <td>Scripts separados para lint incremental, baseline ESLint, formatacao Prettier, teste server, teste browser e instalacao do Chromium Playwright; <code>lint:eslint:refresh</code> agora tambem poda e formata suppressions obsoletas.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/vite.config.ts</code></td>
+              <td>Provider browser do Vitest aceita <code>VITEST_BROWSER_CHANNEL</code> para fallback em Chrome local sem alterar o padrao de Chromium gerenciado.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/package-lock.json</code></td>
+              <td><code>dompurify</code> atualizado para 3.4.15 e dependencias dev vulneraveis atualizadas; audit completo do frontend zerado.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/README.md</code></td>
+              <td>Validacao local documentada com lint incremental, browser test e coverage.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/.eslint-suppressions.json</code></td>
+              <td>Baseline versionada zerada; o arquivo permanece vazio para impedir novas supressoes silenciosas.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/src/lib/presentation/components/StatusBadge.svelte.spec.ts</code></td>
+              <td>Spec browser real para componentes compartilhados de status, scan e botao primario.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/PRONTUARIO_PACIENTE.md</code></td>
+              <td>Exemplo pseudo-Svelte ajustado para nao quebrar parser do Prettier.</td>
+            </tr>
+            <tr>
+              <td><code>backend/tests/security.test.js</code></td>
+              <td>Testes formais de seguranca adicionados na atividade 1 da etapa 13.</td>
+            </tr>
+            <tr>
+              <td><code>backend/tests/priority-use-cases.test.js</code></td>
+              <td>Testes formais de use cases prioritarios adicionados na atividade 2 da etapa 13.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/shared/cors.ts</code>, <code>backend/src/main/app.ts</code>, <code>backend/src/presentation/middlewares/apiKey.ts</code></td>
+              <td>Politica CORS centralizada e API key endurecida com comparacao segura.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/infrastructure/logger.ts</code>, <code>backend/src/infrastructure/audit/PrismaAuditLogger.ts</code></td>
+              <td>Redaction em logs e mascara recursiva de payload sensivel em auditoria.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa10.ts</code></td>
+              <td>Smoke dedicado da etapa de seguranca com 29 asserts, incluindo preview Vercel restrito ao projeto <code>unisism</code>.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa11.ts</code></td>
+              <td>Smoke dedicado da etapa de confiabilidade com 7 asserts.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa12.ts</code></td>
+              <td>Smoke dedicado da etapa de producao/deploy com validacao de compose base/prod/observability, Dockerfile nao-root, env fail-fast, docs e runner unico.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/infrastructure/outbox/OutboxBus.ts</code>, <code>backend/src/modules/relatorios/application/ExpiracaoCron.ts</code>, <code>backend/src/modules/paciente-app/infrastructure/PushDispatcherWorker.ts</code></td>
+              <td>Outbox, cron de expiracao e dispatcher de push ajustados para parada segura e menos risco de starvation.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/modules/centro/application/use-cases/*Agenda*/*Fila*</code> e <code>backend/src/modules/gestao/application/use-cases/ListarFilaEsperaCentroUseCase.ts</code></td>
+              <td>Filtros de <code>DestinoRegulacao</code> alinhados ao enum Prisma atual; compatibilidade CEM/CEO fica por rota/especialidade/local.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa3.ts</code></td>
+              <td>Fixture de atendente idempotente.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa1.ts</code> e <code>backend/scripts/smoke-test-etapa7.ts</code></td>
+              <td>Fixtures de recomendacao e ambiente NTFY tornadas autossuficientes; etapa 7 neutraliza pendencias externas em banco smoke para evitar interferencia entre suites.</td>
+            </tr>
+            <tr>
+              <td><code>backend/scripts/smoke-test-etapa9.ts</code></td>
+              <td>Cleanup respeita dependencias relacionadas a conta de paciente.</td>
+            </tr>
+            <tr>
+              <td><code>backend/prisma/seed.ts</code>, <code>quick-create-paciente.ts</code>, <code>seed-paciente-completo.ts</code></td>
+              <td>Mudancas ja existiam no workspace e foram preservadas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2>Fechamento e Pendencias Registradas</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Objetivo</th>
+              <th>Status / O que olhar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>15 · Relatorio final</strong></td>
+              <td>Fechar a validacao completa no documento.</td>
+              <td>Concluido nesta atualizacao. O estado funcional recomendado e <code>b82019c</code>, com validacoes finais aprovadas apos rollback.</td>
+            </tr>
+            <tr>
+              <td><strong>Pendencia da etapa 4</strong></td>
+              <td>Validar boot em ambiente real.</td>
+              <td>Repetir na VPS antes/depois do proximo deploy: inicializacao do backend, conexao Redis, health, metrics, shutdown e logs com as variaveis reais.</td>
+            </tr>
+            <tr>
+              <td><strong>Pendencia da etapa 14</strong></td>
+              <td>Controlar o que ficou fora do rollback.</td>
+              <td>O estado pos-merge esta preservado em <code>codex/backup-pre-rollback-etapa14-20260923</code> e <code>stash@{0}</code>. Nao reaplicar sem permissao e sem validar novamente todos os gates.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card span-5">
+        <h2>Historico de Commit</h2>
+        <ul class="list">
+          <li>Commit ja criado: <code>5ceff88 chore(backend): preparar validacao e deploy</code>.</li>
+          <li>Commit ja criado: <code>0b757fc chore: consolidar validacao backend e frontend</code>.</li>
+          <li>Commit ja criado: <code>377415d chore: reforcar confiabilidade do backend</code>.</li>
+          <li>Commit ja criado: <code>a832016 chore: alinhar deploy vps e vercel</code>.</li>
+          <li>Commit ja criado: <code>de10a3b docs: mapear lacunas de cobertura</code>.</li>
+          <li>Commit ja criado: <code>3b043cb test: cobrir seguranca backend</code>.</li>
+          <li>Commit ja criado: <code>c37b8b8 test: cobrir use cases prioritarios</code>.</li>
+          <li>Commit ja criado: <code>d402b33 test: trocar specs exemplo por cobertura real</code>.</li>
+          <li>Commit ja criado: <code>ce7fe6c fix: limpar warnings svelte do frontend</code>.</li>
+          <li>Commit ja criado: <code>23b541c test: adicionar thresholds de cobertura</code>.</li>
+          <li>Commit ja criado: <code>7a5518e chore: estabilizar lint e testes browser frontend</code>.</li>
+          <li>Commit ja criado: <code>8d4a4a9 ci: ampliar gates de validacao</code>.</li>
+          <li>Commit ja criado: <code>b5d88bd fix: corrigir vulnerabilidade runtime frontend</code>.</li>
+          <li>Commit ja criado: <code>3cae91c chore: zerar audit completo frontend</code>.</li>
+          <li>Commit ja criado: <code>5febb41 feat: adicionar biometria e site do motorista</code>.</li>
+          <li>Commit ja criado: <code>8d1daa9 style: zerar baseline prettier frontend</code>.</li>
+          <li>Commit ja criado: <code>b82019c atualiza validacoes e componentes frontend</code>.</li>
+          <li>Rollback seguro aplicado em 23/09/2026: <code>main</code> voltou para <code>b82019c</code>; o estado pos-merge foi preservado em branch backup e stash.</li>
+        </ul>
+      </article>
+
+      <article class="card span-7">
+        <h2>Proxima Decisao</h2>
+        <ul class="list">
+          <li>Decidir se o proximo passo sera deploy do estado funcional <code>b82019c</code> ou abertura de uma nova atividade para retomar o merge posterior.</li>
+          <li>Se retomar o merge posterior, tratar como trabalho separado e repetir <code>npm run check</code>, <code>npm run lint</code>, testes, cobertura, audit e build.</li>
+          <li>Se seguir para deploy, executar a pendencia da etapa 4 na VPS: boot real, Redis, health, metrics e logs.</li>
+          <li>Retomada aberta em <code>codex/retomar-etapa14</code>: a atividade 14.8 separou o escopo, a 14.9 estabilizou os gates e a 14.10 removeu itens fora do lote principal.</li>
+          <li>Proxima decisao: limpar a baseline ESLint retomada, preparar revisao/deploy desta branch ou tratar PEC/motorista/landing/auditorias auxiliares em atividades proprias.</li>
+        </ul>
+        <p class="footer-note">
+          Este arquivo e o mapa de contexto local e agora tambem registra o fechamento da etapa 15.
+        </p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

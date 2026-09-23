@@ -132,9 +132,7 @@
 			class="relative border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-blue-900"
 		>
 			<span class="absolute top-0 left-0 h-full w-1 bg-slate-400"></span>
-			<div class="pl-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-				Exames
-			</div>
+			<div class="pl-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">Exames</div>
 			<div class="pl-2 font-mono text-2xl font-bold text-slate-900">{p.exames.length}</div>
 			<div class="pl-2 font-mono text-[10px] text-slate-500">
 				{p.exames.filter((e) => e.resultado === 'ALTERADO').length} alterado(s)

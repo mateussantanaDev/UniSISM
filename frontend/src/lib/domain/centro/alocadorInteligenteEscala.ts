@@ -141,17 +141,25 @@ export function escalaAtendeNaData(escala: EscalaProfissionalCentro, data: Date)
 		if (escala.datasEspecificas && escala.datasEspecificas.length > 0) {
 			return escala.datasEspecificas.includes(iso);
 		}
-		const diasNumericos = Array.from(new Set(
-			(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
-		));
+		const diasNumericos = Array.from(
+			new Set(
+				(escala.diasSemana || [])
+					.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
+					.filter((n) => typeof n === 'number')
+			)
+		);
 		return diasNumericos.includes(diaSemana);
 	}
 
 	// 3. Recorrência Quinzenal
 	if (escala.tipoRecorrencia === 'QUINZENAL') {
-		const diasNumericos = Array.from(new Set(
-			(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
-		));
+		const diasNumericos = Array.from(
+			new Set(
+				(escala.diasSemana || [])
+					.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
+					.filter((n) => typeof n === 'number')
+			)
+		);
 		if (!diasNumericos.includes(diaSemana)) return false;
 
 		if (escala.dataInicioRecorrencia) {
@@ -163,16 +171,22 @@ export function escalaAtendeNaData(escala: EscalaProfissionalCentro, data: Date)
 			return diffWeeks >= 0 && diffWeeks % 2 === 0;
 		} else {
 			const primeiroJan = new Date(data.getFullYear(), 0, 1);
-			const diasDoAno = Math.floor((data.getTime() - primeiroJan.getTime()) / (24 * 60 * 60 * 1000));
+			const diasDoAno = Math.floor(
+				(data.getTime() - primeiroJan.getTime()) / (24 * 60 * 60 * 1000)
+			);
 			const semanaDoAno = Math.ceil((diasDoAno + primeiroJan.getDay() + 1) / 7);
 			return semanaDoAno % 2 === 0;
 		}
 	}
 
 	// 4. Semanal Padrão
-	const diasNumericos = Array.from(new Set(
-		(escala.diasSemana || []).map(d => DIA_SEMANA_MAP[d.trim().toUpperCase()]).filter(n => typeof n === 'number')
-	));
+	const diasNumericos = Array.from(
+		new Set(
+			(escala.diasSemana || [])
+				.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
+				.filter((n) => typeof n === 'number')
+		)
+	);
 	return diasNumericos.includes(diaSemana);
 }
 
@@ -200,17 +214,19 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		return null;
 	}
 
-	const escalasAtivas = escalasDisponiveis.filter(e => e.status === 'ATIVA' || !e.status);
+	const escalasAtivas = escalasDisponiveis.filter((e) => e.status === 'ATIVA' || !e.status);
 	if (escalasAtivas.length === 0) {
 		return null;
 	}
 
 	let escala: EscalaProfissionalCentro | undefined;
 	if (medicoNome) {
-		escala = escalasAtivas.find(e => e.nome.toLowerCase() === medicoNome.toLowerCase());
+		escala = escalasAtivas.find((e) => e.nome.toLowerCase() === medicoNome.toLowerCase());
 	}
 	if (!escala && especialidade) {
-		escala = escalasAtivas.find(e => e.especialidade.toLowerCase() === especialidade.toLowerCase());
+		escala = escalasAtivas.find(
+			(e) => e.especialidade.toLowerCase() === especialidade.toLowerCase()
+		);
 	}
 	if (!escala) {
 		escala = escalasAtivas[0];
@@ -243,9 +259,7 @@ export function alocarVagaPorProfissionalEEscala(params: {
 	let dataCursor = new Date(dataBase);
 	dataCursor.setDate(dataCursor.getDate() + offsetDias);
 
-	const ocupadosSet = new Set(
-		agendamentosExistentes.map(a => `${a.data}_${a.hora}`)
-	);
+	const ocupadosSet = new Set(agendamentosExistentes.map((a) => `${a.data}_${a.hora}`));
 
 	let dataIsoFinal = '';
 	let horaFinal = '';
@@ -291,7 +305,11 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		horaFinal = escala.horarioInicio;
 	}
 
-	const consultorioFinal = escala.consultorio || (ehCeo ? `CADEIRA ODONTOLÓGICA 01 — ${escala.especialidade.toUpperCase()}` : `CONSULTÓRIO 01 — ${escala.especialidade.toUpperCase()}`);
+	const consultorioFinal =
+		escala.consultorio ||
+		(ehCeo
+			? `CADEIRA ODONTOLÓGICA 01 — ${escala.especialidade.toUpperCase()}`
+			: `CONSULTÓRIO 01 — ${escala.especialidade.toUpperCase()}`);
 
 	return {
 		data: dataIsoFinal,
@@ -302,7 +320,9 @@ export function alocarVagaPorProfissionalEEscala(params: {
 		registro: escala.registro,
 		especialidade: escala.especialidade,
 		centro,
-		centroNome: ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro Municipal de Especialidades Médicas (CEM)',
+		centroNome: ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro Municipal de Especialidades Médicas (CEM)',
 		consultorio: consultorioFinal,
 		prioridade,
 		diasAteAtendimento: offsetDias,
@@ -312,18 +332,78 @@ export function alocarVagaPorProfissionalEEscala(params: {
 }
 
 export const TERMOS_ODONTO: readonly string[] = [
-	'endodontia', 'endo', 'periodontia', 'perio', 'cirurgia bucomaxilofacial',
-	'bucomaxilofacial', 'bucomaxilo', 'odontopediatria', 'pacientes com necessidades especiais',
-	'pne', 'prótese dentária', 'protese dentaria', 'prótese', 'protese', 'estomatologia',
-	'ortodontia', 'odontologia', 'saúde bucal', 'saude bucal', 'dentística', 'dentistica',
-	'cirurgia oral', 'implante', 'implantodontia', 'radiologia odontológica',
-	'traumatologia bucomaxilofacial', 'ceo', 'exodontia', 'siso', 'dente', 'dentári',
-	'dentari', 'dentist', 'restauração', 'restauracao', 'obturação', 'obturacao', 'canal',
-	'raspagem', 'profilaxia', 'tartarectomia', 'tártaro', 'tartaro', 'flúor', 'fluor',
-	'selante', 'frenectomia', 'frenotomia', 'gengivoplastia', 'gengivectomia', 'cárie',
-	'carie', 'pulpotomia', 'pulpectomia', 'coroa', 'apicectomia', 'enxerto', 'clareamento',
-	'bucal', 'boca', 'alveoloplastia', 'alveolo', 'amálgama', 'amalgama', 'resina', 'faceta',
-	'odont', 'cisto', 'periapi', 'periodo', 'buco', 'maxil'
+	'endodontia',
+	'endo',
+	'periodontia',
+	'perio',
+	'cirurgia bucomaxilofacial',
+	'bucomaxilofacial',
+	'bucomaxilo',
+	'odontopediatria',
+	'pacientes com necessidades especiais',
+	'pne',
+	'prótese dentária',
+	'protese dentaria',
+	'prótese',
+	'protese',
+	'estomatologia',
+	'ortodontia',
+	'odontologia',
+	'saúde bucal',
+	'saude bucal',
+	'dentística',
+	'dentistica',
+	'cirurgia oral',
+	'implante',
+	'implantodontia',
+	'radiologia odontológica',
+	'traumatologia bucomaxilofacial',
+	'ceo',
+	'exodontia',
+	'siso',
+	'dente',
+	'dentári',
+	'dentari',
+	'dentist',
+	'restauração',
+	'restauracao',
+	'obturação',
+	'obturacao',
+	'canal',
+	'raspagem',
+	'profilaxia',
+	'tartarectomia',
+	'tártaro',
+	'tartaro',
+	'flúor',
+	'fluor',
+	'selante',
+	'frenectomia',
+	'frenotomia',
+	'gengivoplastia',
+	'gengivectomia',
+	'cárie',
+	'carie',
+	'pulpotomia',
+	'pulpectomia',
+	'coroa',
+	'apicectomia',
+	'enxerto',
+	'clareamento',
+	'bucal',
+	'boca',
+	'alveoloplastia',
+	'alveolo',
+	'amálgama',
+	'amalgama',
+	'resina',
+	'faceta',
+	'odont',
+	'cisto',
+	'periapi',
+	'periodo',
+	'buco',
+	'maxil'
 ];
 
 export function isEspecialidadeOdonto(item: any): boolean {
@@ -333,11 +413,16 @@ export function isEspecialidadeOdonto(item: any): boolean {
 		if (/\bcro\b/i.test(str) || str.startsWith('cro')) return true;
 		if (/\bcrm\b/i.test(str) || str.startsWith('crm')) return false;
 		if (str.includes('cadeira') || str.includes('ceo')) return true;
-		return TERMOS_ODONTO.some(t => t === 'pne' ? /\bpne\b/i.test(str) : str.includes(t));
+		return TERMOS_ODONTO.some((t) => (t === 'pne' ? /\bpne\b/i.test(str) : str.includes(t)));
 	}
 
 	// 1. Rota/Canal explícitos
-	const canal = (item.canalRoteamento || item.destinoRegulacao || item.filaDestino || '').toUpperCase();
+	const canal = (
+		item.canalRoteamento ||
+		item.destinoRegulacao ||
+		item.filaDestino ||
+		''
+	).toUpperCase();
 	if (canal === 'CEO' || canal === 'CENTRO_ODONTOLOGICO') return true;
 
 	// 2. Registro no Conselho Profissional (CRO vs CRM)
@@ -356,11 +441,14 @@ export function isEspecialidadeOdonto(item: any): boolean {
 		item.profissionalAgendado || '',
 		item.solicitacao?.especialidadeSolicitada || '',
 		item.solicitacao?.medicoSolicitante || ''
-	].join(' ').toLowerCase().trim();
+	]
+		.join(' ')
+		.toLowerCase()
+		.trim();
 
 	if (/\bcro\b/i.test(texto)) return true;
 
-	return TERMOS_ODONTO.some(t => t === 'pne' ? /\bpne\b/i.test(texto) : texto.includes(t));
+	return TERMOS_ODONTO.some((t) => (t === 'pne' ? /\bpne\b/i.test(texto) : texto.includes(t)));
 }
 
 export function pertenceAoOrgaoCentro(item: any, centro: TipoCentro): boolean {

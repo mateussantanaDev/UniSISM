@@ -34,6 +34,7 @@ import type { IPushProvider, PushPayload, PushResult } from '../src/infrastructu
 import { NtfyPushProvider } from '../src/infrastructure/push/NtfyPushProvider';
 import { NoopPushProvider } from '../src/infrastructure/push/NoopPushProvider';
 import type { IEmailService } from '../src/infrastructure/email/EmailService';
+import { env } from '../src/shared/env';
 
 const CPF_E7 = '11144477735';
 
@@ -62,6 +63,16 @@ class FakeEmailService implements IEmailService {
   enviados: Array<{ to: string; subject: string }> = [];
   async enviar(opts: { to: string; subject: string; text?: string; html?: string }): Promise<void> {
     this.enviados.push({ to: opts.to, subject: opts.subject });
+  }
+}
+
+function usandoBancoSmoke(): boolean {
+  try {
+    const raw = process.env.DATABASE_URL ?? '';
+    const db = decodeURIComponent(new URL(raw).pathname.replace(/^\//, ''));
+    return /(^|[_-])(smoke|test|testing|ci)([_-]|$)/i.test(db);
+  } catch {
+    return false;
   }
 }
 
@@ -108,6 +119,18 @@ async function setup(): Promise<{
   // Limpa devices + notificações antigos
   await prisma.pacienteDispositivo.deleteMany({ where: { contaId: { in: [conta.id, conta2.id] } } });
   await prisma.notificacaoPaciente.deleteMany({ where: { contaId: { in: [conta.id, conta2.id] } } });
+  if (usandoBancoSmoke()) {
+    await prisma.notificacaoPaciente.updateMany({
+      where: {
+        pushStatus: 'PENDENTE',
+        contaId: { notIn: [conta.id, conta2.id] },
+      },
+      data: {
+        pushStatus: 'SEM_DEVICE',
+        pushErro: 'neutralizada pelo smoke etapa7 para isolar o batch',
+      },
+    });
+  }
 
   return { contaId: conta.id, conta2Id: conta2.id, emailFalha: 'paciente-e7@example.com' };
 }
@@ -171,9 +194,10 @@ async function main(): Promise<void> {
 
   // ─────────── BRECHA 13, 3 · Topic auto-gerado + provider agnóstico ───────────
   console.log('\n── BRECHA 13, 3 · Topic UUID auto-gerado ──');
-  // Set env temporariamente pra subscribeUrl ser gerada
-  const origNtfy = process.env['NTFY_BASE_URL'];
-  process.env['NTFY_BASE_URL'] = 'https://ntfy.example.com';
+  // Ajusta o env central temporariamente pra subscribeUrl ser gerada.
+  const smokeEnv = env as { NTFY_BASE_URL: string };
+  const origNtfy = smokeEnv.NTFY_BASE_URL;
+  smokeEnv.NTFY_BASE_URL = 'https://ntfy.example.com';
 
   const out = await regUC.exec(ctx.contaId, {
     provider: 'NTFY',
@@ -186,7 +210,7 @@ async function main(): Promise<void> {
     `subscribeUrl wss:// (foi "${out.subscribeUrl}")`,
     out.subscribeUrl?.startsWith('wss://ntfy.example.com/') === true && out.subscribeUrl?.endsWith('/ws') === true,
   );
-  process.env['NTFY_BASE_URL'] = origNtfy;
+  smokeEnv.NTFY_BASE_URL = origNtfy;
 
   // ─────────── BRECHA 9 · Transferência de device entre contas ───────────
   console.log('\n── BRECHA 9 · Device transfere entre contas (audit) ──');

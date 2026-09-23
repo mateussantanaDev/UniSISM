@@ -58,13 +58,20 @@
 		try {
 			const sessao = await api.auth.me();
 			const superUser = sessao.role === 'ADMIN' || sessao.role === 'DESENVOLVEDOR';
-			const allowedRoles = ['REGULADOR_SMS', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'COORDENADOR_UBS', 'ATENDENTE_UBS'];
+			const allowedRoles = [
+				'REGULADOR_SMS',
+				'MEDICO',
+				'MEDICO_ESPECIALISTA',
+				'ATENDENTE_CENTRO',
+				'COORDENADOR_UBS',
+				'ATENDENTE_UBS'
+			];
 			if (!allowedRoles.includes(sessao.role) && !superUser) {
 				goto(rbac.faceDestinoPadrao(sessao.role, sessao), { replaceState: true });
 				return;
 			}
 			me = sessao;
-			
+
 			// Redirecionamento da raiz /centro para a recepção por padrão
 			const path = page.url.pathname as string;
 			if (path === '/centro' || path === '/centro/') {
@@ -155,21 +162,28 @@
 				</div>
 				<div class="flex items-center gap-4 font-mono text-xs">
 					{#if me?.role === 'ADMIN' || me?.role === 'DESENVOLVEDOR'}
-						<a href="/cem/recepcao/fila" class="text-blue-900 font-bold hover:underline flex items-center gap-1">
+						<a
+							href="/cem/recepcao/fila"
+							class="flex items-center gap-1 font-bold text-blue-900 hover:underline"
+						>
 							<IconArrowsExchange size={14} />
 							<span>Alternar para Centro Médico (CEM) →</span>
 						</a>
 						<span class="text-slate-300">|</span>
 					{/if}
 					<div class="hidden items-center gap-2 md:flex">
-						<span class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-bold tracking-widest text-emerald-800 uppercase">
+						<span
+							class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-bold tracking-widest text-emerald-800 uppercase"
+						>
 							API · OK
 						</span>
-						<span class="border border-slate-300 bg-white px-2 py-0.5 font-bold tracking-widest text-slate-700 uppercase">
+						<span
+							class="border border-slate-300 bg-white px-2 py-0.5 font-bold tracking-widest text-slate-700 uppercase"
+						>
 							{me.role}
 						</span>
 					</div>
-					<div class="text-slate-500 font-mono text-[11px] font-semibold">{relogio}</div>
+					<div class="font-mono text-[11px] font-semibold text-slate-500">{relogio}</div>
 				</div>
 			</header>
 
@@ -177,7 +191,9 @@
 				{@render children()}
 			</main>
 
-			<footer class="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-2.5 font-mono text-[10px] text-slate-500">
+			<footer
+				class="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-2.5 font-mono text-[10px] text-slate-500"
+			>
 				<div>UNISISM · CENTRO DE ESPECIALIDADES MUNICIPAL v1.0.0</div>
 				<div>OPERADOR: {me.nome.toUpperCase()}</div>
 			</footer>
@@ -186,7 +202,9 @@
 {/if}
 
 <style>
-	header, footer, span {
+	header,
+	footer,
+	span {
 		border-radius: 0 !important;
 	}
 </style>

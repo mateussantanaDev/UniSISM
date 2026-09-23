@@ -8,12 +8,13 @@ import type { Request } from 'express';
 import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { logger } from '../../../infrastructure/logger';
-import type { Prisma } from '../../../../generated/prisma';
+import { StatusAbastecimento, type Prisma } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { IFileStorage } from '../../../domain/services/IFileStorage';
 import type { IAnexoScanner } from '../../../infrastructure/scan/ClamavScanner';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
+import { enumValue } from '../../../shared/prismaHelpers';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
@@ -51,7 +52,14 @@ export interface RegistrarComprovanteInput {
   comprovante: { nomeOriginal: string; mimeType: string; buffer: Buffer };
 }
 
-function rowParaAbastecimento(r: any) {
+const INCLUDE_FULL = {
+  veiculo: { select: { id: true, placa: true, modelo: true, hodometroAtualKm: true } },
+  motorista: { select: { id: true, nome: true } },
+} satisfies Prisma.AbastecimentoInclude;
+
+type AbastecimentoRow = Prisma.AbastecimentoGetPayload<{ include: typeof INCLUDE_FULL }>;
+
+function rowParaAbastecimento(r: AbastecimentoRow) {
   return {
     id: r.id,
     protocolo: r.protocolo,
@@ -79,11 +87,6 @@ function rowParaAbastecimento(r: any) {
   };
 }
 
-const INCLUDE_FULL = {
-  veiculo: { select: { id: true, placa: true, modelo: true, hodometroAtualKm: true } },
-  motorista: { select: { id: true, nome: true } },
-};
-
 const MIMES_OK = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -102,7 +105,11 @@ export class AbastecimentosUseCases {
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const where: Prisma.AbastecimentoWhereInput = { prefeituraId };
-    if (filtros.status) where.status = filtros.status as any;
+    if (filtros.status) {
+      const status = enumValue(Object.values(StatusAbastecimento), filtros.status);
+      if (!status) throw Unprocessable('STATUS_INVALIDO', 'Status de abastecimento inválido');
+      where.status = status;
+    }
     if (filtros.veiculoId) where.veiculoId = filtros.veiculoId;
     if (filtros.desde || filtros.ate) {
       const range: Prisma.DateTimeFilter = {};

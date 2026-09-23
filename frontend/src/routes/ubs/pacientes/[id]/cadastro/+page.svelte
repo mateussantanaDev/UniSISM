@@ -112,15 +112,11 @@
 		<PanelHeader title="Filiação" index="02" />
 		<dl class="divide-y divide-slate-100 px-4">
 			<div class="py-2.5">
-				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Nome da Mãe
-				</dt>
+				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Nome da Mãe</dt>
 				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p.nomeMae}</dd>
 			</div>
 			<div class="py-2.5">
-				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Nome do Pai
-				</dt>
+				<dt class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Nome do Pai</dt>
 				<dd class="mt-0.5 text-sm text-slate-900">{p.nomePai ?? '—'}</dd>
 			</div>
 		</dl>
@@ -145,9 +141,7 @@
 				</dd>
 			</div>
 			<div class="col-span-12">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Email
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Email</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.email ?? '—'}</dd>
 			</div>
 		</dl>
@@ -164,9 +158,7 @@
 				<dd class="mt-0.5 text-sm text-slate-900">{p.endereco}</dd>
 			</div>
 			<div class="col-span-6">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Bairro
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Bairro</dt>
 				<dd class="mt-0.5 text-sm text-slate-900">{p.bairro}</dd>
 			</div>
 			<div class="col-span-3">

@@ -1,20 +1,20 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npx svelte-kit *)",
-      "Bash(npx svelte-check *)",
-      "Bash(cp /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/docs/types.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
-      "Bash(cp /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/docs/api-client.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/client.ts)",
-      "Bash(find /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes -type f -name \"+page.svelte\" -exec grep -L \"api\\\\.\" {} \\\\;)",
-      "Bash(awk 'NR==229 { print \"\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t</a>\"; print \"\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t</li>\"; next } /^[[:space:]]+<\\\\/li>$/ && NR==229 {next} {print}' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/dashboard/+page.svelte\")",
-      "Read(//tmp/**)",
-      "Bash(awk 'NR>=225 && NR<=232 { gsub\\(/\\\\t/, \"→\"\\); print NR\": \"$0 }' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/dashboard/+page.svelte\")",
-      "Bash(xargs sed *)",
-      "Bash(awk '/^<\\\\/Modal>$/{c++} END{print c}' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/viagens/[id]/+page.svelte\")",
-      "Bash(head -n 1056 /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
-      "Bash(mv /tmp/types-clean.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
-      "Bash(pnpm svelte-check *)",
-      "Bash(ls -la /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/)"
-    ]
-  }
+	"permissions": {
+		"allow": [
+			"Bash(npx svelte-kit *)",
+			"Bash(npx svelte-check *)",
+			"Bash(cp /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/docs/types.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
+			"Bash(cp /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/docs/api-client.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/client.ts)",
+			"Bash(find /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes -type f -name \"+page.svelte\" -exec grep -L \"api\\\\.\" {} \\\\;)",
+			"Bash(awk 'NR==229 { print \"\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t</a>\"; print \"\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t</li>\"; next } /^[[:space:]]+<\\\\/li>$/ && NR==229 {next} {print}' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/dashboard/+page.svelte\")",
+			"Read(//tmp/**)",
+			"Bash(awk 'NR>=225 && NR<=232 { gsub\\(/\\\\t/, \"→\"\\); print NR\": \"$0 }' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/dashboard/+page.svelte\")",
+			"Bash(xargs sed *)",
+			"Bash(awk '/^<\\\\/Modal>$/{c++} END{print c}' \"/Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/routes/tfd/viagens/[id]/+page.svelte\")",
+			"Bash(head -n 1056 /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
+			"Bash(mv /tmp/types-clean.ts /Users/mateus/Documents/Prefeitura/unisism-ubs/frontend/src/lib/api/types.ts)",
+			"Bash(pnpm svelte-check *)",
+			"Bash(ls -la /Users/mateus/Documents/Prefeitura/unisism-ubs/backend/)"
+		]
+	}
 }

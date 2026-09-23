@@ -43,9 +43,7 @@
 				</dd>
 			</div>
 			<div class="col-span-3">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					CID-10
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">CID-10</dt>
 				<dd class="mt-0.5 font-mono text-sm font-bold text-blue-900">
 					{enc.solicitacao.cid10}
 				</dd>

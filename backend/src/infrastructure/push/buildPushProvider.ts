@@ -15,13 +15,14 @@
 import type { IPushProvider } from './IPushProvider';
 import { NtfyPushProvider } from './NtfyPushProvider';
 import { NoopPushProvider } from './NoopPushProvider';
+import { env } from '../../shared/env';
 import { logger } from '../logger';
 
 export function buildPushProvider(): IPushProvider {
-  const kind = (process.env['PUSH_PROVIDER'] ?? 'noop').toLowerCase();
+  const kind = env.PUSH_PROVIDER.toLowerCase();
 
   if (kind === 'ntfy') {
-    const baseUrl = process.env['NTFY_BASE_URL'];
+    const baseUrl = env.NTFY_BASE_URL;
     if (!baseUrl) {
       logger.warn(
         { kind },
@@ -32,8 +33,8 @@ export function buildPushProvider(): IPushProvider {
     const cfg: { baseUrl: string; authToken?: string | null; timeoutMs?: number } = {
       baseUrl,
     };
-    if (process.env['NTFY_AUTH_TOKEN']) cfg.authToken = process.env['NTFY_AUTH_TOKEN'];
-    const t = Number(process.env['NTFY_TIMEOUT_MS']);
+    if (env.NTFY_AUTH_TOKEN) cfg.authToken = env.NTFY_AUTH_TOKEN;
+    const t = env.NTFY_TIMEOUT_MS;
     if (Number.isFinite(t) && t > 0) cfg.timeoutMs = t;
     const p = new NtfyPushProvider(cfg);
     logger.info(

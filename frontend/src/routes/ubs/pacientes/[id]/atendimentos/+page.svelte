@@ -138,12 +138,17 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard label="Total de Atendimentos" value={p.atendimentos.length} sublabel="Histórico completo" />
+		<MetricCard
+			label="Total de Atendimentos"
+			value={p.atendimentos.length}
+			sublabel="Histórico completo"
+		/>
 		<MetricCard label="Consultas Médicas" value={consultasMedicas} sublabel="Médicos da UBS" />
 		<MetricCard
 			label="Atendimentos no Ano"
@@ -174,10 +179,10 @@
 			{/if}
 		</PanelHeader>
 
-		<div class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
-			<span
-				class="mr-2 font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase"
-			>
+		<div
+			class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
+			<span class="mr-2 font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 				Tipo
 			</span>
 			{#each tipos as t (t)}
@@ -231,7 +236,8 @@
 											{a.diagnostico}
 										</div>
 										<div class="mt-0.5 text-xs text-slate-700">
-											<span class="font-semibold">Queixa:</span> {a.queixaPrincipal}
+											<span class="font-semibold">Queixa:</span>
+											{a.queixaPrincipal}
 										</div>
 										<div class="mt-1 text-xs text-slate-800">
 											<span class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">

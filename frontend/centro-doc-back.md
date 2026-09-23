@@ -21,6 +21,7 @@ O ecossistema UniSISM divide a atenção secundária municipal em **dois órgão
 ## 🗄️ 2. MODELAGEM NO BANCO DE DADOS & ISOLAMENTO (MULTI-TENANCY)
 
 ### 2.1 Esquema da Tabela `encaminhamentos`
+
 ```sql
 CREATE TABLE encaminhamentos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,6 +45,7 @@ CREATE TABLE encaminhamentos (
 ```
 
 ### 2.2 Regras de Isolamento de Dados no Banco de Dados
+
 - **Usuários da Recepção/Médicos do CEM**: As consultas SQL executadas para o CEM filtram rigorosamente `WHERE fila_destino IN ('CENTRO_ESPECIALIDADES', 'CEM')`.
 - **Usuários da Recepção/Dentistas do CEO**: As consultas SQL executadas para o CEO filtram rigorosamente `WHERE fila_destino = 'CEO'`.
 - **Regulação da Secretaria de Saúde (SMS)**: O regulador enxerga a totalidade das solicitações municipais `WHERE status = 'AGUARDANDO_REGULACAO'` e tem a prerrogativa de definir o valor do campo `fila_destino` na aprovação.
@@ -84,6 +86,7 @@ CREATE TABLE encaminhamentos (
 ## 🔒 4. AUTENTICAÇÃO E PERMISSÕES (RBAC)
 
 Todas as requisições exigem os cabeçalhos:
+
 ```http
 Authorization: Bearer <jwt_token>
 Accept: application/json
@@ -95,125 +98,136 @@ Content-Type: application/json
 ## 📡 5. ENDPOINTS REST E ESQUEMAS JSON
 
 ### 5.1 POST `/v1/encaminhamentos`
+
 Cria uma nova solicitação de encaminhamento (pode ser enviada pela UBS ou criada diretamente pelo Médico/Dentista no consultório).
 
 #### **Payload de Entrada (Body JSON):**
+
 ```json
 {
-  "paciente": {
-    "nome": "Maria Eduarda Silva",
-    "cpf": "123.456.789-00",
-    "cartaoSus": "898000123456789",
-    "dataNascimento": "1985-04-12",
-    "sexo": "F",
-    "telefone": "(51) 99887-1122",
-    "endereco": "Rua Central, 120"
-  },
-  "solicitacao": {
-    "medicoSolicitante": "Dr. Roberto Medeiros",
-    "crm": "CRM 12345",
-    "especialidadeSolicitada": "Cardiologia Pediátrica",
-    "cid10": "I10",
-    "cidDescricao": "Hipertensão Essencial",
-    "justificativaClinica": "Paciente com picos hipertensivos constantes necessitando de acompanhamento no CEM.",
-    "prioridade": "PRIORITARIA",
-    "dataSolicitacao": "2026-07-27"
-  }
+	"paciente": {
+		"nome": "Maria Eduarda Silva",
+		"cpf": "123.456.789-00",
+		"cartaoSus": "898000123456789",
+		"dataNascimento": "1985-04-12",
+		"sexo": "F",
+		"telefone": "(51) 99887-1122",
+		"endereco": "Rua Central, 120"
+	},
+	"solicitacao": {
+		"medicoSolicitante": "Dr. Roberto Medeiros",
+		"crm": "CRM 12345",
+		"especialidadeSolicitada": "Cardiologia Pediátrica",
+		"cid10": "I10",
+		"cidDescricao": "Hipertensão Essencial",
+		"justificativaClinica": "Paciente com picos hipertensivos constantes necessitando de acompanhamento no CEM.",
+		"prioridade": "PRIORITARIA",
+		"dataSolicitacao": "2026-07-27"
+	}
 }
 ```
 
 #### **Resposta (201 Created):**
+
 ```json
 {
-  "id": "c1f7a8b2-1111-42b4-82a1-987654321000",
-  "protocolo": "ENC20260727-0099",
-  "status": "AGUARDANDO_REGULACAO",
-  "criadoEm": "2026-07-27T17:40:00Z"
+	"id": "c1f7a8b2-1111-42b4-82a1-987654321000",
+	"protocolo": "ENC20260727-0099",
+	"status": "AGUARDANDO_REGULACAO",
+	"criadoEm": "2026-07-27T17:40:00Z"
 }
 ```
 
 ---
 
 ### 5.2 PATCH `/v1/sms/regulacao/lote`
+
 Aprova e direciona encaminhamentos da Secretaria de Saúde para o **CEM**, **CEO** ou **Fila SUS**.
 
 #### **Payload de Entrada (Body JSON):**
+
 ```json
 {
-  "ids": ["c1f7a8b2-1111-42b4-82a1-987654321000"],
-  "acao": "APROVAR",
-  "filaDestino": "CENTRO_ESPECIALIDADES", // Valores: 'CENTRO_ESPECIALIDADES' (CEM), 'CEO', 'SUS'
-  "observacoes": "Aprovado para agendamento direto na atenção especializada municipal."
+	"ids": ["c1f7a8b2-1111-42b4-82a1-987654321000"],
+	"acao": "APROVAR",
+	"filaDestino": "CENTRO_ESPECIALIDADES", // Valores: 'CENTRO_ESPECIALIDADES' (CEM), 'CEO', 'SUS'
+	"observacoes": "Aprovado para agendamento direto na atenção especializada municipal."
 }
 ```
 
 #### **Resposta (200 OK):**
+
 ```json
 {
-  "sucesso": true,
-  "processados": 1,
-  "status": "APROVADO",
-  "filaDestino": "CENTRO_ESPECIALIDADES"
+	"sucesso": true,
+	"processados": 1,
+	"status": "APROVADO",
+	"filaDestino": "CENTRO_ESPECIALIDADES"
 }
 ```
 
 ---
 
 ### 5.3 GET `/v1/centro/recepcao/fila-espera`
+
 Consulta a fila de espera do **CEM** ou do **CEO**.
 
-* **Query Parameters:**
+- **Query Parameters:**
   - `centro`: `CENTRO_ESPECIALIDADES` (CEM) | `CEO` (CEO) (Padrão: `CENTRO_ESPECIALIDADES`)
   - `status`: `APROVADO` | `TODOS`
 
 #### **Resposta (200 OK):**
+
 ```json
 {
-  "total": 1,
-  "encaminhamentos": [
-    {
-      "id": "c1f7a8b2-1111-42b4-82a1-987654321000",
-      "protocolo": "ENC20260727-0099",
-      "status": "APROVADO",
-      "filaDestino": "CENTRO_ESPECIALIDADES",
-      "paciente": {
-        "nome": "Maria Eduarda Silva",
-        "cpf": "123.456.789-00",
-        "cartaoSus": "898000123456789"
-      },
-      "solicitacao": {
-        "especialidadeSolicitada": "Cardiologia Pediátrica",
-        "prioridade": "PRIORITARIA",
-        "cid10": "I10"
-      }
-    }
-  ]
+	"total": 1,
+	"encaminhamentos": [
+		{
+			"id": "c1f7a8b2-1111-42b4-82a1-987654321000",
+			"protocolo": "ENC20260727-0099",
+			"status": "APROVADO",
+			"filaDestino": "CENTRO_ESPECIALIDADES",
+			"paciente": {
+				"nome": "Maria Eduarda Silva",
+				"cpf": "123.456.789-00",
+				"cartaoSus": "898000123456789"
+			},
+			"solicitacao": {
+				"especialidadeSolicitada": "Cardiologia Pediátrica",
+				"prioridade": "PRIORITARIA",
+				"cid10": "I10"
+			}
+		}
+	]
 }
 ```
 
 ---
 
 ### 5.4 POST `/v1/centro/medico/atendimentos/:id/soap`
+
 Registra a consulta médica (CEM) ou atendimento odontológico (CEO) com assinatura no PEP.
 
 #### **Payload de Entrada (Body JSON):**
+
 ```json
 {
-  "queixaPrincipal": "Paciente refere melhora após início da medicação.",
-  "exameFisico": "PA: 120/80 mmHg, FC: 72 bpm, Peso: 70.5kg, Altura: 170cm.",
-  "cid10": "I10",
-  "diagnostico": "Hipertensão arterial essencial controlada.",
-  "conduta": "Retorno em 60 dias.",
-  "prescricao": "1. Losartana 50mg - 1 comp 12/12h",
-  "pressaoArterial": "120/80",
-  "frequenciaCardiaca": "72",
-  "peso": "70.5"
+	"queixaPrincipal": "Paciente refere melhora após início da medicação.",
+	"exameFisico": "PA: 120/80 mmHg, FC: 72 bpm, Peso: 70.5kg, Altura: 170cm.",
+	"cid10": "I10",
+	"diagnostico": "Hipertensão arterial essencial controlada.",
+	"conduta": "Retorno em 60 dias.",
+	"prescricao": "1. Losartana 50mg - 1 comp 12/12h",
+	"pressaoArterial": "120/80",
+	"frequenciaCardiaca": "72",
+	"peso": "70.5"
 }
 ```
 
 ---
 
 ## 🛡️ CONFORMIDADE E GARANTIA DE DADOS
+
 - **Isolamento Total**: Registros do CEM e do CEO são filtrados via `filaDestino` no banco de dados.
 - **Zero Mock Data**: Todas as telas do frontend consomem estritamente as respostas da API REST.
 - **Auditoria Imutável**: Ações de agendamento, atendimento e regulação são gravadas na tabela de logs de auditoria do sistema.

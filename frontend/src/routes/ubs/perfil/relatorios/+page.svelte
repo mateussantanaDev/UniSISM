@@ -162,9 +162,7 @@
 				e instanceof ApiError &&
 				(e.code === 'RELATORIO_EXPIRADO' || e.code === 'ARQUIVO_NAO_ENCONTRADO')
 			) {
-				historico = historico.map((x) =>
-					x.id === r.id ? { ...x, status: 'FALHA' as const } : x
-				);
+				historico = historico.map((x) => (x.id === r.id ? { ...x, status: 'FALHA' as const } : x));
 			}
 		}
 	}

@@ -17,9 +17,7 @@
 
 	// Quem pode cadastrar/editar prontuário: qualquer usuário UBS (operacional)
 	// ou ADMIN/DEV (administrativo).
-	let podeEditar = $derived(
-		auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev
-	);
+	let podeEditar = $derived(auth.podeConsolidarEncaminhamento || auth.ehAdminOuDev);
 
 	function formatarData(iso: string) {
 		return new Date(iso).toLocaleDateString('pt-BR');
@@ -67,11 +65,7 @@
 		notificar('ok', msg);
 	}
 
-	function abrirRemover(
-		label: string,
-		detalhe: string,
-		exec: () => Promise<PacienteCompleto>
-	) {
+	function abrirRemover(label: string, detalhe: string, exec: () => Promise<PacienteCompleto>) {
 		removeLabel = label;
 		removeDetalhe = detalhe;
 		removeExec = exec;
@@ -98,7 +92,10 @@
 			const atualizado = await api.pacientes.updateMedicamento(p.id, id, {
 				ativo: !ativoAtual
 			});
-			aplicarAtualizado(atualizado, ativoAtual ? 'Medicamento suspenso.' : 'Medicamento reativado.');
+			aplicarAtualizado(
+				atualizado,
+				ativoAtual ? 'Medicamento suspenso.' : 'Medicamento reativado.'
+			);
 		} catch (e) {
 			notificar('erro', e instanceof ApiError ? e.message : 'Falha ao atualizar.');
 		}
@@ -110,10 +107,7 @@
 			const atualizado = await api.pacientes.updateCondicaoCronica(p.id, id, {
 				ativo: !ativoAtual
 			});
-			aplicarAtualizado(
-				atualizado,
-				ativoAtual ? 'Condição encerrada.' : 'Condição reativada.'
-			);
+			aplicarAtualizado(atualizado, ativoAtual ? 'Condição encerrada.' : 'Condição reativada.');
 		} catch (e) {
 			notificar('erro', e instanceof ApiError ? e.message : 'Falha ao atualizar.');
 		}
@@ -163,7 +157,8 @@
 			? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 			: 'border-red-700 bg-red-50 text-red-900'}"
 	>
-		{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+		{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+		{mensagem.texto}
 	</div>
 {/if}
 
@@ -354,11 +349,7 @@
 			index="03"
 		>
 			{#if podeEditar && !editandoHistorico}
-				<PrimaryButton
-					label="Editar"
-					variant="secondary"
-					onclick={abrirEdicaoHistorico}
-				/>
+				<PrimaryButton label="Editar" variant="secondary" onclick={abrirEdicaoHistorico} />
 			{/if}
 		</PanelHeader>
 

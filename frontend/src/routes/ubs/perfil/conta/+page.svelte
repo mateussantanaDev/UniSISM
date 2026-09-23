@@ -41,9 +41,7 @@
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.email}</dd>
 			</div>
 			<div class="col-span-6">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Telefone
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Telefone</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.telefone}</dd>
 			</div>
 		</dl>

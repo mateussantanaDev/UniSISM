@@ -38,7 +38,6 @@
 	let { anexo, protocoloEncaminhamento, size = 'md', onMensagem }: Props = $props();
 
 	let visualizarAberto = $state(false);
-	let visualBlob: Blob | null = null;
 	let visualUrl = $state<string | null>(null);
 	let baixandoVisual = $state(false);
 	let erroVisual = $state<string | null>(null);
@@ -95,7 +94,6 @@
 				erroVisual = 'Não foi possível abrir o documento.';
 				return;
 			}
-			visualBlob = r.blob;
 			visualUrl = URL.createObjectURL(r.blob);
 		} finally {
 			baixandoVisual = false;
@@ -283,11 +281,7 @@
 				</div>
 			</div>
 		{:else if visualUrl && ehPdf}
-			<iframe
-				title={anexo.nome}
-				src={visualUrl}
-				class="h-full w-full border-0 bg-white"
-			></iframe>
+			<iframe title={anexo.nome} src={visualUrl} class="h-full w-full border-0 bg-white"></iframe>
 		{:else if visualUrl && ehImagem}
 			<div class="flex flex-1 items-center justify-center overflow-auto p-3">
 				<img src={visualUrl} alt={anexo.nome} class="max-h-full max-w-full object-contain" />

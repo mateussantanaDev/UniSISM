@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import assert from 'assert';
 import { FilaUbsRepository } from '../src/modules/ubs-atendimento/infrastructure/repositories/FilaUbsRepository';
-import { AdicionarFilaUbsUseCase } from '../src/modules/ubs-atendimento/application/use-cases/AdicionarFilaUbsUseCase';
 import { ListarFilaDiaUbsUseCase } from '../src/modules/ubs-atendimento/application/use-cases/ListarFilaDiaUbsUseCase';
 import { ChamarPacienteUbsUseCase } from '../src/modules/ubs-atendimento/application/use-cases/ChamarPacienteUbsUseCase';
 import { AtualizarStatusAtendimentoUbsUseCase } from '../src/modules/ubs-atendimento/application/use-cases/AtualizarStatusAtendimentoUbsUseCase';

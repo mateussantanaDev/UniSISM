@@ -17,15 +17,24 @@
 		IconClock,
 		IconBuildingHospital
 	} from '@tabler/icons-svelte';
-	import { ESPECIALIDADES_CEM, ESPECIALIDADES_CEO } from '$lib/domain/centro/alocadorInteligenteEscala';
+	import {
+		ESPECIALIDADES_CEM,
+		ESPECIALIDADES_CEO
+	} from '$lib/domain/centro/alocadorInteligenteEscala';
 
 	const auth = useAuth();
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
-	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloProfissional = $derived(
+		ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista'
+	);
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	// Types for Cotas and Escalas
@@ -69,17 +78,36 @@
 	// Real Data from API
 	let cotasUbsList = $state<CotaUbs[]>([]);
 	let escalasList = $state<EscalaEspecialista[]>([]);
-	let listaProfissionais = $state<Array<{ id: string; nome: string; registroProfissional: string; conselho: string; cargo: string; role: string; especialidade: string }>>([]);
-	let listaEspecialidadesCentro = $state<Array<{ id: string; nome: string; codigoSigtap?: string }>>([]);
+	let listaProfissionais = $state<
+		Array<{
+			id: string;
+			nome: string;
+			registroProfissional: string;
+			conselho: string;
+			cargo: string;
+			role: string;
+			especialidade: string;
+		}>
+	>([]);
+	let listaEspecialidadesCentro = $state<
+		Array<{ id: string; nome: string; codigoSigtap?: string }>
+	>([]);
 	let profissionalSelecionadoId = $state('');
 
 	function aoSelecionarProfissional(id: string) {
 		profissionalSelecionadoId = id;
-		const prof = listaProfissionais.find(p => p.id === id);
+		const prof = listaProfissionais.find((p) => p.id === id);
 		if (prof) {
 			novoMedicoNome = prof.nome;
-			novoCrm = prof.registroProfissional ? `${prof.conselho} ${prof.registroProfissional}` : `${prof.conselho} —`;
-			if (prof.especialidade && listaEspecialidadesCentro.some(e => e.nome.toLowerCase() === prof.especialidade.toLowerCase())) {
+			novoCrm = prof.registroProfissional
+				? `${prof.conselho} ${prof.registroProfissional}`
+				: `${prof.conselho} —`;
+			if (
+				prof.especialidade &&
+				listaEspecialidadesCentro.some(
+					(e) => e.nome.toLowerCase() === prof.especialidade.toLowerCase()
+				)
+			) {
 				novaEspecialidade = prof.especialidade;
 			} else if (listaEspecialidadesCentro.length > 0) {
 				novaEspecialidade = listaEspecialidadesCentro[0].nome;
@@ -101,7 +129,9 @@
 	let novoHorarioFim = $state('12:00');
 	let novaDuracao = $state(20);
 	let novasVagas = $state(12);
-	let novoTipoRecorrencia = $state<'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO'>('SEMANAL');
+	let novoTipoRecorrencia = $state<'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO'>(
+		'SEMANAL'
+	);
 	let novasDatasEspecificas = $state<string[]>([]);
 	let inputDataEspecifica = $state('');
 	let novoIsMutirao = $state(false);
@@ -116,7 +146,7 @@
 	}
 
 	function removerDataEspecifica(data: string) {
-		novasDatasEspecificas = novasDatasEspecificas.filter(d => d !== data);
+		novasDatasEspecificas = novasDatasEspecificas.filter((d) => d !== data);
 	}
 
 	function formatarDataBrLocal(iso: string): string {
@@ -128,7 +158,9 @@
 	let escalaFerias = $state<EscalaEspecialista | null>(null);
 	let dataInicioFerias = $state('');
 	let dataFimFerias = $state('');
-	let acaoPacientesAfetados = $state<'REMANEJAR_AUTOMATICO' | 'FILA_AVISO_SMS'>('REMANEJAR_AUTOMATICO');
+	let acaoPacientesAfetados = $state<'REMANEJAR_AUTOMATICO' | 'FILA_AVISO_SMS'>(
+		'REMANEJAR_AUTOMATICO'
+	);
 
 	// Disparo de Avisos ao Paciente (Falta Médica / Mudança de Dia)
 	let modalDispararAvisoAberto = $state(false);
@@ -145,7 +177,7 @@
 	let disparandoAviso = $state(false);
 
 	function abrirModalDispararAviso(medicoNome?: string) {
-		avisoMedicoNome = medicoNome || (opcoesMedicos[0]?.nome || '');
+		avisoMedicoNome = medicoNome || opcoesMedicos[0]?.nome || '';
 		avisoData = new Date().toISOString().substring(0, 10);
 		avisoTipoMotivo = 'FALTA_MEDICA';
 		avisoNovaData = '';
@@ -196,14 +228,17 @@
 
 			modalDispararAvisoAberto = false;
 			const dtFmt = avisoData ? avisoData.split('-').reverse().join('/') : avisoData;
-			const totalMsg = totalNotificados > 0 ? `\n[Total: ${totalNotificados} paciente(s) notificado(s) em tempo real]` : '';
+			const totalMsg =
+				totalNotificados > 0
+					? `\n[Total: ${totalNotificados} paciente(s) notificado(s) em tempo real]`
+					: '';
 			mensagemSucesso = `✓ DISPARO DE AVISO CONCLUÍDO COM SUCESSO!\nNotificação enviada ao App do Paciente UniSISM, SMS e WhatsApp dos pacientes agendados com ${avisoMedicoNome} para o dia ${dtFmt}.${totalMsg}`;
 		} catch (err: any) {
 			console.error(err);
 			erroModalAviso = `Falha ao disparar notificações: ${err?.message || 'Erro do servidor'}`;
 		} finally {
 			disparandoAviso = false;
-			setTimeout(() => mensagemSucesso = '', 6000);
+			setTimeout(() => (mensagemSucesso = ''), 6000);
 		}
 	}
 
@@ -218,12 +253,15 @@
 	let totalVagasMes = $derived(cotasUbsList.reduce((acc, c) => acc + c.totalCotasMes, 0));
 	let totalAlocadas = $derived(cotasUbsList.reduce((acc, c) => acc + c.alocadas, 0));
 	let totalDisponiveis = $derived(cotasUbsList.reduce((acc, c) => acc + c.disponiveis, 0));
-	let taxaOcupacao = $derived(totalVagasMes > 0 ? Math.round((totalAlocadas / totalVagasMes) * 100) : 0);
+	let taxaOcupacao = $derived(
+		totalVagasMes > 0 ? Math.round((totalAlocadas / totalVagasMes) * 100) : 0
+	);
 
 	let escalasFiltradas = $derived(
-		escalasList.filter(e =>
-			e.medicoNome.toLowerCase().includes(buscaEspecialista.toLowerCase()) ||
-			e.especialidade.toLowerCase().includes(buscaEspecialista.toLowerCase())
+		escalasList.filter(
+			(e) =>
+				e.medicoNome.toLowerCase().includes(buscaEspecialista.toLowerCase()) ||
+				e.especialidade.toLowerCase().includes(buscaEspecialista.toLowerCase())
 		)
 	);
 
@@ -236,7 +274,10 @@
 		}
 		for (const esc of escalasList) {
 			if (esc.medicoNome && !mapa.has(esc.medicoNome)) {
-				mapa.set(esc.medicoNome, { nome: esc.medicoNome, especialidade: esc.especialidade || 'Especialista' });
+				mapa.set(esc.medicoNome, {
+					nome: esc.medicoNome,
+					especialidade: esc.especialidade || 'Especialista'
+				});
 			}
 		}
 		return Array.from(mapa.values());
@@ -244,10 +285,10 @@
 
 	$effect(() => {
 		if (opcoesMedicos.length > 0) {
-			if (!remOrigemMedico || !opcoesMedicos.some(m => m.nome === remOrigemMedico)) {
+			if (!remOrigemMedico || !opcoesMedicos.some((m) => m.nome === remOrigemMedico)) {
 				remOrigemMedico = opcoesMedicos[0].nome;
 			}
-			if (!remDestinoMedico || !opcoesMedicos.some(m => m.nome === remDestinoMedico)) {
+			if (!remDestinoMedico || !opcoesMedicos.some((m) => m.nome === remDestinoMedico)) {
 				remDestinoMedico = opcoesMedicos[1]?.nome || opcoesMedicos[0].nome;
 			}
 		}
@@ -261,7 +302,11 @@
 				api.centroGestao.listProfissionais({ centro: siglaOrgao }),
 				api.centroGestao.listEspecialidades({ centro: siglaOrgao })
 			]);
-			if (cotasRes.status === 'fulfilled' && Array.isArray(cotasRes.value) && cotasRes.value.length > 0) {
+			if (
+				cotasRes.status === 'fulfilled' &&
+				Array.isArray(cotasRes.value) &&
+				cotasRes.value.length > 0
+			) {
 				cotasUbsList = cotasRes.value as any[];
 			}
 			if (escalasRes.status === 'fulfilled' && Array.isArray(escalasRes.value)) {
@@ -272,7 +317,11 @@
 			} else {
 				listaProfissionais = [];
 			}
-			if (especialidadesRes.status === 'fulfilled' && Array.isArray(especialidadesRes.value) && especialidadesRes.value.length > 0) {
+			if (
+				especialidadesRes.status === 'fulfilled' &&
+				Array.isArray(especialidadesRes.value) &&
+				especialidadesRes.value.length > 0
+			) {
 				listaEspecialidadesCentro = especialidadesRes.value as any[];
 			} else {
 				listaEspecialidadesCentro = [];
@@ -294,12 +343,17 @@
 
 	async function salvarAjusteCotas() {
 		if (!ubsSelecionadaCota) return;
-		const idx = cotasUbsList.findIndex(c => c.ubsId === ubsSelecionadaCota!.ubsId);
+		const idx = cotasUbsList.findIndex((c) => c.ubsId === ubsSelecionadaCota!.ubsId);
 		if (idx !== -1) {
 			const soma = Object.values(ubsSelecionadaCota.especialidades).reduce((a, b) => a + b, 0);
 			ubsSelecionadaCota.totalCotasMes = soma;
 			ubsSelecionadaCota.disponiveis = Math.max(0, soma - ubsSelecionadaCota.alocadas);
-			ubsSelecionadaCota.status = ubsSelecionadaCota.disponiveis === 0 ? 'ESGOTADA' : ubsSelecionadaCota.disponiveis < 20 ? 'ALERTA' : 'NORMAL';
+			ubsSelecionadaCota.status =
+				ubsSelecionadaCota.disponiveis === 0
+					? 'ESGOTADA'
+					: ubsSelecionadaCota.disponiveis < 20
+						? 'ALERTA'
+						: 'NORMAL';
 			cotasUbsList[idx] = ubsSelecionadaCota;
 
 			try {
@@ -314,7 +368,7 @@
 		}
 		modalAjustarCotasAberto = false;
 		mensagemSucesso = '✓ Cotas da UBS atualizadas com sucesso pelo Diretor!';
-		setTimeout(() => mensagemSucesso = '', 4000);
+		setTimeout(() => (mensagemSucesso = ''), 4000);
 	}
 
 	function abrirNovaEscala() {
@@ -323,7 +377,9 @@
 			const primeiro = listaProfissionais[0];
 			profissionalSelecionadoId = primeiro.id;
 			novoMedicoNome = primeiro.nome;
-			novoCrm = primeiro.registroProfissional ? `${primeiro.conselho} ${primeiro.registroProfissional}` : `${primeiro.conselho} —`;
+			novoCrm = primeiro.registroProfissional
+				? `${primeiro.conselho} ${primeiro.registroProfissional}`
+				: `${primeiro.conselho} —`;
 			novaEspecialidade = primeiro.especialidade || listaEspecialidadesCentro[0]?.nome || '';
 		} else {
 			profissionalSelecionadoId = '';
@@ -351,11 +407,16 @@
 		}
 
 		if (novoTipoRecorrencia === 'DATAS_ESPECIFICAS' && novasDatasEspecificas.length === 0) {
-			erroModalEscala = 'Adicione ao menos uma data pontual de atendimento para a escala do médico.';
+			erroModalEscala =
+				'Adicione ao menos uma data pontual de atendimento para a escala do médico.';
 			return;
 		}
 
-		if (novoTipoRecorrencia !== 'DATAS_ESPECIFICAS' && novosDias.length === 0 && novasDatasEspecificas.length === 0) {
+		if (
+			novoTipoRecorrencia !== 'DATAS_ESPECIFICAS' &&
+			novosDias.length === 0 &&
+			novasDatasEspecificas.length === 0
+		) {
 			erroModalEscala = 'Selecione os dias de atendimento ou informe datas específicas.';
 			return;
 		}
@@ -363,9 +424,8 @@
 		erroModalEscala = '';
 		const [hIni, mIni] = novoHorarioInicio.split(':').map(Number);
 		const [hFim, mFim] = novoHorarioFim.split(':').map(Number);
-		const duracaoTotalMin = (!isNaN(hIni) && !isNaN(hFim))
-			? (hFim * 60 + (mFim || 0)) - (hIni * 60 + (mIni || 0))
-			: 240;
+		const duracaoTotalMin =
+			!isNaN(hIni) && !isNaN(hFim) ? hFim * 60 + (mFim || 0) - (hIni * 60 + (mIni || 0)) : 240;
 		const duracaoValida = duracaoTotalMin > 0 ? duracaoTotalMin : 240;
 		const vagasCalculadas = Math.floor(duracaoValida / (novaDuracao || 20));
 
@@ -410,12 +470,15 @@
 			if (Array.isArray(atualizadas) && atualizadas.length > 0) {
 				escalasList = atualizadas as any;
 			} else if (escalaCriada) {
-				escalasList = [...escalasList.filter(e => e.id !== (escalaCriada as any).id), escalaCriada as any];
+				escalasList = [
+					...escalasList.filter((e) => e.id !== (escalaCriada as any).id),
+					escalaCriada as any
+				];
 			}
 
 			modalNovaEscalaAberto = false;
 			mensagemSucesso = `✓ Nova escala para ${nova.medicoNome} cadastrada e salva com sucesso no servidor!`;
-			setTimeout(() => mensagemSucesso = '', 4000);
+			setTimeout(() => (mensagemSucesso = ''), 4000);
 		} catch (err: any) {
 			console.error(err);
 			erroModalEscala = `Falha ao salvar escala no servidor: ${err?.message || 'Erro do servidor'}`;
@@ -426,7 +489,7 @@
 
 	function toggleDia(dia: string) {
 		if (novosDias.includes(dia)) {
-			novosDias = novosDias.filter(d => d !== dia);
+			novosDias = novosDias.filter((d) => d !== dia);
 		} else {
 			novosDias.push(dia);
 		}
@@ -455,7 +518,7 @@
 		}
 		modalFeriasAberto = false;
 		mensagemSucesso = `✓ Férias registradas para ${escalaFerias.medicoNome}. Pacientes afetados foram notificados/remanejados!`;
-		setTimeout(() => mensagemSucesso = '', 5000);
+		setTimeout(() => (mensagemSucesso = ''), 5000);
 	}
 
 	async function executarRemanejamentoEmLote() {
@@ -482,7 +545,7 @@
 			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\nPacientes de ${remOrigemMedico} (${remOrigemData}) transferidos para ${remDestinoMedico} (${remDestinoData}).`;
 		} finally {
 			processandoRemanejamento = false;
-			setTimeout(() => mensagemSucesso = '', 6000);
+			setTimeout(() => (mensagemSucesso = ''), 6000);
 		}
 	}
 </script>
@@ -500,36 +563,48 @@
 
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 shadow-sm flex flex-col gap-1 whitespace-pre-wrap">
+		<div
+			class="flex flex-col gap-1 border-2 border-emerald-700 bg-emerald-50 p-4 font-bold whitespace-pre-wrap text-emerald-900 shadow-sm"
+		>
 			<div class="text-sm font-black">DIRETORIA · PAINEL DE CONTROLE DE VAGAS</div>
 			<div class="font-mono text-xs font-normal">{mensagemSucesso}</div>
 		</div>
 	{/if}
 
 	<!-- 1. Indicadores Globais de Vagas (Executive Top Dashboard) -->
-	<section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+	<section class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Cotas Totais do Mês</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Cotas Totais do Mês
+			</div>
 			<div class="mt-2 text-3xl font-bold text-slate-900">{totalVagasMes}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Vagas distribuídas entre todas as UBSs</div>
+			<div class="mt-1 text-[11px] text-slate-600">Vagas distribuídas entre todas as UBSs</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Vagas Agendadas / Alocadas</div>
-			<div class="mt-2 text-3xl font-bold text-blue-900">{totalAlocadas} <span class="text-xs font-normal text-slate-500">({taxaOcupacao}%)</span></div>
-			<div class="text-[11px] text-slate-600 mt-1">Pacientes já programados na agenda</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Vagas Agendadas / Alocadas
+			</div>
+			<div class="mt-2 text-3xl font-bold text-blue-900">
+				{totalAlocadas} <span class="text-xs font-normal text-slate-500">({taxaOcupacao}%)</span>
+			</div>
+			<div class="mt-1 text-[11px] text-slate-600">Pacientes já programados na agenda</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Vagas em Estoque</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Vagas em Estoque
+			</div>
 			<div class="mt-2 text-3xl font-bold text-emerald-700">{totalDisponiveis}</div>
-			<div class="text-[11px] text-slate-600 mt-1">Disponíveis para otimização da fila</div>
+			<div class="mt-1 text-[11px] text-slate-600">Disponíveis para otimização da fila</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Absenteísmo Estimado</div>
+			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+				Absenteísmo Estimado
+			</div>
 			<div class="mt-2 text-3xl font-bold text-amber-700">11.2%</div>
-			<div class="text-[11px] text-slate-600 mt-1">Média de faltas nas consultas do mês</div>
+			<div class="mt-1 text-[11px] text-slate-600">Média de faltas nas consultas do mês</div>
 		</div>
 	</section>
 
@@ -537,22 +612,28 @@
 	<div class="flex border-b border-slate-200 bg-white font-mono text-xs font-bold">
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'cotas'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'cotas' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'cotas')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'cotas'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			01. Distribuição de Cotas por UBS
 		</button>
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'escalas'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'escalas' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'escalas')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'escalas'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			02. Escala & Grade dos Especialistas
 		</button>
 		<button
 			type="button"
-			onclick={() => abaAtiva = 'remanejamento'}
-			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'remanejamento' ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}"
+			onclick={() => (abaAtiva = 'remanejamento')}
+			class="border-b-2 px-6 py-3 uppercase transition-colors {abaAtiva === 'remanejamento'
+				? 'border-blue-900 bg-blue-50 text-blue-900'
+				: 'border-transparent text-slate-600 hover:bg-slate-50'}"
 		>
 			03. Remanejamento Emergencial em Lote
 		</button>
@@ -564,14 +645,20 @@
 			<PanelHeader title="Matriz de Cotas de Especialidades por UBS" index="01">
 				<div class="flex items-center gap-2">
 					<span class="text-[10px] text-slate-500">Mês de Referência:</span>
-					<input type="month" bind:value={mesReferencia} class="border border-slate-300 px-2 py-0.5 font-bold text-xs" />
+					<input
+						type="month"
+						bind:value={mesReferencia}
+						class="border border-slate-300 px-2 py-0.5 text-xs font-bold"
+					/>
 				</div>
 			</PanelHeader>
 
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse text-xs">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+						<tr
+							class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+						>
 							<th class="border-r border-slate-200 px-4 py-3">Unidade Básica de Saúde (UBS)</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Cotas Totais</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Alocadas</th>
@@ -583,14 +670,16 @@
 					</thead>
 					<tbody class="font-mono">
 						{#each cotasUbsList as ubs (ubs.ubsId)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<!-- Nome da UBS -->
-								<td class="border-r border-slate-100 px-4 py-3 font-bold font-sans text-slate-900">
+								<td class="border-r border-slate-100 px-4 py-3 font-sans font-bold text-slate-900">
 									{ubs.ubsNome}
 								</td>
 
 								<!-- Totais -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-900 text-sm">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-900"
+								>
 									{ubs.totalCotasMes}
 								</td>
 
@@ -600,15 +689,21 @@
 								</td>
 
 								<!-- Saldo Livre -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-emerald-700 text-sm">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center text-sm font-bold text-emerald-700"
+								>
 									{ubs.disponiveis}
 								</td>
 
 								<!-- Especialidades -->
-								<td class="border-r border-slate-100 px-4 py-3 font-sans text-[11px] text-slate-700">
+								<td
+									class="border-r border-slate-100 px-4 py-3 font-sans text-[11px] text-slate-700"
+								>
 									<div class="flex flex-wrap gap-2">
 										{#each Object.entries(ubs.especialidades) as [esp, val]}
-											<span class="bg-slate-100 border border-slate-300 px-1.5 py-0.5 text-[10px] font-mono">
+											<span
+												class="border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-[10px]"
+											>
 												{esp}: <strong>{val}</strong>
 											</span>
 										{/each}
@@ -618,15 +713,21 @@
 								<!-- Status -->
 								<td class="border-r border-slate-100 px-3 py-3 text-center">
 									{#if ubs.status === 'NORMAL'}
-										<span class="border border-emerald-700 bg-emerald-50 text-emerald-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-900"
+										>
 											LIVRE
 										</span>
 									{:else if ubs.status === 'ALERTA'}
-										<span class="border border-amber-600 bg-amber-50 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-amber-600 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900"
+										>
 											CRÍTICO
 										</span>
 									{:else}
-										<span class="border border-red-700 bg-red-50 text-red-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-red-700 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-900"
+										>
 											ESGOTADO
 										</span>
 									{/if}
@@ -637,7 +738,7 @@
 									<button
 										type="button"
 										onclick={() => abrirAjusteCotas(ubs)}
-										class="border border-blue-900 bg-white hover:bg-blue-50 text-blue-900 px-3 py-1 font-bold text-[10px] uppercase"
+										class="border border-blue-900 bg-white px-3 py-1 text-[10px] font-bold text-blue-900 uppercase hover:bg-blue-50"
 									>
 										Ajustar Cotas
 									</button>
@@ -658,7 +759,7 @@
 					<button
 						type="button"
 						onclick={() => abrirModalDispararAviso()}
-						class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
+						class="flex items-center gap-1.5 border border-purple-900 bg-purple-900 px-3 py-1 text-xs font-bold tracking-wider text-white uppercase hover:bg-purple-950"
 					>
 						<IconDeviceMobile size={14} />
 						<span>Disparar Aviso ao App</span>
@@ -667,7 +768,7 @@
 					<button
 						type="button"
 						onclick={abrirNovaEscala}
-						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-3 py-1 font-bold text-xs uppercase tracking-wider"
+						class="border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950"
 					>
 						+ Cadastrar Nova Escala
 					</button>
@@ -675,8 +776,8 @@
 			</PanelHeader>
 
 			<!-- Busca de Especialista -->
-			<div class="p-4 border-b border-slate-200 bg-slate-50 font-sans flex items-center gap-2">
-				<IconSearch size={16} class="text-slate-400 shrink-0" />
+			<div class="flex items-center gap-2 border-b border-slate-200 bg-slate-50 p-4 font-sans">
+				<IconSearch size={16} class="shrink-0 text-slate-400" />
 				<input
 					type="text"
 					bind:value={buscaEspecialista}
@@ -688,7 +789,9 @@
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse text-xs">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+						<tr
+							class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+						>
 							<th class="border-r border-slate-200 px-4 py-3">Especialista / CRM</th>
 							<th class="border-r border-slate-200 px-3 py-3">Especialidade</th>
 							<th class="border-r border-slate-200 px-3 py-3 text-center">Dias / Modalidade</th>
@@ -700,7 +803,7 @@
 					</thead>
 					<tbody class="font-mono">
 						{#each escalasFiltradas as esc (esc.id)}
-							<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<!-- Médico -->
 								<td class="border-r border-slate-100 px-4 py-3 font-sans">
 									<div class="font-bold text-slate-900">{esc.medicoNome}</div>
@@ -708,7 +811,9 @@
 								</td>
 
 								<!-- Especialidade -->
-								<td class="border-r border-slate-100 px-3 py-3 font-sans font-semibold text-slate-800">
+								<td
+									class="border-r border-slate-100 px-3 py-3 font-sans font-semibold text-slate-800"
+								>
 									{esc.especialidade}
 								</td>
 
@@ -716,12 +821,14 @@
 								<td class="border-r border-slate-100 px-3 py-3 text-center">
 									{#if esc.isMutirao || esc.tipoRecorrencia === 'MUTIRAO'}
 										<div class="flex flex-col items-center gap-1">
-											<span class="px-2 py-0.5 text-[9px] font-bold border border-orange-600 bg-orange-100 text-orange-950 uppercase tracking-wider">
+											<span
+												class="border border-orange-600 bg-orange-100 px-2 py-0.5 text-[9px] font-bold tracking-wider text-orange-950 uppercase"
+											>
 												⚡ MINI MUTIRÃO
 											</span>
-											<div class="text-[10px] text-slate-700 font-semibold">
+											<div class="text-[10px] font-semibold text-slate-700">
 												{#if esc.datasEspecificas && esc.datasEspecificas.length > 0}
-													{esc.datasEspecificas.map(d => formatarDataBrLocal(d)).join(', ')}
+													{esc.datasEspecificas.map((d) => formatarDataBrLocal(d)).join(', ')}
 												{:else}
 													{esc.diasSemana.join(', ')}
 												{/if}
@@ -729,22 +836,33 @@
 										</div>
 									{:else if esc.tipoRecorrencia === 'DATAS_ESPECIFICAS'}
 										<div class="flex flex-col items-center gap-1">
-											<span class="px-2 py-0.5 text-[9px] font-bold border border-indigo-700 bg-indigo-50 text-indigo-900 uppercase">
+											<span
+												class="border border-indigo-700 bg-indigo-50 px-2 py-0.5 text-[9px] font-bold text-indigo-900 uppercase"
+											>
 												DATAS PONTUAIS ({esc.datasEspecificas?.length || 0})
 											</span>
-											<div class="text-[10px] text-slate-700 font-semibold max-w-[190px] truncate" title={(esc.datasEspecificas || []).map(d => formatarDataBrLocal(d)).join(', ')}>
-												{(esc.datasEspecificas || []).map(d => formatarDataBrLocal(d)).join(', ')}
+											<div
+												class="max-w-[190px] truncate text-[10px] font-semibold text-slate-700"
+												title={(esc.datasEspecificas || [])
+													.map((d) => formatarDataBrLocal(d))
+													.join(', ')}
+											>
+												{(esc.datasEspecificas || []).map((d) => formatarDataBrLocal(d)).join(', ')}
 											</div>
 										</div>
 									{:else if esc.tipoRecorrencia === 'QUINZENAL'}
 										<div class="flex flex-col items-center gap-1">
-											<span class="px-2 py-0.5 text-[9px] font-bold border border-purple-700 bg-purple-50 text-purple-900 uppercase">
+											<span
+												class="border border-purple-700 bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-purple-900 uppercase"
+											>
 												QUINZENAL (15 DIAS)
 											</span>
 											<div class="flex justify-center gap-1">
 												{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
 													{#if esc.diasSemana.includes(d)}
-														<span class="px-1.5 py-0.5 text-[9px] font-bold border border-purple-900 bg-purple-900 text-white">
+														<span
+															class="border border-purple-900 bg-purple-900 px-1.5 py-0.5 text-[9px] font-bold text-white"
+														>
 															{d}
 														</span>
 													{/if}
@@ -754,7 +872,13 @@
 									{:else}
 										<div class="flex justify-center gap-1">
 											{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
-												<span class="px-1.5 py-0.5 text-[9px] font-bold border {esc.diasSemana.includes(d) ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-200 bg-slate-100 text-slate-400'}">
+												<span
+													class="border px-1.5 py-0.5 text-[9px] font-bold {esc.diasSemana.includes(
+														d
+													)
+														? 'border-blue-900 bg-blue-900 text-white'
+														: 'border-slate-200 bg-slate-100 text-slate-400'}"
+												>
 													{d}
 												</span>
 											{/each}
@@ -763,7 +887,9 @@
 								</td>
 
 								<!-- Turno -->
-								<td class="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-900"
+								>
 									{esc.horarioInicio} às {esc.horarioFim}
 								</td>
 
@@ -776,26 +902,34 @@
 								<!-- Status -->
 								<td class="border-r border-slate-100 px-3 py-3 text-center">
 									{#if esc.status === 'ATIVA'}
-										<span class="border border-emerald-700 bg-emerald-50 text-emerald-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-900"
+										>
 											AGENDA ATIVA
 										</span>
 									{:else if esc.status === 'FERIAS'}
-										<span class="border border-amber-600 bg-amber-50 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-amber-600 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900"
+										>
 											EM FÉRIAS
 										</span>
 									{:else}
-										<span class="border border-red-700 bg-red-50 text-red-900 px-2 py-0.5 text-[10px] font-bold">
+										<span
+											class="border border-red-700 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-900"
+										>
 											BLOQUEADA
 										</span>
 									{/if}
 								</td>
 
 								<!-- Ação -->
-								<td class="px-3 py-3 text-center whitespace-nowrap flex items-center justify-center gap-1.5">
+								<td
+									class="flex items-center justify-center gap-1.5 px-3 py-3 text-center whitespace-nowrap"
+								>
 									<button
 										type="button"
 										onclick={() => abrirModalDispararAviso(esc.medicoNome)}
-										class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-2.5 py-1 text-[10px] font-bold uppercase flex items-center gap-1"
+										class="flex items-center gap-1 border border-purple-900 bg-purple-900 px-2.5 py-1 text-[10px] font-bold text-white uppercase hover:bg-purple-950"
 									>
 										<IconDeviceMobile size={12} />
 										<span>Avisar Pacientes</span>
@@ -803,7 +937,7 @@
 									<button
 										type="button"
 										onclick={() => abrirRegistroFerias(esc)}
-										class="border border-amber-700 bg-white hover:bg-amber-50 text-amber-800 px-2.5 py-1 text-[10px] font-bold uppercase"
+										class="border border-amber-700 bg-white px-2.5 py-1 text-[10px] font-bold text-amber-800 uppercase hover:bg-amber-50"
 									>
 										Férias
 									</button>
@@ -821,21 +955,33 @@
 		<div class="border border-slate-200 bg-white">
 			<PanelHeader title="Ferramenta de Remanejamento Emergencial de Pacientes" index="03" />
 
-			<div class="p-6 font-sans text-xs flex flex-col gap-6">
-				<div class="border border-amber-300 bg-amber-50 p-4 text-amber-900 font-mono text-xs flex items-center gap-2">
-					<IconAlertTriangle size={16} class="text-amber-700 shrink-0" />
-					<span><strong>Painel de Domínio do Gestor:</strong> Permite mover a demanda agendada de um profissional/dia afetado diretamente para a agenda de outro especialista ou nova data, disparando notificação aos pacientes.</span>
+			<div class="flex flex-col gap-6 p-6 font-sans text-xs">
+				<div
+					class="flex items-center gap-2 border border-amber-300 bg-amber-50 p-4 font-mono text-xs text-amber-900"
+				>
+					<IconAlertTriangle size={16} class="shrink-0 text-amber-700" />
+					<span
+						><strong>Painel de Domínio do Gestor:</strong> Permite mover a demanda agendada de um profissional/dia
+						afetado diretamente para a agenda de outro especialista ou nova data, disparando notificação
+						aos pacientes.</span
+					>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					<!-- Painel Origem -->
-					<div class="border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3 font-mono">
-						<div class="font-bold text-slate-800 uppercase text-xs border-b border-slate-200 pb-2">
+					<div class="flex flex-col gap-3 border border-slate-200 bg-slate-50 p-4 font-mono">
+						<div class="border-b border-slate-200 pb-2 text-xs font-bold text-slate-800 uppercase">
 							01. SELEÇÃO DA ORIGEM (AGENDA AFETADA)
 						</div>
 						<div class="flex flex-col gap-1">
-							<label for="rem-med-origem" class="text-[10px] font-semibold text-slate-600">Médico Afetado</label>
-							<select id="rem-med-origem" bind:value={remOrigemMedico} class="border border-slate-300 bg-white p-2 text-xs">
+							<label for="rem-med-origem" class="text-[10px] font-semibold text-slate-600"
+								>Médico Afetado</label
+							>
+							<select
+								id="rem-med-origem"
+								bind:value={remOrigemMedico}
+								class="border border-slate-300 bg-white p-2 text-xs"
+							>
 								{#if opcoesMedicos.length === 0}
 									<option value="">Nenhum médico cadastrado no servidor</option>
 								{:else}
@@ -846,22 +992,35 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1">
-							<label for="rem-data-origem" class="text-[10px] font-semibold text-slate-600">Data Afetada</label>
-							<input id="rem-data-origem" type="date" bind:value={remOrigemData} class="border border-slate-300 bg-white p-2 text-xs" />
+							<label for="rem-data-origem" class="text-[10px] font-semibold text-slate-600"
+								>Data Afetada</label
+							>
+							<input
+								id="rem-data-origem"
+								type="date"
+								bind:value={remOrigemData}
+								class="border border-slate-300 bg-white p-2 text-xs"
+							/>
 						</div>
-						<div class="bg-white border border-slate-200 p-3 mt-2 text-slate-700 text-[11px]">
+						<div class="mt-2 border border-slate-200 bg-white p-3 text-[11px] text-slate-700">
 							Pacientes Encontrados nesta data: <strong>Agenda Ativa no Servidor</strong>
 						</div>
 					</div>
 
 					<!-- Painel Destino -->
-					<div class="border border-slate-200 bg-blue-50/50 p-4 flex flex-col gap-3 font-mono">
-						<div class="font-bold text-blue-900 uppercase text-xs border-b border-slate-200 pb-2">
+					<div class="flex flex-col gap-3 border border-slate-200 bg-blue-50/50 p-4 font-mono">
+						<div class="border-b border-slate-200 pb-2 text-xs font-bold text-blue-900 uppercase">
 							02. SELEÇÃO DO DESTINO (NOVA AGENDA)
 						</div>
 						<div class="flex flex-col gap-1">
-							<label for="rem-med-dest" class="text-[10px] font-semibold text-slate-600">Médico Substituto</label>
-							<select id="rem-med-dest" bind:value={remDestinoMedico} class="border border-slate-300 bg-white p-2 text-xs">
+							<label for="rem-med-dest" class="text-[10px] font-semibold text-slate-600"
+								>Médico Substituto</label
+							>
+							<select
+								id="rem-med-dest"
+								bind:value={remDestinoMedico}
+								class="border border-slate-300 bg-white p-2 text-xs"
+							>
 								{#if opcoesMedicos.length === 0}
 									<option value="">Nenhum médico cadastrado no servidor</option>
 								{:else}
@@ -872,10 +1031,17 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1">
-							<label for="rem-data-dest" class="text-[10px] font-semibold text-slate-600">Nova Data para Encaixe</label>
-							<input id="rem-data-dest" type="date" bind:value={remDestinoData} class="border border-slate-300 bg-white p-2 text-xs" />
+							<label for="rem-data-dest" class="text-[10px] font-semibold text-slate-600"
+								>Nova Data para Encaixe</label
+							>
+							<input
+								id="rem-data-dest"
+								type="date"
+								bind:value={remDestinoData}
+								class="border border-slate-300 bg-white p-2 text-xs"
+							/>
 						</div>
-						<div class="bg-white border border-slate-200 p-3 mt-2 text-blue-900 text-[11px]">
+						<div class="mt-2 border border-slate-200 bg-white p-3 text-[11px] text-blue-900">
 							Slots livres previstos no destino: <strong>12 Vagas Disponíveis</strong>
 						</div>
 					</div>
@@ -886,10 +1052,14 @@
 						type="button"
 						onclick={executarRemanejamentoEmLote}
 						disabled={processandoRemanejamento}
-						class="border border-blue-900 bg-blue-900 hover:bg-blue-950 text-white px-6 py-3 font-mono font-bold text-xs uppercase tracking-wider disabled:opacity-50 flex items-center gap-2"
+						class="flex items-center gap-2 border border-blue-900 bg-blue-900 px-6 py-3 font-mono text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950 disabled:opacity-50"
 					>
 						<IconRefresh size={14} class={processandoRemanejamento ? 'animate-spin' : ''} />
-						<span>{processandoRemanejamento ? 'Reorganizando Fila...' : 'Executar Remanejamento em Lote'}</span>
+						<span
+							>{processandoRemanejamento
+								? 'Reorganizando Fila...'
+								: 'Executar Remanejamento em Lote'}</span
+						>
 					</button>
 				</div>
 			</div>
@@ -900,47 +1070,68 @@
 <!-- MODAL 1: Ajustar Cotas da UBS -->
 <Modal
 	isOpen={modalAjustarCotasAberto}
-	onClose={() => modalAjustarCotasAberto = false}
+	onClose={() => (modalAjustarCotasAberto = false)}
 	title="REDEFINIR COTAS MENSAIS DA UBS — {siglaOrgao}"
 	subtitle={ubsSelecionadaCota ? ubsSelecionadaCota.ubsNome : ''}
 	maxWidth="md"
 >
 	{#if ubsSelecionadaCota}
 		<div class="flex flex-col gap-4 font-mono text-xs">
-			<div class="text-slate-600 font-sans text-xs">
+			<div class="font-sans text-xs text-slate-600">
 				Ajuste a quantidade máxima de cotas disponíveis para o mês por especialidade cadastrada:
 			</div>
 
 			{#if Object.keys(ubsSelecionadaCota.especialidades).length > 0}
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1">
+				<div class="grid max-h-[350px] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
 					{#each Object.entries(ubsSelecionadaCota.especialidades) as [esp, val]}
-						<div class="flex flex-col gap-1 border border-slate-200 p-2.5 bg-slate-50">
-							<label for="esp-{esp}" class="text-[10px] font-bold text-slate-700 uppercase flex justify-between">
+						<div class="flex flex-col gap-1 border border-slate-200 bg-slate-50 p-2.5">
+							<label
+								for="esp-{esp}"
+								class="flex justify-between text-[10px] font-bold text-slate-700 uppercase"
+							>
 								<span>{esp}</span>
-								<span class="text-blue-900 font-mono">vagas/mês</span>
+								<span class="font-mono text-blue-900">vagas/mês</span>
 							</label>
 							<input
 								id="esp-{esp}"
 								type="number"
 								bind:value={ubsSelecionadaCota.especialidades[esp]}
 								min="0"
-								class="border border-slate-300 p-2 text-xs font-bold bg-white text-slate-900"
+								class="border border-slate-300 bg-white p-2 text-xs font-bold text-slate-900"
 							/>
 						</div>
 					{/each}
 				</div>
 			{:else}
-				<div class="border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 font-sans flex items-center gap-2">
-					<IconAlertTriangle size={16} class="text-amber-700 shrink-0" />
-					<span><strong>Nenhuma especialidade cadastrada:</strong> Acesse o módulo de <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold text-amber-950">Catálogo de Especialidades</a> para cadastrar as especialidades ofertadas pelo {siglaOrgao} antes de definir a distribuição de cotas.</span>
+				<div
+					class="flex items-center gap-2 border border-dashed border-amber-300 bg-amber-50 p-3 font-sans text-xs text-amber-900"
+				>
+					<IconAlertTriangle size={16} class="shrink-0 text-amber-700" />
+					<span
+						><strong>Nenhuma especialidade cadastrada:</strong> Acesse o módulo de
+						<a
+							href="/{siglaOrgao.toLowerCase()}/gestao/especialidades"
+							class="font-bold text-amber-950 underline">Catálogo de Especialidades</a
+						>
+						para cadastrar as especialidades ofertadas pelo {siglaOrgao} antes de definir a distribuição
+						de cotas.</span
+					>
 				</div>
 			{/if}
 
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-				<button type="button" onclick={() => modalAjustarCotasAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
+				<button
+					type="button"
+					onclick={() => (modalAjustarCotasAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
+				>
 					Cancelar
 				</button>
-				<button type="button" onclick={salvarAjusteCotas} class="border border-blue-900 bg-blue-900 text-white px-5 py-2 font-bold text-xs uppercase">
+				<button
+					type="button"
+					onclick={salvarAjusteCotas}
+					class="border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold text-white uppercase"
+				>
 					Salvar Novas Cotas
 				</button>
 			</div>
@@ -951,19 +1142,19 @@
 <!-- MODAL 2: Cadastrar Nova Escala de Especialista -->
 <Modal
 	isOpen={modalNovaEscalaAberto}
-	onClose={() => modalNovaEscalaAberto = false}
+	onClose={() => (modalNovaEscalaAberto = false)}
 	title="CADASTRAR NOVA ESCALA DE ATENDIMENTO — {siglaOrgao}"
 	subtitle="Definição de grade de horários do {rotuloProfissional.toLowerCase()}"
 	maxWidth="md"
 >
 	<div class="flex flex-col gap-4 font-mono text-xs">
 		{#if erroModalEscala}
-			<div class="border border-red-300 bg-red-50 p-2.5 text-red-800 font-bold text-xs">
+			<div class="border border-red-300 bg-red-50 p-2.5 text-xs font-bold text-red-800">
 				{erroModalEscala}
 			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 			<div class="flex flex-col gap-1">
 				<label for="esc-prof" class="text-[10px] font-bold text-slate-600 uppercase">
 					{rotuloProfissional} Cadastrado *
@@ -973,7 +1164,7 @@
 						id="esc-prof"
 						value={profissionalSelecionadoId}
 						onchange={(e) => aoSelecionarProfissional(e.currentTarget.value)}
-						class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white"
+						class="border border-slate-300 bg-white p-2 font-sans text-xs font-bold"
 					>
 						{#each listaProfissionais as prof}
 							<option value={prof.id}>
@@ -982,8 +1173,13 @@
 						{/each}
 					</select>
 				{:else}
-					<div class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800">
-						Nenhum profissional encontrado. Cadastre em <a href="/{siglaOrgao.toLowerCase()}/gestao/usuarios" class="underline font-bold">Gestão de Usuários</a>.
+					<div
+						class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800"
+					>
+						Nenhum profissional encontrado. Cadastre em <a
+							href="/{siglaOrgao.toLowerCase()}/gestao/usuarios"
+							class="font-bold underline">Gestão de Usuários</a
+						>.
 					</div>
 				{/if}
 			</div>
@@ -997,32 +1193,47 @@
 					type="text"
 					bind:value={novoCrm}
 					readonly
-					class="border border-slate-200 bg-slate-100 p-2 text-xs font-mono font-bold text-slate-700"
+					class="border border-slate-200 bg-slate-100 p-2 font-mono text-xs font-bold text-slate-700"
 				/>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 			<div class="flex flex-col gap-1">
 				<label for="esc-esp" class="text-[10px] font-bold text-slate-600 uppercase">
 					Especialidade Ofertada *
 				</label>
 				{#if listaEspecialidadesCentro.length > 0}
-					<select id="esc-esp" bind:value={novaEspecialidade} class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white">
+					<select
+						id="esc-esp"
+						bind:value={novaEspecialidade}
+						class="border border-slate-300 bg-white p-2 font-sans text-xs font-bold"
+					>
 						{#each listaEspecialidadesCentro as esp}
 							<option value={esp.nome}>{esp.nome}</option>
 						{/each}
 					</select>
 				{:else}
-					<div class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800">
-						Nenhuma especialidade cadastrada. Cadastre em <a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="underline font-bold">Catálogo</a>.
+					<div
+						class="border border-dashed border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800"
+					>
+						Nenhuma especialidade cadastrada. Cadastre em <a
+							href="/{siglaOrgao.toLowerCase()}/gestao/especialidades"
+							class="font-bold underline">Catálogo</a
+						>.
 					</div>
 				{/if}
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<label for="esc-tipo" class="text-[10px] font-bold text-slate-600 uppercase">Tipo de Atendimento *</label>
-				<select id="esc-tipo" bind:value={novoTipoServico} class="border border-slate-300 p-2 text-xs font-sans font-bold bg-white">
+				<label for="esc-tipo" class="text-[10px] font-bold text-slate-600 uppercase"
+					>Tipo de Atendimento *</label
+				>
+				<select
+					id="esc-tipo"
+					bind:value={novoTipoServico}
+					class="border border-slate-300 bg-white p-2 font-sans text-xs font-bold"
+				>
 					<option value="CONSULTA">{ehCeo ? 'CONSULTA ODONTOLÓGICA' : 'CONSULTA MÉDICA'}</option>
 					<option value="PROCEDIMENTO">PROCEDIMENTO / CIRURGIA</option>
 				</select>
@@ -1031,35 +1242,61 @@
 
 		<!-- Seletor de Modalidade da Escala -->
 		<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
-			<span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+			<span class="text-[10px] font-bold tracking-wider text-slate-700 uppercase">
 				Modalidade da Escala / Recorrência de Atendimento *
 			</span>
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+			<div class="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
 				<button
 					type="button"
-					onclick={() => { novoTipoRecorrencia = 'SEMANAL'; novoIsMutirao = false; }}
-					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'SEMANAL' ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => {
+						novoTipoRecorrencia = 'SEMANAL';
+						novoIsMutirao = false;
+					}}
+					class="border p-2 text-center text-[11px] font-bold transition-colors {novoTipoRecorrencia ===
+					'SEMANAL'
+						? 'border-blue-900 bg-blue-900 text-white'
+						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Semanal
 				</button>
 				<button
 					type="button"
-					onclick={() => { novoTipoRecorrencia = 'QUINZENAL'; novoIsMutirao = false; }}
-					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'QUINZENAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => {
+						novoTipoRecorrencia = 'QUINZENAL';
+						novoIsMutirao = false;
+					}}
+					class="border p-2 text-center text-[11px] font-bold transition-colors {novoTipoRecorrencia ===
+					'QUINZENAL'
+						? 'border-purple-900 bg-purple-900 text-white'
+						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Quinzenal (15 dias)
 				</button>
 				<button
 					type="button"
-					onclick={() => { novoTipoRecorrencia = 'DATAS_ESPECIFICAS'; novoIsMutirao = false; }}
-					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'DATAS_ESPECIFICAS' ? 'border-indigo-900 bg-indigo-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => {
+						novoTipoRecorrencia = 'DATAS_ESPECIFICAS';
+						novoIsMutirao = false;
+					}}
+					class="border p-2 text-center text-[11px] font-bold transition-colors {novoTipoRecorrencia ===
+					'DATAS_ESPECIFICAS'
+						? 'border-indigo-900 bg-indigo-900 text-white'
+						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					Datas Pontuais
 				</button>
 				<button
 					type="button"
-					onclick={() => { novoTipoRecorrencia = 'MUTIRAO'; novoIsMutirao = true; if (novasVagas < 30) novasVagas = 40; if (!novosDias.includes('SAB')) novosDias = ['SAB']; }}
-					class="p-2 text-[11px] font-bold border text-center transition-colors {novoTipoRecorrencia === 'MUTIRAO' ? 'border-orange-600 bg-orange-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
+					onclick={() => {
+						novoTipoRecorrencia = 'MUTIRAO';
+						novoIsMutirao = true;
+						if (novasVagas < 30) novasVagas = 40;
+						if (!novosDias.includes('SAB')) novosDias = ['SAB'];
+					}}
+					class="border p-2 text-center text-[11px] font-bold transition-colors {novoTipoRecorrencia ===
+					'MUTIRAO'
+						? 'border-orange-600 bg-orange-600 text-white'
+						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
 					⚡ Mini Mutirão
 				</button>
@@ -1070,14 +1307,20 @@
 		{#if novoTipoRecorrencia === 'SEMANAL' || novoTipoRecorrencia === 'QUINZENAL'}
 			<div class="flex flex-col gap-1">
 				<span class="text-[10px] font-bold text-slate-600 uppercase">
-					{novoTipoRecorrencia === 'QUINZENAL' ? 'Dias de Atendimento na Quinzena' : 'Dias de Atendimento na Semana'}
+					{novoTipoRecorrencia === 'QUINZENAL'
+						? 'Dias de Atendimento na Quinzena'
+						: 'Dias de Atendimento na Semana'}
 				</span>
 				<div class="flex flex-wrap gap-1.5">
 					{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
 						<button
 							type="button"
 							onclick={() => toggleDia(d)}
-							class="px-3 py-1.5 font-bold text-xs border transition-colors {novosDias.includes(d) ? (novoTipoRecorrencia === 'QUINZENAL' ? 'border-purple-900 bg-purple-900 text-white' : 'border-blue-900 bg-blue-900 text-white') : 'border-slate-300 bg-white text-slate-700'}"
+							class="border px-3 py-1.5 text-xs font-bold transition-colors {novosDias.includes(d)
+								? novoTipoRecorrencia === 'QUINZENAL'
+									? 'border-purple-900 bg-purple-900 text-white'
+									: 'border-blue-900 bg-blue-900 text-white'
+								: 'border-slate-300 bg-white text-slate-700'}"
 						>
 							{d}
 						</button>
@@ -1085,7 +1328,9 @@
 				</div>
 
 				{#if novoTipoRecorrencia === 'QUINZENAL'}
-					<div class="mt-2 flex flex-col gap-1 border border-purple-200 bg-purple-50 p-2.5 text-purple-950">
+					<div
+						class="mt-2 flex flex-col gap-1 border border-purple-200 bg-purple-50 p-2.5 text-purple-950"
+					>
 						<label for="esc-ini-quinz" class="text-[10px] font-bold uppercase">
 							Data Inicial de Início do Ciclo Quinzenal (Opcional)
 						</label>
@@ -1093,7 +1338,7 @@
 							id="esc-ini-quinz"
 							type="date"
 							bind:value={novaDataInicioRecorrencia}
-							class="border border-purple-300 bg-white p-1.5 text-xs font-mono font-bold text-slate-800"
+							class="border border-purple-300 bg-white p-1.5 font-mono text-xs font-bold text-slate-800"
 						/>
 						<span class="text-[10px] text-purple-800">
 							Define a primeira semana de atendimento para alternar quinzenalmente (a cada 15 dias).
@@ -1113,26 +1358,28 @@
 					<input
 						type="date"
 						bind:value={inputDataEspecifica}
-						class="border border-slate-300 bg-white p-2 text-xs font-mono font-bold flex-1"
+						class="flex-1 border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
 					/>
 					<button
 						type="button"
 						onclick={adicionarDataEspecifica}
-						class="border border-indigo-900 bg-indigo-900 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-indigo-950"
+						class="border border-indigo-900 bg-indigo-900 px-3 py-1 text-xs font-bold text-white uppercase hover:bg-indigo-950"
 					>
 						+ Adicionar Data
 					</button>
 				</div>
 
 				{#if novasDatasEspecificas.length > 0}
-					<div class="flex flex-wrap gap-1.5 mt-1">
+					<div class="mt-1 flex flex-wrap gap-1.5">
 						{#each novasDatasEspecificas as dt}
-							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-indigo-700 text-indigo-950 font-mono text-[11px] font-bold">
+							<span
+								class="inline-flex items-center gap-1.5 border border-indigo-700 bg-white px-2.5 py-1 font-mono text-[11px] font-bold text-indigo-950"
+							>
 								{formatarDataBrLocal(dt)}
 								<button
 									type="button"
 									onclick={() => removerDataEspecifica(dt)}
-									class="text-red-600 font-bold hover:text-red-800"
+									class="font-bold text-red-600 hover:text-red-800"
 									title="Remover data"
 								>
 									×
@@ -1148,21 +1395,24 @@
 			</div>
 		{:else if novoTipoRecorrencia === 'MUTIRAO'}
 			<div class="flex flex-col gap-2 border border-orange-300 bg-orange-50 p-3 text-orange-950">
-				<div class="font-bold text-xs uppercase flex items-center gap-1.5 text-orange-900">
+				<div class="flex items-center gap-1.5 text-xs font-bold text-orange-900 uppercase">
 					⚡ Configuração do Mini Mutirão (Carga Expandida de Consultas)
 				</div>
 				<p class="text-[11px] text-orange-900">
-					Permite atendimento intensivo no final de semana (<strong>Sábado</strong> e <strong>Domingo</strong>) ou em datas extras de campanha com alto volume de vagas.
+					Permite atendimento intensivo no final de semana (<strong>Sábado</strong> e
+					<strong>Domingo</strong>) ou em datas extras de campanha com alto volume de vagas.
 				</p>
 
-				<div class="flex flex-col gap-1 mt-1">
+				<div class="mt-1 flex flex-col gap-1">
 					<span class="text-[10px] font-bold text-orange-900 uppercase">Dias do Mutirão</span>
 					<div class="flex flex-wrap gap-2">
 						{#each ['SAB', 'DOM', 'SEX', 'SEG'] as d}
 							<button
 								type="button"
 								onclick={() => toggleDia(d)}
-								class="px-3 py-1.5 font-bold text-xs border transition-colors {novosDias.includes(d) ? 'border-orange-700 bg-orange-600 text-white' : 'border-slate-300 bg-white text-slate-700'}"
+								class="border px-3 py-1.5 text-xs font-bold transition-colors {novosDias.includes(d)
+									? 'border-orange-700 bg-orange-600 text-white'
+									: 'border-slate-300 bg-white text-slate-700'}"
 							>
 								{d === 'SAB' ? 'Sábado (SAB)' : d === 'DOM' ? 'Domingo (DOM)' : d}
 							</button>
@@ -1170,31 +1420,35 @@
 					</div>
 				</div>
 
-				<div class="flex flex-col gap-1 mt-2">
-					<span class="text-[10px] font-bold text-orange-900 uppercase">Ou selecione datas pontuais do mutirão</span>
+				<div class="mt-2 flex flex-col gap-1">
+					<span class="text-[10px] font-bold text-orange-900 uppercase"
+						>Ou selecione datas pontuais do mutirão</span
+					>
 					<div class="flex gap-2">
 						<input
 							type="date"
 							bind:value={inputDataEspecifica}
-							class="border border-slate-300 bg-white p-2 text-xs font-mono font-bold flex-1"
+							class="flex-1 border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
 						/>
 						<button
 							type="button"
 							onclick={adicionarDataEspecifica}
-							class="border border-orange-700 bg-orange-600 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-orange-700"
+							class="border border-orange-700 bg-orange-600 px-3 py-1 text-xs font-bold text-white uppercase hover:bg-orange-700"
 						>
 							+ Adicionar Data
 						</button>
 					</div>
 					{#if novasDatasEspecificas.length > 0}
-						<div class="flex flex-wrap gap-1.5 mt-1">
+						<div class="mt-1 flex flex-wrap gap-1.5">
 							{#each novasDatasEspecificas as dt}
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-orange-600 text-orange-950 font-mono text-[11px] font-bold">
+								<span
+									class="inline-flex items-center gap-1.5 border border-orange-600 bg-white px-2.5 py-1 font-mono text-[11px] font-bold text-orange-950"
+								>
 									{formatarDataBrLocal(dt)}
 									<button
 										type="button"
 										onclick={() => removerDataEspecifica(dt)}
-										class="text-red-600 font-bold hover:text-red-800"
+										class="font-bold text-red-600 hover:text-red-800"
 									>
 										×
 									</button>
@@ -1208,19 +1462,39 @@
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-h-ini" class="text-[10px] font-bold text-slate-600 uppercase">Horário Início *</label>
-				<input id="esc-h-ini" type="time" bind:value={novoHorarioInicio} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
+				<label for="esc-h-ini" class="text-[10px] font-bold text-slate-600 uppercase"
+					>Horário Início *</label
+				>
+				<input
+					id="esc-h-ini"
+					type="time"
+					bind:value={novoHorarioInicio}
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				/>
 			</div>
 			<div class="flex flex-col gap-1">
-				<label for="esc-h-fim" class="text-[10px] font-bold text-slate-600 uppercase">Horário Fim *</label>
-				<input id="esc-h-fim" type="time" bind:value={novoHorarioFim} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
+				<label for="esc-h-fim" class="text-[10px] font-bold text-slate-600 uppercase"
+					>Horário Fim *</label
+				>
+				<input
+					id="esc-h-fim"
+					type="time"
+					bind:value={novoHorarioFim}
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				/>
 			</div>
 		</div>
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="flex flex-col gap-1">
-				<label for="esc-dur" class="text-[10px] font-bold text-slate-600 uppercase">Duração por Paciente</label>
-				<select id="esc-dur" bind:value={novaDuracao} class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white">
+				<label for="esc-dur" class="text-[10px] font-bold text-slate-600 uppercase"
+					>Duração por Paciente</label
+				>
+				<select
+					id="esc-dur"
+					bind:value={novaDuracao}
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				>
 					<option value={15}>15 minutos</option>
 					<option value={20}>20 minutos (Padrão CEM)</option>
 					<option value={30}>30 minutos (Padrão CEO)</option>
@@ -1231,17 +1505,35 @@
 
 			<div class="flex flex-col gap-1">
 				<label for="esc-vagas" class="text-[10px] font-bold text-slate-600 uppercase">
-					{novoTipoRecorrencia === 'MUTIRAO' ? 'Capacidade Mutirão (Carga Extra)' : 'Capacidade Vagas / Turno'}
+					{novoTipoRecorrencia === 'MUTIRAO'
+						? 'Capacidade Mutirão (Carga Extra)'
+						: 'Capacidade Vagas / Turno'}
 				</label>
-				<input id="esc-vagas" type="number" bind:value={novasVagas} min="1" max="150" class="border border-slate-300 p-2 text-xs font-mono font-bold bg-white" />
+				<input
+					id="esc-vagas"
+					type="number"
+					bind:value={novasVagas}
+					min="1"
+					max="150"
+					class="border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+				/>
 			</div>
 		</div>
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-			<button type="button" onclick={() => modalNovaEscalaAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
+			<button
+				type="button"
+				onclick={() => (modalNovaEscalaAberto = false)}
+				class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
+			>
 				Cancelar
 			</button>
-			<button type="button" onclick={salvarNovaEscala} disabled={salvandoEscala} class="border border-blue-900 bg-blue-900 text-white px-5 py-2 font-bold text-xs uppercase hover:bg-blue-950 disabled:opacity-50">
+			<button
+				type="button"
+				onclick={salvarNovaEscala}
+				disabled={salvandoEscala}
+				class="border border-blue-900 bg-blue-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-blue-950 disabled:opacity-50"
+			>
 				{salvandoEscala ? 'Salvando...' : 'Salvar Escala'}
 			</button>
 		</div>
@@ -1251,7 +1543,7 @@
 <!-- MODAL 3: Registrar Férias/Licença de Médico -->
 <Modal
 	isOpen={modalFeriasAberto}
-	onClose={() => modalFeriasAberto = false}
+	onClose={() => (modalFeriasAberto = false)}
 	title="REGISTRAR FÉRIAS OU LICENÇA MÉDICA"
 	subtitle={escalaFerias ? `${escalaFerias.medicoNome} (${escalaFerias.especialidade})` : ''}
 	maxWidth="md"
@@ -1260,32 +1552,72 @@
 		<div class="flex flex-col gap-4 font-mono text-xs">
 			<div class="grid grid-cols-2 gap-3">
 				<div class="flex flex-col gap-1">
-					<label for="fer-ini" class="text-[10px] font-bold text-slate-600 uppercase">Data Início</label>
-					<input id="fer-ini" type="date" bind:value={dataInicioFerias} class="border border-slate-300 p-2 text-xs" />
+					<label for="fer-ini" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Data Início</label
+					>
+					<input
+						id="fer-ini"
+						type="date"
+						bind:value={dataInicioFerias}
+						class="border border-slate-300 p-2 text-xs"
+					/>
 				</div>
 				<div class="flex flex-col gap-1">
-					<label for="fer-fim" class="text-[10px] font-bold text-slate-600 uppercase">Data Término</label>
-					<input id="fer-fim" type="date" bind:value={dataFimFerias} class="border border-slate-300 p-2 text-xs" />
+					<label for="fer-fim" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Data Término</label
+					>
+					<input
+						id="fer-fim"
+						type="date"
+						bind:value={dataFimFerias}
+						class="border border-slate-300 p-2 text-xs"
+					/>
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<span class="text-[10px] font-bold text-slate-600 uppercase">Ação com Pacientes Agendados no Período</span>
-				<label for="opt-rem-auto" class="flex items-center gap-2 cursor-pointer font-sans text-xs border border-slate-200 p-2 bg-slate-50">
-					<input id="opt-rem-auto" type="radio" bind:group={acaoPacientesAfetados} value="REMANEJAR_AUTOMATICO" />
+				<span class="text-[10px] font-bold text-slate-600 uppercase"
+					>Ação com Pacientes Agendados no Período</span
+				>
+				<label
+					for="opt-rem-auto"
+					class="flex cursor-pointer items-center gap-2 border border-slate-200 bg-slate-50 p-2 font-sans text-xs"
+				>
+					<input
+						id="opt-rem-auto"
+						type="radio"
+						bind:group={acaoPacientesAfetados}
+						value="REMANEJAR_AUTOMATICO"
+					/>
 					<span>Remanejar automaticamente para especialistas da mesma área</span>
 				</label>
-				<label for="opt-rem-sms" class="flex items-center gap-2 cursor-pointer font-sans text-xs border border-slate-200 p-2 bg-slate-50">
-					<input id="opt-rem-sms" type="radio" bind:group={acaoPacientesAfetados} value="FILA_AVISO_SMS" />
+				<label
+					for="opt-rem-sms"
+					class="flex cursor-pointer items-center gap-2 border border-slate-200 bg-slate-50 p-2 font-sans text-xs"
+				>
+					<input
+						id="opt-rem-sms"
+						type="radio"
+						bind:group={acaoPacientesAfetados}
+						value="FILA_AVISO_SMS"
+					/>
 					<span>Retornar para fila com notificação aos pacientes</span>
 				</label>
 			</div>
 
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-				<button type="button" onclick={() => modalFeriasAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
+				<button
+					type="button"
+					onclick={() => (modalFeriasAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
+				>
 					Cancelar
 				</button>
-				<button type="button" onclick={confirmarFerias} class="border border-amber-800 bg-amber-800 text-white px-5 py-2 font-bold text-xs uppercase">
+				<button
+					type="button"
+					onclick={confirmarFerias}
+					class="border border-amber-800 bg-amber-800 px-5 py-2 text-xs font-bold text-white uppercase"
+				>
 					Confirmar Registro
 				</button>
 			</div>
@@ -1297,21 +1629,34 @@
 {#if modalDispararAvisoAberto}
 	<Modal
 		isOpen={modalDispararAvisoAberto}
-		onClose={() => modalDispararAvisoAberto = false}
+		onClose={() => (modalDispararAvisoAberto = false)}
 		title="DISPARAR NOTIFICAÇÃO E AVISO AO APP DO PACIENTE"
 		subtitle="Comunicação em tempo real por falta médica ou mudança de dia de atendimento"
 		maxWidth="md"
 	>
 		<div class="flex flex-col gap-4 font-mono text-xs">
-			<div class="border border-purple-300 bg-purple-50 p-3 text-purple-950 font-sans text-xs flex items-center gap-2">
-				<IconDeviceMobile size={16} class="text-purple-900 shrink-0" />
-				<span><strong>Disparo aos Pacientes:</strong> Envia notificação instantânea para o <strong>App do Paciente UniSISM</strong>, SMS e WhatsApp para todos os cidadãos agendados com o profissional selecionado na data informada.</span>
+			<div
+				class="flex items-center gap-2 border border-purple-300 bg-purple-50 p-3 font-sans text-xs text-purple-950"
+			>
+				<IconDeviceMobile size={16} class="shrink-0 text-purple-900" />
+				<span
+					><strong>Disparo aos Pacientes:</strong> Envia notificação instantânea para o
+					<strong>App do Paciente UniSISM</strong>, SMS e WhatsApp para todos os cidadãos agendados
+					com o profissional selecionado na data informada.</span
+				>
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
 				<div class="flex flex-col gap-1">
-					<label for="aviso-med" class="text-[10px] font-bold text-slate-600 uppercase">Profissional Especialista *</label>
-					<select id="aviso-med" bind:value={avisoMedicoNome} onchange={atualizarTextoPreviewAviso} class="border border-slate-300 p-2 text-xs font-sans bg-white">
+					<label for="aviso-med" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Profissional Especialista *</label
+					>
+					<select
+						id="aviso-med"
+						bind:value={avisoMedicoNome}
+						onchange={atualizarTextoPreviewAviso}
+						class="border border-slate-300 bg-white p-2 font-sans text-xs"
+					>
 						{#each opcoesMedicos as med}
 							<option value={med.nome}>{med.nome} ({med.especialidade})</option>
 						{/each}
@@ -1319,14 +1664,29 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label for="aviso-data-af" class="text-[10px] font-bold text-slate-600 uppercase">Data da Consulta Afetada *</label>
-					<input id="aviso-data-af" type="date" bind:value={avisoData} onchange={atualizarTextoPreviewAviso} class="border border-slate-300 p-2 text-xs" />
+					<label for="aviso-data-af" class="text-[10px] font-bold text-slate-600 uppercase"
+						>Data da Consulta Afetada *</label
+					>
+					<input
+						id="aviso-data-af"
+						type="date"
+						bind:value={avisoData}
+						onchange={atualizarTextoPreviewAviso}
+						class="border border-slate-300 p-2 text-xs"
+					/>
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<label for="aviso-motivo" class="text-[10px] font-bold text-slate-600 uppercase">Motivo do Aviso ao Paciente *</label>
-				<select id="aviso-motivo" bind:value={avisoTipoMotivo} onchange={atualizarTextoPreviewAviso} class="border border-slate-300 p-2 text-xs font-bold bg-white">
+				<label for="aviso-motivo" class="text-[10px] font-bold text-slate-600 uppercase"
+					>Motivo do Aviso ao Paciente *</label
+				>
+				<select
+					id="aviso-motivo"
+					bind:value={avisoTipoMotivo}
+					onchange={atualizarTextoPreviewAviso}
+					class="border border-slate-300 bg-white p-2 text-xs font-bold"
+				>
 					<option value="FALTA_MEDICA">FALTA / AUSÊNCIA IMPREVISTA DO PROFISSIONAL</option>
 					<option value="MUDANCA_DIA">MUDANÇA DE DIA / HORÁRIO DE ATENDIMENTO</option>
 					<option value="FERIAS_LICENCA">FÉRIAS / LICENÇA DO PROFISSIONAL</option>
@@ -1335,21 +1695,32 @@
 
 			{#if avisoTipoMotivo === 'MUDANCA_DIA'}
 				<div class="flex flex-col gap-1 border-l-2 border-purple-800 pl-2">
-					<label for="aviso-nova-dt" class="text-[10px] font-bold text-purple-900 uppercase">Nova Data Proposta para os Pacientes</label>
-					<input id="aviso-nova-dt" type="date" bind:value={avisoNovaData} onchange={atualizarTextoPreviewAviso} class="border border-purple-300 bg-purple-50 p-2 text-xs font-bold" />
+					<label for="aviso-nova-dt" class="text-[10px] font-bold text-purple-900 uppercase"
+						>Nova Data Proposta para os Pacientes</label
+					>
+					<input
+						id="aviso-nova-dt"
+						type="date"
+						bind:value={avisoNovaData}
+						onchange={atualizarTextoPreviewAviso}
+						class="border border-purple-300 bg-purple-50 p-2 text-xs font-bold"
+					/>
 				</div>
 			{/if}
 
 			<div class="flex flex-col gap-1">
-				<label for="aviso-preview" class="text-[10px] font-bold text-slate-600 uppercase flex justify-between">
+				<label
+					for="aviso-preview"
+					class="flex justify-between text-[10px] font-bold text-slate-600 uppercase"
+				>
 					<span>Mensagem que será enviada aos Pacientes</span>
-					<span class="text-[9px] text-purple-800 font-normal">Editável</span>
+					<span class="text-[9px] font-normal text-purple-800">Editável</span>
 				</label>
 				<textarea
 					id="aviso-preview"
 					rows="3"
 					bind:value={avisoMensagemPersonalizada}
-					class="border border-slate-300 p-2 text-xs font-sans outline-none focus:border-purple-800 resize-none"
+					class="resize-none border border-slate-300 p-2 font-sans text-xs outline-none focus:border-purple-800"
 				></textarea>
 			</div>
 
@@ -1357,15 +1728,15 @@
 			<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-3">
 				<span class="text-[10px] font-bold text-slate-700 uppercase">Canais de Notificação:</span>
 				<div class="flex items-center gap-4 font-sans text-xs">
-					<label class="flex items-center gap-1.5 cursor-pointer">
+					<label class="flex cursor-pointer items-center gap-1.5">
 						<input type="checkbox" bind:checked={avisoCanais.app} />
 						<span class="font-bold text-purple-900">App do Paciente (Push)</span>
 					</label>
-					<label class="flex items-center gap-1.5 cursor-pointer">
+					<label class="flex cursor-pointer items-center gap-1.5">
 						<input type="checkbox" bind:checked={avisoCanais.sms} />
 						<span>SMS Direct</span>
 					</label>
-					<label class="flex items-center gap-1.5 cursor-pointer">
+					<label class="flex cursor-pointer items-center gap-1.5">
 						<input type="checkbox" bind:checked={avisoCanais.whatsapp} />
 						<span>WhatsApp Bot</span>
 					</label>
@@ -1373,14 +1744,18 @@
 			</div>
 
 			<div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-				<button type="button" onclick={() => modalDispararAvisoAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold text-xs uppercase">
+				<button
+					type="button"
+					onclick={() => (modalDispararAvisoAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase"
+				>
 					Cancelar
 				</button>
 				<button
 					type="button"
 					onclick={dispararAvisoPacientes}
 					disabled={disparandoAviso}
-					class="border border-purple-900 bg-purple-900 hover:bg-purple-950 text-white px-5 py-2 font-bold text-xs uppercase disabled:opacity-50 flex items-center gap-1.5"
+					class="flex items-center gap-1.5 border border-purple-900 bg-purple-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-purple-950 disabled:opacity-50"
 				>
 					<IconDeviceMobile size={14} />
 					<span>{disparandoAviso ? 'Enviando...' : 'Disparar Notificação ao App'}</span>
@@ -1391,8 +1766,9 @@
 {/if}
 
 <style>
-	select, input, button {
+	select,
+	input,
+	button {
 		border-radius: 0 !important;
 	}
 </style>
-

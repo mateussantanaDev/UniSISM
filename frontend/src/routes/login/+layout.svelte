@@ -61,14 +61,14 @@
 			<h1 class="mt-16 font-mono text-xs font-bold tracking-widest text-blue-200 uppercase">
 				SISTEMA UNIFICADO DE SAÚDE · MUNICIPAL
 			</h1>
-			<p class="mt-3 text-3xl font-bold leading-tight">
+			<p class="mt-3 text-3xl leading-tight font-bold">
 				Terminal<br />
 				institucional<br />
 				de regulação.
 			</p>
 			<p class="mt-4 max-w-sm text-sm leading-relaxed text-blue-100">
-				Plataforma unificando Unidades Básicas de Saúde e a Secretaria Municipal —
-				ingestão de encaminhamentos, regulação e rastreabilidade de todo o fluxo.
+				Plataforma unificando Unidades Básicas de Saúde e a Secretaria Municipal — ingestão de
+				encaminhamentos, regulação e rastreabilidade de todo o fluxo.
 			</p>
 
 			<ul class="mt-10 space-y-2 font-mono text-[11px] tracking-wider text-blue-100 uppercase">
@@ -87,7 +87,9 @@
 			</ul>
 		</div>
 
-		<div class="border-t border-blue-800 px-10 py-5 font-mono text-[10px] tracking-widest text-blue-200 uppercase">
+		<div
+			class="border-t border-blue-800 px-10 py-5 font-mono text-[10px] tracking-widest text-blue-200 uppercase"
+		>
 			<div class="flex items-center justify-between">
 				<span>UNISISM v0.1.0</span>
 				<span>{relogio}</span>

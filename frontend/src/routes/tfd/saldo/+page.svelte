@@ -7,12 +7,7 @@
 	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarDataHora, mesAtual } from '$lib/presentation/utils/tfdFormat';
-	import type {
-		AporteSaldoFrota,
-		FonteRecurso,
-		SaldoVeiculo,
-		Veiculo
-	} from '$lib/api/tfd-types';
+	import type { AporteSaldoFrota, FonteRecurso, SaldoVeiculo, Veiculo } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
 
@@ -80,8 +75,7 @@
 	let processandoAjuste = $state(false);
 
 	async function ajustar() {
-		if (!ajustarVeiculoId || !novoSaldo.trim() || justificativaAjuste.trim().length < 10)
-			return;
+		if (!ajustarVeiculoId || !novoSaldo.trim() || justificativaAjuste.trim().length < 10) return;
 		processandoAjuste = true;
 		try {
 			await api.tfd.saldo.ajustar({
@@ -142,10 +136,7 @@
 			erroAporte = 'Justificativa precisa ter pelo menos 10 caracteres.';
 			return;
 		}
-		if (
-			(aporteFonte === 'EMPENHO' || aporteFonte === 'PORTARIA') &&
-			!aporteDoc.trim()
-		) {
+		if ((aporteFonte === 'EMPENHO' || aporteFonte === 'PORTARIA') && !aporteDoc.trim()) {
 			erroAporte = 'Informe o número do empenho/portaria.';
 			return;
 		}
@@ -197,7 +188,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -328,7 +320,9 @@
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2">
 									<span
-										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {tone[al]}"
+										class="border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {tone[
+											al
+										]}"
 									>
 										{al}
 									</span>
@@ -434,9 +428,10 @@
 	</div>
 
 	<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900">
-		<strong class="font-mono tracking-wider uppercase">LGPD/TCM:</strong> todo aporte ou ajuste de saldo
-		é registrado em auditoria com operador, IP, valores antes/depois, fonte do recurso e justificativa.
-		Disponível para consulta em <a href="/tfd/auditoria" class="underline">/tfd/auditoria</a>.
+		<strong class="font-mono tracking-wider uppercase">LGPD/TCM:</strong> todo aporte ou ajuste de
+		saldo é registrado em auditoria com operador, IP, valores antes/depois, fonte do recurso e
+		justificativa. Disponível para consulta em
+		<a href="/tfd/auditoria" class="underline">/tfd/auditoria</a>.
 	</div>
 </div>
 
@@ -464,7 +459,7 @@
 							: 'border-slate-300 bg-white text-slate-700 hover:border-blue-900'}"
 					>
 						<div class="font-bold tracking-widest">Veículo Específico</div>
-						<div class="font-sans text-[11px] normal-case text-slate-600">
+						<div class="font-sans text-[11px] text-slate-600 normal-case">
 							Credita em uma placa só.
 						</div>
 					</button>
@@ -477,7 +472,7 @@
 							: 'border-slate-300 bg-white text-slate-700 hover:border-blue-900'}"
 					>
 						<div class="font-bold tracking-widest">Rateio Geral</div>
-						<div class="font-sans text-[11px] normal-case text-slate-600">
+						<div class="font-sans text-[11px] text-slate-600 normal-case">
 							Divide entre veículos ATIVOS.
 						</div>
 					</button>
@@ -584,8 +579,8 @@
 		<div
 			class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[11px] text-blue-900"
 		>
-			Aporte = <strong>crédito</strong> no saldo do mês (soma ao existente). Para sobrescrever o
-			valor mensal, use “Ajustar” na linha do veículo.
+			Aporte = <strong>crédito</strong> no saldo do mês (soma ao existente). Para sobrescrever o valor
+			mensal, use “Ajustar” na linha do veículo.
 		</div>
 
 		{#if erroAporte}
@@ -597,11 +592,7 @@
 		{/if}
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (aportarAberto = false)}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (aportarAberto = false)} />
 			<PrimaryButton label="Confirmar Aporte" onclick={aportar} loading={processandoAporte} />
 		</div>
 	</div>

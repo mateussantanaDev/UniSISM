@@ -33,10 +33,7 @@
 
 	onMount(async () => {
 		try {
-			const [prefs, ubs] = await Promise.all([
-				api.admin.listPrefeituras(),
-				api.admin.listUbs()
-			]);
+			const [prefs, ubs] = await Promise.all([api.admin.listPrefeituras(), api.admin.listUbs()]);
 			prefeituras = prefs;
 			ubsList = ubs;
 			if (prefs.length === 1) prefeituraId = prefs[0].id;
@@ -108,7 +105,7 @@
 			erro = 'Selecione a UBS para esta role.';
 			return;
 		}
- 
+
 		enviando = true;
 		try {
 			await api.admin.createUsuario({
@@ -169,9 +166,7 @@
 		<div class="font-mono text-sm font-bold tracking-widest text-red-900 uppercase">
 			Permissão insuficiente
 		</div>
-		<p class="mt-2 text-xs text-red-800">
-			Apenas ADMIN ou DESENVOLVEDOR podem criar usuários.
-		</p>
+		<p class="mt-2 text-xs text-red-800">Apenas ADMIN ou DESENVOLVEDOR podem criar usuários.</p>
 	</div>
 {:else if sucesso}
 	<div class="border-2 border-emerald-700 bg-emerald-50 p-6">
@@ -197,10 +192,29 @@
 			</div>
 			<div class="grid grid-cols-12 gap-3">
 				<FormField label="Nome Completo" name="nome" span={8} bind:value={nome} />
-				<FormField label="Matrícula (opcional)" name="matricula" span={4} mono bind:value={matricula} />
+				<FormField
+					label="Matrícula (opcional)"
+					name="matricula"
+					span={4}
+					mono
+					bind:value={matricula}
+				/>
 				<FormField label="CPF" name="cpf" span={4} mono bind:value={cpf} />
-				<FormField label="Email Corporativo" name="email" type="email" span={5} mono bind:value={email} />
-				<FormField label="Telefone (opcional)" name="telefone" span={3} mono bind:value={telefone} />
+				<FormField
+					label="Email Corporativo"
+					name="email"
+					type="email"
+					span={5}
+					mono
+					bind:value={email}
+				/>
+				<FormField
+					label="Telefone (opcional)"
+					name="telefone"
+					span={3}
+					mono
+					bind:value={telefone}
+				/>
 				<FormField label="Cargo (opcional)" name="cargo" span={12} bind:value={cargo} />
 			</div>
 
@@ -347,15 +361,16 @@
 					<div
 						class="col-span-12 border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[10px] tracking-wider text-slate-600 uppercase"
 					>
-						⚠ Role com acesso <strong>GLOBAL</strong> — cria usuário sem prefeitura nem UBS
-						vinculada.
+						⚠ Role com acesso <strong>GLOBAL</strong> — cria usuário sem prefeitura nem UBS vinculada.
 					</div>
 				{/if}
 			</div>
 		</div>
 
 		{#if erro}
-			<div class="mx-4 mb-3 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+			<div
+				class="mx-4 mb-3 border border-red-700 bg-red-50 px-3 py-2 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+			>
 				⚠ {erro}
 			</div>
 		{/if}

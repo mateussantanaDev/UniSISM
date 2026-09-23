@@ -109,7 +109,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -152,11 +153,7 @@
 			</div>
 			{#if podeOperar}
 				<div class="flex flex-wrap gap-2">
-					<PrimaryButton
-						label="Editar"
-						variant="secondary"
-						onclick={() => (editarAberto = true)}
-					/>
+					<PrimaryButton label="Editar" variant="secondary" onclick={() => (editarAberto = true)} />
 					{#if m.status !== 'INATIVO'}
 						<PrimaryButton
 							label={m.status === 'ATIVO' ? 'Afastar' : 'Reativar'}
@@ -294,8 +291,8 @@
 				Confirma a exclusão de <strong>{m.nome}</strong> (CNH {m.cnh})?
 			</p>
 			<p class="text-xs text-slate-500">
-				Se houver viagens registradas, o backend bloqueia a exclusão e sugere afastar/inativar.
-				O usuário <code>Atendente</code> vinculado fica desativado.
+				Se houver viagens registradas, o backend bloqueia a exclusão e sugere afastar/inativar. O
+				usuário <code>Atendente</code> vinculado fica desativado.
 			</p>
 			<div class="mt-3 flex justify-end gap-2">
 				<PrimaryButton

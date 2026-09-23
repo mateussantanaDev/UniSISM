@@ -48,13 +48,13 @@ Todo encaminhamento segue o mesmo fluxo de estado documentado em [BACKEND_API.md
 
 ### 2.1. Persona primária: Regulador SMS
 
-| Atributo | Descrição |
-|---|---|
-| Cargo típico | Enfermeira/médico regulador, auditor clínico da SMS |
-| Jornada | ≥ 8h diárias em terminal; opera com muitos encaminhamentos ao dia |
-| Input principal | Encaminhamentos consolidados pela UBS (lê/decide) |
+| Atributo         | Descrição                                                                        |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Cargo típico     | Enfermeira/médico regulador, auditor clínico da SMS                              |
+| Jornada          | ≥ 8h diárias em terminal; opera com muitos encaminhamentos ao dia                |
+| Input principal  | Encaminhamentos consolidados pela UBS (lê/decide)                                |
 | Output principal | Aprovações, pendências, rejeições — cada uma gerando notificação à UBS de origem |
-| KPI pessoal | SLA de decisão (horas de fila) · Taxa de aprovação · Volume decidido |
+| KPI pessoal      | SLA de decisão (horas de fila) · Taxa de aprovação · Volume decidido             |
 
 ### 2.2. Escopo de acesso: Prefeitura
 
@@ -62,12 +62,12 @@ Toda sessão de REGULADOR_SMS tem claim `prefeituraId` no JWT. O backend **deve*
 
 ### 2.3. Roles secundárias com acesso à Face 2
 
-| Role | Escopo efetivo na Face 2 |
-|---|---|
-| `REGULADOR_SMS` | sua prefeitura · pode aprovar/rejeitar/pendenciar |
-| `ADMIN` | sua prefeitura · apenas leitura (fila, estatísticas) |
-| `DESENVOLVEDOR` | todas as prefeituras · todas as ações (técnico) |
-| `ATENDENTE_UBS` / `COORDENADOR_UBS` | **sem acesso** à Face 2 (stack da Face 1) |
+| Role                                | Escopo efetivo na Face 2                             |
+| ----------------------------------- | ---------------------------------------------------- |
+| `REGULADOR_SMS`                     | sua prefeitura · pode aprovar/rejeitar/pendenciar    |
+| `ADMIN`                             | sua prefeitura · apenas leitura (fila, estatísticas) |
+| `DESENVOLVEDOR`                     | todas as prefeituras · todas as ações (técnico)      |
+| `ATENDENTE_UBS` / `COORDENADOR_UBS` | **sem acesso** à Face 2 (stack da Face 1)            |
 
 ---
 
@@ -75,13 +75,13 @@ Toda sessão de REGULADOR_SMS tem claim `prefeituraId` no JWT. O backend **deve*
 
 ### 3.1. Matriz de ação
 
-| Ação | Endpoint | `REGULADOR_SMS` | `ADMIN` | `DESENVOLVEDOR` | demais |
-|---|---|---|---|---|---|
-| Ver fila de análise | `GET /encaminhamentos?status=AGUARDANDO_REGULACAO` | ✅ | ✅ | ✅ | 403 |
-| Ver detalhe | `GET /encaminhamentos/:id` | ✅ | ✅ | ✅ | 403 |
-| **Aprovar** | `POST /encaminhamentos/:id/aprovar` | ✅ | ❌ | ✅ | 403 |
-| **Registrar pendência** | `POST /encaminhamentos/:id/registrar-pendencia` | ✅ | ❌ | ✅ | 403 |
-| **Rejeitar** | `POST /encaminhamentos/:id/rejeitar` | ✅ | ❌ | ✅ | 403 |
+| Ação                    | Endpoint                                           | `REGULADOR_SMS` | `ADMIN` | `DESENVOLVEDOR` | demais |
+| ----------------------- | -------------------------------------------------- | --------------- | ------- | --------------- | ------ |
+| Ver fila de análise     | `GET /encaminhamentos?status=AGUARDANDO_REGULACAO` | ✅              | ✅      | ✅              | 403    |
+| Ver detalhe             | `GET /encaminhamentos/:id`                         | ✅              | ✅      | ✅              | 403    |
+| **Aprovar**             | `POST /encaminhamentos/:id/aprovar`                | ✅              | ❌      | ✅              | 403    |
+| **Registrar pendência** | `POST /encaminhamentos/:id/registrar-pendencia`    | ✅              | ❌      | ✅              | 403    |
+| **Rejeitar**            | `POST /encaminhamentos/:id/rejeitar`               | ✅              | ❌      | ✅              | 403    |
 
 `ADMIN` é um papel administrativo (criar UBSs/usuários) — **não** assume decisão clínica de regulação.
 
@@ -90,10 +90,10 @@ Toda sessão de REGULADOR_SMS tem claim `prefeituraId` no JWT. O backend **deve*
 Implementados em [src/lib/presentation/contexts/authContext.ts](src/lib/presentation/contexts/authContext.ts):
 
 ```ts
-rbac.podeAprovarEncaminhamento(role)     // REGULADOR_SMS | DESENVOLVEDOR
-rbac.podeRegistrarPendencia(role)        // REGULADOR_SMS | DESENVOLVEDOR
-rbac.podeRejeitarEncaminhamento(role)    // REGULADOR_SMS | DESENVOLVEDOR
-rbac.podeVerFilaRegulacao(role)          // REGULADOR_SMS | ADMIN | DESENVOLVEDOR
+rbac.podeAprovarEncaminhamento(role); // REGULADOR_SMS | DESENVOLVEDOR
+rbac.podeRegistrarPendencia(role); // REGULADOR_SMS | DESENVOLVEDOR
+rbac.podeRejeitarEncaminhamento(role); // REGULADOR_SMS | DESENVOLVEDOR
+rbac.podeVerFilaRegulacao(role); // REGULADOR_SMS | ADMIN | DESENVOLVEDOR
 ```
 
 O frontend usa esses helpers pra esconder botões (defesa em profundidade). O **backend é a fonte de verdade** — precisa validar independentemente.
@@ -134,12 +134,12 @@ src/routes/sms/
 
 ### 5.1. Componentes exclusivos
 
-| Arquivo | Papel |
-|---|---|
-| [SidebarSMS.svelte](src/lib/presentation/components/SidebarSMS.svelte) | Sidebar específica da Face 2 (label "SMS / FACE 2", nav própria) |
-| [AprovarEncaminhamento.svelte](src/lib/presentation/components/AprovarEncaminhamento.svelte) | Modal da ação Aprovar |
-| [SolicitarCorrecao.svelte](src/lib/presentation/components/SolicitarCorrecao.svelte) | Modal da ação Solicitar Correção (gerar pendência) |
-| [RejeitarEncaminhamento.svelte](src/lib/presentation/components/RejeitarEncaminhamento.svelte) | Modal da ação Rejeitar (com confirmação obrigatória) |
+| Arquivo                                                                                        | Papel                                                            |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [SidebarSMS.svelte](src/lib/presentation/components/SidebarSMS.svelte)                         | Sidebar específica da Face 2 (label "SMS / FACE 2", nav própria) |
+| [AprovarEncaminhamento.svelte](src/lib/presentation/components/AprovarEncaminhamento.svelte)   | Modal da ação Aprovar                                            |
+| [SolicitarCorrecao.svelte](src/lib/presentation/components/SolicitarCorrecao.svelte)           | Modal da ação Solicitar Correção (gerar pendência)               |
+| [RejeitarEncaminhamento.svelte](src/lib/presentation/components/RejeitarEncaminhamento.svelte) | Modal da ação Rejeitar (com confirmação obrigatória)             |
 
 ### 5.2. Componentes reutilizados da Face 1 (sem duplicação)
 
@@ -148,10 +148,10 @@ src/routes/sms/
 
 ### 5.3. Contextos reutilizados
 
-| Contexto | Quem popula | Quem consome |
-|---|---|---|
-| `authContext` | `/sms/+layout.svelte` | `SidebarSMS`, todas as páginas SMS que fazem RBAC |
-| `encaminhamentoContext` | `/sms/encaminhamento/[id]/+layout.svelte` | as 5 sub-páginas do detalhe |
+| Contexto                | Quem popula                               | Quem consome                                      |
+| ----------------------- | ----------------------------------------- | ------------------------------------------------- |
+| `authContext`           | `/sms/+layout.svelte`                     | `SidebarSMS`, todas as páginas SMS que fazem RBAC |
+| `encaminhamentoContext` | `/sms/encaminhamento/[id]/+layout.svelte` | as 5 sub-páginas do detalhe                       |
 
 ---
 
@@ -161,14 +161,14 @@ src/routes/sms/
 
 Documentação em [BACKEND_API.md](BACKEND_API.md).
 
-| Endpoint | Consumido em | Nota sobre a Face 2 |
-|---|---|---|
-| `POST /auth/login` | `/login` | compartilhado · role do JWT indica Face destino |
-| `GET /auth/me` | `/sms/+layout.svelte` (guard) | usado pra hidratar `me` no context |
-| `POST /auth/logout` | `/sms/+layout.svelte` (logout) | — |
-| `GET /dashboard/metrics` | `/sms/dashboard/+page.svelte` | **escopo PREFEITURA** — mesmo shape, backend agrega diferente |
-| `GET /encaminhamentos?status=...` | todas as 4 sub-tabs do dashboard | filtro por status |
-| `GET /encaminhamentos/:id` | `/sms/encaminhamento/[id]/+layout.svelte` | retorna full com timeline + anexos |
+| Endpoint                          | Consumido em                              | Nota sobre a Face 2                                           |
+| --------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| `POST /auth/login`                | `/login`                                  | compartilhado · role do JWT indica Face destino               |
+| `GET /auth/me`                    | `/sms/+layout.svelte` (guard)             | usado pra hidratar `me` no context                            |
+| `POST /auth/logout`               | `/sms/+layout.svelte` (logout)            | —                                                             |
+| `GET /dashboard/metrics`          | `/sms/dashboard/+page.svelte`             | **escopo PREFEITURA** — mesmo shape, backend agrega diferente |
+| `GET /encaminhamentos?status=...` | todas as 4 sub-tabs do dashboard          | filtro por status                                             |
+| `GET /encaminhamentos/:id`        | `/sms/encaminhamento/[id]/+layout.svelte` | retorna full com timeline + anexos                            |
 
 ### 6.2. Novos endpoints · **3 obrigatórios**
 
@@ -195,6 +195,7 @@ Content-Type: application/json
 **Response 200**: retorna o `Encaminhamento` completo atualizado.
 
 **Transições** (aplicar nesta ordem atômica):
+
 1. Validar `status === AGUARDANDO_REGULACAO` → senão `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 2. Se `nota` presente: criar evento `OBSERVACAO`
 3. Criar evento `APROVADO` (autor = regulador, papel = "Regulação · SMS")
@@ -222,6 +223,7 @@ Content-Type: application/json
 **Response 200**: `Encaminhamento` atualizado.
 
 **Transições**:
+
 1. Validar `status === AGUARDANDO_REGULACAO` → senão `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 2. Validar `observacao.trim().length > 0` → senão `422 OBSERVACAO_OBRIGATORIA`
 3. Preencher `observacoesRegulacao = observacao`
@@ -251,6 +253,7 @@ Content-Type: application/json
 **Response 200**: `Encaminhamento` atualizado.
 
 **Transições**:
+
 1. Validar `status === AGUARDANDO_REGULACAO` → senão `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 2. Validar `motivo.trim().length > 0` → senão `422 MOTIVO_OBRIGATORIO`
 3. Criar evento `REJEITADO` (autor = regulador, descricao = motivo)
@@ -293,10 +296,12 @@ Entrada:  AGUARDANDO_REGULACAO  (enviado pela UBS)
 **Arquivo**: [+page.svelte](src/routes/sms/dashboard/+page.svelte)
 
 **Consome**:
+
 - `GET /dashboard/metrics` — já existe, escopo PREFEITURA
 - `GET /encaminhamentos?status=AGUARDANDO_REGULACAO&limit=100` — fila de análise
 
 **Renderiza**:
+
 - 4 MetricCards: Fila de Análise · Pendências Ativas · Aprovados Hoje · Taxa de Aprovação (derivada no client)
 - `HistoricoTable` da fila com cliques levando pro detalhe SMS
 
@@ -309,6 +314,7 @@ Entrada:  AGUARDANDO_REGULACAO  (enviado pela UBS)
 **Consome**: `GET /encaminhamentos?status=PENDENCIA_DOCUMENTO&limit=500`
 
 **Renderiza**:
+
 - 4 MetricCards: Total · SLA Estourado (>48h) · Prioridade Urgente · Taxa de Readequação (placeholder)
 - Tabela
 
@@ -339,19 +345,22 @@ Entrada:  AGUARDANDO_REGULACAO  (enviado pela UBS)
 **Consome**: `GET /encaminhamentos/:id`
 
 **Ações** (action bar):
+
 - Sempre visíveis: Voltar · Imprimir · Baixar PDF
 - Só se `status === AGUARDANDO_REGULACAO` e RBAC: Aprovar · Solicitar Correção · Rejeitar
 
 **Sub-tabs** (5):
-| Slug | Foco |
-|---|---|
+
+| Slug          | Foco                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------- |
 | `''` (Resumo) | Situação, tempo em fila, últimos 3 eventos, cards compactos do paciente e da solicitação |
-| `/paciente` | Dados do paciente + link pro PEC (futuro) |
-| `/clinico` | Solicitação médica completa + justificativa clínica em blockquote destacada |
-| `/anexos` | Tabela de anexos com visualizar/baixar + métrica de integridade (solicitação presente?) |
-| `/historico` | Timeline completa + auditoria + legenda de tipos de evento |
+| `/paciente`   | Dados do paciente + link pro PEC (futuro)                                                |
+| `/clinico`    | Solicitação médica completa + justificativa clínica em blockquote destacada              |
+| `/anexos`     | Tabela de anexos com visualizar/baixar + métrica de integridade (solicitação presente?)  |
+| `/historico`  | Timeline completa + auditoria + legenda de tipos de evento                               |
 
 **Observações de UX**:
+
 - Após cada ação (Aprovar/Pendência/Rejeitar), o modal chama o endpoint, recebe o `Encaminhamento` atualizado e o context se atualiza automaticamente — **sem refetch** (economia de round-trip).
 - Se o backend quiser ser mais conservador e sempre fazer o frontend buscar de novo, tudo bem também — o context tem método `atualizar(enc)` que aceita qualquer shape válido.
 
@@ -377,10 +386,12 @@ Qualquer `REGULADOR_SMS` **só enxerga** encaminhamentos da sua prefeitura. O ba
 ### 9.3. Autor dos eventos timeline
 
 Em eventos gerados pela Face 2:
+
 - `autor`: nome completo do regulador autenticado (ex.: `"DRA. HELENA COSTA"`)
 - `autorPapel`: `"Regulação · SMS"` (ou personalizado, ex.: `"Regulação SMS · Águas Belas/PE"`)
 
 Em eventos automáticos (envio de notificação, integração):
+
 - `autor`: `"SISTEMA"`
 - `autorPapel`: `"UNISISM · Integração"`
 
@@ -426,25 +437,25 @@ Mesmos limites globais da Face 1 ([BACKEND_API.md §12](BACKEND_API.md)). Adicio
 
 Novos códigos adicionados ao enum `ErrorCode` em [src/lib/api/types.ts](src/lib/api/types.ts). Frontend mapeia cada um para mensagem pt-BR específica — mantenham os códigos **estáveis**.
 
-| `code` | HTTP | Quando ocorrer |
-|---|---|---|
-| `ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO` | 409 | Qualquer tentativa de aprovar/rejeitar/pendenciar um encaminhamento que não está em `AGUARDANDO_REGULACAO` |
-| `OBSERVACAO_OBRIGATORIA` | 422 | `registrar-pendencia` com `observacao` vazia ou ausente |
-| `MOTIVO_OBRIGATORIO` | 422 | `rejeitar` com `motivo` vazio ou ausente |
-| `PERMISSAO_INSUFICIENTE` | 403 | Role sem permissão (já existente, reutilizado) |
-| `ENCAMINHAMENTO_NAO_ENCONTRADO` | 404 | Inclui o caso "fora da prefeitura do regulador" (já existente, reutilizado) |
+| `code`                                    | HTTP | Quando ocorrer                                                                                             |
+| ----------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------- |
+| `ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO` | 409  | Qualquer tentativa de aprovar/rejeitar/pendenciar um encaminhamento que não está em `AGUARDANDO_REGULACAO` |
+| `OBSERVACAO_OBRIGATORIA`                  | 422  | `registrar-pendencia` com `observacao` vazia ou ausente                                                    |
+| `MOTIVO_OBRIGATORIO`                      | 422  | `rejeitar` com `motivo` vazio ou ausente                                                                   |
+| `PERMISSAO_INSUFICIENTE`                  | 403  | Role sem permissão (já existente, reutilizado)                                                             |
+| `ENCAMINHAMENTO_NAO_ENCONTRADO`           | 404  | Inclui o caso "fora da prefeitura do regulador" (já existente, reutilizado)                                |
 
 Shape do body de erro (igual ao resto da API):
 
 ```json
 {
-  "error": {
-    "code": "ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO",
-    "message": "Encaminhamento não está aguardando regulação.",
-    "details": {
-      "statusAtual": "APROVADO"
-    }
-  }
+	"error": {
+		"code": "ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO",
+		"message": "Encaminhamento não está aguardando regulação.",
+		"details": {
+			"statusAtual": "APROVADO"
+		}
+	}
 }
 ```
 
@@ -511,24 +522,24 @@ Extensão do checklist geral em [BACKEND_API.md §14](BACKEND_API.md). Para libe
 
 ### 12.1. Arquivos-fonte do frontend
 
-| Tópico | Arquivo |
-|---|---|
-| Shell + auth guard | [src/routes/sms/+layout.svelte](src/routes/sms/+layout.svelte) |
-| Sidebar SMS | [src/lib/presentation/components/SidebarSMS.svelte](src/lib/presentation/components/SidebarSMS.svelte) |
-| RBAC helpers | [src/lib/presentation/contexts/authContext.ts](src/lib/presentation/contexts/authContext.ts) |
-| Dashboard (4 tabs) | [src/routes/sms/dashboard/](src/routes/sms/dashboard/) |
-| Detalhe (5 sub-tabs) | [src/routes/sms/encaminhamento/[id]/](src/routes/sms/encaminhamento/[id]/) |
-| Modais de ação | [src/lib/presentation/components/AprovarEncaminhamento.svelte](src/lib/presentation/components/AprovarEncaminhamento.svelte) · [SolicitarCorrecao.svelte](src/lib/presentation/components/SolicitarCorrecao.svelte) · [RejeitarEncaminhamento.svelte](src/lib/presentation/components/RejeitarEncaminhamento.svelte) |
-| Contrato TS | [src/lib/api/types.ts](src/lib/api/types.ts) · `AprovarEncaminhamentoRequest` · `RegistrarPendenciaRequest` · `RejeitarEncaminhamentoRequest` |
-| Cliente HTTP tipado | [src/lib/api/client.ts](src/lib/api/client.ts) · `api.encaminhamentos.aprovar()` · `.registrarPendencia()` · `.rejeitar()` |
+| Tópico               | Arquivo                                                                                                                                                                                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell + auth guard   | [src/routes/sms/+layout.svelte](src/routes/sms/+layout.svelte)                                                                                                                                                                                                                                                       |
+| Sidebar SMS          | [src/lib/presentation/components/SidebarSMS.svelte](src/lib/presentation/components/SidebarSMS.svelte)                                                                                                                                                                                                               |
+| RBAC helpers         | [src/lib/presentation/contexts/authContext.ts](src/lib/presentation/contexts/authContext.ts)                                                                                                                                                                                                                         |
+| Dashboard (4 tabs)   | [src/routes/sms/dashboard/](src/routes/sms/dashboard/)                                                                                                                                                                                                                                                               |
+| Detalhe (5 sub-tabs) | [src/routes/sms/encaminhamento/[id]/](src/routes/sms/encaminhamento/[id]/)                                                                                                                                                                                                                                           |
+| Modais de ação       | [src/lib/presentation/components/AprovarEncaminhamento.svelte](src/lib/presentation/components/AprovarEncaminhamento.svelte) · [SolicitarCorrecao.svelte](src/lib/presentation/components/SolicitarCorrecao.svelte) · [RejeitarEncaminhamento.svelte](src/lib/presentation/components/RejeitarEncaminhamento.svelte) |
+| Contrato TS          | [src/lib/api/types.ts](src/lib/api/types.ts) · `AprovarEncaminhamentoRequest` · `RegistrarPendenciaRequest` · `RejeitarEncaminhamentoRequest`                                                                                                                                                                        |
+| Cliente HTTP tipado  | [src/lib/api/client.ts](src/lib/api/client.ts) · `api.encaminhamentos.aprovar()` · `.registrarPendencia()` · `.rejeitar()`                                                                                                                                                                                           |
 
 ### 12.2. Documentos relacionados
 
-| Doc | Conteúdo |
-|---|---|
-| [BACKEND_API.md](BACKEND_API.md) | Spec completa de **todos** os endpoints (Face 1 + Face 2 + Admin + Auth) — fonte de verdade |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Tokens, componentes, padrões visuais e regras de UX (replicáveis em todas as Faces) |
-| [FACE2_SMS.md](FACE2_SMS.md) | Este documento — recorte focado na Face 2 |
+| Doc                                  | Conteúdo                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [BACKEND_API.md](BACKEND_API.md)     | Spec completa de **todos** os endpoints (Face 1 + Face 2 + Admin + Auth) — fonte de verdade |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Tokens, componentes, padrões visuais e regras de UX (replicáveis em todas as Faces)         |
+| [FACE2_SMS.md](FACE2_SMS.md)         | Este documento — recorte focado na Face 2                                                   |
 
 ### 12.3. Exemplo de chamada curl (dev local)
 
@@ -576,17 +587,17 @@ Para testar o fluxo ponta-a-ponta (Face 1 → Face 2), adicionar ao seed:
 
 Documentadas aqui pra evitar confusão:
 
-| Aspecto | Face 1 (UBS) | Face 2 (SMS) |
-|---|---|---|
-| Sidebar label | `UBS / FACE 1` | `SMS / FACE 2` |
-| Escopo padrão | UBS específica (claim `ubsId`) | Prefeitura (claim `prefeituraId`) |
-| Ação principal | Consolidar encaminhamento (POST `/encaminhamentos`) | Decidir encaminhamento (POST `/:id/aprovar`, etc.) |
-| Upload | PDF + anexos (multipart) | Apenas JSON (sem upload) |
-| Role primária | `ATENDENTE_UBS` | `REGULADOR_SMS` |
-| Tabelas | Todos os encaminhamentos da UBS | Todos os encaminhamentos da prefeitura |
-| Rotas base | `/ubs/*` | `/sms/*` |
-| Componente detalhe | reusa `encaminhamentoContext` | reusa `encaminhamentoContext` |
-| Action bar | Imprimir · Baixar PDF · Resolver Pendência (condicional) | Imprimir · Baixar PDF · Aprovar · Solicitar Correção · Rejeitar (condicionais) |
+| Aspecto            | Face 1 (UBS)                                             | Face 2 (SMS)                                                                   |
+| ------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Sidebar label      | `UBS / FACE 1`                                           | `SMS / FACE 2`                                                                 |
+| Escopo padrão      | UBS específica (claim `ubsId`)                           | Prefeitura (claim `prefeituraId`)                                              |
+| Ação principal     | Consolidar encaminhamento (POST `/encaminhamentos`)      | Decidir encaminhamento (POST `/:id/aprovar`, etc.)                             |
+| Upload             | PDF + anexos (multipart)                                 | Apenas JSON (sem upload)                                                       |
+| Role primária      | `ATENDENTE_UBS`                                          | `REGULADOR_SMS`                                                                |
+| Tabelas            | Todos os encaminhamentos da UBS                          | Todos os encaminhamentos da prefeitura                                         |
+| Rotas base         | `/ubs/*`                                                 | `/sms/*`                                                                       |
+| Componente detalhe | reusa `encaminhamentoContext`                            | reusa `encaminhamentoContext`                                                  |
+| Action bar         | Imprimir · Baixar PDF · Resolver Pendência (condicional) | Imprimir · Baixar PDF · Aprovar · Solicitar Correção · Rejeitar (condicionais) |
 
 O **domínio é o mesmo** — muda o quem-faz-o-quê. É por isso que `Encaminhamento`, `Paciente`, `SolicitacaoMedica`, `AnexoDocumento`, `EventoTimeline` são compartilhados via `src/lib/api/types.ts`.
 

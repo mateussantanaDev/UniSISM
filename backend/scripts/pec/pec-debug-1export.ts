@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { PEC, sleep, getLaunchOptions } from './pec-common';
+import { PEC, sleep } from './pec-common';
 
 const SS_DIR = '/tmp/pec-debug';
 fs.mkdirSync(SS_DIR, { recursive: true });
@@ -25,7 +25,11 @@ async function ss(page: any, name: string): Promise<void> {
 async function main() {
   console.log('🚀 PEC debug · UM export (Cadastro Domiciliar — snapshot, mais simples)\n');
 
-  const browser = await chromium.launch(getLaunchOptions());
+  const browser = await chromium.launch({
+    headless: process.env.PEC_HEADLESS !== 'false' ? true : false,
+    channel: 'chrome',
+    slowMo: 200, // delay entre ações pra ser visível
+  });
   const ctx = await browser.newContext({
     viewport: { width: 1366, height: 900 },
     acceptDownloads: true,

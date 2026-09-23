@@ -18,7 +18,6 @@
 	import type { Encaminhamento, TipoAnexo } from '$lib/api/types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
 	const auth = useAuth();
@@ -168,19 +167,13 @@
 			sol = await api.tfd.solicitacoesPaciente.aprovar(sol.id, { numeroAssento });
 			aprovarAberto = false;
 			assentoEscolhido = null;
-			notificar(
-				'ok',
-				`Pedido aprovado · assento ${sol.numeroAssento} · paciente notificado.`
-			);
+			notificar('ok', `Pedido aprovado · assento ${sol.numeroAssento} · paciente notificado.`);
 		} catch (e) {
 			if (e instanceof ApiError) {
 				if (e.code === 'TFD_VIAGEM_SEM_VAGAS') {
 					notificar('erro', 'Viagem ficou lotada antes da aprovação. Recuse este pedido.');
 				} else if (e.code === 'TFD_ASSENTO_OCUPADO') {
-					notificar(
-						'erro',
-						`Assento ${assentoEscolhido} foi ocupado agora mesmo · escolha outro.`
-					);
+					notificar('erro', `Assento ${assentoEscolhido} foi ocupado agora mesmo · escolha outro.`);
 					// Recarrega o mapa pra refletir a nova ocupação
 					if (sol) {
 						try {
@@ -290,7 +283,9 @@
 
 <div class="flex flex-col gap-4">
 	<!-- Breadcrumb minimalista -->
-	<nav class="flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+	<nav
+		class="flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase"
+	>
 		<a href="/tfd/solicitacoes-paciente" class="hover:text-blue-900">Pedidos do App</a>
 		<span>›</span>
 		<span class="text-slate-700">{sol?.paciente.nome ?? '...'}</span>
@@ -309,11 +304,15 @@
 	{/if}
 
 	{#if carregando}
-		<div class="border border-slate-200 bg-white px-4 py-12 text-center font-sans text-sm text-slate-500">
+		<div
+			class="border border-slate-200 bg-white px-4 py-12 text-center font-sans text-sm text-slate-500"
+		>
 			Carregando...
 		</div>
 	{:else if erro}
-		<div class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+		<div
+			class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+		>
 			⚠ {erro}
 		</div>
 	{:else if sol}
@@ -322,7 +321,11 @@
 			<div class="flex flex-col gap-4">
 				<!-- Cabeçalho do pedido -->
 				<div class="border border-slate-200 bg-white">
-					<PanelHeader title="Pedido do App" subtitle="Solicitação vinda da Face 3 (cidadão)" index="01">
+					<PanelHeader
+						title="Pedido do App"
+						subtitle="Solicitação vinda da Face 3 (cidadão)"
+						index="01"
+					>
 						<span
 							class="border px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest uppercase {statusTone[
 								sol.status
@@ -341,7 +344,9 @@
 
 					<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4">
 						<div class="col-span-12 md:col-span-6">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Paciente
 							</dt>
 							<dd class="mt-0.5 text-base font-bold text-slate-900">{sol.paciente.nome}</dd>
@@ -350,7 +355,9 @@
 							</dd>
 						</div>
 						<div class="col-span-12 md:col-span-6">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Encaminhamento vinculado
 							</dt>
 							<dd class="mt-0.5 font-mono text-sm text-slate-900">
@@ -370,7 +377,7 @@
 									{:else}
 										<button
 											type="button"
-											class="text-blue-900 underline decoration-blue-900/30 underline-offset-2 hover:text-blue-700 text-left font-mono"
+											class="text-left font-mono text-blue-900 underline decoration-blue-900/30 underline-offset-2 hover:text-blue-700"
 											onclick={abrirModalEncaminhamento}
 										>
 											{sol.encaminhamentoProtocolo}
@@ -383,17 +390,23 @@
 						</div>
 
 						<div class="col-span-12">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Justificativa do paciente
 							</dt>
-							<dd class="mt-1 whitespace-pre-wrap rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+							<dd
+								class="mt-1 rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm whitespace-pre-wrap text-slate-700"
+							>
 								{sol.justificativaPaciente}
 							</dd>
 						</div>
 
 						{#if sol.acompanhante}
 							<div class="col-span-12">
-								<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+								<dt
+									class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+								>
 									Acompanhante
 								</dt>
 								<dd class="mt-0.5 text-sm text-slate-900">{sol.acompanhante}</dd>
@@ -414,7 +427,9 @@
 					</PanelHeader>
 					<dl class="grid grid-cols-12 gap-x-4 gap-y-3 px-4 py-4">
 						<div class="col-span-12 md:col-span-6">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Destino
 							</dt>
 							<dd class="mt-0.5 text-sm font-semibold text-slate-900">{sol.viagem.destino}</dd>
@@ -423,7 +438,9 @@
 							{/if}
 						</div>
 						<div class="col-span-6 md:col-span-3">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Data
 							</dt>
 							<dd class="mt-0.5 font-mono text-sm text-slate-900">
@@ -431,7 +448,9 @@
 							</dd>
 						</div>
 						<div class="col-span-6 md:col-span-3">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Hora de saída
 							</dt>
 							<dd class="mt-0.5 font-mono text-sm text-slate-900">
@@ -439,7 +458,9 @@
 							</dd>
 						</div>
 						<div class="col-span-6 md:col-span-3">
-							<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+							<dt
+								class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+							>
 								Vagas
 							</dt>
 							<dd
@@ -452,7 +473,9 @@
 						</div>
 						{#if sol.numeroAssento}
 							<div class="col-span-6 md:col-span-3">
-								<dt class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+								<dt
+									class="font-mono text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
+								>
 									Assento atribuído
 								</dt>
 								<dd class="mt-0.5 font-mono text-sm font-bold text-blue-900">
@@ -475,7 +498,11 @@
 
 				<!-- Timeline -->
 				<div class="border border-slate-200 bg-white">
-					<PanelHeader title="Histórico" subtitle="Transições registradas na auditoria TJ" index="03" />
+					<PanelHeader
+						title="Histórico"
+						subtitle="Transições registradas na auditoria TJ"
+						index="03"
+					/>
 					<ul class="divide-y divide-slate-100 px-4 py-2 font-mono text-[11px]">
 						<li class="flex items-center justify-between py-1.5">
 							<span class="tracking-widest text-slate-600 uppercase">Criada</span>
@@ -559,9 +586,7 @@
 								disabled={processando}
 								fullWidth
 							/>
-							<p class="mt-1 text-[11px] text-slate-500">
-								Marque ao retorno do paciente.
-							</p>
+							<p class="mt-1 text-[11px] text-slate-500">Marque ao retorno do paciente.</p>
 						{:else}
 							<p class="text-xs text-slate-500">
 								Pedido em estado final ({sol.status}). Sem ações disponíveis.
@@ -576,9 +601,9 @@
 						Sobre este fluxo
 					</div>
 					<p class="mt-2">
-						Pedido vem do app paciente. Aprovação aloca em vaga real da viagem (com
-						lock atômico). Recusa exige motivo (≥5 caracteres) e notifica o paciente.
-						Toda transição vai para a cadeia hash do TFD.
+						Pedido vem do app paciente. Aprovação aloca em vaga real da viagem (com lock atômico).
+						Recusa exige motivo (≥5 caracteres) e notifica o paciente. Toda transição vai para a
+						cadeia hash do TFD.
 					</p>
 				</div>
 			</aside>
@@ -635,8 +660,8 @@
 					<div
 						class="border-l-4 border-amber-600 bg-amber-50 px-3 py-2 font-sans text-[12px] text-amber-900"
 					>
-						Não foi possível carregar o mapa de assentos. A aprovação ainda pode
-						ser feita — o sistema atribui o próximo assento livre.
+						Não foi possível carregar o mapa de assentos. A aprovação ainda pode ser feita — o
+						sistema atribui o próximo assento livre.
 					</div>
 				{/if}
 			</div>
@@ -644,7 +669,8 @@
 			<div class="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
 				<div class="font-sans text-[12px] text-slate-600">
 					{#if assentoEscolhido != null}
-						Assento selecionado: <strong class="font-mono text-blue-900">A{assentoEscolhido}</strong>
+						Assento selecionado: <strong class="font-mono text-blue-900">A{assentoEscolhido}</strong
+						>
 					{:else}
 						Nenhum assento selecionado — sistema vai atribuir automaticamente.
 					{/if}
@@ -672,8 +698,8 @@
 	<Modal isOpen={recusarAberto} title="Recusar pedido" onClose={() => (recusarAberto = false)}>
 		<div class="flex flex-col gap-3 px-1 py-1">
 			<p class="text-sm text-slate-700">
-				O paciente será notificado da recusa pelo app. Explique o motivo de forma
-				clara — vai aparecer na notificação dele.
+				O paciente será notificado da recusa pelo app. Explique o motivo de forma clara — vai
+				aparecer na notificação dele.
 			</p>
 			<label class="flex flex-col gap-1">
 				<span class="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
@@ -721,9 +747,7 @@
 				Confirmar que <strong>{sol.paciente.nome}</strong> embarcou na viagem para
 				<strong>{sol.viagem.destino}</strong>?
 			</p>
-			<p class="text-xs text-slate-500">
-				Esta ação grava na cadeia hash TFD e é definitiva.
-			</p>
+			<p class="text-xs text-slate-500">Esta ação grava na cadeia hash TFD e é definitiva.</p>
 			<div class="mt-3 flex justify-end gap-2">
 				<PrimaryButton
 					label="Cancelar"
@@ -779,11 +803,15 @@
 	>
 		{#if carregandoEncaminhamento}
 			<div class="flex flex-col items-center justify-center py-12 text-slate-500">
-				<div class="mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
+				<div
+					class="mb-3 h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"
+				></div>
 				<span class="font-mono text-xs tracking-widest uppercase">Carregando detalhes...</span>
 			</div>
 		{:else if erroEncaminhamento}
-			<div class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase">
+			<div
+				class="border border-red-700 bg-red-50 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-red-800 uppercase"
+			>
 				⚠ {erroEncaminhamento}
 			</div>
 		{:else if encaminhamentoCarregado}
@@ -798,17 +826,23 @@
 						</div>
 					</div>
 					<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Prioridade</div>
+						<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+							Prioridade
+						</div>
 						<div class="mt-1.5">
 							<StatusBadge prioridade={enc.solicitacao.prioridade} />
 						</div>
 					</div>
 					<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
 						<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Origem</div>
-						<div class="mt-1 font-sans text-xs font-semibold text-slate-900">{enc.unidadeOrigem}</div>
+						<div class="mt-1 font-sans text-xs font-semibold text-slate-900">
+							{enc.unidadeOrigem}
+						</div>
 					</div>
 					<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Criado em</div>
+						<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+							Criado em
+						</div>
 						<div class="mt-1 font-mono text-xs text-slate-900">{formatarDataIso(enc.criadoEm)}</div>
 					</div>
 				</div>
@@ -824,22 +858,28 @@
 
 				<!-- Paciente / Identificação -->
 				<div class="border border-slate-200 bg-white">
-					<div class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+					<div
+						class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase"
+					>
 						Paciente
 					</div>
 					<div class="p-4 font-sans">
 						<div class="text-sm font-bold text-slate-900">{enc.paciente.nome}</div>
 						<div class="mt-0.5 font-mono text-[11px] text-slate-600">
 							{calcularIdade(enc.paciente.dataNascimento)} anos ·
-							{enc.paciente.sexo === 'F' ? 'Feminino' : enc.paciente.sexo === 'M' ? 'Masculino' : 'Outro'}
+							{enc.paciente.sexo === 'F'
+								? 'Feminino'
+								: enc.paciente.sexo === 'M'
+									? 'Masculino'
+									: 'Outro'}
 						</div>
 						<dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 font-mono text-[11px]">
 							<div>
-								<dt class="tracking-widest text-slate-500 uppercase font-semibold">CPF</dt>
+								<dt class="font-semibold tracking-widest text-slate-500 uppercase">CPF</dt>
 								<dd class="text-slate-900">{formatarCpf(enc.paciente.cpf)}</dd>
 							</div>
 							<div>
-								<dt class="tracking-widest text-slate-500 uppercase font-semibold">Cartão SUS</dt>
+								<dt class="font-semibold tracking-widest text-slate-500 uppercase">Cartão SUS</dt>
 								<dd class="text-slate-900">{enc.paciente.cartaoSus}</dd>
 							</div>
 						</dl>
@@ -848,24 +888,36 @@
 
 				<!-- Detalhes Clínicos -->
 				<div class="border border-slate-200 bg-white">
-					<div class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+					<div
+						class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase"
+					>
 						Solicitação Clínica
 					</div>
 					<div class="p-4 font-sans">
-						<div class="text-sm font-bold text-slate-900">{enc.solicitacao.especialidadeSolicitada}</div>
-						<div class="mt-0.5 font-mono text-[11px] text-slate-600">CID-10 · {enc.solicitacao.cid10} - {enc.solicitacao.cidDescricao}</div>
+						<div class="text-sm font-bold text-slate-900">
+							{enc.solicitacao.especialidadeSolicitada}
+						</div>
+						<div class="mt-0.5 font-mono text-[11px] text-slate-600">
+							CID-10 · {enc.solicitacao.cid10} - {enc.solicitacao.cidDescricao}
+						</div>
 						<dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 font-mono text-[11px]">
 							<div>
-								<dt class="tracking-widest text-slate-500 uppercase font-semibold">Médico Solicitante</dt>
+								<dt class="font-semibold tracking-widest text-slate-500 uppercase">
+									Médico Solicitante
+								</dt>
 								<dd class="font-sans text-slate-900">{enc.solicitacao.medicoSolicitante}</dd>
 							</div>
 							<div>
-								<dt class="tracking-widest text-slate-500 uppercase font-semibold">CRM</dt>
+								<dt class="font-semibold tracking-widest text-slate-500 uppercase">CRM</dt>
 								<dd class="text-slate-900">{enc.solicitacao.crm}</dd>
 							</div>
 							<div class="col-span-2">
-								<dt class="tracking-widest text-slate-500 uppercase font-semibold">Justificativa Clínica</dt>
-								<dd class="mt-1 whitespace-pre-wrap rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+								<dt class="font-semibold tracking-widest text-slate-500 uppercase">
+									Justificativa Clínica
+								</dt>
+								<dd
+									class="mt-1 rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-xs whitespace-pre-wrap text-slate-700"
+								>
 									{enc.solicitacao.justificativaClinica}
 								</dd>
 							</div>
@@ -875,13 +927,17 @@
 
 				<!-- Documentos Anexos -->
 				<div class="border border-slate-200 bg-white">
-					<div class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+					<div
+						class="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-[10px] font-bold tracking-widest text-slate-700 uppercase"
+					>
 						Documentos Anexos ({enc.anexos.length})
 					</div>
 					<div class="overflow-x-auto">
 						<table class="w-full border-collapse text-xs">
 							<thead>
-								<tr class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase">
+								<tr
+									class="border-b border-slate-200 bg-slate-50 text-left font-mono text-[10px] tracking-widest text-slate-600 uppercase"
+								>
 									<th class="border-r border-slate-200 px-3 py-2">Arquivo</th>
 									<th class="border-r border-slate-200 px-3 py-2">Tipo</th>
 									<th class="border-r border-slate-200 px-3 py-2">Tamanho</th>
@@ -898,11 +954,15 @@
 								{:else}
 									{#each enc.anexos as a (a.id)}
 										<tr class="border-b border-slate-100 hover:bg-slate-50">
-											<td class="border-r border-slate-100 px-3 py-2 font-semibold text-slate-900 text-left">
+											<td
+												class="border-r border-slate-100 px-3 py-2 text-left font-semibold text-slate-900"
+											>
 												{a.nome}
 											</td>
 											<td class="border-r border-slate-100 px-3 py-2 text-left">
-												<span class="border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+												<span
+													class="border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-slate-700 uppercase"
+												>
 													{tipoLabel[a.tipo] || a.tipo}
 												</span>
 											</td>
@@ -910,7 +970,12 @@
 												{(a.tamanhoKb / 1024).toFixed(2)} MB
 											</td>
 											<td class="px-3 py-2 text-left">
-												<AnexoActions anexo={a} protocoloEncaminhamento={enc.protocolo} size="sm" onMensagem={notificar} />
+												<AnexoActions
+													anexo={a}
+													protocoloEncaminhamento={enc.protocolo}
+													size="sm"
+													onMensagem={notificar}
+												/>
 											</td>
 										</tr>
 									{/each}

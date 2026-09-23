@@ -259,8 +259,8 @@
 			Banners SMS — Carrossel da Home
 		</h2>
 		<p class="mt-1 text-sm text-slate-600">
-			Avisos exibidos no topo do app paciente. Use tons (URGENTE/CAMPANHA/INFO/ATENÇÃO)
-			para destacar prioridades. Toda mudança é auditada.
+			Avisos exibidos no topo do app paciente. Use tons (URGENTE/CAMPANHA/INFO/ATENÇÃO) para
+			destacar prioridades. Toda mudança é auditada.
 			{#if ehDev}
 				<br /><span class="font-mono text-[10px] tracking-widest text-blue-900 uppercase">
 					Você (DEV) pode criar banners globais (todas prefeituras).
@@ -275,10 +275,7 @@
 
 	<!-- Form criar/editar -->
 	<section class="border border-slate-200 bg-white">
-		<PanelHeader
-			title={editandoId ? 'Editar banner' : 'Novo banner'}
-			index="01"
-		/>
+		<PanelHeader title={editandoId ? 'Editar banner' : 'Novo banner'} index="01" />
 		<div class="grid grid-cols-12 gap-3 p-4">
 			<div class="col-span-12 flex flex-col md:col-span-8">
 				<label
@@ -308,7 +305,7 @@
 					bind:value={formTone}
 					class="w-full border border-slate-300 bg-white px-3 py-2 font-sans text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 				>
-					{#each TONES as t}
+					{#each TONES as t (t.value)}
 						<option value={t.value}>{t.label}</option>
 					{/each}
 				</select>
@@ -483,7 +480,10 @@
 				<span class="font-bold tracking-widest uppercase">Filtros:</span>
 				<label class="flex items-center gap-1.5">
 					<span class="text-[10px] uppercase">Status:</span>
-					<select bind:value={filtroAtivo} class="border border-slate-300 bg-white px-2 py-1 text-xs">
+					<select
+						bind:value={filtroAtivo}
+						class="border border-slate-300 bg-white px-2 py-1 text-xs"
+					>
 						<option value="todos">todos</option>
 						<option value="true">ativos</option>
 						<option value="false">inativos</option>
@@ -491,7 +491,10 @@
 				</label>
 				<label class="flex items-center gap-1.5">
 					<span class="text-[10px] uppercase">Validade:</span>
-					<select bind:value={filtroExpirados} class="border border-slate-300 bg-white px-2 py-1 text-xs">
+					<select
+						bind:value={filtroExpirados}
+						class="border border-slate-300 bg-white px-2 py-1 text-xs"
+					>
 						<option value="todos">todos</option>
 						<option value="false">não expirados</option>
 						<option value="true">expirados</option>
@@ -505,21 +508,18 @@
 		{:else if erro}
 			<div class="p-4 text-sm text-red-700">{erro}</div>
 		{:else if lista.length === 0}
-			<div class="p-4 text-sm text-slate-500">
-				Nenhum banner com esses filtros. Crie um acima.
-			</div>
+			<div class="p-4 text-sm text-slate-500">Nenhum banner com esses filtros. Crie um acima.</div>
 		{:else}
 			<ul class="divide-y divide-slate-200">
 				{#each lista as b (b.id)}
-					<li
-						class="p-4 transition hover:bg-slate-50"
-						class:opacity-50={!b.ativo}
-					>
+					<li class="p-4 transition hover:bg-slate-50" class:opacity-50={!b.ativo}>
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex-1">
 								<div class="flex items-center gap-2">
 									<div
-										class="border-l-4 {TONE_BORDA[b.tone]} {TONE_BG[b.tone]} px-2 py-0.5 font-mono text-[9px] font-bold tracking-widest uppercase"
+										class="border-l-4 {TONE_BORDA[b.tone]} {TONE_BG[
+											b.tone
+										]} px-2 py-0.5 font-mono text-[9px] font-bold tracking-widest uppercase"
 									>
 										{b.tone}
 									</div>
@@ -545,7 +545,9 @@
 								<div class="mt-0.5 line-clamp-2 font-sans text-xs text-slate-600">
 									{b.corpo}
 								</div>
-								<div class="mt-2 flex flex-wrap items-center gap-3 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+								<div
+									class="mt-2 flex flex-wrap items-center gap-3 font-mono text-[10px] tracking-wider text-slate-500 uppercase"
+								>
 									<span>Pub: {formatDate(b.publicadoEm)}</span>
 									{#if b.expiraEm}
 										<span>Exp: {formatDate(b.expiraEm)}</span>
@@ -555,11 +557,7 @@
 								</div>
 							</div>
 							<div class="flex flex-col gap-1.5">
-								<PrimaryButton
-									label="Editar"
-									variant="secondary"
-									onclick={() => abrirEditar(b)}
-								/>
+								<PrimaryButton label="Editar" variant="secondary" onclick={() => abrirEditar(b)} />
 								{#if auth.ehAdminOuDev}
 									<button
 										type="button"

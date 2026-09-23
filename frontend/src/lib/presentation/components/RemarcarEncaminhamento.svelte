@@ -17,7 +17,9 @@
 	let novaData = $state('');
 	let novoHorario = $state('09:00');
 	let novaUnidade = $state('Centro de Especialidades Médicas (CEM)');
-	let motivoRemarcacao = $state('Remarcação de atendimento a pedido do paciente / ajuste de escala de regulação.');
+	let motivoRemarcacao = $state(
+		'Remarcação de atendimento a pedido do paciente / ajuste de escala de regulação.'
+	);
 
 	$effect(() => {
 		novaData = encaminhamento.agendamentoPrevisto
@@ -43,7 +45,7 @@
 
 		try {
 			const dataHoraISO = new Date(`${novaData}T${novoHorario}:00`).toISOString();
-			
+
 			// Atualiza agendamento no backend ou simulado
 			const atualizado = await api.encaminhamentos.update(encaminhamento.id, {
 				agendamentoPrevisto: dataHoraISO,
@@ -67,9 +69,19 @@
 	}
 </script>
 
-<form onsubmit={(e) => { e.preventDefault(); submit(); }} class="flex flex-col gap-4 font-mono text-xs text-slate-900">
-	<div class="border border-blue-200 bg-blue-50 p-3 font-sans text-xs text-blue-950 leading-relaxed">
-		<strong>📅 Remarcação de Atendimento (Fila de Regulação):</strong> Altere a data, o horário ou o local de atendimento do encaminhamento <strong>sem perder a ordem de chegada e a prioridade clínica</strong> do paciente na fila.
+<form
+	onsubmit={(e) => {
+		e.preventDefault();
+		submit();
+	}}
+	class="flex flex-col gap-4 font-mono text-xs text-slate-900"
+>
+	<div
+		class="border border-blue-200 bg-blue-50 p-3 font-sans text-xs leading-relaxed text-blue-950"
+	>
+		<strong>📅 Remarcação de Atendimento (Fila de Regulação):</strong> Altere a data, o horário ou o
+		local de atendimento do encaminhamento
+		<strong>sem perder a ordem de chegada e a prioridade clínica</strong> do paciente na fila.
 	</div>
 
 	{#if erro}
@@ -80,7 +92,9 @@
 
 	<div class="grid grid-cols-2 gap-3">
 		<div class="flex flex-col gap-1">
-			<label for="rem-dt" class="text-[10px] font-bold text-slate-700 uppercase">Nova Data Desejada *</label>
+			<label for="rem-dt" class="text-[10px] font-bold text-slate-700 uppercase"
+				>Nova Data Desejada *</label
+			>
 			<input
 				id="rem-dt"
 				type="date"
@@ -90,7 +104,9 @@
 		</div>
 
 		<div class="flex flex-col gap-1">
-			<label for="rem-hr" class="text-[10px] font-bold text-slate-700 uppercase">Horário Previsto *</label>
+			<label for="rem-hr" class="text-[10px] font-bold text-slate-700 uppercase"
+				>Horário Previsto *</label
+			>
 			<input
 				id="rem-hr"
 				type="time"
@@ -101,7 +117,9 @@
 	</div>
 
 	<div class="flex flex-col gap-1">
-		<label for="rem-und" class="text-[10px] font-bold text-slate-700 uppercase">Unidade de Destino / Local</label>
+		<label for="rem-und" class="text-[10px] font-bold text-slate-700 uppercase"
+			>Unidade de Destino / Local</label
+		>
 		<input
 			id="rem-und"
 			type="text"
@@ -112,7 +130,9 @@
 	</div>
 
 	<div class="flex flex-col gap-1">
-		<label for="rem-mot" class="text-[10px] font-bold text-slate-700 uppercase">Motivo da Remarcação *</label>
+		<label for="rem-mot" class="text-[10px] font-bold text-slate-700 uppercase"
+			>Motivo da Remarcação *</label
+		>
 		<textarea
 			id="rem-mot"
 			rows="3"

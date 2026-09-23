@@ -544,7 +544,7 @@ export class CentroRecepcaoController {
         totalChamadas: chamadas.length,
         servidorHorario: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (_err) {
       res.status(500).json({ error: { code: 'ERRO_TV_CHAMADAS', message: 'Falha ao buscar chamadas da TV' } });
     }
   };

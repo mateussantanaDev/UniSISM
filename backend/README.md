@@ -3,8 +3,9 @@
 Backend Node.js + TypeScript + Express + Prisma + PostgreSQL para a Face 1 (UBS) do
 sistema **UNISISM** da SMS de Águas Belas / PE.
 
-Implementa todos os contratos descritos em `BACKEND-SPEC.md` (auth, perfil, dashboard,
-encaminhamentos com OCR/PDF, pacientes/PEC, relatórios).
+Implementa os contratos documentados em `docs/API.md`, `docs/ROTAS.md` e nos guias
+específicos de cada módulo (`docs/PACIENTE_APP_API.md`, `docs/TFD_API.md`,
+`docs/MOTORISTA_APP_API.md`, entre outros).
 
 ## Arquitetura
 
@@ -90,15 +91,29 @@ docker compose exec backend npx ts-node-dev --transpile-only prisma/seed.ts
 | `npm run build` | Compila para `dist/` |
 | `npm start` | Roda `dist/main/server.js` (produção) |
 | `npm run typecheck` | Apenas type-check (`tsc --noEmit`) |
+| `npm test` | Build + testes unitários/contratuais locais |
+| `npm run validate` | Type-check + suíte local de testes |
+| `npm run test:smoke:app` | Smoke test do contrato do app paciente contra backend em execução |
 | `npm run prisma:generate` | Gera Prisma Client |
 | `npm run prisma:migrate` | Cria/aplica migration em dev |
 | `npm run prisma:deploy` | Aplica migrations em produção |
 | `npm run prisma:studio` | Abre Prisma Studio |
 | `npm run db:seed` | Roda `prisma/seed.ts` |
 
+### Dados demonstrativos no boot
+
+O servidor não cria mais viagem, encaminhamento ou métricas seed automaticamente ao
+iniciar. Para ambientes de demonstração, habilite explicitamente:
+
+```bash
+DEMO_SEED_ON_BOOT=true npm run dev
+```
+
+Em produção, mantenha `DEMO_SEED_ON_BOOT=false`.
+
 ## Endpoints implementados (MVP)
 
-Veja `BACKEND-SPEC.md` para o contrato completo.
+Veja `docs/API.md` e `docs/ROTAS.md` para o contrato completo.
 
 | Método | Rota | Descrição |
 |---|---|---|

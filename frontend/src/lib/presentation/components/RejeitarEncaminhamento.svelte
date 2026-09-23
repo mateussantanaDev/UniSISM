@@ -64,8 +64,9 @@
 			⚠ Ação Definitiva
 		</div>
 		<p class="mt-1 text-xs text-red-900">
-			A rejeição encerra o encaminhamento. Para correções pontuais, prefira <strong>Solicitar
-			Correção</strong> (registra pendência e permite reenvio pela UBS).
+			A rejeição encerra o encaminhamento. Para correções pontuais, prefira <strong
+				>Solicitar Correção</strong
+			> (registra pendência e permite reenvio pela UBS).
 		</p>
 	</section>
 
@@ -78,7 +79,7 @@
 			<StatusBadge status={encaminhamento.status} />
 		</div>
 		<div class="text-sm font-bold text-blue-900">{encaminhamento.protocolo}</div>
-		<div class="text-xs font-sans font-semibold text-slate-900">
+		<div class="font-sans text-xs font-semibold text-slate-900">
 			{encaminhamento.paciente.nome}
 		</div>
 		<div class="text-[11px] text-slate-700">
@@ -110,8 +111,8 @@
 				class="mt-0.5 h-3.5 w-3.5 border-slate-300 text-red-700 focus:ring-red-700"
 			/>
 			<span class="text-[11px] text-slate-700">
-				Confirmo que esta é uma rejeição <strong class="text-red-700">definitiva</strong> e que a
-				UBS de origem será notificada. Li o motivo acima.
+				Confirmo que esta é uma rejeição <strong class="text-red-700">definitiva</strong> e que a UBS
+				de origem será notificada. Li o motivo acima.
 			</span>
 		</label>
 	</section>

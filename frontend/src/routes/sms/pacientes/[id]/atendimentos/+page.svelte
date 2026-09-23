@@ -45,16 +45,18 @@
 		p.atendimentos.filter((a) => a.tipo === 'CONSULTA_MEDICA').length
 	);
 	let totalAno = $derived(
-		p.atendimentos.filter(
-			(a) => new Date(a.data).getFullYear() === new Date().getFullYear()
-		).length
+		p.atendimentos.filter((a) => new Date(a.data).getFullYear() === new Date().getFullYear()).length
 	);
 	let ultimoAtendimentoFmt = $derived(formatarDataHoraPartes(p.ultimoAtendimento));
 </script>
 
 <div class="flex flex-col gap-4">
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
-		<MetricCard label="Total de Atendimentos" value={p.atendimentos.length} sublabel="Histórico completo" />
+		<MetricCard
+			label="Total de Atendimentos"
+			value={p.atendimentos.length}
+			sublabel="Histórico completo"
+		/>
 		<MetricCard label="Consultas Médicas" value={consultasMedicas} sublabel="Médicos da rede" />
 		<MetricCard label="No Ano" value={totalAno} sublabel={String(new Date().getFullYear())} />
 		<MetricCard
@@ -112,7 +114,8 @@
 										{a.diagnostico}
 									</div>
 									<div class="mt-0.5 text-xs text-slate-700">
-										<span class="font-semibold">Queixa:</span> {a.queixaPrincipal}
+										<span class="font-semibold">Queixa:</span>
+										{a.queixaPrincipal}
 									</div>
 									<div class="mt-1 text-xs text-slate-800">
 										<span class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">

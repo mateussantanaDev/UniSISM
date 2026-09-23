@@ -7,11 +7,12 @@
 import type { Request } from 'express';
 import { Conflict, NotFound, Unprocessable } from '../../../shared/errors';
 import { prisma } from '../../../infrastructure/database/prisma';
-import type { Prisma } from '../../../../generated/prisma';
+import { StatusAjudaCusto, type Prisma } from '../../../../generated/prisma';
 import type { AccessScope } from '../../../shared/scope';
 import type { IAtendenteRepository } from '../../../domain/repositories/IAtendenteRepository';
 import type { IFileStorage } from '../../../domain/services/IFileStorage';
 import type { ITfdAuditLogger } from '../infrastructure/TfdAuditLogger';
+import { enumValue, jsonPayload } from '../../../shared/prismaHelpers';
 import {
   assertMesmaPrefeitura,
   ctxAudit,
@@ -40,7 +41,13 @@ export interface PagarAjudaInput {
 const MIMES_OK = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const MAX_BYTES = 10 * 1024 * 1024;
 
-function rowParaAjuda(r: any) {
+const INCLUDE_FULL = {
+  paciente: { select: { id: true, nome: true, cpf: true } },
+} satisfies Prisma.AjudaCustoInclude;
+
+type AjudaCustoRow = Prisma.AjudaCustoGetPayload<{ include: typeof INCLUDE_FULL }>;
+
+function rowParaAjuda(r: AjudaCustoRow) {
   return {
     id: r.id,
     protocolo: r.protocolo,
@@ -61,10 +68,6 @@ function rowParaAjuda(r: any) {
   };
 }
 
-const INCLUDE_FULL = {
-  paciente: { select: { id: true, nome: true, cpf: true } },
-};
-
 export class AjudasCustoUseCases {
   constructor(
     private readonly audit: ITfdAuditLogger,
@@ -79,7 +82,11 @@ export class AjudasCustoUseCases {
   ) {
     const prefeituraId = resolverPrefeituraIdEfetiva(scope, req);
     const where: Prisma.AjudaCustoWhereInput = { prefeituraId };
-    if (filtros.status) where.status = filtros.status as any;
+    if (filtros.status) {
+      const status = enumValue(Object.values(StatusAjudaCusto), filtros.status);
+      if (!status) throw Unprocessable('STATUS_INVALIDO', 'Status de ajuda de custo inválido');
+      where.status = status;
+    }
     if (filtros.pacienteId) where.pacienteId = filtros.pacienteId;
     const rows = await prisma.ajudaCusto.findMany({
       where,
@@ -132,7 +139,7 @@ export class AjudasCustoUseCases {
         prefeituraId,
         viagemId: input.viagemId,
         pacienteId: input.pacienteId,
-        itens: input.itens as unknown as Prisma.InputJsonValue,
+        itens: jsonPayload(input.itens),
         valorTotal,
         criadaPorId: autorId,
       },

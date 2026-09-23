@@ -23,7 +23,14 @@
 		const list: NavGroup[] = [];
 
 		// Recepção / Operação CEM
-		if (role === 'REGULADOR_SMS' || role === 'ATENDENTE_UBS' || role === 'ATENDENTE_CENTRO' || role === 'ENFERMEIRO' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'REGULADOR_SMS' ||
+			role === 'ATENDENTE_UBS' ||
+			role === 'ATENDENTE_CENTRO' ||
+			role === 'ENFERMEIRO' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'OPERAÇÃO CEM',
 				items: [
@@ -38,7 +45,14 @@
 		}
 
 		// Enfermagem & Triagem CEM
-		if (role === 'ENFERMEIRO' || role === 'REGULADOR_SMS' || role === 'ATENDENTE_CENTRO' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'ENFERMEIRO' ||
+			role === 'REGULADOR_SMS' ||
+			role === 'ATENDENTE_CENTRO' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'ENFERMAGEM & TRIAGEM',
 				items: [
@@ -50,7 +64,13 @@
 		}
 
 		// Médico Especialista CEM
-		if (role === 'MEDICO' || role === 'MEDICO_ESPECIALISTA' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'MEDICO' ||
+			role === 'MEDICO_ESPECIALISTA' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'CORPO CLÍNICO MÉDICO',
 				items: [
@@ -62,7 +82,12 @@
 		}
 
 		// Gestão ERP CEM
-		if (role === 'REGULADOR_SMS' || role === 'COORDENADOR_UBS' || role === 'ADMIN' || role === 'DESENVOLVEDOR') {
+		if (
+			role === 'REGULADOR_SMS' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'ADMIN' ||
+			role === 'DESENVOLVEDOR'
+		) {
 			list.push({
 				titulo: 'INTELIGÊNCIA & GESTÃO CEM',
 				items: [
@@ -84,25 +109,29 @@
 	let current = $derived(page.url.pathname);
 </script>
 
-<aside class="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white font-mono text-sm">
+<aside
+	class="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white font-mono text-sm"
+>
 	<!-- Marca institucional CEM -->
 	<div class="border-b border-slate-200 bg-gradient-to-b from-indigo-50 to-white px-4 py-4">
 		<div class="flex items-center gap-2">
-			<div class="flex h-8 w-8 items-center justify-center bg-indigo-900 text-xs font-bold text-white font-mono">
+			<div
+				class="flex h-8 w-8 items-center justify-center bg-indigo-900 font-mono text-xs font-bold text-white"
+			>
 				CEM
 			</div>
 			<div class="leading-tight">
-				<div class="text-xs font-bold tracking-widest text-slate-900 font-mono">UNISISM</div>
-				<div class="text-[9px] tracking-wider text-indigo-900 font-mono font-bold">ESPECIALIDADES MÉDICAS</div>
+				<div class="font-mono text-xs font-bold tracking-widest text-slate-900">UNISISM</div>
+				<div class="font-mono text-[9px] font-bold tracking-wider text-indigo-900">
+					ESPECIALIDADES MÉDICAS
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Bloco de contexto -->
 	<div class="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-3">
-		<div class="text-[10px] tracking-wider text-slate-500 font-mono">
-			ÓRGÃO AUTÔNOMO
-		</div>
+		<div class="font-mono text-[10px] tracking-wider text-slate-500">ÓRGÃO AUTÔNOMO</div>
 		<div class="truncate text-xs font-semibold text-slate-900">
 			{auth.me?.prefeitura ?? 'Centro de Especialidades Médicas (CEM)'}
 		</div>
@@ -112,7 +141,9 @@
 	<nav class="flex flex-1 flex-col overflow-y-auto py-2" aria-label="Navegação CEM">
 		{#each gruposVisiveis as grupo (grupo.titulo)}
 			<div class="mt-3 first:mt-1">
-				<div class="px-5 pb-1.5 font-mono text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+				<div
+					class="px-5 pb-1.5 font-mono text-[9px] font-bold tracking-widest text-slate-400 uppercase"
+				>
 					{grupo.titulo}
 				</div>
 				{#each grupo.items as item (item.href)}
@@ -142,7 +173,10 @@
 				<div class="truncate font-sans text-xs font-bold text-slate-900">
 					{auth.me?.nome ?? 'Profissional CEM'}
 				</div>
-				<div class="font-mono text-[10px] text-indigo-900 font-bold truncate" title={formatarCargoPerfil(auth.me)}>
+				<div
+					class="truncate font-mono text-[10px] font-bold text-indigo-900"
+					title={formatarCargoPerfil(auth.me)}
+				>
 					{formatarCargoPerfil(auth.me)}
 				</div>
 			</div>

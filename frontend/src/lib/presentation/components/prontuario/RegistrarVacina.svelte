@@ -72,14 +72,7 @@
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">
-		<FormField
-			label="Data da Aplicação"
-			name="data"
-			type="date"
-			span={3}
-			mono
-			bind:value={data}
-		/>
+		<FormField label="Data da Aplicação" name="data" type="date" span={3} mono bind:value={data} />
 		<FormField
 			label="Vacina"
 			name="vacina"
@@ -94,7 +87,14 @@
 			placeholder="Ex.: 1ª · Reforço"
 			bind:value={dose}
 		/>
-		<FormField label="Lote" name="lote" span={4} mono placeholder="Ex.: FL-0872" bind:value={lote} />
+		<FormField
+			label="Lote"
+			name="lote"
+			span={4}
+			mono
+			placeholder="Ex.: FL-0872"
+			bind:value={lote}
+		/>
 		<div class="col-span-4 flex flex-col">
 			<label
 				for="via"

@@ -5,7 +5,7 @@ import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-c
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound, BadRequest } from '../../../../shared/errors';
+import { NotFound } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface AgendarConsultaCentroInput {

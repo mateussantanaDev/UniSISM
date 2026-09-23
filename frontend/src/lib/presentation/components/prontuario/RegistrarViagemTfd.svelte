@@ -74,11 +74,9 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-slate-900">
-	<div
-		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
-	>
-		TFD · Tratamento Fora do Domicílio. Viagem custeada pela SMS. Registro cria linha no
-		orçamento municipal e aparece no relatório de custos.
+	<div class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900">
+		TFD · Tratamento Fora do Domicílio. Viagem custeada pela SMS. Registro cria linha no orçamento
+		municipal e aparece no relatório de custos.
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">
@@ -131,14 +129,7 @@
 			bind:value={unidadeDestino}
 		/>
 
-		<FormField
-			label="Data Ida"
-			name="dataIda"
-			type="date"
-			span={3}
-			mono
-			bind:value={dataIda}
-		/>
+		<FormField label="Data Ida" name="dataIda" type="date" span={3} mono bind:value={dataIda} />
 		<FormField
 			label="Data Volta"
 			name="dataVolta"
@@ -206,9 +197,7 @@
 				bind:checked={acompanhante}
 				class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-blue-900"
 			/>
-			<span class="font-mono tracking-wider uppercase">
-				Paciente viajará com acompanhante
-			</span>
+			<span class="font-mono tracking-wider uppercase"> Paciente viajará com acompanhante </span>
 		</label>
 	</div>
 

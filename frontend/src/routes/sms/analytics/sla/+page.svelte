@@ -33,9 +33,7 @@
 		ELETIVA: 240
 	};
 
-	let decididos = $derived(
-		encs.filter((e) => e.status === 'APROVADO' || e.status === 'REJEITADO')
-	);
+	let decididos = $derived(encs.filter((e) => e.status === 'APROVADO' || e.status === 'REJEITADO'));
 
 	let tempos = $derived(
 		decididos.map((e) => ({
@@ -56,9 +54,7 @@
 		return sorted[Math.floor(sorted.length * 0.95)] ?? 0;
 	});
 
-	let dentroSLA = $derived(
-		tempos.filter((t) => t.horas <= slaMetas[t.prioridade]).length
-	);
+	let dentroSLA = $derived(tempos.filter((t) => t.horas <= slaMetas[t.prioridade]).length);
 
 	let percDentroSLA = $derived(
 		tempos.length > 0 ? Math.round((dentroSLA / tempos.length) * 100) : 0
@@ -184,7 +180,13 @@
 									{row.total}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2">
-									<span class="font-bold {pct >= 90 ? 'text-emerald-700' : pct >= 70 ? 'text-amber-700' : 'text-red-700'}">
+									<span
+										class="font-bold {pct >= 90
+											? 'text-emerald-700'
+											: pct >= 70
+												? 'text-amber-700'
+												: 'text-red-700'}"
+									>
 										{row.dentro}
 									</span>
 									<span class="text-slate-500"> / {row.total}</span>
@@ -196,12 +198,20 @@
 									<div class="flex items-center gap-2">
 										<div class="h-2 w-24 bg-slate-100">
 											<div
-												class="h-full {pct >= 90 ? 'bg-emerald-700' : pct >= 70 ? 'bg-amber-600' : 'bg-red-700'}"
+												class="h-full {pct >= 90
+													? 'bg-emerald-700'
+													: pct >= 70
+														? 'bg-amber-600'
+														: 'bg-red-700'}"
 												style="width: {pct}%"
 											></div>
 										</div>
 										<span
-											class="font-mono text-[11px] font-bold {pct >= 90 ? 'text-emerald-700' : pct >= 70 ? 'text-amber-700' : 'text-red-700'}"
+											class="font-mono text-[11px] font-bold {pct >= 90
+												? 'text-emerald-700'
+												: pct >= 70
+													? 'text-amber-700'
+													: 'text-red-700'}"
 										>
 											{pct}%
 										</span>
@@ -216,12 +226,10 @@
 	</div>
 
 	<!-- Aviso sobre cálculo -->
-	<div
-		class="border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-[11px] text-slate-600"
-	>
+	<div class="border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-[11px] text-slate-600">
 		<span class="font-bold tracking-widest text-slate-700 uppercase">Nota técnica:</span> SLA
-		calculado como <code class="bg-white px-1">atualizadoEm − criadoEm</code> para encaminhamentos
-		em estado terminal (APROVADO/REJEITADO). Quando o backend expuser um endpoint de métricas
-		agregadas, substituir pela fonte oficial.
+		calculado como <code class="bg-white px-1">atualizadoEm − criadoEm</code> para encaminhamentos em
+		estado terminal (APROVADO/REJEITADO). Quando o backend expuser um endpoint de métricas agregadas,
+		substituir pela fonte oficial.
 	</div>
 </div>

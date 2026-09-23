@@ -139,7 +139,7 @@ export async function defensiveSleep(): Promise<void> {
 // ────────────────────────────────────────────────────────────────
 const STATE_FILE = path.join(STATE_DIR, 'storage-state.json');
 
-export function getLaunchOptions() {
+function getLaunchOptions() {
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.PLAYWRIGHT_EXECUTABLE_PATH;
   return {
     headless: HEADLESS,

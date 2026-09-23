@@ -62,7 +62,14 @@
 	</div>
 
 	<div class="grid grid-cols-12 gap-3">
-		<FormField label="CID-10" name="cid10" span={3} mono placeholder="Ex.: I10" bind:value={cid10} />
+		<FormField
+			label="CID-10"
+			name="cid10"
+			span={3}
+			mono
+			placeholder="Ex.: I10"
+			bind:value={cid10}
+		/>
 		<FormField
 			label="Descrição"
 			name="descricao"
@@ -70,26 +77,15 @@
 			placeholder="Ex.: Hipertensão essencial"
 			bind:value={descricao}
 		/>
-		<FormField
-			label="Diagnosticado em"
-			name="desde"
-			type="date"
-			span={4}
-			mono
-			bind:value={desde}
-		/>
+		<FormField label="Diagnosticado em" name="desde" type="date" span={4} mono bind:value={desde} />
 		<div class="col-span-8 flex items-end">
-			<label
-				class="flex cursor-pointer items-center gap-2 text-[11px] text-slate-700"
-			>
+			<label class="flex cursor-pointer items-center gap-2 text-[11px] text-slate-700">
 				<input
 					type="checkbox"
 					bind:checked={ativo}
 					class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-blue-900"
 				/>
-				<span class="font-mono tracking-wider uppercase">
-					Condição ativa (em acompanhamento)
-				</span>
+				<span class="font-mono tracking-wider uppercase"> Condição ativa (em acompanhamento) </span>
 			</label>
 		</div>
 		<div class="col-span-12 flex flex-col">

@@ -164,10 +164,11 @@
 		} catch (e) {
 			erroGerar = mensagemAmigavel(e);
 			// Se o arquivo expirou / sumiu, marca status como FALHA localmente.
-			if (e instanceof ApiError && (e.code === 'RELATORIO_EXPIRADO' || e.code === 'ARQUIVO_NAO_ENCONTRADO')) {
-				historico = historico.map((x) =>
-					x.id === r.id ? { ...x, status: 'FALHA' as const } : x
-				);
+			if (
+				e instanceof ApiError &&
+				(e.code === 'RELATORIO_EXPIRADO' || e.code === 'ARQUIVO_NAO_ENCONTRADO')
+			) {
+				historico = historico.map((x) => (x.id === r.id ? { ...x, status: 'FALHA' as const } : x));
 			}
 		}
 	}

@@ -84,11 +84,8 @@
 </script>
 
 <div class="flex flex-col gap-4 font-mono text-slate-900">
-	<div
-		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
-	>
-		Registro clínico do atendimento. Aparece no histórico do paciente e conta para produção da
-		UBS.
+	<div class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900">
+		Registro clínico do atendimento. Aparece no histórico do paciente e conta para produção da UBS.
 	</div>
 
 	<!-- Quando / Tipo -->
@@ -183,7 +180,14 @@
 			placeholder="Ex.: Hipertensão arterial sistêmica"
 			bind:value={diagnostico}
 		/>
-		<FormField label="CID-10" name="cid10" span={3} mono placeholder="Ex.: I10" bind:value={cid10} />
+		<FormField
+			label="CID-10"
+			name="cid10"
+			span={3}
+			mono
+			placeholder="Ex.: I10"
+			bind:value={cid10}
+		/>
 		<div class="col-span-12 flex flex-col">
 			<label
 				for="conduta"

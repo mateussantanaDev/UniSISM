@@ -3,13 +3,17 @@
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
-	import { formatarCpf, formatarData } from '$lib/presentation/utils/tfdFormat';
+	import { formatarCpf } from '$lib/presentation/utils/tfdFormat';
 	import type {
 		PrioridadeTfdPaciente,
 		StatusTfdPaciente,
 		TfdPacienteSolicAdmin
 	} from '$lib/api/tfd-types';
 	import { onMount } from 'svelte';
+
+	type SolicitacaoPacienteComRegra = TfdPacienteSolicAdmin & {
+		encaminhamentoComDataConfirmada?: boolean;
+	};
 
 	/**
 	 * Pedidos de TFD vindos do app paciente (Face 3).
@@ -22,7 +26,7 @@
 	 * Backend: `/v1/tfd/solicitacoes-paciente/*` (6 endpoints). RBAC: rwGestor.
 	 */
 
-	let todas = $state<TfdPacienteSolicAdmin[]>([]);
+	let todas = $state<SolicitacaoPacienteComRegra[]>([]);
 	let carregando = $state(true);
 	let erro = $state<string | null>(null);
 
@@ -238,10 +242,7 @@
 						{/each}
 					{:else if lista.length === 0}
 						<tr>
-							<td
-								colspan="8"
-								class="px-3 py-12 text-center font-sans text-sm text-slate-500"
-							>
+							<td colspan="8" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
 								Nenhum pedido do App encontrado.
 							</td>
 						</tr>
@@ -283,12 +284,16 @@
 								</td>
 								<!-- Regra 5: Encaminhamento agendado com data ganha vaga automática; aguardando resposta exige gestor -->
 								<td class="border-r border-slate-100 px-3 py-2 text-center whitespace-nowrap">
-									{#if s.encaminhamentoProtocolo && (s as any).encaminhamentoComDataConfirmada !== false}
-										<span class="border border-emerald-700 bg-emerald-50 text-emerald-900 px-2 py-0.5 text-[9px] font-bold uppercase">
+									{#if s.encaminhamentoProtocolo && s.encaminhamentoComDataConfirmada !== false}
+										<span
+											class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-900 uppercase"
+										>
 											✓ Vaga Automática (Data Confirmada)
 										</span>
 									{:else}
-										<span class="border border-amber-600 bg-amber-50 text-amber-900 px-2 py-0.5 text-[9px] font-bold uppercase">
+										<span
+											class="border border-amber-600 bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-900 uppercase"
+										>
 											⏳ Exige Gestor (Aguardando Data)
 										</span>
 									{/if}

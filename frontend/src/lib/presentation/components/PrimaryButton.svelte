@@ -40,8 +40,7 @@
 		{fullWidth ? 'w-full' : ''}"
 >
 	{#if loading}
-		<span
-			class="inline-block h-3 w-3 animate-spin border-2 border-current border-t-transparent"
+		<span class="inline-block h-3 w-3 animate-spin border-2 border-current border-t-transparent"
 		></span>
 		<span>PROCESSANDO...</span>
 	{:else}

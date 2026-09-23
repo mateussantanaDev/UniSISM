@@ -8,18 +8,18 @@
  *    - Role:   DESENVOLVEDOR (acesso global)
  * 
  *  Usuário Paciente:
- *    - CPF:    53474131826
- *    - Senha:  53474131826 (senhaProvisoria = true)
- *    - Nome:   Mateus Santana
+ *    - CPF:    12345678909
+ *    - Senha:  12345678909 (senhaProvisoria = true)
+ *    - Nome:   João da Silva Sauro
  */
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
-const CPF = '53474131826';
-const CPF_FMT = '534.741.318-26';
-const NOME = 'Mateus Santana';
+const CPF = '12345678909';
+const CPF_FMT = '123.456.789-09';
+const NOME = 'João da Silva Sauro';
 
 async function main() {
   const devSenhaHash = await bcrypt.hash('Aguasbelas#!', 10);

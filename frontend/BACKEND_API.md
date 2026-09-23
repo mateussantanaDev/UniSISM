@@ -77,33 +77,33 @@ O frontend atualmente consome arrays planos — manter compatibilidade até a fe
 
 ### 1.6. Códigos HTTP
 
-| Código | Uso |
-|---|---|
-| `200 OK` | Sucesso em GET, PUT, PATCH |
-| `201 Created` | Sucesso em POST que cria recurso |
-| `204 No Content` | Sucesso sem body (ex.: logout) |
-| `400 Bad Request` | Payload inválido / validação de schema |
-| `401 Unauthorized` | Token ausente ou expirado |
-| `403 Forbidden` | Autenticado mas sem permissão |
-| `404 Not Found` | Recurso não existe |
-| `409 Conflict` | Conflito de estado (ex.: resolver pendência em enc. não pendente) |
-| `413 Payload Too Large` | Upload acima do limite |
-| `415 Unsupported Media Type` | MIME não aceito |
-| `422 Unprocessable Entity` | Regra de negócio violada |
-| `429 Too Many Requests` | Rate limit |
-| `500 Internal Server Error` | Falha não tratada |
+| Código                       | Uso                                                               |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `200 OK`                     | Sucesso em GET, PUT, PATCH                                        |
+| `201 Created`                | Sucesso em POST que cria recurso                                  |
+| `204 No Content`             | Sucesso sem body (ex.: logout)                                    |
+| `400 Bad Request`            | Payload inválido / validação de schema                            |
+| `401 Unauthorized`           | Token ausente ou expirado                                         |
+| `403 Forbidden`              | Autenticado mas sem permissão                                     |
+| `404 Not Found`              | Recurso não existe                                                |
+| `409 Conflict`               | Conflito de estado (ex.: resolver pendência em enc. não pendente) |
+| `413 Payload Too Large`      | Upload acima do limite                                            |
+| `415 Unsupported Media Type` | MIME não aceito                                                   |
+| `422 Unprocessable Entity`   | Regra de negócio violada                                          |
+| `429 Too Many Requests`      | Rate limit                                                        |
+| `500 Internal Server Error`  | Falha não tratada                                                 |
 
 ### 1.7. Formato padrão de erro
 
 ```json
 {
-  "error": {
-    "code": "ENCAMINHAMENTO_NAO_EM_PENDENCIA",
-    "message": "Encaminhamento não está em pendência e não pode ser readequado.",
-    "details": {
-      "statusAtual": "APROVADO"
-    }
-  }
+	"error": {
+		"code": "ENCAMINHAMENTO_NAO_EM_PENDENCIA",
+		"message": "Encaminhamento não está em pendência e não pode ser readequado.",
+		"details": {
+			"statusAtual": "APROVADO"
+		}
+	}
 }
 ```
 
@@ -127,9 +127,9 @@ Autentica o atendente. Consumido em [src/routes/login/+page.svelte](src/routes/l
 
 ```json
 {
-  "login": "SMS-047291",
-  "senha": "••••••••",
-  "lembrar": true
+	"login": "SMS-047291",
+	"senha": "••••••••",
+	"lembrar": true
 }
 ```
 
@@ -141,24 +141,26 @@ Autentica o atendente. Consumido em [src/routes/login/+page.svelte](src/routes/l
 
 ```json
 {
-  "token": "eyJhbGciOi...",
-  "refreshToken": "...",
-  "expiresIn": 1800,
-  "atendente": {
-    "id": "atd-042",
-    "nome": "MATEUS DE SANTANA NEVES",
-    "matricula": "SMS-047291",
-    "iniciais": "MS"
-  }
+	"token": "eyJhbGciOi...",
+	"refreshToken": "...",
+	"expiresIn": 1800,
+	"atendente": {
+		"id": "atd-042",
+		"nome": "MATEUS DE SANTANA NEVES",
+		"matricula": "SMS-047291",
+		"iniciais": "MS"
+	}
 }
 ```
 
 **Erros**:
+
 - `401` — `CREDENCIAIS_INVALIDAS`
 - `403` — `USUARIO_INATIVO`, `USUARIO_BLOQUEADO` (após N tentativas falhas)
 - `422` — `SENHA_EXPIRADA` (força fluxo de redefinição)
 
 **Regras**:
+
 - Registrar tentativas falhas por IP/usuário.
 - Após 5 tentativas falhas em 15 min, bloqueio de 30 min.
 - Registrar IP, user-agent, geolocalização aproximada — disponíveis em `/me/profile` > segurança.
@@ -187,6 +189,7 @@ Inicia fluxo de recuperação. Consumido em [src/routes/login/esqueci-senha/+pag
 ```
 
 **Regras**:
+
 - **Sempre retornar `200` com `tokenEnviado: true`**, mesmo quando o usuário não existe (evita enumeration).
 - Enviar código de 6 dígitos numéricos ao email cadastrado no RH.
 - TTL do código: 10 minutos.
@@ -219,8 +222,8 @@ Redefine a senha com o token obtido no passo anterior.
 
 ```json
 {
-  "resetToken": "tkn-...",
-  "novaSenha": "minhaNovaSenha123"
+	"resetToken": "tkn-...",
+	"novaSenha": "minhaNovaSenha123"
 }
 ```
 
@@ -231,11 +234,13 @@ Redefine a senha com o token obtido no passo anterior.
 ```
 
 **Regras**:
+
 - Mínimo 8 caracteres (validado também no backend).
 - Invalida todos os refresh tokens do usuário (encerra demais sessões).
 - Registra evento de "senha alterada" no histórico de segurança.
 
 **Erros**:
+
 - `400` — `SENHA_FRACA`, `TOKEN_EXPIRADO`, `TOKEN_INVALIDO`
 
 ### 2.6. `GET /auth/me`
@@ -246,12 +251,12 @@ Retorna atendente autenticado (dados mínimos para renderizar sidebar/header ime
 
 ```json
 {
-  "id": "atd-042",
-  "nome": "MATEUS DE SANTANA NEVES",
-  "matricula": "SMS-047291",
-  "iniciais": "MS",
-  "unidade": "UBS CENTRAL",
-  "cargo": "ATENDENTE DE REGULAÇÃO"
+	"id": "atd-042",
+	"nome": "MATEUS DE SANTANA NEVES",
+	"matricula": "SMS-047291",
+	"iniciais": "MS",
+	"unidade": "UBS CENTRAL",
+	"cargo": "ATENDENTE DE REGULAÇÃO"
 }
 ```
 
@@ -269,69 +274,70 @@ Retorna o perfil completo do atendente autenticado.
 
 ```json
 {
-  "nome": "MATEUS DE SANTANA NEVES",
-  "iniciais": "MS",
-  "matricula": "SMS-047291",
-  "email": "mateus.santana@saude.aguasbelas.pe.gov.br",
-  "cpf": "123.456.789-00",
-  "telefone": "(75) 99812-4421",
-  "dataNascimento": "1995-08-14",
-  "cargo": "ATENDENTE DE REGULAÇÃO",
-  "funcao": "Operador do canal de ingestão de encaminhamentos",
-  "lotacao": "UBS CENTRAL · ÁGUAS BELAS / PE",
-  "unidade": "UBS CENTRAL",
-  "dataAdmissao": "2023-02-15",
+	"nome": "MATEUS DE SANTANA NEVES",
+	"iniciais": "MS",
+	"matricula": "SMS-047291",
+	"email": "mateus.santana@saude.aguasbelas.pe.gov.br",
+	"cpf": "123.456.789-00",
+	"telefone": "(75) 99812-4421",
+	"dataNascimento": "1995-08-14",
+	"cargo": "ATENDENTE DE REGULAÇÃO",
+	"funcao": "Operador do canal de ingestão de encaminhamentos",
+	"lotacao": "UBS CENTRAL · ÁGUAS BELAS / PE",
+	"unidade": "UBS CENTRAL",
+	"dataAdmissao": "2023-02-15",
 
-  "producao": {
-    "hoje": 47,
-    "semana": 214,
-    "mes": 892,
-    "ano": 7318,
-    "tempoMedio": "3m 02s",
-    "taxaAprovacao": 88.4,
-    "ranking": 3,
-    "totalAtendentes": 14,
-    "metaMes": 970,
-    "porDia": [
-      { "dia": "SEG", "volume": 52 },
-      { "dia": "TER", "volume": 48 },
-      { "dia": "QUA", "volume": 41 },
-      { "dia": "QUI", "volume": 39 },
-      { "dia": "SEX", "volume": 47 },
-      { "dia": "SÁB", "volume": 12 },
-      { "dia": "DOM", "volume": 0 }
-    ],
-    "porEspecialidade": [
-      { "nome": "Cardiologia", "volume": 68 },
-      { "nome": "Ortopedia", "volume": 51 }
-    ]
-  },
+	"producao": {
+		"hoje": 47,
+		"semana": 214,
+		"mes": 892,
+		"ano": 7318,
+		"tempoMedio": "3m 02s",
+		"taxaAprovacao": 88.4,
+		"ranking": 3,
+		"totalAtendentes": 14,
+		"metaMes": 970,
+		"porDia": [
+			{ "dia": "SEG", "volume": 52 },
+			{ "dia": "TER", "volume": 48 },
+			{ "dia": "QUA", "volume": 41 },
+			{ "dia": "QUI", "volume": 39 },
+			{ "dia": "SEX", "volume": 47 },
+			{ "dia": "SÁB", "volume": 12 },
+			{ "dia": "DOM", "volume": 0 }
+		],
+		"porEspecialidade": [
+			{ "nome": "Cardiologia", "volume": 68 },
+			{ "nome": "Ortopedia", "volume": 51 }
+		]
+	},
 
-  "seguranca": {
-    "senhaAlteradaEm": "2025-12-18",
-    "twoFAAtivo": true,
-    "metodoTwoFA": "Aplicativo autenticador (TOTP)",
-    "ultimoAcesso": "22/04/2026 14:32:18",
-    "ipUltimoAcesso": "177.18.44.12",
-    "dispositivo": "Chrome 130 · macOS 15",
-    "localUltimoAcesso": "Águas Belas / PE",
-    "tentativasFalhasSemana": 0,
-    "sessoesAtivas": 1,
-    "sessaoInatividade": "2m 14s",
-    "sessaoExpiraEm": "27m 46s"
-  },
+	"seguranca": {
+		"senhaAlteradaEm": "2025-12-18",
+		"twoFAAtivo": true,
+		"metodoTwoFA": "Aplicativo autenticador (TOTP)",
+		"ultimoAcesso": "22/04/2026 14:32:18",
+		"ipUltimoAcesso": "177.18.44.12",
+		"dispositivo": "Chrome 130 · macOS 15",
+		"localUltimoAcesso": "Águas Belas / PE",
+		"tentativasFalhasSemana": 0,
+		"sessoesAtivas": 1,
+		"sessaoInatividade": "2m 14s",
+		"sessaoExpiraEm": "27m 46s"
+	},
 
-  "atividadeRecente": [
-    {
-      "em": "22/04/2026 14:28",
-      "acao": "Consolidou encaminhamento",
-      "alvo": "UBS-2026-100137"
-    }
-  ]
+	"atividadeRecente": [
+		{
+			"em": "22/04/2026 14:28",
+			"acao": "Consolidou encaminhamento",
+			"alvo": "UBS-2026-100137"
+		}
+	]
 }
 ```
 
 **Notas**:
+
 - `producao.porDia[].dia` é label de 3 letras da semana (aceita-se também retornar ISO weekday — ajustaremos no frontend).
 - `seguranca.ultimoAcesso`, `sessaoInatividade`, `sessaoExpiraEm` são **strings já formatadas** no mock. Backend pode retornar ISO e o frontend formata; **preferível**: retornar ISO e `ttlSegundos` para campos de duração.
 - `atividadeRecente[]` limitado a ~20 últimas ações. Endpoint dedicado com paginação virá depois.
@@ -347,6 +353,7 @@ Retorna o perfil completo do atendente autenticado.
 ```
 
 **Response 204** ou:
+
 - `400 SENHA_FRACA`
 - `401 SENHA_ATUAL_INCORRETA`
 
@@ -372,16 +379,17 @@ Consumido em [src/routes/ubs/dashboard/+page.svelte](src/routes/ubs/dashboard/+p
 
 ```json
 {
-  "encaminhamentosHoje": 47,
-  "aguardandoRegulacao": 128,
-  "pendenciasDocumento": 9,
-  "aprovadosHoje": 31,
-  "tempoMedioConsolidacaoSegundos": 182,
-  "encaminhamentosSemana": 214
+	"encaminhamentosHoje": 47,
+	"aguardandoRegulacao": 128,
+	"pendenciasDocumento": 9,
+	"aprovadosHoje": 31,
+	"tempoMedioConsolidacaoSegundos": 182,
+	"encaminhamentosSemana": 214
 }
 ```
 
 **Regras**:
+
 - Escopo: **UBS vinculada ao atendente**.
 - `tempoMedioConsolidacaoSegundos`: tempo médio entre upload do PDF e `POST /encaminhamentos`.
 - Cacheável por 30s (lado do backend).
@@ -408,30 +416,31 @@ file: <binary>  (application/pdf, máx 10 MB)
 
 ```json
 {
-  "paciente": {
-    "nome": "MARIA APARECIDA DA SILVA SANTOS",
-    "cpf": "123.456.789-00",
-    "cartaoSus": "704 8052 9384 0012",
-    "dataNascimento": "1968-03-14",
-    "sexo": "F",
-    "telefone": "(75) 99812-4421",
-    "endereco": "RUA JOÃO BATISTA DE SOUZA, 245 - CENTRO - ÁGUAS BELAS/PE"
-  },
-  "solicitacao": {
-    "medicoSolicitante": "DR. CARLOS EDUARDO MENDES",
-    "crm": "CRM/BA 28.471",
-    "especialidadeSolicitada": "Cardiologia",
-    "cid10": "I10",
-    "cidDescricao": "Hipertensão essencial (primária)",
-    "justificativaClinica": "Paciente com quadro crônico refratário...",
-    "prioridade": "PRIORITARIA",
-    "dataSolicitacao": "2026-04-22"
-  },
-  "confiancaExtracao": 0.94
+	"paciente": {
+		"nome": "MARIA APARECIDA DA SILVA SANTOS",
+		"cpf": "123.456.789-00",
+		"cartaoSus": "704 8052 9384 0012",
+		"dataNascimento": "1968-03-14",
+		"sexo": "F",
+		"telefone": "(75) 99812-4421",
+		"endereco": "RUA JOÃO BATISTA DE SOUZA, 245 - CENTRO - ÁGUAS BELAS/PE"
+	},
+	"solicitacao": {
+		"medicoSolicitante": "DR. CARLOS EDUARDO MENDES",
+		"crm": "CRM/BA 28.471",
+		"especialidadeSolicitada": "Cardiologia",
+		"cid10": "I10",
+		"cidDescricao": "Hipertensão essencial (primária)",
+		"justificativaClinica": "Paciente com quadro crônico refratário...",
+		"prioridade": "PRIORITARIA",
+		"dataSolicitacao": "2026-04-22"
+	},
+	"confiancaExtracao": 0.94
 }
 ```
 
 **Regras**:
+
 - Aceitar PDFs nativos (texto) **e** escaneados (OCR).
 - `confiancaExtracao`: float 0..1. Quando `< 0.75`, frontend pode alertar visualmente.
 - Se campos críticos ausentes (CPF, nome ou especialidade): ainda retorna 200 com strings vazias nesses campos + `confiancaExtracao` baixa. O atendente corrigirá na Revisão.
@@ -439,6 +448,7 @@ file: <binary>  (application/pdf, máx 10 MB)
 - **NÃO persistir** nada neste endpoint. É apenas extração.
 
 **Erros**:
+
 - `400 ARQUIVO_INVALIDO` — não é PDF válido
 - `413 ARQUIVO_MUITO_GRANDE` — acima de 10 MB
 - `415 MIME_NAO_SUPORTADO`
@@ -475,12 +485,13 @@ Body JSON em `payload`:
 
 ```json
 {
-  "id": "enc-uuid",
-  "protocolo": "UBS-2026-100137"
+	"id": "enc-uuid",
+	"protocolo": "UBS-2026-100137"
 }
 ```
 
 **Regras**:
+
 - Status inicial: `AGUARDANDO_REGULACAO`.
 - Gerar `protocolo` único no padrão `UBS-AAAA-NNNNNN`.
 - Registrar evento timeline `CRIADO`.
@@ -489,30 +500,33 @@ Body JSON em `payload`:
 - Atendente e unidade derivam do JWT.
 
 **Erros**:
+
 - `422 DADOS_OBRIGATORIOS_AUSENTES` — CPF, nome, especialidade ou CID-10 faltando
 - `422 CID_INVALIDO`
 
 ### 5.3. `GET /encaminhamentos`
 
 Lista encaminhamentos. Consumido em:
+
 - [src/routes/ubs/historico/+layout.svelte](src/routes/ubs/historico/+layout.svelte) (todos/por status)
 - [src/routes/ubs/dashboard/+page.svelte](src/routes/ubs/dashboard/+page.svelte) (últimos 6)
 - [src/routes/ubs/dashboard/fila/+page.svelte](src/routes/ubs/dashboard/fila/+page.svelte) (aguardando + pendências)
 
 **Query params**:
 
-| Param | Tipo | Default | Descrição |
-|---|---|---|---|
-| `status` | StatusEncaminhamento\|null | todos | Filtro por status |
-| `pacienteId` | string | — | Todos encaminhamentos de um paciente |
-| `desde` | ISO date | −30d | Limite inferior do `criadoEm` |
-| `ate` | ISO date | hoje | Limite superior |
-| `limit` | number | 100 | Máximo de resultados |
-| `sort` | string | `-criadoEm` | Ordenação |
+| Param        | Tipo                       | Default     | Descrição                            |
+| ------------ | -------------------------- | ----------- | ------------------------------------ |
+| `status`     | StatusEncaminhamento\|null | todos       | Filtro por status                    |
+| `pacienteId` | string                     | —           | Todos encaminhamentos de um paciente |
+| `desde`      | ISO date                   | −30d        | Limite inferior do `criadoEm`        |
+| `ate`        | ISO date                   | hoje        | Limite superior                      |
+| `limit`      | number                     | 100         | Máximo de resultados                 |
+| `sort`       | string                     | `-criadoEm` | Ordenação                            |
 
 **Response 200**: `Encaminhamento[]` (shape completo abaixo em §9).
 
 **Regras**:
+
 - Escopo padrão: UBS do atendente. RBAC pode ampliar (ex.: coordenador vê todas as UBS).
 
 ### 5.4. `GET /encaminhamentos/:id`
@@ -543,6 +557,7 @@ tipoAnexo[1]: EXAME
 **Response 200**: `Encaminhamento` atualizado (com status novo + anexos + timeline estendida).
 
 **Regras obrigatórias**:
+
 1. Só aceita quando `status atual === PENDENCIA_DOCUMENTO`. Caso contrário `409 ENCAMINHAMENTO_NAO_EM_PENDENCIA`.
 2. Adicionar eventos timeline, **nesta ordem**:
    - `OBSERVACAO` — "Pendência respondida pelo atendente" + `descricao = nota`
@@ -555,6 +570,7 @@ tipoAnexo[1]: EXAME
 7. Disparar notificação à Regulação (fila/webhook).
 
 **Erros**:
+
 - `409 ENCAMINHAMENTO_NAO_EM_PENDENCIA`
 - `422 NENHUMA_ACAO_FORNECIDA` — nem anexo, nem nota
 
@@ -568,19 +584,20 @@ Aprovação final pela Regulação SMS. Consumido em [src/lib/presentation/compo
 
 ```json
 {
-  "nota": "Paciente inserido na fila da Cardiologia · Hospital Ana Nery.",
-  "agendamentoPrevisto": "2026-05-14"
+	"nota": "Paciente inserido na fila da Cardiologia · Hospital Ana Nery.",
+	"agendamentoPrevisto": "2026-05-14"
 }
 ```
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `nota` | `string` | não | Observação do regulador. Se presente, vira evento `OBSERVACAO` na timeline. |
-| `agendamentoPrevisto` | `string` (YYYY-MM-DD) | não | Data prevista do atendimento especializado. Se presente, vira evento `AGENDADO` e preenche o campo `agendamentoPrevisto` do encaminhamento. |
+| Campo                 | Tipo                  | Obrigatório | Descrição                                                                                                                                   |
+| --------------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nota`                | `string`              | não         | Observação do regulador. Se presente, vira evento `OBSERVACAO` na timeline.                                                                 |
+| `agendamentoPrevisto` | `string` (YYYY-MM-DD) | não         | Data prevista do atendimento especializado. Se presente, vira evento `AGENDADO` e preenche o campo `agendamentoPrevisto` do encaminhamento. |
 
 **Response 200**: `Encaminhamento` atualizado.
 
 **Regras obrigatórias**:
+
 1. Só aceita quando `status atual === AGUARDANDO_REGULACAO`. Caso contrário `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`.
 2. Eventos timeline adicionados, nesta ordem:
    - `OBSERVACAO` (opcional, apenas se `nota` foi informada)
@@ -592,6 +609,7 @@ Aprovação final pela Regulação SMS. Consumido em [src/lib/presentation/compo
 6. Notificar UBS de origem (fila/webhook).
 
 **Erros**:
+
 - `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 - `403 PERMISSAO_INSUFICIENTE`
 
@@ -605,17 +623,18 @@ Solicita correção/complementação à UBS. Consumido em [src/lib/presentation/
 
 ```json
 {
-  "observacao": "Anexar laudo médico com data inferior a 90 dias. O laudo atual está desatualizado (datado de 12/2024). Reenviar após correção."
+	"observacao": "Anexar laudo médico com data inferior a 90 dias. O laudo atual está desatualizado (datado de 12/2024). Reenviar após correção."
 }
 ```
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `observacao` | `string` | **sim** | Texto da pendência (mínimo 10 caracteres recomendado). Vira o campo `observacoesRegulacao` e fica visível ao atendente na UBS. |
+| Campo        | Tipo     | Obrigatório | Descrição                                                                                                                      |
+| ------------ | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `observacao` | `string` | **sim**     | Texto da pendência (mínimo 10 caracteres recomendado). Vira o campo `observacoesRegulacao` e fica visível ao atendente na UBS. |
 
 **Response 200**: `Encaminhamento` atualizado.
 
 **Regras obrigatórias**:
+
 1. Só aceita quando `status atual === AGUARDANDO_REGULACAO`. Caso contrário `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`.
 2. Preencher `observacoesRegulacao` com o texto da request.
 3. Evento timeline `PENDENCIA_REGISTRADA` — autor = regulador autenticado, `descricao` = observação.
@@ -624,6 +643,7 @@ Solicita correção/complementação à UBS. Consumido em [src/lib/presentation/
 6. Notificar UBS de origem.
 
 **Erros**:
+
 - `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 - `422 OBSERVACAO_OBRIGATORIA` — observação vazia ou ausente
 - `403 PERMISSAO_INSUFICIENTE`
@@ -638,17 +658,18 @@ Rejeição **definitiva** (sem possibilidade de reenvio pela UBS). Consumido em 
 
 ```json
 {
-  "motivo": "Paciente não atende aos critérios de protocolo para a especialidade. Indicar tratamento conservador na atenção básica."
+	"motivo": "Paciente não atende aos critérios de protocolo para a especialidade. Indicar tratamento conservador na atenção básica."
 }
 ```
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `motivo` | `string` | **sim** | Justificativa clara da rejeição (mínimo 10 caracteres recomendado). Vai para o campo `descricao` do evento `REJEITADO` na timeline. |
+| Campo    | Tipo     | Obrigatório | Descrição                                                                                                                           |
+| -------- | -------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `motivo` | `string` | **sim**     | Justificativa clara da rejeição (mínimo 10 caracteres recomendado). Vai para o campo `descricao` do evento `REJEITADO` na timeline. |
 
 **Response 200**: `Encaminhamento` atualizado.
 
 **Regras obrigatórias**:
+
 1. Só aceita quando `status atual === AGUARDANDO_REGULACAO`. Caso contrário `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`.
 2. Evento timeline `REJEITADO` — autor = regulador autenticado, `descricao` = motivo.
 3. Mudar `status` para `REJEITADO`.
@@ -658,6 +679,7 @@ Rejeição **definitiva** (sem possibilidade de reenvio pela UBS). Consumido em 
 7. Rejeição é **terminal** — nenhuma outra transição é permitida depois (UBS não pode reenviar o mesmo protocolo).
 
 **Erros**:
+
 - `409 ENCAMINHAMENTO_NAO_AGUARDANDO_REGULACAO`
 - `422 MOTIVO_OBRIGATORIO` — motivo vazio ou ausente
 - `403 PERMISSAO_INSUFICIENTE`
@@ -680,6 +702,7 @@ observacao: <string obrigatório — resumo curado da resposta>
 **Response 200**: `Encaminhamento` atualizado (com `respostaSUS` preenchido + novo evento timeline + novo anexo).
 
 **Regras obrigatórias**:
+
 1. Só aceita quando `status atual === APROVADO`. Caso contrário `409 ENCAMINHAMENTO_NAO_APROVADO`.
 2. Só aceita se `respostaSUS` **ainda não estiver presente** no encaminhamento. Caso contrário `409 RESPOSTA_SUS_JA_REGISTRADA` (evita duplicação; regras de substituição futura ficarão em endpoint PUT separado).
 3. Validar `file` não vazio e MIME `application/pdf`. Senão `422 PDF_RESPOSTA_OBRIGATORIO` ou `415 MIME_NAO_SUPORTADO`.
@@ -702,6 +725,7 @@ observacao: <string obrigatório — resumo curado da resposta>
 9. Notificar UBS de origem (webhook/fila · evento `resposta_sus.registrada`) — a UBS pode então contatar o paciente com a resposta oficial.
 
 **Erros**:
+
 - `409 ENCAMINHAMENTO_NAO_APROVADO`
 - `409 RESPOSTA_SUS_JA_REGISTRADA`
 - `413 ARQUIVO_MUITO_GRANDE`
@@ -717,12 +741,12 @@ Endpoint **agregado** que alimenta o file-manager de Ingestões da Secretaria (`
 
 **Query params** (progressivo — quanto mais parâmetros, mais profundo):
 
-| Params enviados | Retorna |
-|---|---|
-| nenhum | `ArvoreUbsNode[]` (nível 1: UBSs da prefeitura) |
-| `?ubsId=...` | `ArvoreAnoNode[]` (nível 2: anos daquela UBS) |
-| `?ubsId=...&ano=2026` | `ArvoreMesNode[]` (nível 3: meses do ano) |
-| `?ubsId=...&ano=2026&mes=4` | `ArvoreDiaNode[]` (nível 4: dias do mês) |
+| Params enviados             | Retorna                                         |
+| --------------------------- | ----------------------------------------------- |
+| nenhum                      | `ArvoreUbsNode[]` (nível 1: UBSs da prefeitura) |
+| `?ubsId=...`                | `ArvoreAnoNode[]` (nível 2: anos daquela UBS)   |
+| `?ubsId=...&ano=2026`       | `ArvoreMesNode[]` (nível 3: meses do ano)       |
+| `?ubsId=...&ano=2026&mes=4` | `ArvoreDiaNode[]` (nível 4: dias do mês)        |
 
 Para o **nível 5** (lista de encaminhamentos de um dia específico) → usar `GET /encaminhamentos?desde=YYYY-MM-DD&ate=YYYY-MM-DD` (endpoint já existente).
 
@@ -730,18 +754,18 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → usar `G
 
 ```json
 [
-  {
-    "ubsId": "ubs-central",
-    "nome": "UBS CENTRAL",
-    "totalEncaminhamentos": 248,
-    "anoMaisRecente": 2026,
-    "statusContagem": {
-      "aguardando": 18,
-      "pendencia": 4,
-      "aprovado": 210,
-      "rejeitado": 16
-    }
-  }
+	{
+		"ubsId": "ubs-central",
+		"nome": "UBS CENTRAL",
+		"totalEncaminhamentos": 248,
+		"anoMaisRecente": 2026,
+		"statusContagem": {
+			"aguardando": 18,
+			"pendencia": 4,
+			"aprovado": 210,
+			"rejeitado": 16
+		}
+	}
 ]
 ```
 
@@ -759,6 +783,7 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → usar `G
 **Response 200 (nível 4 · dias)**: mesma estrutura com campo `dia` (1-31).
 
 **Regras obrigatórias**:
+
 1. Escopo automático por `prefeituraId` do JWT (regulador só vê UBSs da sua prefeitura).
 2. UBSs sem nenhum encaminhamento **podem** aparecer com `totalEncaminhamentos: 0` (para o file-manager mostrar unidades recém-cadastradas).
 3. Ordenação padrão:
@@ -769,6 +794,7 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → usar `G
 4. `statusContagem` é calculado apenas sobre os encaminhamentos filtrados pelo caminho hierárquico (UBS + ano + mês conforme os params).
 
 **Erros**:
+
 - `400 PARAMS_INCOMPATIVEIS` — ex.: `mes` sem `ano`.
 - `404 UBS_NAO_ENCONTRADA` — `ubsId` inválido ou fora do escopo.
 
@@ -778,7 +804,7 @@ Para o **nível 5** (lista de encaminhamentos de um dia específico) → usar `G
 
 ## 6. Pacientes (PEC · Prontuário Eletrônico do Cidadão)
 
-Consumido em [src/routes/ubs/pacientes/*](src/routes/ubs/pacientes/). Fonte mock: [src/lib/infrastructure/api/pacientesApi.ts](src/lib/infrastructure/api/pacientesApi.ts).
+Consumido em [src/routes/ubs/pacientes/\*](src/routes/ubs/pacientes/). Fonte mock: [src/lib/infrastructure/api/pacientesApi.ts](src/lib/infrastructure/api/pacientesApi.ts).
 
 ### 6.1. `GET /pacientes`
 
@@ -788,12 +814,12 @@ Consumido em [src/routes/ubs/pacientes/+page.svelte](src/routes/ubs/pacientes/+p
 
 **Query params**:
 
-| Param | Descrição |
-|---|---|
-| `q` | busca textual (nome, CPF, Cartão SUS, equipe ESF) |
-| `filtro` | `COM_CRONICAS` \| `COM_ENCAMINHAMENTOS` \| `SEM_ATENDIMENTO_90D` |
-| `equipeId` | id da equipe ESF |
-| `microarea` | ex. "03" |
+| Param       | Descrição                                                        |
+| ----------- | ---------------------------------------------------------------- |
+| `q`         | busca textual (nome, CPF, Cartão SUS, equipe ESF)                |
+| `filtro`    | `COM_CRONICAS` \| `COM_ENCAMINHAMENTOS` \| `SEM_ATENDIMENTO_90D` |
+| `equipeId`  | id da equipe ESF                                                 |
+| `microarea` | ex. "03"                                                         |
 
 **Response 200**: `PacienteResumo[]` (ver §9).
 
@@ -806,6 +832,7 @@ Consumido em todas as sub-tabs do paciente.
 **Response 200**: `PacienteCompleto` (ver §9).
 
 **Regras**:
+
 - Escopo: paciente deve estar vinculado à UBS do atendente (ou o atendente ter role que autorize cross-UBS).
 - `encaminhamentosIds`: apenas IDs; o detalhe é obtido em `GET /encaminhamentos/:id`. O frontend cruza localmente com `GET /encaminhamentos?pacienteId=:id` na sub-tab de encaminhamentos.
 
@@ -842,11 +869,11 @@ Solicita geração de novo relatório. Geração pode ser **assíncrona** (recom
 
 ```json
 {
-  "tipo": "PRODUCAO_INDIVIDUAL",
-  "dataInicial": "2026-04-01",
-  "dataFinal": "2026-04-22",
-  "formato": "PDF",
-  "filtros": { "especialidade": "Cardiologia" }
+	"tipo": "PRODUCAO_INDIVIDUAL",
+	"dataInicial": "2026-04-01",
+	"dataFinal": "2026-04-22",
+	"formato": "PDF",
+	"filtros": { "especialidade": "Cardiologia" }
 }
 ```
 
@@ -858,9 +885,9 @@ Solicita geração de novo relatório. Geração pode ser **assíncrona** (recom
 
 ```json
 {
-  "id": "rel-...",
-  "titulo": "Produção Individual · 01/04/2026 – 22/04/2026",
-  "status": "PROCESSANDO"
+	"id": "rel-...",
+	"titulo": "Produção Individual · 01/04/2026 – 22/04/2026",
+	"status": "PROCESSANDO"
 }
 ```
 
@@ -870,14 +897,14 @@ Frontend faz polling em `GET /relatorios/:id` até `status === DISPONIVEL`. Alte
 
 ```json
 {
-  "id": "rel-...",
-  "titulo": "...",
-  "tipo": "PRODUCAO_INDIVIDUAL",
-  "periodo": "01/04/2026 – 22/04/2026",
-  "formato": "PDF",
-  "geradoEm": "2026-04-22T14:32:18.000Z",
-  "tamanhoKb": 284,
-  "status": "DISPONIVEL"
+	"id": "rel-...",
+	"titulo": "...",
+	"tipo": "PRODUCAO_INDIVIDUAL",
+	"periodo": "01/04/2026 – 22/04/2026",
+	"formato": "PDF",
+	"geradoEm": "2026-04-22T14:32:18.000Z",
+	"tamanhoKb": 284,
+	"status": "DISPONIVEL"
 }
 ```
 
@@ -894,15 +921,15 @@ Content-Disposition: attachment; filename="producao-individual-202604.pdf"
 
 ### 7.4. Tipos de relatório
 
-| `tipo` | Descrição | Escopo |
-|---|---|---|
-| `PRODUCAO_INDIVIDUAL` | Volume do próprio atendente por dia/semana/mês. | Atendente autenticado |
-| `ENCAMINHAMENTOS_POR_ESPECIALIDADE` | Ranking de especialidades. | UBS |
-| `FILA_REGULACAO` | Aguardando + tempo médio por prioridade. | UBS |
-| `PENDENCIAS_RESOLVIDAS` | Readequações feitas no período. | Atendente |
-| `TFD_CUSTOS` | Viagens custeadas + valores. | UBS |
-| `VACINACAO_UBS` | Doses aplicadas por vacina / campanha. | UBS |
-| `BUSCA_ATIVA` | Pacientes sem atendimento >90d. | UBS |
+| `tipo`                              | Descrição                                       | Escopo                |
+| ----------------------------------- | ----------------------------------------------- | --------------------- |
+| `PRODUCAO_INDIVIDUAL`               | Volume do próprio atendente por dia/semana/mês. | Atendente autenticado |
+| `ENCAMINHAMENTOS_POR_ESPECIALIDADE` | Ranking de especialidades.                      | UBS                   |
+| `FILA_REGULACAO`                    | Aguardando + tempo médio por prioridade.        | UBS                   |
+| `PENDENCIAS_RESOLVIDAS`             | Readequações feitas no período.                 | Atendente             |
+| `TFD_CUSTOS`                        | Viagens custeadas + valores.                    | UBS                   |
+| `VACINACAO_UBS`                     | Doses aplicadas por vacina / campanha.          | UBS                   |
+| `BUSCA_ATIVA`                       | Pacientes sem atendimento >90d.                 | UBS                   |
 
 ---
 
@@ -936,92 +963,92 @@ Definições exatas que o backend deve refletir. **Palavras em `UPPER_CASE` são
 
 ```ts
 type StatusEncaminhamento =
-  | 'RASCUNHO'
-  | 'AGUARDANDO_REGULACAO'
-  | 'PENDENCIA_DOCUMENTO'
-  | 'APROVADO'
-  | 'REJEITADO';
+	| 'RASCUNHO'
+	| 'AGUARDANDO_REGULACAO'
+	| 'PENDENCIA_DOCUMENTO'
+	| 'APROVADO'
+	| 'REJEITADO';
 
 type PrioridadeClinica = 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' | 'EMERGENCIA';
 
 interface Paciente {
-  nome: string;
-  cpf: string;               // formato "123.456.789-00"
-  cartaoSus: string;         // formato "704 8052 9384 0012"
-  dataNascimento: string;    // YYYY-MM-DD
-  sexo: 'M' | 'F' | 'OUTRO';
-  telefone: string;
-  endereco: string;
+	nome: string;
+	cpf: string; // formato "123.456.789-00"
+	cartaoSus: string; // formato "704 8052 9384 0012"
+	dataNascimento: string; // YYYY-MM-DD
+	sexo: 'M' | 'F' | 'OUTRO';
+	telefone: string;
+	endereco: string;
 }
 
 interface SolicitacaoMedica {
-  medicoSolicitante: string;
-  crm: string;               // ex.: "CRM/BA 28.471"
-  especialidadeSolicitada: string;
-  cid10: string;             // ex.: "I10"
-  cidDescricao: string;
-  justificativaClinica: string;
-  prioridade: PrioridadeClinica;
-  dataSolicitacao: string;   // YYYY-MM-DD
+	medicoSolicitante: string;
+	crm: string; // ex.: "CRM/BA 28.471"
+	especialidadeSolicitada: string;
+	cid10: string; // ex.: "I10"
+	cidDescricao: string;
+	justificativaClinica: string;
+	prioridade: PrioridadeClinica;
+	dataSolicitacao: string; // YYYY-MM-DD
 }
 
 interface AnexoDocumento {
-  id: string;
-  nome: string;
-  tipo: 'SOLICITACAO' | 'RG' | 'CPF' | 'CARTAO_SUS' | 'EXAME' | 'LAUDO' | 'OUTRO';
-  tamanhoKb: number;
-  uploadEm: string;          // ISO 8601
+	id: string;
+	nome: string;
+	tipo: 'SOLICITACAO' | 'RG' | 'CPF' | 'CARTAO_SUS' | 'EXAME' | 'LAUDO' | 'OUTRO';
+	tamanhoKb: number;
+	uploadEm: string; // ISO 8601
 }
 
 type TipoEventoTimeline =
-  | 'CRIADO'
-  | 'DOCUMENTO_ANEXADO'
-  | 'ENVIADO_REGULACAO'
-  | 'PENDENCIA_REGISTRADA'
-  | 'APROVADO'
-  | 'REJEITADO'
-  | 'AGENDADO'
-  | 'OBSERVACAO';
+	| 'CRIADO'
+	| 'DOCUMENTO_ANEXADO'
+	| 'ENVIADO_REGULACAO'
+	| 'PENDENCIA_REGISTRADA'
+	| 'APROVADO'
+	| 'REJEITADO'
+	| 'AGENDADO'
+	| 'OBSERVACAO';
 
 interface EventoTimeline {
-  id: string;
-  tipo: TipoEventoTimeline;
-  titulo: string;
-  descricao: string;
-  autor: string;             // ex.: "MATEUS SANTANA" ou "SISTEMA"
-  autorPapel: string;        // ex.: "Atendente · UBS Central"
-  em: string;                // ISO 8601
+	id: string;
+	tipo: TipoEventoTimeline;
+	titulo: string;
+	descricao: string;
+	autor: string; // ex.: "MATEUS SANTANA" ou "SISTEMA"
+	autorPapel: string; // ex.: "Atendente · UBS Central"
+	em: string; // ISO 8601
 }
 
 interface Encaminhamento {
-  id: string;
-  protocolo: string;                    // UBS-AAAA-NNNNNN
-  paciente: Paciente;
-  solicitacao: SolicitacaoMedica;
-  anexos: AnexoDocumento[];
-  status: StatusEncaminhamento;
-  criadoEm: string;                     // ISO 8601
-  atualizadoEm: string;                 // ISO 8601
-  unidadeOrigem: string;                // ex.: "UBS CENTRAL - ÁGUAS BELAS"
-  atendenteResponsavel: string;
-  timeline?: EventoTimeline[];
-  observacoesRegulacao?: string;
-  agendamentoPrevisto?: string | null;  // ISO 8601 quando APROVADO
+	id: string;
+	protocolo: string; // UBS-AAAA-NNNNNN
+	paciente: Paciente;
+	solicitacao: SolicitacaoMedica;
+	anexos: AnexoDocumento[];
+	status: StatusEncaminhamento;
+	criadoEm: string; // ISO 8601
+	atualizadoEm: string; // ISO 8601
+	unidadeOrigem: string; // ex.: "UBS CENTRAL - ÁGUAS BELAS"
+	atendenteResponsavel: string;
+	timeline?: EventoTimeline[];
+	observacoesRegulacao?: string;
+	agendamentoPrevisto?: string | null; // ISO 8601 quando APROVADO
 }
 
 interface MetricasDashboard {
-  encaminhamentosHoje: number;
-  aguardandoRegulacao: number;
-  pendenciasDocumento: number;
-  aprovadosHoje: number;
-  tempoMedioConsolidacaoSegundos: number;
-  encaminhamentosSemana: number;
+	encaminhamentosHoje: number;
+	aguardandoRegulacao: number;
+	pendenciasDocumento: number;
+	aprovadosHoje: number;
+	tempoMedioConsolidacaoSegundos: number;
+	encaminhamentosSemana: number;
 }
 
 interface ExtracaoPdfResultado {
-  paciente: Paciente;
-  solicitacao: SolicitacaoMedica;
-  confiancaExtracao: number;            // 0.0 a 1.0
+	paciente: Paciente;
+	solicitacao: SolicitacaoMedica;
+	confiancaExtracao: number; // 0.0 a 1.0
 }
 ```
 
@@ -1030,161 +1057,157 @@ interface ExtracaoPdfResultado {
 ```ts
 type Sexo = 'M' | 'F' | 'OUTRO';
 
-type GrupoSanguineo =
-  | 'A+' | 'A-'
-  | 'B+' | 'B-'
-  | 'AB+' | 'AB-'
-  | 'O+' | 'O-'
-  | 'NAO_INFORMADO';
+type GrupoSanguineo = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'NAO_INFORMADO';
 
-type EstadoCivil =
-  | 'SOLTEIRO' | 'CASADO' | 'DIVORCIADO'
-  | 'VIUVO' | 'UNIAO_ESTAVEL' | 'OUTRO';
+type EstadoCivil = 'SOLTEIRO' | 'CASADO' | 'DIVORCIADO' | 'VIUVO' | 'UNIAO_ESTAVEL' | 'OUTRO';
 
-type RacaCor =
-  | 'BRANCA' | 'PRETA' | 'PARDA'
-  | 'AMARELA' | 'INDIGENA' | 'NAO_INFORMADA';
+type RacaCor = 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA' | 'NAO_INFORMADA';
 
 interface Alergia {
-  substancia: string;
-  tipo: 'MEDICAMENTO' | 'ALIMENTO' | 'AMBIENTAL' | 'OUTRO';
-  gravidade: 'LEVE' | 'MODERADA' | 'GRAVE';
-  observacao?: string;
+	substancia: string;
+	tipo: 'MEDICAMENTO' | 'ALIMENTO' | 'AMBIENTAL' | 'OUTRO';
+	gravidade: 'LEVE' | 'MODERADA' | 'GRAVE';
+	observacao?: string;
 }
 
 interface CondicaoCronica {
-  cid10: string;
-  descricao: string;
-  desde: string;              // YYYY-MM-DD
-  ativo: boolean;
-  observacao?: string;
+	cid10: string;
+	descricao: string;
+	desde: string; // YYYY-MM-DD
+	ativo: boolean;
+	observacao?: string;
 }
 
 interface MedicamentoEmUso {
-  nome: string;
-  dosagem: string;            // ex.: "50 mg"
-  frequencia: string;         // ex.: "1x ao dia · manhã"
-  desde: string;              // YYYY-MM-DD
-  prescritor: string;
-  ativo: boolean;
+	nome: string;
+	dosagem: string; // ex.: "50 mg"
+	frequencia: string; // ex.: "1x ao dia · manhã"
+	desde: string; // YYYY-MM-DD
+	prescritor: string;
+	ativo: boolean;
 }
 
 type TipoAtendimento =
-  | 'CONSULTA_MEDICA' | 'ENFERMAGEM' | 'VACINACAO'
-  | 'CURATIVO' | 'ODONTOLOGICO' | 'PROCEDIMENTO' | 'ACOLHIMENTO';
+	| 'CONSULTA_MEDICA'
+	| 'ENFERMAGEM'
+	| 'VACINACAO'
+	| 'CURATIVO'
+	| 'ODONTOLOGICO'
+	| 'PROCEDIMENTO'
+	| 'ACOLHIMENTO';
 
 interface Atendimento {
-  id: string;
-  data: string;                    // ISO 8601
-  tipo: TipoAtendimento;
-  profissional: string;
-  registroProfissional: string;    // CRM/COREN/CRO
-  especialidade: string;
-  unidade: string;
-  queixaPrincipal: string;
-  diagnostico: string;
-  cid10: string;
-  conduta: string;
-  prescricaoResumo?: string;
+	id: string;
+	data: string; // ISO 8601
+	tipo: TipoAtendimento;
+	profissional: string;
+	registroProfissional: string; // CRM/COREN/CRO
+	especialidade: string;
+	unidade: string;
+	queixaPrincipal: string;
+	diagnostico: string;
+	cid10: string;
+	conduta: string;
+	prescricaoResumo?: string;
 }
 
 type StatusViagemTFD = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'EM_ANDAMENTO';
 
 interface ViagemTFD {
-  id: string;
-  protocolo: string;              // TFD-AAAA-PPPNNN
-  dataIda: string;                // ISO 8601
-  dataVolta: string;              // ISO 8601
-  destino: string;                // ex.: "SALVADOR / BA"
-  unidadeDestino: string;
-  motivo: string;
-  especialidade: string;
-  acompanhante: boolean;
-  transporte: 'VAN_SMS' | 'AMBULANCIA' | 'PASSAGEM_RODOVIARIA' | 'PASSAGEM_AEREA';
-  status: StatusViagemTFD;
-  custoEstimadoBRL: number;
+	id: string;
+	protocolo: string; // TFD-AAAA-PPPNNN
+	dataIda: string; // ISO 8601
+	dataVolta: string; // ISO 8601
+	destino: string; // ex.: "SALVADOR / BA"
+	unidadeDestino: string;
+	motivo: string;
+	especialidade: string;
+	acompanhante: boolean;
+	transporte: 'VAN_SMS' | 'AMBULANCIA' | 'PASSAGEM_RODOVIARIA' | 'PASSAGEM_AEREA';
+	status: StatusViagemTFD;
+	custoEstimadoBRL: number;
 }
 
 type ResultadoExame = 'NORMAL' | 'ALTERADO' | 'CRITICO' | 'PENDENTE';
 
 interface ExameRealizado {
-  id: string;
-  data: string;                   // ISO 8601
-  tipo: string;                   // ex.: "Hemograma completo"
-  categoria: 'LABORATORIAL' | 'IMAGEM' | 'FUNCIONAL' | 'OUTROS';
-  solicitante: string;
-  unidadeExecutora: string;
-  resultado: ResultadoExame;
-  observacao?: string;
+	id: string;
+	data: string; // ISO 8601
+	tipo: string; // ex.: "Hemograma completo"
+	categoria: 'LABORATORIAL' | 'IMAGEM' | 'FUNCIONAL' | 'OUTROS';
+	solicitante: string;
+	unidadeExecutora: string;
+	resultado: ResultadoExame;
+	observacao?: string;
 }
 
 interface VacinaAplicada {
-  id: string;
-  data: string;                   // ISO 8601
-  vacina: string;
-  dose: string;                   // ex.: "Reforço"
-  lote: string;
-  aplicador: string;
-  unidade: string;
-  via: 'INTRAMUSCULAR' | 'SUBCUTANEA' | 'ORAL' | 'INTRADERMICA';
+	id: string;
+	data: string; // ISO 8601
+	vacina: string;
+	dose: string; // ex.: "Reforço"
+	lote: string;
+	aplicador: string;
+	unidade: string;
+	via: 'INTRAMUSCULAR' | 'SUBCUTANEA' | 'ORAL' | 'INTRADERMICA';
 }
 
 interface MedicoAtendente {
-  nome: string;
-  registro: string;
-  especialidade: string;
-  unidade: string;
-  ultimaConsulta: string;         // ISO 8601
-  totalConsultas: number;
+	nome: string;
+	registro: string;
+	especialidade: string;
+	unidade: string;
+	ultimaConsulta: string; // ISO 8601
+	totalConsultas: number;
 }
 
 interface PacienteResumo {
-  id: string;
-  nome: string;
-  nomeSocial?: string;
-  cpf: string;
-  cartaoSus: string;
-  dataNascimento: string;         // YYYY-MM-DD
-  sexo: Sexo;
-  telefone: string;
-  unidadeVinculada: string;
-  equipeSaudeFamilia?: string;    // ex.: "ESF-07 · Dr. Rafael Nunes"
-  ultimoAtendimento?: string;     // ISO 8601
-  condicoesCronicasAtivas: number;
-  encaminhamentosAtivos: number;
-  cadastradoEm: string;           // YYYY-MM-DD
+	id: string;
+	nome: string;
+	nomeSocial?: string;
+	cpf: string;
+	cartaoSus: string;
+	dataNascimento: string; // YYYY-MM-DD
+	sexo: Sexo;
+	telefone: string;
+	unidadeVinculada: string;
+	equipeSaudeFamilia?: string; // ex.: "ESF-07 · Dr. Rafael Nunes"
+	ultimoAtendimento?: string; // ISO 8601
+	condicoesCronicasAtivas: number;
+	encaminhamentosAtivos: number;
+	cadastradoEm: string; // YYYY-MM-DD
 }
 
 interface PacienteCompleto extends PacienteResumo {
-  nomeMae: string;
-  nomePai?: string;
-  estadoCivil: EstadoCivil;
-  escolaridade: string;
-  profissao?: string;
-  racaCor: RacaCor;
-  endereco: string;
-  bairro: string;
-  municipio: string;
-  uf: string;
-  cep: string;
-  telefoneSecundario?: string;
-  email?: string;
+	nomeMae: string;
+	nomePai?: string;
+	estadoCivil: EstadoCivil;
+	escolaridade: string;
+	profissao?: string;
+	racaCor: RacaCor;
+	endereco: string;
+	bairro: string;
+	municipio: string;
+	uf: string;
+	cep: string;
+	telefoneSecundario?: string;
+	email?: string;
 
-  grupoSanguineo: GrupoSanguineo;
-  alergias: Alergia[];
-  condicoesCronicas: CondicaoCronica[];
-  medicamentosEmUso: MedicamentoEmUso[];
-  historicoFamiliar: string[];   // textos livres
+	grupoSanguineo: GrupoSanguineo;
+	alergias: Alergia[];
+	condicoesCronicas: CondicaoCronica[];
+	medicamentosEmUso: MedicamentoEmUso[];
+	historicoFamiliar: string[]; // textos livres
 
-  agenteComunitario?: string;
-  microarea?: string;
+	agenteComunitario?: string;
+	microarea?: string;
 
-  atendimentos: Atendimento[];
-  viagensTFD: ViagemTFD[];
-  exames: ExameRealizado[];
-  vacinacoes: VacinaAplicada[];
-  medicosAtendentes: MedicoAtendente[];
-  encaminhamentosIds: string[];
+	atendimentos: Atendimento[];
+	viagensTFD: ViagemTFD[];
+	exames: ExameRealizado[];
+	vacinacoes: VacinaAplicada[];
+	medicosAtendentes: MedicoAtendente[];
+	encaminhamentosIds: string[];
 }
 ```
 
@@ -1192,81 +1215,81 @@ interface PacienteCompleto extends PacienteResumo {
 
 ```ts
 interface AtendentePerfil {
-  nome: string;
-  iniciais: string;               // ex.: "MS"
-  matricula: string;              // SMS-NNNNNN
-  email: string;
-  cpf: string;
-  telefone: string;
-  dataNascimento: string;         // YYYY-MM-DD
-  cargo: string;
-  funcao: string;
-  lotacao: string;
-  unidade: string;
-  dataAdmissao: string;           // YYYY-MM-DD
+	nome: string;
+	iniciais: string; // ex.: "MS"
+	matricula: string; // SMS-NNNNNN
+	email: string;
+	cpf: string;
+	telefone: string;
+	dataNascimento: string; // YYYY-MM-DD
+	cargo: string;
+	funcao: string;
+	lotacao: string;
+	unidade: string;
+	dataAdmissao: string; // YYYY-MM-DD
 
-  producao: {
-    hoje: number;
-    semana: number;
-    mes: number;
-    ano: number;
-    tempoMedio: string;           // ex.: "3m 02s" (formatado)
-    taxaAprovacao: number;        // 0..100
-    ranking: number;              // 1-based
-    totalAtendentes: number;
-    metaMes: number;
-    porDia: { dia: string; volume: number }[];          // 7 entradas
-    porEspecialidade: { nome: string; volume: number }[]; // top 5
-  };
+	producao: {
+		hoje: number;
+		semana: number;
+		mes: number;
+		ano: number;
+		tempoMedio: string; // ex.: "3m 02s" (formatado)
+		taxaAprovacao: number; // 0..100
+		ranking: number; // 1-based
+		totalAtendentes: number;
+		metaMes: number;
+		porDia: { dia: string; volume: number }[]; // 7 entradas
+		porEspecialidade: { nome: string; volume: number }[]; // top 5
+	};
 
-  seguranca: {
-    senhaAlteradaEm: string;      // YYYY-MM-DD
-    twoFAAtivo: boolean;
-    metodoTwoFA: string;
-    ultimoAcesso: string;
-    ipUltimoAcesso: string;
-    dispositivo: string;
-    localUltimoAcesso: string;
-    tentativasFalhasSemana: number;
-    sessoesAtivas: number;
-    sessaoInatividade: string;    // ex.: "2m 14s"
-    sessaoExpiraEm: string;
-  };
+	seguranca: {
+		senhaAlteradaEm: string; // YYYY-MM-DD
+		twoFAAtivo: boolean;
+		metodoTwoFA: string;
+		ultimoAcesso: string;
+		ipUltimoAcesso: string;
+		dispositivo: string;
+		localUltimoAcesso: string;
+		tentativasFalhasSemana: number;
+		sessoesAtivas: number;
+		sessaoInatividade: string; // ex.: "2m 14s"
+		sessaoExpiraEm: string;
+	};
 
-  atividadeRecente: {
-    em: string;                   // ex.: "22/04/2026 14:28"
-    acao: string;
-    alvo?: string;                // protocolo ou título
-  }[];
+	atividadeRecente: {
+		em: string; // ex.: "22/04/2026 14:28"
+		acao: string;
+		alvo?: string; // protocolo ou título
+	}[];
 }
 
 type TipoRelatorio =
-  | 'PRODUCAO_INDIVIDUAL'
-  | 'ENCAMINHAMENTOS_POR_ESPECIALIDADE'
-  | 'FILA_REGULACAO'
-  | 'PENDENCIAS_RESOLVIDAS'
-  | 'TFD_CUSTOS'
-  | 'VACINACAO_UBS'
-  | 'BUSCA_ATIVA';
+	| 'PRODUCAO_INDIVIDUAL'
+	| 'ENCAMINHAMENTOS_POR_ESPECIALIDADE'
+	| 'FILA_REGULACAO'
+	| 'PENDENCIAS_RESOLVIDAS'
+	| 'TFD_CUSTOS'
+	| 'VACINACAO_UBS'
+	| 'BUSCA_ATIVA';
 
 type FormatoRelatorio = 'PDF' | 'CSV' | 'XLSX';
 
 interface Relatorio {
-  id: string;
-  titulo: string;
-  tipo: TipoRelatorio;
-  periodo: string;                // ex.: "01/04/2026 – 22/04/2026"
-  formato: FormatoRelatorio;
-  geradoEm: string;               // ISO 8601
-  tamanhoKb: number;
-  status: 'DISPONIVEL' | 'PROCESSANDO' | 'FALHA';
+	id: string;
+	titulo: string;
+	tipo: TipoRelatorio;
+	periodo: string; // ex.: "01/04/2026 – 22/04/2026"
+	formato: FormatoRelatorio;
+	geradoEm: string; // ISO 8601
+	tamanhoKb: number;
+	status: 'DISPONIVEL' | 'PROCESSANDO' | 'FALHA';
 }
 
 interface GerarRelatorioPayload {
-  tipo: TipoRelatorio;
-  dataInicial: string;            // YYYY-MM-DD
-  dataFinal: string;              // YYYY-MM-DD
-  formato: FormatoRelatorio;
+	tipo: TipoRelatorio;
+	dataInicial: string; // YYYY-MM-DD
+	dataFinal: string; // YYYY-MM-DD
+	formato: FormatoRelatorio;
 }
 ```
 
@@ -1295,13 +1318,13 @@ interface GerarRelatorioPayload {
 
 **Gates de transição (validação no backend)**:
 
-| De → Para | Endpoint | Role exigido |
-|---|---|---|
-| — → `AGUARDANDO_REGULACAO` | `POST /encaminhamentos` | `ATENDENTE_UBS`/`COORDENADOR_UBS`/`DESENVOLVEDOR` |
-| `AGUARDANDO_REGULACAO` → `APROVADO` | `POST /:id/aprovar` | `REGULADOR_SMS`/`DESENVOLVEDOR` |
-| `AGUARDANDO_REGULACAO` → `PENDENCIA_DOCUMENTO` | `POST /:id/registrar-pendencia` | `REGULADOR_SMS`/`DESENVOLVEDOR` |
-| `AGUARDANDO_REGULACAO` → `REJEITADO` | `POST /:id/rejeitar` | `REGULADOR_SMS`/`DESENVOLVEDOR` |
-| `PENDENCIA_DOCUMENTO` → `AGUARDANDO_REGULACAO` | `POST /:id/resolve-pendencia` | `ATENDENTE_UBS`/`COORDENADOR_UBS`/`DESENVOLVEDOR` |
+| De → Para                                      | Endpoint                        | Role exigido                                      |
+| ---------------------------------------------- | ------------------------------- | ------------------------------------------------- |
+| — → `AGUARDANDO_REGULACAO`                     | `POST /encaminhamentos`         | `ATENDENTE_UBS`/`COORDENADOR_UBS`/`DESENVOLVEDOR` |
+| `AGUARDANDO_REGULACAO` → `APROVADO`            | `POST /:id/aprovar`             | `REGULADOR_SMS`/`DESENVOLVEDOR`                   |
+| `AGUARDANDO_REGULACAO` → `PENDENCIA_DOCUMENTO` | `POST /:id/registrar-pendencia` | `REGULADOR_SMS`/`DESENVOLVEDOR`                   |
+| `AGUARDANDO_REGULACAO` → `REJEITADO`           | `POST /:id/rejeitar`            | `REGULADOR_SMS`/`DESENVOLVEDOR`                   |
+| `PENDENCIA_DOCUMENTO` → `AGUARDANDO_REGULACAO` | `POST /:id/resolve-pendencia`   | `ATENDENTE_UBS`/`COORDENADOR_UBS`/`DESENVOLVEDOR` |
 
 - `APROVADO` e `REJEITADO` são **terminais em termos de status**. Nenhuma transição depois (exceto correção administrativa via DEV, se for o caso).
 - **Enrichment pós-aprovação**: `POST /:id/resposta-sus` anexa o PDF oficial do SUS Federal ao encaminhamento já `APROVADO` — **não é uma transição de status**, só enriquece o registro com `respostaSUS` + evento `RESPOSTA_SUS_RECEBIDA`.
@@ -1336,15 +1359,15 @@ Na readequação (`resolve-pendencia`), **acrescentam-se** novos anexos à lista
 
 ## 11. Latências e SLA esperados (benchmark do mock)
 
-| Operação | Mock atual | SLA alvo |
-|---|---|---|
-| Login | 1.2s | ≤ 1s |
-| Extração OCR de PDF | 2.1s | ≤ 5s (PDF nativo) / ≤ 15s (escaneado) |
-| Consolidação | 1.2s | ≤ 2s |
-| GET listagem (dashboard / histórico / pacientes) | 0.4–0.6s | ≤ 800ms |
-| GET detalhe (enc / paciente) | 0.5s | ≤ 500ms |
-| Resolver pendência | 1.4s | ≤ 3s |
-| Gerar relatório síncrono | 1.6s | ≤ 3s (caso síncrono) |
+| Operação                                         | Mock atual | SLA alvo                              |
+| ------------------------------------------------ | ---------- | ------------------------------------- |
+| Login                                            | 1.2s       | ≤ 1s                                  |
+| Extração OCR de PDF                              | 2.1s       | ≤ 5s (PDF nativo) / ≤ 15s (escaneado) |
+| Consolidação                                     | 1.2s       | ≤ 2s                                  |
+| GET listagem (dashboard / histórico / pacientes) | 0.4–0.6s   | ≤ 800ms                               |
+| GET detalhe (enc / paciente)                     | 0.5s       | ≤ 500ms                               |
+| Resolver pendência                               | 1.4s       | ≤ 3s                                  |
+| Gerar relatório síncrono                         | 1.6s       | ≤ 3s (caso síncrono)                  |
 
 ---
 
@@ -1403,12 +1426,12 @@ Na readequação (`resolve-pendencia`), **acrescentam-se** novos anexos à lista
 
 ## 15. Referências rápidas (arquivos do frontend)
 
-| Arquivo | Finalidade |
-|---|---|
-| [src/lib/domain/models/Encaminhamento.ts](src/lib/domain/models/Encaminhamento.ts) | Tipos core de encaminhamento |
-| [src/lib/domain/models/Paciente.ts](src/lib/domain/models/Paciente.ts) | Tipos do PEC |
-| [src/lib/infrastructure/api/ubsApi.ts](src/lib/infrastructure/api/ubsApi.ts) | Contratos de encaminhamento + dashboard |
-| [src/lib/infrastructure/api/pacientesApi.ts](src/lib/infrastructure/api/pacientesApi.ts) | Contratos de paciente |
-| [src/lib/infrastructure/api/userApi.ts](src/lib/infrastructure/api/userApi.ts) | Contratos de auth, perfil, relatórios |
+| Arquivo                                                                                  | Finalidade                              |
+| ---------------------------------------------------------------------------------------- | --------------------------------------- |
+| [src/lib/domain/models/Encaminhamento.ts](src/lib/domain/models/Encaminhamento.ts)       | Tipos core de encaminhamento            |
+| [src/lib/domain/models/Paciente.ts](src/lib/domain/models/Paciente.ts)                   | Tipos do PEC                            |
+| [src/lib/infrastructure/api/ubsApi.ts](src/lib/infrastructure/api/ubsApi.ts)             | Contratos de encaminhamento + dashboard |
+| [src/lib/infrastructure/api/pacientesApi.ts](src/lib/infrastructure/api/pacientesApi.ts) | Contratos de paciente                   |
+| [src/lib/infrastructure/api/userApi.ts](src/lib/infrastructure/api/userApi.ts)           | Contratos de auth, perfil, relatórios   |
 
 Qualquer divergência entre este documento e os arquivos-fonte acima — **a fonte vence**. Este documento é gerado a partir deles.

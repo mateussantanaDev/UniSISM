@@ -11,7 +11,10 @@
 		Prefeitura
 	} from '$lib/api/types';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
-	import { formatarCargoPerfil, formatarVinculoUsuario } from '$lib/presentation/utils/usuarioUtils';
+	import {
+		formatarCargoPerfil,
+		formatarVinculoUsuario
+	} from '$lib/presentation/utils/usuarioUtils';
 	import {
 		IconAlertTriangle,
 		IconCheck,
@@ -33,9 +36,15 @@
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived<'CEM' | 'CEO'>(ehCeo ? 'CEO' : 'CEM');
-	let rotuloProfissional = $derived(ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista');
+	let rotuloProfissional = $derived(
+		ehCeo ? 'Cirurgião-Dentista Especialista' : 'Médico Especialista'
+	);
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	const DIAS_SEMANA = [
@@ -88,7 +97,9 @@
 	// Reset Senha Form State
 	let formNovaSenha = $state('');
 	let usuarioLogado = $state<any>(null);
-	let isSuperUser = $derived(usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR');
+	let isSuperUser = $derived(
+		usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR'
+	);
 	let isDev = $derived(usuarioLogado?.role === 'DESENVOLVEDOR');
 
 	// Form State - Atribuição de Serviço & Atendimento ao Médico
@@ -116,26 +127,29 @@
 
 			// Se não for Administrador/Desenvolvedor, filtra pela unidade do Centro de Especialidades
 			const superUser = usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR';
-			const query = !superUser && usuarioLogado?.unidadeVinculadaId ? { ubsId: usuarioLogado.unidadeVinculadaId } : undefined;
+			const query =
+				!superUser && usuarioLogado?.unidadeVinculadaId
+					? { ubsId: usuarioLogado.unidadeVinculadaId }
+					: undefined;
 
 			const [resUsers, resEscalas, resEsp, resSalas, resPrefs] = await Promise.all([
-				api.admin.listUsuarios(query).catch(e => {
+				api.admin.listUsuarios(query).catch((e) => {
 					console.error('Erro ao listar usuários:', e);
 					return [] as UsuarioListado[];
 				}),
-				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(e => {
+				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch((e) => {
 					console.error('Erro ao listar escalas:', e);
 					return [] as EscalaMedicoCentro[];
 				}),
-				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch(e => {
+				api.centroGestao.listEspecialidades({ centro: siglaOrgao }).catch((e) => {
 					console.error('Erro ao listar especialidades:', e);
 					return [] as EspecialidadeSigtapCentro[];
 				}),
-				api.centroGestao.listSalas({ centro: siglaOrgao }).catch(e => {
+				api.centroGestao.listSalas({ centro: siglaOrgao }).catch((e) => {
 					console.error('Erro ao listar salas:', e);
 					return [] as SalaConsultorioCentro[];
 				}),
-				api.admin.listPrefeituras().catch(e => {
+				api.admin.listPrefeituras().catch((e) => {
 					console.error('Erro ao listar prefeituras:', e);
 					return [] as Prefeitura[];
 				})
@@ -151,10 +165,12 @@
 			if (usuarioLogado?.prefeituraInfo?.id) {
 				prefeituraConectada = usuarioLogado.prefeituraInfo as any;
 			} else if (usuarioLogado?.prefeituraId) {
-				prefeituraConectada = prefeiturasDisponiveis.find(p => p.id === usuarioLogado.prefeituraId) || null;
+				prefeituraConectada =
+					prefeiturasDisponiveis.find((p) => p.id === usuarioLogado.prefeituraId) || null;
 			}
 			if (!prefeituraConectada && prefeiturasDisponiveis.length > 0) {
-				prefeituraConectada = prefeiturasDisponiveis.find(p => p.ativa) || prefeiturasDisponiveis[0];
+				prefeituraConectada =
+					prefeiturasDisponiveis.find((p) => p.ativa) || prefeiturasDisponiveis[0];
 			}
 			if (!prefeituraConectada) {
 				prefeituraConectada = {
@@ -182,7 +198,7 @@
 	});
 
 	let usuariosFiltrados = $derived.by(() => {
-		return listaUsuarios.filter(u => {
+		return listaUsuarios.filter((u) => {
 			// Restrição de Escopo: Gestor do Centro só vê usuários do Centro de Especialidades
 			if (!isSuperUser && usuarioLogado?.unidadeVinculadaId) {
 				const ubsIdDoUsuario = u.ubs?.id || (u as any).ubsId;
@@ -197,10 +213,24 @@
 			const roleU = ((u as any).perfil || u.role || '').toUpperCase();
 
 			if (ehCeo) {
-				const ehDoCeo = tipoU === 'CEO' || cargoU.includes('CEO') || cargoU.includes('DENTIST') || cargoU.includes('ODONTOL') || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
+				const ehDoCeo =
+					tipoU === 'CEO' ||
+					cargoU.includes('CEO') ||
+					cargoU.includes('DENTIST') ||
+					cargoU.includes('ODONTOL') ||
+					roleU === 'DESENVOLVEDOR' ||
+					roleU === 'ADMIN';
 				if (!ehDoCeo && tipoU && tipoU !== 'CEO') return false;
 			} else {
-				const ehDoCem = tipoU === 'CEM' || cargoU.includes('CEM') || cargoU.includes('MÉDIC') || cargoU.includes('MEDIC') || cargoU.includes('ENFERM') || roleU === 'ENFERMEIRO' || roleU === 'DESENVOLVEDOR' || roleU === 'ADMIN';
+				const ehDoCem =
+					tipoU === 'CEM' ||
+					cargoU.includes('CEM') ||
+					cargoU.includes('MÉDIC') ||
+					cargoU.includes('MEDIC') ||
+					cargoU.includes('ENFERM') ||
+					roleU === 'ENFERMEIRO' ||
+					roleU === 'DESENVOLVEDOR' ||
+					roleU === 'ADMIN';
 				if (!ehDoCem && tipoU && tipoU !== 'CEM') return false;
 			}
 
@@ -233,7 +263,9 @@
 		formEspecialidade = ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada';
 		formRegistroProfissional = '';
 		formSenha = 'Mudar@123';
-		formPrefeituraId = prefeituraConectada?.id || (prefeiturasDisponiveis[0]?.id ?? 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6');
+		formPrefeituraId =
+			prefeituraConectada?.id ||
+			(prefeiturasDisponiveis[0]?.id ?? 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6');
 		modalNovoAberto = true;
 	}
 
@@ -251,7 +283,11 @@
 				? 'Gestão e Operação do Centro de Especialidades Odontológicas'
 				: 'Gestão e Operação do Centro de Especialidades Médicas';
 
-			const prefIdFinal = formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraInfo?.id || 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
+			const prefIdFinal =
+				formPrefeituraId ||
+				prefeituraConectada?.id ||
+				usuarioLogado?.prefeituraInfo?.id ||
+				'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
 
 			await api.admin.createUsuario({
 				nome: formNome.trim(),
@@ -287,7 +323,12 @@
 		formMatricula = u.matricula || '';
 		formPerfil = ((u as any).perfil || u.role) as Role;
 		formTipoUnidade = (u.tipoUnidade || siglaOrgao) as any;
-		formPrefeituraId = u.prefeitura?.id || (u as any).prefeituraId || u.ubs?.prefeitura?.id || prefeituraConectada?.id || '';
+		formPrefeituraId =
+			u.prefeitura?.id ||
+			(u as any).prefeituraId ||
+			u.ubs?.prefeitura?.id ||
+			prefeituraConectada?.id ||
+			'';
 		modalEditarAberto = true;
 	}
 
@@ -303,7 +344,12 @@
 		try {
 			const tipoEfetivo = usuarioEdicao.tipoUnidade || siglaOrgao;
 			const cargoAtualizado = formatarCargoPerfil({ role: formPerfil, tipoUnidade: tipoEfetivo });
-			const prefIdFinal = formPrefeituraId || prefeituraConectada?.id || usuarioLogado?.prefeituraInfo?.id || (usuarioEdicao as any).prefeituraId || 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
+			const prefIdFinal =
+				formPrefeituraId ||
+				prefeituraConectada?.id ||
+				usuarioLogado?.prefeituraInfo?.id ||
+				(usuarioEdicao as any).prefeituraId ||
+				'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
 
 			await api.admin.updateUsuario(usuarioEdicao.id, {
 				nome: formNome.trim(),
@@ -386,10 +432,12 @@
 	}
 
 	function getEscalasDoUsuario(u: UsuarioListado): EscalaMedicoCentro[] {
-		return listaEscalas.filter(escala => {
+		return listaEscalas.filter((escala) => {
 			if (escala.medicoId && escala.medicoId === u.id) return true;
-			if (escala.medicoNome && escala.medicoNome.toLowerCase() === u.nome.toLowerCase()) return true;
-			if (u.matricula && escala.crm && escala.crm.toLowerCase().includes(u.matricula.toLowerCase())) return true;
+			if (escala.medicoNome && escala.medicoNome.toLowerCase() === u.nome.toLowerCase())
+				return true;
+			if (u.matricula && escala.crm && escala.crm.toLowerCase().includes(u.matricula.toLowerCase()))
+				return true;
 			return false;
 		});
 	}
@@ -423,7 +471,7 @@
 	}
 
 	function aoSelecionarEspecialidade(idOuNome: string) {
-		const esp = especialidadesCatalogo.find(e => e.id === idOuNome || e.nome === idOuNome);
+		const esp = especialidadesCatalogo.find((e) => e.id === idOuNome || e.nome === idOuNome);
 		if (esp) {
 			atriEspecialidadeId = esp.id;
 			atriEspecialidadeNome = esp.nome;
@@ -437,7 +485,7 @@
 	function toggleAtriDia(sigla: string) {
 		if (atriDias.includes(sigla)) {
 			if (atriDias.length > 1) {
-				atriDias = atriDias.filter(d => d !== sigla);
+				atriDias = atriDias.filter((d) => d !== sigla);
 			}
 		} else {
 			atriDias = [...atriDias, sigla];
@@ -488,7 +536,11 @@
 
 	async function removerAtribuicao(escala: EscalaMedicoCentro) {
 		if (!escala.id) return;
-		if (!confirm(`Deseja realmente remover a atribuição de "${escala.especialidade}" do profissional ${escala.medicoNome}?`)) {
+		if (
+			!confirm(
+				`Deseja realmente remover a atribuição de "${escala.especialidade}" do profissional ${escala.medicoNome}?`
+			)
+		) {
 			return;
 		}
 
@@ -517,56 +569,77 @@
 
 	<!-- Banner Sucesso Global -->
 	{#if mensagemSucesso}
-		<div class="border-2 border-emerald-700 bg-emerald-50 p-4 font-bold text-emerald-900 flex flex-col gap-1 shadow-sm whitespace-pre-wrap">
+		<div
+			class="flex flex-col gap-1 border-2 border-emerald-700 bg-emerald-50 p-4 font-bold whitespace-pre-wrap text-emerald-900 shadow-sm"
+		>
 			<div class="flex items-center gap-2 text-sm font-black">
-				<span class="bg-emerald-700 text-white px-2 py-0.5 text-xs font-mono">SUCESSO</span>
+				<span class="bg-emerald-700 px-2 py-0.5 font-mono text-xs text-white">SUCESSO</span>
 				<span>OPERAÇÃO EXECUTADA COM SUCESSO</span>
 			</div>
-			<div class="text-xs font-mono font-normal mt-1">{mensagemSucesso}</div>
+			<div class="mt-1 font-mono text-xs font-normal">{mensagemSucesso}</div>
 		</div>
 	{/if}
 
 	{#if erro}
-		<div class="border border-amber-600 bg-amber-50 p-4 text-amber-900 font-semibold flex items-center justify-between">
+		<div
+			class="flex items-center justify-between border border-amber-600 bg-amber-50 p-4 font-semibold text-amber-900"
+		>
 			<span class="flex items-center gap-1.5">
-				<IconAlertTriangle size={15} class="text-amber-700 shrink-0" />
+				<IconAlertTriangle size={15} class="shrink-0 text-amber-700" />
 				<span>{erro}</span>
 			</span>
-			<button onclick={carregarUsuarios} class="border border-amber-800 bg-amber-800 text-white px-3 py-1 text-xs uppercase font-bold">
+			<button
+				onclick={carregarUsuarios}
+				class="border border-amber-800 bg-amber-800 px-3 py-1 text-xs font-bold text-white uppercase"
+			>
 				Recarregar Dados
 			</button>
 		</div>
 	{/if}
 
 	<!-- Indicador de Escopo de Permissão -->
-	<div class="border border-slate-200 bg-white p-3 flex items-center justify-between">
+	<div class="flex items-center justify-between border border-slate-200 bg-white p-3">
 		{#if isSuperUser}
 			<div class="flex items-center gap-2">
-				<span class="bg-indigo-900 text-white px-2 py-0.5 font-bold text-[10px]">ESCOPO GLOBAL</span>
-				<span class="text-slate-700 text-[11px] font-bold">Perfil Administrador/Desenvolvedor — Exibindo todos os usuários cadastrados na rede municipal.</span>
+				<span class="bg-indigo-900 px-2 py-0.5 text-[10px] font-bold text-white">ESCOPO GLOBAL</span
+				>
+				<span class="text-[11px] font-bold text-slate-700"
+					>Perfil Administrador/Desenvolvedor — Exibindo todos os usuários cadastrados na rede
+					municipal.</span
+				>
 			</div>
 		{:else}
 			<div class="flex items-center gap-2">
-				<span class="bg-blue-900 text-white px-2 py-0.5 font-bold text-[10px]">ESCOPO DO CENTRO</span>
-				<span class="text-slate-700 text-[11px] font-bold">Perfil Gestão do Centro — Exibindo exclusivamente a equipe e profissionais vinculados a esta unidade.</span>
+				<span class="bg-blue-900 px-2 py-0.5 text-[10px] font-bold text-white"
+					>ESCOPO DO CENTRO</span
+				>
+				<span class="text-[11px] font-bold text-slate-700"
+					>Perfil Gestão do Centro — Exibindo exclusivamente a equipe e profissionais vinculados a
+					esta unidade.</span
+				>
 			</div>
 		{/if}
-		<span class="text-[10px] text-slate-500">{usuariosFiltrados.length} usuário(s) visível(is)</span>
+		<span class="text-[10px] text-slate-500">{usuariosFiltrados.length} usuário(s) visível(is)</span
+		>
 	</div>
 
 	<!-- Barra Superior de Controle e Filtros -->
-	<section class="border border-slate-200 bg-white p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+	<section
+		class="flex flex-col gap-3 border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between"
+	>
 		<div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
 			<input
 				type="text"
 				placeholder="Buscar por nome, CPF, e-mail ou matrícula..."
 				bind:value={busca}
-				class="border border-slate-300 bg-slate-50 p-2 text-xs flex-1 min-w-[240px]"
+				class="min-w-[240px] flex-1 border border-slate-300 bg-slate-50 p-2 text-xs"
 			/>
 			<select bind:value={filtroPerfil} class="border border-slate-300 bg-white p-2 text-xs">
 				<option value="TODOS">Todos os Perfis</option>
 				<option value="MEDICO">{ehCeo ? 'Cirurgiões-Dentistas' : 'Médicos Especialistas'}</option>
-				<option value="MEDICO_ESPECIALISTA">{ehCeo ? 'Dentistas Plantonistas' : 'Médicos Plantonistas'}</option>
+				<option value="MEDICO_ESPECIALISTA"
+					>{ehCeo ? 'Dentistas Plantonistas' : 'Médicos Plantonistas'}</option
+				>
 				<option value="ENFERMEIRO">Enfermeiro(a) / Triagem</option>
 				<option value="ATENDENTE_CENTRO">Atendentes / Recepção</option>
 				<option value="REGULADOR_SMS">Reguladores / Recepção</option>
@@ -583,7 +656,7 @@
 		<button
 			type="button"
 			onclick={abrirNovoUsuario}
-			class="border border-blue-900 bg-blue-900 text-white px-4 py-2 font-bold text-xs uppercase tracking-wider hover:bg-blue-950 flex items-center gap-1.5 shrink-0"
+			class="flex shrink-0 items-center gap-1.5 border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950"
 		>
 			<span>+ Novo Profissional / Usuário</span>
 		</button>
@@ -591,15 +664,17 @@
 
 	<!-- Tabela de Usuários do Servidor -->
 	{#if carregando}
-		<div class="border border-slate-200 bg-white p-8 text-center text-slate-500 font-mono">
+		<div class="border border-slate-200 bg-white p-8 text-center font-mono text-slate-500">
 			Carregando profissionais cadastrados no servidor...
 		</div>
 	{:else}
-		<section class="border border-slate-200 bg-white overflow-hidden">
+		<section class="overflow-hidden border border-slate-200 bg-white">
 			<div class="overflow-x-auto">
-				<table class="w-full text-left border-collapse">
+				<table class="w-full border-collapse text-left">
 					<thead>
-						<tr class="border-b border-slate-200 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-wider">
+						<tr
+							class="border-b border-slate-200 bg-slate-900 text-[10px] font-bold tracking-wider text-white uppercase"
+						>
 							<th class="p-3">Nome / Profissional</th>
 							<th class="p-3">Perfil & Função</th>
 							<th class="p-3">Serviços & Atendimentos Atribuídos</th>
@@ -609,7 +684,7 @@
 							<th class="p-3 text-right">Ações ERP</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-slate-200 text-xs font-mono">
+					<tbody class="divide-y divide-slate-200 font-mono text-xs">
 						{#if usuariosFiltrados.length === 0}
 							<tr>
 								<td colspan="7" class="p-8 text-center text-slate-500">
@@ -619,19 +694,25 @@
 						{:else}
 							{#each usuariosFiltrados as u (u.id)}
 								<tr class="hover:bg-slate-50">
-									<td class="p-3 font-bold text-slate-900 font-sans">
+									<td class="p-3 font-sans font-bold text-slate-900">
 										<div class="flex items-center gap-2">
-											<div class="flex h-7 w-7 items-center justify-center bg-blue-900 text-[10px] font-bold text-white font-mono">
+											<div
+												class="flex h-7 w-7 items-center justify-center bg-blue-900 font-mono text-[10px] font-bold text-white"
+											>
 												{u.nome.substring(0, 2).toUpperCase()}
 											</div>
 											<div>
 												<div>{u.nome}</div>
-												<div class="text-[10px] text-slate-500 font-mono font-normal">ID: {u.id}</div>
+												<div class="font-mono text-[10px] font-normal text-slate-500">
+													ID: {u.id}
+												</div>
 											</div>
 										</div>
 									</td>
 									<td class="p-3 font-semibold text-blue-900">
-										<span class="bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] text-blue-900 font-bold uppercase">
+										<span
+											class="border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-900 uppercase"
+										>
 											{formatarCargoPerfil(u)}
 										</span>
 									</td>
@@ -639,42 +720,59 @@
 										{#if isProfissional(u)}
 											{@const escalasProf = getEscalasDoUsuario(u)}
 											{#if escalasProf.length > 0}
-												<div class="flex flex-col gap-1 max-w-[280px]">
+												<div class="flex max-w-[280px] flex-col gap-1">
 													<div class="flex items-center gap-1">
-														<span class="bg-indigo-900 text-white px-1.5 py-0.2 text-[9px] font-bold">
+														<span
+															class="py-0.2 bg-indigo-900 px-1.5 text-[9px] font-bold text-white"
+														>
 															{escalasProf.length} SERVIÇO(S) ATRIBUÍDO(S)
 														</span>
 													</div>
 													<div class="flex flex-wrap gap-1">
 														{#each escalasProf as esc}
-															<span class="bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0.5 text-[9px] font-semibold" title="{esc.especialidade} ({esc.diasSemana?.join(', ')})">
+															<span
+																class="border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-800"
+																title="{esc.especialidade} ({esc.diasSemana?.join(', ')})"
+															>
 																<strong class="text-blue-900">{esc.especialidade}</strong>
-																<span class="text-slate-500 font-mono">({esc.diasSemana?.join(', ') || 'Sem dias'})</span>
+																<span class="font-mono text-slate-500"
+																	>({esc.diasSemana?.join(', ') || 'Sem dias'})</span
+																>
 															</span>
 														{/each}
 													</div>
 												</div>
 											{:else}
-												<span class="bg-amber-50 border border-amber-300 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+												<span
+													class="border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900"
+												>
 													Nenhum serviço atribuído
 												</span>
 											{/if}
 										{:else}
-											<span class="text-slate-400 text-[11px]">—</span>
+											<span class="text-[11px] text-slate-400">—</span>
 										{/if}
 									</td>
 									<td class="p-3 text-slate-700">
 										<div>{u.cpf || 'Não informado'}</div>
 										{#if u.matricula}
-											<div class="text-[10px] text-slate-500 font-normal">Matrícula: {u.matricula}</div>
+											<div class="text-[10px] font-normal text-slate-500">
+												Matrícula: {u.matricula}
+											</div>
 										{/if}
 									</td>
 									<td class="p-3 text-slate-700">{u.email || 'Sem e-mail'}</td>
 									<td class="p-3">
 										{#if u.ativo}
-											<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">ATIVO</span>
+											<span
+												class="border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800"
+												>ATIVO</span
+											>
 										{:else}
-											<span class="bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold">INATIVO</span>
+											<span
+												class="border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800"
+												>INATIVO</span
+											>
 										{/if}
 									</td>
 									<td class="p-3 text-right">
@@ -682,7 +780,7 @@
 											{#if isProfissional(u)}
 												<button
 													onclick={() => abrirAtribuicoes(u)}
-													class="border border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 px-2 py-1 text-[10px] font-bold flex items-center gap-1 shrink-0"
+													class="flex shrink-0 items-center gap-1 border border-indigo-700 bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-900 hover:bg-indigo-100"
 													title="Atribuir Atendimentos, Especialidades e Dias da Agenda"
 												>
 													{#if ehCeo}
@@ -695,7 +793,7 @@
 											{/if}
 											<button
 												onclick={() => abrirEditar(u)}
-												class="border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[10px] font-bold flex items-center gap-1"
+												class="flex items-center gap-1 border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold hover:bg-slate-100"
 												title="Editar Credenciais"
 											>
 												<IconEdit size={12} />
@@ -703,7 +801,7 @@
 											</button>
 											<button
 												onclick={() => abrirResetSenha(u)}
-												class="border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-2 py-1 text-[10px] font-bold flex items-center gap-1"
+												class="flex items-center gap-1 border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-900 hover:bg-amber-100"
 												title="Resetar Senha"
 											>
 												<IconKey size={12} />
@@ -711,7 +809,9 @@
 											</button>
 											<button
 												onclick={() => toggleStatusUsuario(u)}
-												class="border px-2 py-1 text-[10px] font-bold {u.ativo ? 'border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'}"
+												class="border px-2 py-1 text-[10px] font-bold {u.ativo
+													? 'border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100'
+													: 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'}"
 											>
 												{u.ativo ? 'Inativar' : 'Ativar'}
 											</button>
@@ -729,34 +829,52 @@
 
 <!-- Modal 1: Novo Profissional / Usuário -->
 {#if modalNovoAberto}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">+ Cadastrar Novo Gestor / Profissional / Usuário</div>
-				<button onclick={() => modalNovoAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+		>
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
+			>
+				<div class="text-xs font-bold tracking-wider uppercase">
+					+ Cadastrar Novo Gestor / Profissional / Usuário
+				</div>
+				<button
+					onclick={() => (modalNovoAberto = false)}
+					class="text-sm font-bold text-slate-400 hover:text-white">✕</button
+				>
 			</div>
 
-			<div class="p-5 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-5">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
-						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+					<div
+						class="flex items-center gap-1.5 border border-rose-200 bg-rose-50 p-2.5 font-bold text-rose-900"
+					>
+						<IconAlertTriangle size={14} class="shrink-0 text-rose-700" />
 						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
 
 				<!-- Prefeitura Vinculada: Dropdown manual quando Desenvolvedor, Card informativo para os demais -->
 				{#if isDev}
-					<div class="border-2 border-indigo-600 bg-indigo-50/70 p-3 flex flex-col gap-2">
+					<div class="flex flex-col gap-2 border-2 border-indigo-600 bg-indigo-50/70 p-3">
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2">
-								<div class="bg-indigo-700 text-white p-1 flex items-center justify-center">
+								<div class="flex items-center justify-center bg-indigo-700 p-1 text-white">
 									<IconBuildingCommunity size={16} />
 								</div>
-								<label for="usr-pref" class="text-[11px] font-bold uppercase text-indigo-950 tracking-wider">
+								<label
+									for="usr-pref"
+									class="text-[11px] font-bold tracking-wider text-indigo-950 uppercase"
+								>
 									Prefeitura / Município Vinculado *
 								</label>
 							</div>
-							<span class="bg-indigo-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
+							<span
+								class="bg-indigo-700 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase"
+							>
 								Modo Desenvolvedor
 							</span>
 						</div>
@@ -764,62 +882,107 @@
 						<select
 							id="usr-pref"
 							bind:value={formPrefeituraId}
-							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
 						>
 							<option value="">-- Selecione a Prefeitura --</option>
 							{#each prefeiturasDisponiveis as pref}
 								<option value={pref.id}>
-									{pref.nome} {pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''} {pref.ativa ? '• ATIVA' : ''}
+									{pref.nome}
+									{pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''}
+									{pref.ativa ? '• ATIVA' : ''}
 								</option>
 							{/each}
 						</select>
-						<span class="text-[10px] text-indigo-900 font-semibold">
-							Como Desenvolvedor, você pode selecionar manualmente qual prefeitura receberá o cadastro deste usuário.
+						<span class="text-[10px] font-semibold text-indigo-900">
+							Como Desenvolvedor, você pode selecionar manualmente qual prefeitura receberá o
+							cadastro deste usuário.
 						</span>
 					</div>
 				{:else if prefeituraConectada}
-					<div class="border-2 border-emerald-600 bg-emerald-50/80 p-3 flex items-center justify-between">
+					<div
+						class="flex items-center justify-between border-2 border-emerald-600 bg-emerald-50/80 p-3"
+					>
 						<div class="flex items-center gap-2.5">
-							<div class="bg-emerald-700 text-white p-1.5 flex items-center justify-center">
+							<div class="flex items-center justify-center bg-emerald-700 p-1.5 text-white">
 								<IconBuildingCommunity size={18} />
 							</div>
 							<div>
-								<span class="text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Prefeitura Conectada ao Sistema</span>
+								<span class="text-[10px] font-bold tracking-wider text-emerald-800 uppercase"
+									>Prefeitura Conectada ao Sistema</span
+								>
 								<div class="text-xs font-bold text-emerald-950">{prefeituraConectada.nome}</div>
 							</div>
 						</div>
-						<span class="border border-emerald-700 bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">
+						<span
+							class="border border-emerald-700 bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-900 uppercase"
+						>
 							{prefeituraConectada.cnpj ? `CNPJ: ${prefeituraConectada.cnpj}` : 'Município Ativo'}
 						</span>
 					</div>
 				{/if}
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+				<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 					<div class="flex flex-col gap-1">
-						<label for="usr-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo *</label>
-						<input id="usr-nome" type="text" bind:value={formNome} placeholder="Ex.: Dr. Fernando Souza" class="border border-slate-300 p-2 text-xs" />
+						<label for="usr-nome" class="text-[11px] font-bold text-slate-700"
+							>Nome Completo *</label
+						>
+						<input
+							id="usr-nome"
+							type="text"
+							bind:value={formNome}
+							placeholder="Ex.: Dr. Fernando Souza"
+							class="border border-slate-300 p-2 text-xs"
+						/>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="usr-cpf" class="font-bold text-slate-700 text-[11px]">CPF *</label>
-						<input id="usr-cpf" type="text" bind:value={formCpf} placeholder="000.000.000-00" class="border border-slate-300 p-2 text-xs" />
+						<label for="usr-cpf" class="text-[11px] font-bold text-slate-700">CPF *</label>
+						<input
+							id="usr-cpf"
+							type="text"
+							bind:value={formCpf}
+							placeholder="000.000.000-00"
+							class="border border-slate-300 p-2 text-xs"
+						/>
 					</div>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+				<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 					<div class="flex flex-col gap-1">
-						<label for="usr-email" class="font-bold text-slate-700 text-[11px]">E-mail Institucional *</label>
-						<input id="usr-email" type="email" bind:value={formEmail} placeholder="profissional@saude.gov.br" class="border border-slate-300 p-2 text-xs" />
+						<label for="usr-email" class="text-[11px] font-bold text-slate-700"
+							>E-mail Institucional *</label
+						>
+						<input
+							id="usr-email"
+							type="email"
+							bind:value={formEmail}
+							placeholder="profissional@saude.gov.br"
+							class="border border-slate-300 p-2 text-xs"
+						/>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="usr-mat" class="font-bold text-slate-700 text-[11px]">Matrícula / Registro Profissional</label>
-						<input id="usr-mat" type="text" bind:value={formMatricula} placeholder="Ex.: MAT-4482 ou CRM 12345" class="border border-slate-300 p-2 text-xs" />
+						<label for="usr-mat" class="text-[11px] font-bold text-slate-700"
+							>Matrícula / Registro Profissional</label
+						>
+						<input
+							id="usr-mat"
+							type="text"
+							bind:value={formMatricula}
+							placeholder="Ex.: MAT-4482 ou CRM 12345"
+							class="border border-slate-300 p-2 text-xs"
+						/>
 					</div>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+				<div class="grid grid-cols-1 gap-3 md:grid-cols-3">
 					<div class="flex flex-col gap-1">
-						<label for="usr-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso *</label>
-						<select id="usr-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
+						<label for="usr-perfil" class="text-[11px] font-bold text-slate-700"
+							>Perfil de Acesso *</label
+						>
+						<select
+							id="usr-perfil"
+							bind:value={formPerfil}
+							class="border border-slate-300 bg-white p-2 text-xs font-bold"
+						>
 							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
 							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
 							{#if ehCeo}
@@ -837,26 +1000,48 @@
 						</select>
 					</div>
 					<div class="flex flex-col gap-1">
-						<span class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</span>
-						<div class="border border-blue-900 bg-blue-50 text-blue-950 p-2 text-xs font-bold font-mono flex items-center justify-between">
+						<span class="text-[11px] font-bold text-slate-700">Unidade / Face Vinculada</span>
+						<div
+							class="flex items-center justify-between border border-blue-900 bg-blue-50 p-2 font-mono text-xs font-bold text-blue-950"
+						>
 							<span>{siglaOrgao} — {nomeOrgao}</span>
-							<span class="bg-blue-900 text-white text-[9px] px-2 py-0.5 uppercase">Automático</span>
+							<span class="bg-blue-900 px-2 py-0.5 text-[9px] text-white uppercase">Automático</span
+							>
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
-						<label for="usr-senha" class="font-bold text-slate-700 text-[11px]">Senha Temporária *</label>
-						<input id="usr-senha" type="text" bind:value={formSenha} class="border border-slate-300 p-2 text-xs bg-slate-50 font-bold" />
+						<label for="usr-senha" class="text-[11px] font-bold text-slate-700"
+							>Senha Temporária *</label
+						>
+						<input
+							id="usr-senha"
+							type="text"
+							bind:value={formSenha}
+							class="border border-slate-300 bg-slate-50 p-2 text-xs font-bold"
+						/>
 					</div>
 				</div>
 
-				<div class="bg-blue-50 border border-blue-300 p-3 text-[11px] text-blue-950 font-semibold flex items-center gap-2">
-					<IconShield size={16} class="text-blue-900 shrink-0" />
-					<span>O usuário será vinculado à <strong>{prefeituraConectada?.nome || 'Prefeitura Conectada'}</strong> com credenciais de acesso ao <strong>{nomeOrgao} ({siglaOrgao})</strong>.</span>
+				<div
+					class="flex items-center gap-2 border border-blue-300 bg-blue-50 p-3 text-[11px] font-semibold text-blue-950"
+				>
+					<IconShield size={16} class="shrink-0 text-blue-900" />
+					<span
+						>O usuário será vinculado à <strong
+							>{prefeituraConectada?.nome || 'Prefeitura Conectada'}</strong
+						>
+						com credenciais de acesso ao <strong>{nomeOrgao} ({siglaOrgao})</strong>.</span
+					>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
-				<button onclick={() => modalNovoAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
+			<div
+				class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3"
+			>
+				<button
+					onclick={() => (modalNovoAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100"
+				>
 					Cancelar
 				</button>
 				<button
@@ -873,34 +1058,52 @@
 
 <!-- Modal 2: Editar Usuário -->
 {#if modalEditarAberto && usuarioEdicao}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">Editar Cadastro: {usuarioEdicao.nome}</div>
-				<button onclick={() => modalEditarAberto = false} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+		>
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
+			>
+				<div class="text-xs font-bold tracking-wider uppercase">
+					Editar Cadastro: {usuarioEdicao.nome}
+				</div>
+				<button
+					onclick={() => (modalEditarAberto = false)}
+					class="text-sm font-bold text-slate-400 hover:text-white">✕</button
+				>
 			</div>
 
-			<div class="p-5 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-5">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
-						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+					<div
+						class="flex items-center gap-1.5 border border-rose-200 bg-rose-50 p-2.5 font-bold text-rose-900"
+					>
+						<IconAlertTriangle size={14} class="shrink-0 text-rose-700" />
 						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
 
 				<!-- Prefeitura Vinculada: Dropdown manual quando Desenvolvedor, Card informativo para os demais -->
 				{#if isDev}
-					<div class="border-2 border-indigo-600 bg-indigo-50/70 p-3 flex flex-col gap-2">
+					<div class="flex flex-col gap-2 border-2 border-indigo-600 bg-indigo-50/70 p-3">
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2">
-								<div class="bg-indigo-700 text-white p-1 flex items-center justify-center">
+								<div class="flex items-center justify-center bg-indigo-700 p-1 text-white">
 									<IconBuildingCommunity size={16} />
 								</div>
-								<label for="ed-pref" class="text-[11px] font-bold uppercase text-indigo-950 tracking-wider">
+								<label
+									for="ed-pref"
+									class="text-[11px] font-bold tracking-wider text-indigo-950 uppercase"
+								>
 									Prefeitura / Município Vinculado *
 								</label>
 							</div>
-							<span class="bg-indigo-700 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
+							<span
+								class="bg-indigo-700 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase"
+							>
 								Modo Desenvolvedor
 							</span>
 						</div>
@@ -908,46 +1111,73 @@
 						<select
 							id="ed-pref"
 							bind:value={formPrefeituraId}
-							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+							class="border border-indigo-400 bg-white p-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
 						>
 							<option value="">-- Selecione a Prefeitura --</option>
 							{#each prefeiturasDisponiveis as pref}
 								<option value={pref.id}>
-									{pref.nome} {pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''} {pref.ativa ? '• ATIVA' : ''}
+									{pref.nome}
+									{pref.cnpj ? `(CNPJ: ${pref.cnpj})` : ''}
+									{pref.ativa ? '• ATIVA' : ''}
 								</option>
 							{/each}
 						</select>
-						<span class="text-[10px] text-indigo-900 font-semibold">
-							Como Desenvolvedor, você pode alterar manualmente o município de lotação deste usuário.
+						<span class="text-[10px] font-semibold text-indigo-900">
+							Como Desenvolvedor, você pode alterar manualmente o município de lotação deste
+							usuário.
 						</span>
 					</div>
 				{:else if prefeituraConectada}
-					<div class="border border-emerald-300 bg-emerald-50 p-2.5 flex items-center justify-between">
+					<div
+						class="flex items-center justify-between border border-emerald-300 bg-emerald-50 p-2.5"
+					>
 						<div class="flex items-center gap-2">
-							<IconBuildingCommunity size={16} class="text-emerald-800 shrink-0" />
+							<IconBuildingCommunity size={16} class="shrink-0 text-emerald-800" />
 							<div>
-								<span class="text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Prefeitura Conectada</span>
+								<span class="text-[10px] font-bold tracking-wider text-emerald-800 uppercase"
+									>Prefeitura Conectada</span
+								>
 								<div class="text-xs font-bold text-emerald-950">{prefeituraConectada.nome}</div>
 							</div>
 						</div>
-						<span class="border border-emerald-600 bg-emerald-100 text-emerald-900 text-[9px] font-bold px-2 py-0.5 uppercase">
+						<span
+							class="border border-emerald-600 bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-900 uppercase"
+						>
 							{prefeituraConectada.cnpj ? `CNPJ: ${prefeituraConectada.cnpj}` : 'Ativa'}
 						</span>
 					</div>
 				{/if}
 
 				<div class="flex flex-col gap-1">
-					<label for="ed-nome" class="font-bold text-slate-700 text-[11px]">Nome Completo</label>
-					<input id="ed-nome" type="text" bind:value={formNome} class="border border-slate-300 p-2 text-xs" />
+					<label for="ed-nome" class="text-[11px] font-bold text-slate-700">Nome Completo</label>
+					<input
+						id="ed-nome"
+						type="text"
+						bind:value={formNome}
+						class="border border-slate-300 p-2 text-xs"
+					/>
 				</div>
 				<div class="flex flex-col gap-1">
-					<label for="ed-email" class="font-bold text-slate-700 text-[11px]">E-mail Institucional</label>
-					<input id="ed-email" type="email" bind:value={formEmail} class="border border-slate-300 p-2 text-xs" />
+					<label for="ed-email" class="text-[11px] font-bold text-slate-700"
+						>E-mail Institucional</label
+					>
+					<input
+						id="ed-email"
+						type="email"
+						bind:value={formEmail}
+						class="border border-slate-300 p-2 text-xs"
+					/>
 				</div>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+				<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 					<div class="flex flex-col gap-1">
-						<label for="ed-perfil" class="font-bold text-slate-700 text-[11px]">Perfil de Acesso</label>
-						<select id="ed-perfil" bind:value={formPerfil} class="border border-slate-300 p-2 text-xs bg-white font-bold">
+						<label for="ed-perfil" class="text-[11px] font-bold text-slate-700"
+							>Perfil de Acesso</label
+						>
+						<select
+							id="ed-perfil"
+							bind:value={formPerfil}
+							class="border border-slate-300 bg-white p-2 text-xs font-bold"
+						>
 							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
 							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
 							{#if ehCeo}
@@ -965,17 +1195,30 @@
 						</select>
 					</div>
 					<div class="flex flex-col gap-1">
-						<span class="font-bold text-slate-700 text-[11px]">Unidade / Face Vinculada</span>
-						<div class="border border-slate-300 bg-slate-100 text-slate-800 p-2 text-xs font-bold font-mono flex items-center justify-between">
-							<span>{usuarioEdicao.tipoUnidade || siglaOrgao} — {usuarioEdicao.tipoUnidade === 'CEO' ? 'Centro Odontológico' : usuarioEdicao.tipoUnidade === 'CEM' ? 'Centro Médico' : siglaOrgao}</span>
-							<span class="bg-slate-700 text-white text-[9px] px-2 py-0.5 uppercase">Fixo</span>
+						<span class="text-[11px] font-bold text-slate-700">Unidade / Face Vinculada</span>
+						<div
+							class="flex items-center justify-between border border-slate-300 bg-slate-100 p-2 font-mono text-xs font-bold text-slate-800"
+						>
+							<span
+								>{usuarioEdicao.tipoUnidade || siglaOrgao} — {usuarioEdicao.tipoUnidade === 'CEO'
+									? 'Centro Odontológico'
+									: usuarioEdicao.tipoUnidade === 'CEM'
+										? 'Centro Médico'
+										: siglaOrgao}</span
+							>
+							<span class="bg-slate-700 px-2 py-0.5 text-[9px] text-white uppercase">Fixo</span>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
-				<button onclick={() => modalEditarAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
+			<div
+				class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3"
+			>
+				<button
+					onclick={() => (modalEditarAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100"
+				>
 					Cancelar
 				</button>
 				<button
@@ -992,17 +1235,28 @@
 
 <!-- Modal 3: Reset de Senha -->
 {#if modalResetSenhaAberto && usuarioEdicao}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-amber-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">Redefinir Senha do Usuário</div>
-				<button onclick={() => modalResetSenhaAberto = false} class="text-amber-200 hover:text-white font-bold text-sm">✕</button>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+		>
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-amber-900 px-4 py-3 text-white"
+			>
+				<div class="text-xs font-bold tracking-wider uppercase">Redefinir Senha do Usuário</div>
+				<button
+					onclick={() => (modalResetSenhaAberto = false)}
+					class="text-sm font-bold text-amber-200 hover:text-white">✕</button
+				>
 			</div>
 
-			<div class="p-5 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-5">
 				{#if erroModalUsuario}
-					<div class="border border-rose-200 bg-rose-50 p-2.5 text-rose-900 font-bold flex items-center gap-1.5">
-						<IconAlertTriangle size={14} class="text-rose-700 shrink-0" />
+					<div
+						class="flex items-center gap-1.5 border border-rose-200 bg-rose-50 p-2.5 font-bold text-rose-900"
+					>
+						<IconAlertTriangle size={14} class="shrink-0 text-rose-700" />
 						<span>{erroModalUsuario}</span>
 					</div>
 				{/if}
@@ -1010,13 +1264,25 @@
 					Definir nova senha temporária para <strong>{usuarioEdicao.nome}</strong>:
 				</div>
 				<div class="flex flex-col gap-1">
-					<label for="rst-senha" class="font-bold text-slate-700 text-[11px]">Nova Senha Temporária *</label>
-					<input id="rst-senha" type="text" bind:value={formNovaSenha} class="border border-slate-300 p-2 text-xs font-bold" />
+					<label for="rst-senha" class="text-[11px] font-bold text-slate-700"
+						>Nova Senha Temporária *</label
+					>
+					<input
+						id="rst-senha"
+						type="text"
+						bind:value={formNovaSenha}
+						class="border border-slate-300 p-2 text-xs font-bold"
+					/>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
-				<button onclick={() => modalResetSenhaAberto = false} class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100">
+			<div
+				class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3"
+			>
+				<button
+					onclick={() => (modalResetSenhaAberto = false)}
+					class="border border-slate-300 bg-white px-4 py-2 font-bold hover:bg-slate-100"
+				>
 					Cancelar
 				</button>
 				<button
@@ -1033,10 +1299,16 @@
 
 <!-- Modal 4: Atribuições Clínicas, Serviços Especializados & Agenda de Atendimento -->
 {#if modalAtribuicoesAberto && usuarioAtribuicao}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs overflow-y-auto">
-		<div class="w-full max-w-3xl border-2 border-slate-900 bg-white shadow-[10px_10px_0_rgba(15,23,42,0.15)] my-8">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="my-8 w-full max-w-3xl border-2 border-slate-900 bg-white shadow-[10px_10px_0_rgba(15,23,42,0.15)]"
+		>
 			<!-- Header Modal -->
-			<div class="flex items-center justify-between border-b border-slate-200 bg-indigo-950 px-5 py-3.5 text-white">
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-indigo-950 px-5 py-3.5 text-white"
+			>
 				<div class="flex items-center gap-2.5">
 					<div class="flex h-7 w-7 items-center justify-center bg-indigo-800 text-white">
 						{#if ehCeo}
@@ -1046,42 +1318,55 @@
 						{/if}
 					</div>
 					<div>
-						<div class="font-bold uppercase tracking-wider text-xs">
+						<div class="text-xs font-bold tracking-wider uppercase">
 							Atribuições de Atendimento & Agenda Clínica
 						</div>
 						<div class="text-[10px] text-indigo-300">
-							Profissional: <span class="text-white font-bold">{usuarioAtribuicao.nome}</span> · {rotuloRegistro}: {usuarioAtribuicao.matricula || 'Não informado'}
+							Profissional: <span class="font-bold text-white">{usuarioAtribuicao.nome}</span> · {rotuloRegistro}:
+							{usuarioAtribuicao.matricula || 'Não informado'}
 						</div>
 					</div>
 				</div>
-				<button onclick={() => (modalAtribuicoesAberto = false)} class="text-indigo-300 hover:text-white font-bold text-base">
+				<button
+					onclick={() => (modalAtribuicoesAberto = false)}
+					class="text-base font-bold text-indigo-300 hover:text-white"
+				>
 					✕
 				</button>
 			</div>
 
-			<div class="p-5 flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
+			<div class="flex max-h-[75vh] flex-col gap-5 overflow-y-auto p-5">
 				{#if erroModalAtribuicao}
-					<div class="border border-rose-300 bg-rose-50 p-3 text-rose-900 font-bold flex items-center gap-2">
-						<IconAlertTriangle size={16} class="text-rose-700 shrink-0" />
+					<div
+						class="flex items-center gap-2 border border-rose-300 bg-rose-50 p-3 font-bold text-rose-900"
+					>
+						<IconAlertTriangle size={16} class="shrink-0 text-rose-700" />
 						<span>{erroModalAtribuicao}</span>
 					</div>
 				{/if}
 
 				<!-- Identificação do Profissional -->
-				<div class="border border-slate-200 bg-slate-50 p-3.5 flex flex-wrap items-center justify-between gap-3">
+				<div
+					class="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-slate-50 p-3.5"
+				>
 					<div class="flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center bg-indigo-900 text-white font-bold text-sm">
+						<div
+							class="flex h-10 w-10 items-center justify-center bg-indigo-900 text-sm font-bold text-white"
+						>
 							{usuarioAtribuicao.nome.substring(0, 2).toUpperCase()}
 						</div>
 						<div>
 							<div class="text-sm font-bold text-slate-900">{usuarioAtribuicao.nome}</div>
 							<div class="text-[11px] text-slate-600">
-								CPF: <strong>{usuarioAtribuicao.cpf || '—'}</strong> · Função: <strong class="text-indigo-900">{formatarCargoPerfil(usuarioAtribuicao)}</strong>
+								CPF: <strong>{usuarioAtribuicao.cpf || '—'}</strong> · Função:
+								<strong class="text-indigo-900">{formatarCargoPerfil(usuarioAtribuicao)}</strong>
 							</div>
 						</div>
 					</div>
 					<div class="flex items-center gap-2">
-						<span class="bg-indigo-100 text-indigo-900 border border-indigo-300 px-2 py-0.5 text-[10px] font-bold">
+						<span
+							class="border border-indigo-300 bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-900"
+						>
 							{siglaOrgao} — {nomeOrgao}
 						</span>
 					</div>
@@ -1090,7 +1375,9 @@
 				<!-- Seção 1: Atendimentos e Serviços Atualmente Atribuídos -->
 				<div class="flex flex-col gap-2">
 					<div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
-						<div class="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+						<div
+							class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-900 uppercase"
+						>
 							<IconCalendar size={14} class="text-indigo-800" />
 							<span>Serviços & Atendimentos Atribuídos ({escalasDoUsuarioAtual.length})</span>
 						</div>
@@ -1098,24 +1385,35 @@
 					</div>
 
 					{#if escalasDoUsuarioAtual.length === 0}
-						<div class="border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 flex flex-col items-center gap-2">
+						<div
+							class="flex flex-col items-center gap-2 border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500"
+						>
 							<IconAlertTriangle size={20} class="text-amber-600" />
-							<div class="font-bold text-slate-700">Nenhum atendimento atribuído a este profissional ainda.</div>
-							<div class="text-[11px] max-w-md">
-								Utilize o formulário abaixo para vincular as especialidades/serviços que ele realiza e definir os dias e horários em que atenderá.
+							<div class="font-bold text-slate-700">
+								Nenhum atendimento atribuído a este profissional ainda.
+							</div>
+							<div class="max-w-md text-[11px]">
+								Utilize o formulário abaixo para vincular as especialidades/serviços que ele realiza
+								e definir os dias e horários em que atenderá.
 							</div>
 						</div>
 					{:else}
 						<div class="grid grid-cols-1 gap-2.5">
 							{#each escalasDoUsuarioAtual as esc (esc.id || esc.especialidade)}
-								<div class="border border-slate-200 bg-white p-3 hover:border-indigo-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+								<div
+									class="flex flex-col justify-between gap-3 border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-indigo-300 sm:flex-row sm:items-center"
+								>
 									<div class="flex flex-col gap-1">
 										<div class="flex items-center gap-2">
-											<span class="bg-blue-900 text-white text-[9px] font-bold px-1.5 py-0.5 uppercase">
+											<span
+												class="bg-blue-900 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase"
+											>
 												{esc.tipoServico || 'CONSULTA'}
 											</span>
 											<span class="text-xs font-bold text-slate-900">{esc.especialidade}</span>
-											<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-bold px-1.5 py-0.2">
+											<span
+												class="py-0.2 border border-emerald-300 bg-emerald-100 px-1.5 text-[9px] font-bold text-emerald-800"
+											>
 												{esc.status || 'ATIVA'}
 											</span>
 										</div>
@@ -1124,8 +1422,10 @@
 												<IconCalendar size={12} class="text-slate-500" />
 												<span class="font-bold text-slate-700">Dias:</span>
 												<div class="flex gap-1">
-													{#each (esc.diasSemana || []) as dia}
-														<span class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-1 py-0.2 text-[9px] font-bold">
+													{#each esc.diasSemana || [] as dia}
+														<span
+															class="py-0.2 border border-indigo-200 bg-indigo-50 px-1 text-[9px] font-bold text-indigo-900"
+														>
 															{dia}
 														</span>
 													{/each}
@@ -1136,7 +1436,8 @@
 												<span>{esc.horarioInicio || '08:00'} às {esc.horarioFim || '12:00'}</span>
 											</div>
 											<div class="text-slate-500">
-												{esc.duracaoMinutos || 20} min/vaga · <strong>{esc.vagasPorTurno || 12} vagas/turno</strong>
+												{esc.duracaoMinutos || 20} min/vaga ·
+												<strong>{esc.vagasPorTurno || 12} vagas/turno</strong>
 											</div>
 										</div>
 									</div>
@@ -1144,7 +1445,7 @@
 									<button
 										type="button"
 										onclick={() => removerAtribuicao(esc)}
-										class="border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 self-start sm:self-center shrink-0"
+										class="flex shrink-0 items-center gap-1 self-start border border-rose-300 bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-900 hover:bg-rose-100 sm:self-center"
 										title="Desvincular e remover atendimento"
 									>
 										<IconTrash size={12} />
@@ -1157,26 +1458,41 @@
 				</div>
 
 				<!-- Seção 2: Formulário de Atribuição de Novo Serviço/Atendimento -->
-				<div class="border-t-2 border-slate-200 pt-4 flex flex-col gap-3">
-					<div class="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+				<div class="flex flex-col gap-3 border-t-2 border-slate-200 pt-4">
+					<div
+						class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-900 uppercase"
+					>
 						<IconPlus size={14} class="text-indigo-800" />
 						<span>+ Atribuir Novo Serviço / Atendimento ao Profissional</span>
 					</div>
 
-					<div class="border border-indigo-200 bg-indigo-50/40 p-4 flex flex-col gap-3.5">
+					<div class="flex flex-col gap-3.5 border border-indigo-200 bg-indigo-50/40 p-4">
 						<!-- Seleção de Especialidade/Serviço do Catálogo -->
 						<div class="flex flex-col gap-1">
-							<label for="atri-esp" class="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+							<label
+								for="atri-esp"
+								class="flex items-center justify-between text-[11px] font-bold text-slate-800"
+							>
 								<span>Serviço Especializado / Especialidade Habilitada *</span>
-								<a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="text-indigo-700 hover:underline text-[10px] font-normal">
+								<a
+									href="/{siglaOrgao.toLowerCase()}/gestao/especialidades"
+									class="text-[10px] font-normal text-indigo-700 hover:underline"
+								>
 									Ver catálogo oficial de serviços ›
 								</a>
 							</label>
 
 							{#if especialidadesCatalogo.length === 0}
-								<div class="border border-amber-300 bg-amber-50 p-2.5 text-amber-900 text-[11px] flex items-center justify-between">
-									<span>Nenhum serviço ou especialidade cadastrada no catálogo do {siglaOrgao}.</span>
-									<a href="/{siglaOrgao.toLowerCase()}/gestao/especialidades" class="bg-amber-800 text-white px-2 py-1 text-[10px] font-bold uppercase">
+								<div
+									class="flex items-center justify-between border border-amber-300 bg-amber-50 p-2.5 text-[11px] text-amber-900"
+								>
+									<span
+										>Nenhum serviço ou especialidade cadastrada no catálogo do {siglaOrgao}.</span
+									>
+									<a
+										href="/{siglaOrgao.toLowerCase()}/gestao/especialidades"
+										class="bg-amber-800 px-2 py-1 text-[10px] font-bold text-white uppercase"
+									>
 										Cadastrar Serviços
 									</a>
 								</div>
@@ -1189,18 +1505,25 @@
 								>
 									{#each especialidadesCatalogo as esp}
 										<option value={esp.id}>
-											{esp.nome} — SIGTAP: {esp.codigoSigtap || 'SIA'} ({esp.tipoServico || 'CONSULTA'})
+											{esp.nome} — SIGTAP: {esp.codigoSigtap || 'SIA'} ({esp.tipoServico ||
+												'CONSULTA'})
 										</option>
 									{/each}
 								</select>
 							{/if}
 						</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+						<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 							<!-- Tipo de Atendimento -->
 							<div class="flex flex-col gap-1">
-								<label for="atri-tipo" class="font-bold text-slate-700 text-[11px]">Tipo de Atendimento *</label>
-								<select id="atri-tipo" bind:value={atriTipoServico} class="border border-slate-300 bg-white p-2 text-xs font-bold">
+								<label for="atri-tipo" class="text-[11px] font-bold text-slate-700"
+									>Tipo de Atendimento *</label
+								>
+								<select
+									id="atri-tipo"
+									bind:value={atriTipoServico}
+									class="border border-slate-300 bg-white p-2 text-xs font-bold"
+								>
 									<option value="CONSULTA">Consulta Clínica Especializada</option>
 									<option value="PROCEDIMENTO">Procedimento / Exame Especializado</option>
 								</select>
@@ -1208,24 +1531,38 @@
 
 							<!-- Vagas por Turno -->
 							<div class="flex flex-col gap-1">
-								<label for="atri-vagas" class="font-bold text-slate-700 text-[11px]">Capacidade / Vagas por Turno *</label>
-								<input id="atri-vagas" type="number" min="1" max="100" bind:value={atriVagasPorTurno} class="border border-slate-300 bg-white p-2 text-xs" />
+								<label for="atri-vagas" class="text-[11px] font-bold text-slate-700"
+									>Capacidade / Vagas por Turno *</label
+								>
+								<input
+									id="atri-vagas"
+									type="number"
+									min="1"
+									max="100"
+									bind:value={atriVagasPorTurno}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 						</div>
 
 						<!-- Dias da Semana de Atendimento -->
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-slate-700 text-[11px]">Dias de Atendimento na Semana *</span>
+							<span class="text-[11px] font-bold text-slate-700"
+								>Dias de Atendimento na Semana *</span
+							>
 							<div class="flex flex-wrap gap-1.5">
 								{#each DIAS_SEMANA as d}
 									{@const selecionado = atriDias.includes(d.sigla)}
 									<button
 										type="button"
 										onclick={() => toggleAtriDia(d.sigla)}
-										class="px-3 py-1.5 text-xs font-bold border transition-colors flex items-center gap-1.5 {selecionado ? 'bg-indigo-900 border-indigo-900 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}"
+										class="flex items-center gap-1.5 border px-3 py-1.5 text-xs font-bold transition-colors {selecionado
+											? 'border-indigo-900 bg-indigo-900 text-white'
+											: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 									>
 										<span>{d.sigla}</span>
-										<span class="text-[10px] font-normal opacity-80">({d.label.split('-')[0]})</span>
+										<span class="text-[10px] font-normal opacity-80">({d.label.split('-')[0]})</span
+										>
 										{#if selecionado}
 											<IconCheck size={12} class="text-emerald-300" />
 										{/if}
@@ -1238,27 +1575,50 @@
 						</div>
 
 						<!-- Horários e Duração -->
-						<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+						<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
 							<div class="flex flex-col gap-1">
-								<label for="atri-hi" class="font-bold text-slate-700 text-[11px]">Horário Início</label>
-								<input id="atri-hi" type="time" bind:value={atriHorarioInicio} class="border border-slate-300 bg-white p-2 text-xs" />
+								<label for="atri-hi" class="text-[11px] font-bold text-slate-700"
+									>Horário Início</label
+								>
+								<input
+									id="atri-hi"
+									type="time"
+									bind:value={atriHorarioInicio}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 							<div class="flex flex-col gap-1">
-								<label for="atri-hf" class="font-bold text-slate-700 text-[11px]">Horário Fim</label>
-								<input id="atri-hf" type="time" bind:value={atriHorarioFim} class="border border-slate-300 bg-white p-2 text-xs" />
+								<label for="atri-hf" class="text-[11px] font-bold text-slate-700">Horário Fim</label
+								>
+								<input
+									id="atri-hf"
+									type="time"
+									bind:value={atriHorarioFim}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 							<div class="flex flex-col gap-1">
-								<label for="atri-dur" class="font-bold text-slate-700 text-[11px]">Duração Slot (min)</label>
-								<input id="atri-dur" type="number" min="5" max="180" step="5" bind:value={atriDuracaoMinutos} class="border border-slate-300 bg-white p-2 text-xs" />
+								<label for="atri-dur" class="text-[11px] font-bold text-slate-700"
+									>Duração Slot (min)</label
+								>
+								<input
+									id="atri-dur"
+									type="number"
+									min="5"
+									max="180"
+									step="5"
+									bind:value={atriDuracaoMinutos}
+									class="border border-slate-300 bg-white p-2 text-xs"
+								/>
 							</div>
 						</div>
 
-						<div class="flex items-center justify-end mt-1">
+						<div class="mt-1 flex items-center justify-end">
 							<button
 								type="button"
 								onclick={salvarAtribuicao}
 								disabled={salvandoAtribuicao || especialidadesCatalogo.length === 0}
-								class="border border-indigo-900 bg-indigo-900 text-white px-5 py-2 font-bold text-xs uppercase hover:bg-indigo-950 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+								class="flex items-center gap-1.5 border border-indigo-900 bg-indigo-900 px-5 py-2 text-xs font-bold text-white uppercase shadow-sm hover:bg-indigo-950 disabled:opacity-50"
 							>
 								{#if salvandoAtribuicao}
 									<span>Salvando Atribuição...</span>
@@ -1273,13 +1633,16 @@
 			</div>
 
 			<!-- Rodapé do Modal -->
-			<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+			<div
+				class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3"
+			>
 				<div class="text-[11px] text-slate-600">
-					As atribuições ficam disponíveis de imediato no <strong>Agendamento de Balcão</strong> e na <strong>Regulação</strong>.
+					As atribuições ficam disponíveis de imediato no <strong>Agendamento de Balcão</strong> e
+					na <strong>Regulação</strong>.
 				</div>
 				<button
 					onclick={() => (modalAtribuicoesAberto = false)}
-					class="border border-slate-300 bg-white hover:bg-slate-100 px-4 py-2 font-bold text-xs uppercase"
+					class="border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase hover:bg-slate-100"
 				>
 					Concluir / Fechar
 				</button>

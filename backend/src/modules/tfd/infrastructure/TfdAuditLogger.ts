@@ -11,10 +11,9 @@
  * Genesis: '0' x 64 (64 hex chars).
  *
  * Garantias:
- *   - Tabela tem trigger de imutabilidade (no BD): UPDATE/DELETE rejeitados
- *     ⚠️  TODO: o trigger SQL ainda precisa ser criado via migration manual
- *     (Prisma db push não cria triggers; usar `npx prisma migrate dev` em prod
- *      e adicionar `ALTER TRIGGER ... BEFORE UPDATE ...` no SQL gerado).
+ *   - Tabela tem trigger de imutabilidade (no BD): UPDATE/DELETE rejeitados.
+ *     Os triggers são aplicados pelo bootstrap `aplicarTriggersImutabilidade`
+ *     e também podem ser aplicados manualmente via `npm run db:setup-triggers`.
  *   - Inserção é serializada por prefeitura via SELECT FOR UPDATE no último
  *     hash, evitando race conditions.
  */

@@ -1,251 +1,283 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNISISM - Guia do Centro Municipal de Especialidades (Recepção e Médico)</title>
-    <style>
-        :root {
-            --primary: #0f766e;
-            --primary-light: #f0fdfa;
-            --primary-dark: #115e59;
-            --success: #059669;
-            --success-light: #ecfdf5;
-            --danger: #dc2626;
-            --warning: #d97706;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border: #e2e8f0;
-            --text: #334155;
-            --text-dark: #0f172a;
-            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        }
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>UNISISM - Guia do Centro Municipal de Especialidades (Recepção e Médico)</title>
+		<style>
+			:root {
+				--primary: #0f766e;
+				--primary-light: #f0fdfa;
+				--primary-dark: #115e59;
+				--success: #059669;
+				--success-light: #ecfdf5;
+				--danger: #dc2626;
+				--warning: #d97706;
+				--bg: #f8fafc;
+				--card-bg: #ffffff;
+				--border: #e2e8f0;
+				--text: #334155;
+				--text-dark: #0f172a;
+				--font-mono:
+					ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+					monospace;
+			}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
+			body {
+				font-family:
+					-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+				background-color: var(--bg);
+				color: var(--text);
+				line-height: 1.6;
+				margin: 0;
+				padding: 0;
+			}
 
-        header {
-            background: linear-gradient(135deg, #0d1117 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 2.5rem 2rem;
-            border-bottom: 4px solid var(--primary);
-        }
+			header {
+				background: linear-gradient(135deg, #0d1117 0%, var(--primary-dark) 100%);
+				color: white;
+				padding: 2.5rem 2rem;
+				border-bottom: 4px solid var(--primary);
+			}
 
-        .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+			.header-container {
+				max-width: 1200px;
+				margin: 0 auto;
+			}
 
-        header h1 {
-            margin: 0 0 0.5rem 0;
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.025em;
-        }
+			header h1 {
+				margin: 0 0 0.5rem 0;
+				font-size: 2rem;
+				font-weight: 800;
+				letter-spacing: -0.025em;
+			}
 
-        header p {
-            margin: 0;
-            font-size: 1.1rem;
-            color: #99f6e4;
-            font-family: var(--font-mono);
-        }
+			header p {
+				margin: 0;
+				font-size: 1.1rem;
+				color: #99f6e4;
+				font-family: var(--font-mono);
+			}
 
-        main {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-        }
+			main {
+				max-width: 1200px;
+				margin: 2rem auto;
+				padding: 0 1.5rem;
+			}
 
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 0;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
+			.card {
+				background-color: var(--card-bg);
+				border: 1px solid var(--border);
+				border-radius: 0;
+				padding: 2rem;
+				margin-bottom: 2rem;
+				box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+			}
 
-        .card-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid var(--primary);
-            padding-left: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+			.card-title {
+				font-size: 1.4rem;
+				font-weight: 700;
+				color: var(--text-dark);
+				margin-top: 0;
+				margin-bottom: 1.5rem;
+				border-left: 4px solid var(--primary);
+				padding-left: 0.75rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
 
-        .badge {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0;
-            text-transform: uppercase;
-        }
+			.badge {
+				font-family: var(--font-mono);
+				font-size: 0.75rem;
+				font-weight: 700;
+				padding: 0.25rem 0.5rem;
+				border-radius: 0;
+				text-transform: uppercase;
+			}
 
-        .badge-post { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-        .badge-get { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-        .badge-alg { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+			.badge-post {
+				background-color: #ecfdf5;
+				color: #065f46;
+				border: 1px solid #a7f3d0;
+			}
+			.badge-get {
+				background-color: #eff6ff;
+				color: #1e40af;
+				border: 1px solid #bfdbfe;
+			}
+			.badge-alg {
+				background-color: #f5f3ff;
+				color: #6d28d9;
+				border: 1px solid #ddd6fe;
+			}
 
-        h3 {
-            color: var(--text-dark);
-            font-size: 1.1rem;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
+			h3 {
+				color: var(--text-dark);
+				font-size: 1.1rem;
+				margin-top: 1.5rem;
+				margin-bottom: 0.5rem;
+			}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-        }
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1rem 0;
+				font-size: 0.9rem;
+			}
 
-        th, td {
-            text-align: left;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
+			th,
+			td {
+				text-align: left;
+				padding: 0.75rem 1rem;
+				border-bottom: 1px solid var(--border);
+			}
 
-        th {
-            background-color: var(--primary-light);
-            color: var(--primary-dark);
-            font-weight: 700;
-        }
+			th {
+				background-color: var(--primary-light);
+				color: var(--primary-dark);
+				font-weight: 700;
+			}
 
-        tr:hover {
-            background-color: #f8fafc;
-        }
+			tr:hover {
+				background-color: #f8fafc;
+			}
 
-        code {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            background-color: #f1f5f9;
-            color: #0f172a;
-            padding: 0.15rem 0.35rem;
-            border-radius: 0;
-            border: 1px solid #e2e8f0;
-        }
+			code {
+				font-family: var(--font-mono);
+				font-size: 0.85rem;
+				background-color: #f1f5f9;
+				color: #0f172a;
+				padding: 0.15rem 0.35rem;
+				border-radius: 0;
+				border: 1px solid #e2e8f0;
+			}
 
-        pre {
-            background-color: #0f172a;
-            color: #f8fafc;
-            padding: 1.25rem;
-            border-radius: 0;
-            overflow-x: auto;
-            margin: 1rem 0;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            border: 1px solid #334155;
-        }
+			pre {
+				background-color: #0f172a;
+				color: #f8fafc;
+				padding: 1.25rem;
+				border-radius: 0;
+				overflow-x: auto;
+				margin: 1rem 0;
+				font-family: var(--font-mono);
+				font-size: 0.85rem;
+				border: 1px solid #334155;
+			}
 
-        .alert {
-            border-left: 4px solid var(--warning);
-            background-color: #fffbeb;
-            padding: 1rem;
-            border-radius: 0;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-            color: #78350f;
-        }
+			.alert {
+				border-left: 4px solid var(--warning);
+				background-color: #fffbeb;
+				padding: 1rem;
+				border-radius: 0;
+				margin: 1rem 0;
+				font-size: 0.9rem;
+				color: #78350f;
+			}
 
-        .alert-success {
-            border-left-color: var(--success);
-            background-color: var(--success-light);
-            color: #065f46;
-        }
+			.alert-success {
+				border-left-color: var(--success);
+				background-color: var(--success-light);
+				color: #065f46;
+			}
 
-        /* Interactive Simulator Styles */
-        .sim-input {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid var(--border);
-            border-radius: 0;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            box-sizing: border-box;
-            outline: none;
-        }
-        .sim-input:focus {
-            border-color: var(--primary);
-        }
+			/* Interactive Simulator Styles */
+			.sim-input {
+				width: 100%;
+				padding: 0.5rem;
+				border: 1px solid var(--border);
+				border-radius: 0;
+				font-family: var(--font-mono);
+				font-size: 0.85rem;
+				margin-bottom: 1rem;
+				box-sizing: border-box;
+				outline: none;
+			}
+			.sim-input:focus {
+				border-color: var(--primary);
+			}
 
-        .sim-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            font-family: var(--font-mono);
-            font-weight: 700;
-            font-size: 0.85rem;
-            border-radius: 0;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+			.sim-btn {
+				background-color: var(--primary);
+				color: white;
+				border: none;
+				padding: 0.6rem 1.2rem;
+				font-family: var(--font-mono);
+				font-weight: 700;
+				font-size: 0.85rem;
+				border-radius: 0;
+				cursor: pointer;
+				transition: background-color 0.2s;
+			}
 
-        .sim-btn:hover {
-            background-color: var(--primary-dark);
-        }
+			.sim-btn:hover {
+				background-color: var(--primary-dark);
+			}
 
-        footer {
-            background-color: #0d1117;
-            color: #64748b;
-            text-align: center;
-            padding: 2rem 0;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            border-top: 1px solid #334155;
-        }
-    </style>
-</head>
-<body>
+			footer {
+				background-color: #0d1117;
+				color: #64748b;
+				text-align: center;
+				padding: 2rem 0;
+				font-family: var(--font-mono);
+				font-size: 0.8rem;
+				border-top: 1px solid #334155;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<div class="header-container">
+				<h1>UNISISM · Centro Municipal de Especialidades</h1>
+				<p>
+					Guia de Integração e Especificação do Backend (Fase 1: Recepção + Fase 2: Médico) - v2.0.0
+				</p>
+			</div>
+		</header>
 
-    <header>
-        <div class="header-container">
-            <h1>UNISISM · Centro Municipal de Especialidades</h1>
-            <p>Guia de Integração e Especificação do Backend (Fase 1: Recepção + Fase 2: Médico) - v2.0.0</p>
-        </div>
-    </header>
+		<main>
+			<!-- 1. Visão Geral -->
+			<div class="card">
+				<h2 class="card-title">1. Visão Geral das Duas Faces do Módulo</h2>
+				<p>
+					O <strong>Centro Municipal de Especialidades</strong> é o núcleo de atenção secundária em
+					saúde do município. Ele é dividido em duas operações integradas:
+				</p>
+				<ul>
+					<li>
+						<strong>Fase 1: Recepção / Atendente</strong> — Gestão da fila de regulação, otimização
+						de agendamentos por especialista e recepção direta no balcão.
+					</li>
+					<li>
+						<strong>Fase 2: Módulo Médico Especialista</strong> — Agenda diária por data/horário,
+						consulta ao Prontuário Eletrônico (PEC), registro de consulta SOAP e geração de
+						Encaminhamentos Intermunicipais para a Regulação da SMS / TFD.
+					</li>
+				</ul>
+				<div class="alert alert-success font-mono">
+					Fluxo de Estados: [UBS] &rarr; [SMS: AGUARDANDO_REGULACAO] &rarr; [SMS: APROVADO ·
+					filaDestino: CENTRO_ESPECIALIDADES] &rarr; [CENTRO RECEPÇÃO: Agendado] &rarr; [CENTRO
+					MÉDICO: Em Atendimento &rarr; Concluído &rarr; (Opção TFD Intermunicipal)].
+				</div>
+			</div>
 
-    <main>
-        <!-- 1. Visão Geral -->
-        <div class="card">
-            <h2 class="card-title">1. Visão Geral das Duas Faces do Módulo</h2>
-            <p>
-                O <strong>Centro Municipal de Especialidades</strong> é o núcleo de atenção secundária em saúde do município. Ele é dividido em duas operações integradas:
-            </p>
-            <ul>
-                <li><strong>Fase 1: Recepção / Atendente</strong> — Gestão da fila de regulação, otimização de agendamentos por especialista e recepção direta no balcão.</li>
-                <li><strong>Fase 2: Módulo Médico Especialista</strong> — Agenda diária por data/horário, consulta ao Prontuário Eletrônico (PEC), registro de consulta SOAP e geração de Encaminhamentos Intermunicipais para a Regulação da SMS / TFD.</li>
-            </ul>
-            <div class="alert alert-success font-mono">
-                Fluxo de Estados: [UBS] &rarr; [SMS: AGUARDANDO_REGULACAO] &rarr; [SMS: APROVADO · filaDestino: CENTRO_ESPECIALIDADES] &rarr; [CENTRO RECEPÇÃO: Agendado] &rarr; [CENTRO MÉDICO: Em Atendimento &rarr; Concluído &rarr; (Opção TFD Intermunicipal)].
-            </div>
-        </div>
+			<!-- 2. Endpoints e Contratos -->
+			<div class="card">
+				<h2 class="card-title">2. Endpoints Requeridos (Recepção e Médico)</h2>
 
-        <!-- 2. Endpoints e Contratos -->
-        <div class="card">
-            <h2 class="card-title">2. Endpoints Requeridos (Recepção e Médico)</h2>
-
-            <!-- GET /encaminhamentos -->
-            <div>
-                <h3>
-                    <span class="badge badge-get">GET</span>
-                    <code>/v1/encaminhamentos?status=APROVADO&limit=1000</code>
-                </h3>
-                <p>Retorna os encaminhamentos aprovados pela regulação da SMS destinados ao Centro. Tanto a Recepção quanto o Médico consomem este endpoint para listar a demanda por especialidade e data de agenda.</p>
-                <pre>{
+				<!-- GET /encaminhamentos -->
+				<div>
+					<h3>
+						<span class="badge badge-get">GET</span>
+						<code>/v1/encaminhamentos?status=APROVADO&limit=1000</code>
+					</h3>
+					<p>
+						Retorna os encaminhamentos aprovados pela regulação da SMS destinados ao Centro. Tanto a
+						Recepção quanto o Médico consomem este endpoint para listar a demanda por especialidade
+						e data de agenda.
+					</p>
+					<pre>
+{
   "encaminhamentos": [
     {
       "id": "uuid-enc-101",
@@ -274,40 +306,54 @@
       "observacoesRegulacao": "Médico: Dr. Roberto Medeiros às 08:00 | Obs: Trazer exames antigos."
     }
   ]
-}</pre>
-            </div>
+}</pre
+					>
+				</div>
 
-            <!-- POST /encaminhamentos/:id/aprovar -->
-            <div>
-                <h3>
-                    <span class="badge badge-post">POST</span>
-                    <code>/v1/encaminhamentos/:id/aprovar</code>
-                </h3>
-                <p>Usado pela Recepção para acionar a alocação de vaga pelo algoritmo backend ou desmarcar consulta.</p>
-                <pre>{
+				<!-- POST /encaminhamentos/:id/aprovar -->
+				<div>
+					<h3>
+						<span class="badge badge-post">POST</span>
+						<code>/v1/encaminhamentos/:id/aprovar</code>
+					</h3>
+					<p>
+						Usado pela Recepção para acionar a alocação de vaga pelo algoritmo backend ou desmarcar
+						consulta.
+					</p>
+					<pre>
+{
   "filaDestino": "CENTRO_ESPECIALIDADES",
   "agendamentoPrevisto": "2026-07-27",
   "nota": "Médico: Dr. Roberto Medeiros às 08:00 | Obs: Comparecer 15 min antes."
-}</pre>
-            </div>
+}</pre
+					>
+				</div>
 
-            <!-- GET /pacientes/:id -->
-            <div>
-                <h3>
-                    <span class="badge badge-get">GET</span>
-                    <code>/v1/pacientes/:id</code>
-                </h3>
-                <p>Usado pelo Médico Especialista para abrir o <strong>Dossiê Completo do Paciente (Prontuário PEC)</strong> com alergias, crônicas, medicamentos, consultas anteriores, exames e vacinas.</p>
-            </div>
+				<!-- GET /pacientes/:id -->
+				<div>
+					<h3>
+						<span class="badge badge-get">GET</span>
+						<code>/v1/pacientes/:id</code>
+					</h3>
+					<p>
+						Usado pelo Médico Especialista para abrir o
+						<strong>Dossiê Completo do Paciente (Prontuário PEC)</strong> com alergias, crônicas,
+						medicamentos, consultas anteriores, exames e vacinas.
+					</p>
+				</div>
 
-            <!-- POST /pacientes/:id/atendimentos -->
-            <div>
-                <h3>
-                    <span class="badge badge-post">POST</span>
-                    <code>/v1/pacientes/:pacienteId/atendimentos</code>
-                </h3>
-                <p>Enviado quando o médico conclui a consulta. Grava permanentemente a anamnese SOAP, diagnósticos CID-10 e prescrições no prontuário do paciente.</p>
-                <pre>{
+				<!-- POST /pacientes/:id/atendimentos -->
+				<div>
+					<h3>
+						<span class="badge badge-post">POST</span>
+						<code>/v1/pacientes/:pacienteId/atendimentos</code>
+					</h3>
+					<p>
+						Enviado quando o médico conclui a consulta. Grava permanentemente a anamnese SOAP,
+						diagnósticos CID-10 e prescrições no prontuário do paciente.
+					</p>
+					<pre>
+{
   "data": "2026-07-27T11:30:00.000Z",
   "tipo": "CONSULTA_MEDICA",
   "profissional": "Dr. Roberto Medeiros",
@@ -319,17 +365,23 @@
   "cid10": "I10",
   "conduta": "Ajustado anti-hipertensivo para Losartana 50mg 12/12h. Solicitado ECG.",
   "prescricaoResumo": "1. Losartana 50mg — Tomar 1 cp VO de 12/12h por 60 dias."
-}</pre>
-            </div>
+}</pre
+					>
+				</div>
 
-            <!-- POST /encaminhamentos (Encaminhamento Intermunicipal do Médico) -->
-            <div>
-                <h3>
-                    <span class="badge badge-post">POST</span>
-                    <code>/v1/encaminhamentos</code>
-                </h3>
-                <p>Enviado pelo Médico Especialista quando o paciente necessita de procedimento de alta complexidade fora do município. O pedido entra direto na Regulação da SMS (status <code>AGUARDANDO_REGULACAO</code>).</p>
-                <pre>{
+				<!-- POST /encaminhamentos (Encaminhamento Intermunicipal do Médico) -->
+				<div>
+					<h3>
+						<span class="badge badge-post">POST</span>
+						<code>/v1/encaminhamentos</code>
+					</h3>
+					<p>
+						Enviado pelo Médico Especialista quando o paciente necessita de procedimento de alta
+						complexidade fora do município. O pedido entra direto na Regulação da SMS (status
+						<code>AGUARDANDO_REGULACAO</code>).
+					</p>
+					<pre>
+{
   "paciente": {
     "nome": "Maria Eduarda Oliveira",
     "cpf": "98765432100",
@@ -349,120 +401,156 @@
     "prioridade": "URGENTE",
     "dataSolicitacao": "2026-07-27"
   }
-}</pre>
-            </div>
-        </div>
+}</pre
+					>
+				</div>
+			</div>
 
-        <!-- 3. Simulador Interativo de Payloads -->
-        <div class="card">
-            <h2 class="card-title">3. Simulador Interativo de Payloads do Centro</h2>
-            <p>Selecione a ação e simule o JSON enviado pelo frontend ao backend:</p>
+			<!-- 3. Simulador Interativo de Payloads -->
+			<div class="card">
+				<h2 class="card-title">3. Simulador Interativo de Payloads do Centro</h2>
+				<p>Selecione a ação e simule o JSON enviado pelo frontend ao backend:</p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                <div>
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Ação / Perfil Operacional:</label>
-                    <select id="sim-modo" class="sim-input" style="height: 35px; width: 100%; font-weight: bold;" onchange="alternarModoSimulacao()">
-                        <option value="RECEPCAO">Recepção: Agendar Vaga (POST /aprovar)</option>
-                        <option value="ATENDIMENTO">Médico: Concluir Consulta SOAP (POST /atendimentos)</option>
-                        <option value="INTERMUNICIPAL">Médico: Encaminhamento Intermunicipal (POST /encaminhamentos)</option>
-                    </select>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem">
+					<div>
+						<label
+							style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem"
+							>Ação / Perfil Operacional:</label
+						>
+						<select
+							id="sim-modo"
+							class="sim-input"
+							style="height: 35px; width: 100%; font-weight: bold"
+							onchange="alternarModoSimulacao()"
+						>
+							<option value="RECEPCAO">Recepção: Agendar Vaga (POST /aprovar)</option>
+							<option value="ATENDIMENTO">
+								Médico: Concluir Consulta SOAP (POST /atendimentos)
+							</option>
+							<option value="INTERMUNICIPAL">
+								Médico: Encaminhamento Intermunicipal (POST /encaminhamentos)
+							</option>
+						</select>
 
-                    <div id="sim-painel-recepcao">
-                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Médico Especialista:</label>
-                        <select id="sim-medico" class="sim-input" style="height: 35px; width: 100%;">
-                            <option value="Dr. Roberto Medeiros (Cardiologia)">Dr. Roberto Medeiros (Cardiologia)</option>
-                            <option value="Dra. Sandra Regina (Cardiologia)">Dra. Sandra Regina (Cardiologia)</option>
-                            <option value="Dr. Fábio Alencar (Oftalmologia)">Dr. Fábio Alencar (Oftalmologia)</option>
-                        </select>
-                    </div>
+						<div id="sim-painel-recepcao">
+							<label
+								style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem"
+								>Médico Especialista:</label
+							>
+							<select id="sim-medico" class="sim-input" style="height: 35px; width: 100%">
+								<option value="Dr. Roberto Medeiros (Cardiologia)">
+									Dr. Roberto Medeiros (Cardiologia)
+								</option>
+								<option value="Dra. Sandra Regina (Cardiologia)">
+									Dra. Sandra Regina (Cardiologia)
+								</option>
+								<option value="Dr. Fábio Alencar (Oftalmologia)">
+									Dr. Fábio Alencar (Oftalmologia)
+								</option>
+							</select>
+						</div>
 
-                    <div id="sim-painel-medico" style="display: none;">
-                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Diagnóstico / CID-10:</label>
-                        <input id="sim-cid" class="sim-input" value="I10 — Hipertensão arterial primária" />
+						<div id="sim-painel-medico" style="display: none">
+							<label
+								style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem"
+								>Diagnóstico / CID-10:</label
+							>
+							<input id="sim-cid" class="sim-input" value="I10 — Hipertensão arterial primária" />
 
-                        <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Conduta / Prescrição:</label>
-                        <textarea id="sim-conduta" class="sim-input" style="height: 50px;">Ajustado anti-hipertensivo. Solicitado ECG de controle.</textarea>
-                    </div>
+							<label
+								style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem"
+								>Conduta / Prescrição:</label
+							>
+							<textarea id="sim-conduta" class="sim-input" style="height: 50px">
+Ajustado anti-hipertensivo. Solicitado ECG de controle.</textarea
+							>
+						</div>
 
-                    <button type="button" class="sim-btn" onclick="gerarPayload()">Gerar JSON de Teste</button>
-                </div>
-                <div>
-                    <label style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem;">Payload Produzido:</label>
-                    <pre id="sim-output" style="margin-top: 0; height: 230px; overflow-y: auto;">Clique em "Gerar" para ver o JSON.</pre>
-                </div>
-            </div>
-        </div>
-    </main>
+						<button type="button" class="sim-btn" onclick="gerarPayload()">
+							Gerar JSON de Teste
+						</button>
+					</div>
+					<div>
+						<label
+							style="font-weight: bold; font-size: 0.8rem; display: block; margin-bottom: 0.25rem"
+							>Payload Produzido:</label
+						>
+						<pre id="sim-output" style="margin-top: 0; height: 230px; overflow-y: auto">
+Clique em "Gerar" para ver o JSON.</pre
+						>
+					</div>
+				</div>
+			</div>
+		</main>
 
-    <footer>
-        UNISISM · Coordenação de Integrações de Sistemas e Tecnologia Municipal · 2026
-    </footer>
+		<footer>UNISISM · Coordenação de Integrações de Sistemas e Tecnologia Municipal · 2026</footer>
 
-    <script>
-        function alternarModoSimulacao() {
-            const modo = document.getElementById('sim-modo').value;
-            const pRecep = document.getElementById('sim-painel-recepcao');
-            const pMed = document.getElementById('sim-painel-medico');
+		<script>
+			function alternarModoSimulacao() {
+				const modo = document.getElementById('sim-modo').value;
+				const pRecep = document.getElementById('sim-painel-recepcao');
+				const pMed = document.getElementById('sim-painel-medico');
 
-            if (modo === 'RECEPCAO') {
-                pRecep.style.display = 'block';
-                pMed.style.display = 'none';
-            } else {
-                pRecep.style.display = 'none';
-                pMed.style.display = 'block';
-            }
-            gerarPayload();
-        }
+				if (modo === 'RECEPCAO') {
+					pRecep.style.display = 'block';
+					pMed.style.display = 'none';
+				} else {
+					pRecep.style.display = 'none';
+					pMed.style.display = 'block';
+				}
+				gerarPayload();
+			}
 
-        function gerarPayload() {
-            const modo = document.getElementById('sim-modo').value;
-            let payload = {};
+			function gerarPayload() {
+				const modo = document.getElementById('sim-modo').value;
+				let payload = {};
 
-            if (modo === 'RECEPCAO') {
-                const medico = document.getElementById('sim-medico').value;
-                payload = {
-                    filaDestino: "CENTRO_ESPECIALIDADES",
-                    agendamentoPrevisto: "2026-07-27",
-                    nota: "Médico: " + medico + " às 08:45 | Obs: Trazer exames antigos."
-                };
-            } else if (modo === 'ATENDIMENTO') {
-                const cid = document.getElementById('sim-cid').value;
-                const conduta = document.getElementById('sim-conduta').value;
-                payload = {
-                    data: new Date().toISOString(),
-                    tipo: "CONSULTA_MEDICA",
-                    profissional: "Dr. Roberto Medeiros",
-                    registroProfissional: "CRM 12345",
-                    especialidade: "Cardiologia",
-                    unidade: "Centro Municipal de Especialidades",
-                    queixaPrincipal: "Paciente com picos hipertensivos recorrentes.",
-                    diagnostico: cid,
-                    cid10: "I10",
-                    conduta: conduta,
-                    prescricaoResumo: "1. Losartana 50mg — 1 cp VO de 12/12h."
-                };
-            } else {
-                payload = {
-                    paciente: {
-                        nome: "Maria Eduarda Oliveira",
-                        cpf: "98765432100",
-                        cartaoSus: "898000987654321"
-                    },
-                    solicitacao: {
-                        medicoSolicitante: "Dr. Roberto Medeiros",
-                        crm: "CRM 12345",
-                        especialidadeSolicitada: "Cirurgia Cardiovascular (Porto Alegre)",
-                        cid10: "I20.9",
-                        cidDescricao: "Angina pectoris não especificada",
-                        justificativaClinica: "[ENCAMINHAMENTO INTERMUNICIPAL FORA DO DOMICÍLIO]\nMunicípio Destino: Porto Alegre",
-                        prioridade: "URGENTE"
-                    }
-                };
-            }
+				if (modo === 'RECEPCAO') {
+					const medico = document.getElementById('sim-medico').value;
+					payload = {
+						filaDestino: 'CENTRO_ESPECIALIDADES',
+						agendamentoPrevisto: '2026-07-27',
+						nota: 'Médico: ' + medico + ' às 08:45 | Obs: Trazer exames antigos.'
+					};
+				} else if (modo === 'ATENDIMENTO') {
+					const cid = document.getElementById('sim-cid').value;
+					const conduta = document.getElementById('sim-conduta').value;
+					payload = {
+						data: new Date().toISOString(),
+						tipo: 'CONSULTA_MEDICA',
+						profissional: 'Dr. Roberto Medeiros',
+						registroProfissional: 'CRM 12345',
+						especialidade: 'Cardiologia',
+						unidade: 'Centro Municipal de Especialidades',
+						queixaPrincipal: 'Paciente com picos hipertensivos recorrentes.',
+						diagnostico: cid,
+						cid10: 'I10',
+						conduta: conduta,
+						prescricaoResumo: '1. Losartana 50mg — 1 cp VO de 12/12h.'
+					};
+				} else {
+					payload = {
+						paciente: {
+							nome: 'Maria Eduarda Oliveira',
+							cpf: '98765432100',
+							cartaoSus: '898000987654321'
+						},
+						solicitacao: {
+							medicoSolicitante: 'Dr. Roberto Medeiros',
+							crm: 'CRM 12345',
+							especialidadeSolicitada: 'Cirurgia Cardiovascular (Porto Alegre)',
+							cid10: 'I20.9',
+							cidDescricao: 'Angina pectoris não especificada',
+							justificativaClinica:
+								'[ENCAMINHAMENTO INTERMUNICIPAL FORA DO DOMICÍLIO]\nMunicípio Destino: Porto Alegre',
+							prioridade: 'URGENTE'
+						}
+					};
+				}
 
-            document.getElementById('sim-output').textContent = JSON.stringify(payload, null, 2);
-        }
-        gerarPayload();
-    </script>
-</body>
+				document.getElementById('sim-output').textContent = JSON.stringify(payload, null, 2);
+			}
+			gerarPayload();
+		</script>
+	</body>
 </html>

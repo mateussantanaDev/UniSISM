@@ -3,6 +3,7 @@
 > **Base URL (dev):** `http://localhost:3333/v1`
 > **Base URL (prod planejada):** `https://api.unisism.aguasbelas.pe.gov.br/v1`
 > **Auth:** `Authorization: Bearer <jwt>` em toda rota exceto as marcadas como _público_.
+> **API key:** quando `API_KEY` estiver configurada, todas as rotas exigem `x-api-key` (ou `API_KEY_HEADER`), exceto `/v1/health` e `/metrics`. Rotas marcadas como _público_ dispensam JWT, mas não dispensam API key nesse modo.
 > **Erros:** `{ error: { code, message, details? } }` — códigos catalogados em [`API.md §14`](API.md#14-c%C3%B3digos-de-erro-catalogados).
 
 Roles (RBAC):
@@ -188,7 +189,7 @@ Tipos: `PRODUCAO_INDIVIDUAL`, `ENCAMINHAMENTOS_POR_ESPECIALIDADE`, `FILA_REGULAC
 
 ## 10. TFD (gestão)
 
-Spec completa: [`TFD_API.md`](TFD_API.md). 47 rotas com cadeia hash de auditoria TJ.
+Spec completa: [`TFD_API.md`](TFD_API.md). 57 rotas com cadeia hash de auditoria TJ.
 
 **Grupos de roles:**
 - `rwGestor` = GES_TFD, ADM, DEV
@@ -231,7 +232,7 @@ Spec completa: [`TFD_API.md`](TFD_API.md). 47 rotas com cadeia hash de auditoria
 | POST | `/v1/tfd/solicitacoes/:id/anexos` | rwSolic | Anexa comprovante (`multipart`). |
 | GET | `/v1/tfd/anexos/:id/download` | rwSolic | Download (após scan LIMPO). |
 
-### Viagens (10)
+### Viagens (12)
 
 | Método | Rota | Roles |
 |---|---|---|
@@ -242,6 +243,8 @@ Spec completa: [`TFD_API.md`](TFD_API.md). 47 rotas com cadeia hash de auditoria
 | POST | `/v1/tfd/viagens/:id/iniciar` | rwGestor |
 | POST | `/v1/tfd/viagens/:id/concluir` | rwGestor |
 | POST | `/v1/tfd/viagens/:id/cancelar` | rwGestor |
+| POST | `/v1/tfd/viagens/:id/km-gestor` | rwGestor |
+| POST | `/v1/tfd/viagens/:id/alocar` | rwGestor |
 | POST | `/v1/tfd/viagens/:id/passageiros` | rwGestor |
 | DELETE | `/v1/tfd/viagens/:id/passageiros/:pid` | rwGestor |
 | POST | `/v1/tfd/viagens/:id/passageiros/:pid/presenca` | rwGestor |
@@ -284,6 +287,17 @@ Spec completa: [`TFD_API.md`](TFD_API.md). 47 rotas com cadeia hash de auditoria
 | GET | `/v1/tfd/auditoria/verificar` | rwAdmin (verifica integridade da cadeia hash) |
 | GET | `/v1/tfd/auditoria/:id` | rwAdmin |
 
+### Solicitações Paciente (6)
+
+| Método | Rota | Roles |
+|---|---|---|
+| GET | `/v1/tfd/solicitacoes-paciente` | rwGestor |
+| GET | `/v1/tfd/solicitacoes-paciente/:id` | rwGestor |
+| POST | `/v1/tfd/solicitacoes-paciente/:id/aprovar` | rwGestor |
+| POST | `/v1/tfd/solicitacoes-paciente/:id/recusar` | rwGestor |
+| POST | `/v1/tfd/solicitacoes-paciente/:id/embarque` | rwGestor |
+| POST | `/v1/tfd/solicitacoes-paciente/:id/concluir` | rwGestor |
+
 ---
 
 ## 11. Motorista app
@@ -313,12 +327,14 @@ Spec completa: [`MOTORISTA_APP_API.md`](MOTORISTA_APP_API.md).
 
 ## 12. Paciente app
 
-Base path: `/v1/paciente-app/*`. App Flutter (kit em [`flutter/`](flutter/)).
-Token **opaco** (não JWT) com TTL 24h. Não exige role do RBAC — auth pelo paciente.
+Base path legado: `/v1/paciente-app/*`. Contrato novo também expõe `/v1/auth/paciente/*`
+para autenticação e `/v1/paciente/*` para recursos. App Flutter (kit em [`flutter/`](flutter/)).
+Token **opaco** (não JWT) com access curto + refresh rotativo. Não exige role do RBAC — auth pelo paciente.
 
 | Método | Rota | Auth | Descrição |
 |---|---|---|---|
-| POST | `/v1/paciente-app/auth/login` | público | CPF + senha (inicial = CPF dígitos). Response: `{token, paciente: { senhaProvisoria }}`. |
+| POST | `/v1/paciente-app/auth/login` | público | CPF + senha (inicial = CPF dígitos). Response: `{accessToken, refreshToken, expiresAt, paciente}`. |
+| POST | `/v1/paciente-app/auth/refresh` | público | Rotaciona refresh e devolve novo access token. |
 | POST | `/v1/paciente-app/auth/ativar-conta` | público | Legado: CPF + dataNascimento + senha (confirmação de identidade). |
 | POST | `/v1/paciente-app/auth/logout` | bearer paciente | Revoga sessão. |
 | POST | `/v1/paciente-app/auth/trocar-senha` | bearer paciente | Body: `{senhaAtual, novaSenha}`. Zera `senhaProvisoria`. |

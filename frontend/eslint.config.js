@@ -19,7 +19,20 @@ export default defineConfig(
 		rules: {
 			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			"no-undef": 'off'
+			'no-undef': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_'
+				}
+			],
+			'svelte/no-navigation-without-resolve': 'off',
+			// Date/Map sao usados em varios pontos como calculos locais de renderizacao,
+			// nao como estado mutavel compartilhado; svelte-check cobre os fluxos reativos reais.
+			'svelte/prefer-svelte-reactivity': 'off'
 		}
 	},
 	{

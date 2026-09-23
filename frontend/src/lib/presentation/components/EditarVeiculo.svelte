@@ -104,7 +104,7 @@
 	let consumoOk = $derived(Number(consumoMedioKml) > 0);
 
 	let podeSalvar = $derived(
-		pendente > 0 && !enviando && placaOk && capacidadeOk && anoOk && consumoOk,
+		pendente > 0 && !enviando && placaOk && capacidadeOk && anoOk && consumoOk
 	);
 
 	async function salvar() {
@@ -140,18 +140,23 @@
 	<section
 		class="border-l-4 border-blue-900 bg-blue-50 px-3 py-2 font-sans text-[12px] text-blue-900"
 	>
-		Hodômetro é atualizado pela conclusão de viagens. Status (ativo/manutenção/inativo)
-		é alterado pelas ações no detalhe do veículo. Todas as edições são auditadas.
+		Hodômetro é atualizado pela conclusão de viagens. Status (ativo/manutenção/inativo) é alterado
+		pelas ações no detalhe do veículo. Todas as edições são auditadas.
 	</section>
 
 	<section>
 		<div class="mb-2 border-b border-slate-200 pb-1.5">
-			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">
-				Identificação
-			</h3>
+			<h3 class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Identificação</h3>
 		</div>
 		<div class="grid grid-cols-12 gap-3">
-			<FormField label="Placa" name="placa" span={4} mono bind:value={placa} hint="ABC-1234 ou ABC1D23" />
+			<FormField
+				label="Placa"
+				name="placa"
+				span={4}
+				mono
+				bind:value={placa}
+				hint="ABC-1234 ou ABC1D23"
+			/>
 			<FormField label="Modelo" name="modelo" span={5} bind:value={modelo} />
 			<div class="col-span-3 flex flex-col">
 				<label
@@ -242,7 +247,9 @@
 
 	<div class="flex items-center justify-between pt-2">
 		<span class="font-sans text-[11px] text-slate-500">
-			{pendente === 0 ? 'Nenhum campo alterado' : `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
+			{pendente === 0
+				? 'Nenhum campo alterado'
+				: `${pendente} campo${pendente === 1 ? '' : 's'} alterado${pendente === 1 ? '' : 's'}`}
 		</span>
 		<div class="flex gap-2">
 			<PrimaryButton label="Cancelar" variant="secondary" onclick={onCancel} disabled={enviando} />

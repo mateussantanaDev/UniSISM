@@ -17,7 +17,8 @@
 	let filaDestino = $state<FilaDestino>('SUS');
 
 	$effect(() => {
-		const isOdonto = encaminhamento.solicitacao.especialidadeSolicitada?.toUpperCase().includes('ODONTO') || false;
+		const isOdonto =
+			encaminhamento.solicitacao.especialidadeSolicitada?.toUpperCase().includes('ODONTO') || false;
 		filaDestino = isOdonto ? 'CEO' : 'SUS';
 	});
 
@@ -30,7 +31,7 @@
 		try {
 			const atualizado = await api.encaminhamentos.aprovar(encaminhamento.id, {
 				nota: nota.trim() || undefined,
-				agendamentoPrevisto: filaDestino === 'SUS' ? (agendamentoPrevisto || undefined) : undefined,
+				agendamentoPrevisto: filaDestino === 'SUS' ? agendamentoPrevisto || undefined : undefined,
 				filaDestino
 			});
 			onAprovado(atualizado);
@@ -65,7 +66,7 @@
 			<StatusBadge status={encaminhamento.status} />
 		</div>
 		<div class="text-sm font-bold text-blue-900">{encaminhamento.protocolo}</div>
-		<div class="text-xs font-sans font-semibold text-slate-900">
+		<div class="font-sans text-xs font-semibold text-slate-900">
 			{encaminhamento.paciente.nome}
 		</div>
 		<div class="text-[11px] text-slate-700">
@@ -81,20 +82,23 @@
 			</h3>
 		</div>
 		<div class="flex flex-col gap-2">
-			<label for="select-fila" class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
+			<label
+				for="select-fila"
+				class="text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+			>
 				Direcionar vaga para:
 			</label>
 			<select
 				id="select-fila"
 				bind:value={filaDestino}
-				class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900 font-sans"
+				class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-sans text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 			>
 				<option value="SUS">Fila SUS (Regulação do Estado)</option>
 				<option value="CENTRO_ESPECIALIDADES">Centro de Especialidades Municipal</option>
 				<option value="CEO">Centro de Especialidades Odontológicas (CEO)</option>
 			</select>
 			{#if filaDestino === 'CENTRO_ESPECIALIDADES' || filaDestino === 'CEO'}
-				<div class="mt-1 text-[10px] tracking-wider text-emerald-800 font-bold uppercase">
+				<div class="mt-1 text-[10px] font-bold tracking-wider text-emerald-800 uppercase">
 					✓ Fluxo Direto: Agendado na fila interna do centro, sem depender de decreto do SUS.
 				</div>
 			{:else}

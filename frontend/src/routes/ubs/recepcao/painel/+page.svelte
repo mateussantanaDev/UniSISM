@@ -2,10 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
 	import type { ChamadaPainelUbs } from '$lib/api/types';
-	import {
-		PRIORIDADE_LABEL,
-		TIPO_ATENDIMENTO_LABEL
-	} from '$lib/api/types';
+	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
 
 	let chamadaAtual = $state<ChamadaPainelUbs | null>(null);
 	let ultimasChamadas = $state<ChamadaPainelUbs[]>([]);
@@ -80,11 +77,23 @@
 			utterance.volume = 1.0;
 
 			const vozes = window.speechSynthesis.getVoices();
-			const nomesFemininos = ['francisca', 'thalita', 'leticia', 'vitória', 'luciana', 'fernanda', 'maria', 'helena', 'camila', 'bia', 'google português do brasil'];
-			const vozesPtBr = vozes.filter(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+			const nomesFemininos = [
+				'francisca',
+				'thalita',
+				'leticia',
+				'vitória',
+				'luciana',
+				'fernanda',
+				'maria',
+				'helena',
+				'camila',
+				'bia',
+				'google português do brasil'
+			];
+			const vozesPtBr = vozes.filter((v) => v.lang === 'pt-BR' || v.lang === 'pt_BR');
 			let melhorVoz: SpeechSynthesisVoice | undefined;
 			for (const nome of nomesFemininos) {
-				melhorVoz = vozesPtBr.find(v => v.name.toLowerCase().includes(nome));
+				melhorVoz = vozesPtBr.find((v) => v.name.toLowerCase().includes(nome));
 				if (melhorVoz) break;
 			}
 			if (melhorVoz) utterance.voice = melhorVoz;
@@ -241,13 +250,13 @@
 		<!-- Seção da Chamada Atual (70% da tela) -->
 		<section
 			class="flex flex-1 flex-col justify-between border-r-4 border-slate-800 bg-slate-900/90 p-10 transition-colors duration-500
-			{piscarDestaque ? 'bg-blue-950/90 ring-8 ring-blue-500 inset-0' : ''}"
+			{piscarDestaque ? 'inset-0 bg-blue-950/90 ring-8 ring-blue-500' : ''}"
 		>
 			{#if chamadaAtual}
 				<!-- Badge de Status -->
 				<div class="flex items-center justify-between">
 					<div
-						class="flex items-center gap-3 rounded-full bg-blue-600 px-6 py-2 text-sm font-black tracking-widest text-white uppercase shadow-lg animate-pulse"
+						class="flex animate-pulse items-center gap-3 rounded-full bg-blue-600 px-6 py-2 text-sm font-black tracking-widest text-white uppercase shadow-lg"
 					>
 						<span>📢 CHAMANDO AGORA</span>
 					</div>
@@ -259,17 +268,17 @@
 
 				<!-- Paciente em Destaque Gigante -->
 				<div class="my-auto text-center">
-					<div class="font-mono text-5xl font-black text-amber-400 tracking-widest mb-4">
+					<div class="mb-4 font-mono text-5xl font-black tracking-widest text-amber-400">
 						SENHA {chamadaAtual.senha}
 					</div>
 
 					<h2
-						class="text-6xl font-black tracking-tight text-white uppercase leading-tight drop-shadow-md lg:text-7xl"
+						class="text-6xl leading-tight font-black tracking-tight text-white uppercase drop-shadow-md lg:text-7xl"
 					>
 						{chamadaAtual.pacienteNome}
 					</h2>
 
-					<div class="mt-4 text-xl font-bold text-slate-300 uppercase tracking-wider">
+					<div class="mt-4 text-xl font-bold tracking-wider text-slate-300 uppercase">
 						{TIPO_ATENDIMENTO_LABEL[chamadaAtual.tipoAtendimento]}
 					</div>
 				</div>
@@ -282,7 +291,7 @@
 						<div class="text-sm font-bold tracking-widest text-emerald-400 uppercase">
 							DIRIJA-SE AO LOCAL:
 						</div>
-						<div class="text-4xl font-black tracking-wide text-emerald-300 uppercase mt-1">
+						<div class="mt-1 text-4xl font-black tracking-wide text-emerald-300 uppercase">
 							{chamadaAtual.consultorio}
 						</div>
 					</div>
@@ -291,7 +300,7 @@
 						<div class="text-sm font-bold tracking-widest text-slate-400 uppercase">
 							PROFISSIONAL / MÉDICO:
 						</div>
-						<div class="text-3xl font-black tracking-wide text-white uppercase mt-1">
+						<div class="mt-1 text-3xl font-black tracking-wide text-white uppercase">
 							{chamadaAtual.medicoNome}
 						</div>
 						{#if chamadaAtual.crm}
@@ -302,13 +311,13 @@
 			{:else}
 				<!-- Tela de Espera Sem Chamadas -->
 				<div class="my-auto text-center text-slate-500">
-					<div class="text-7xl mb-4">🏥</div>
-					<h2 class="text-4xl font-black text-slate-300 uppercase tracking-widest">
+					<div class="mb-4 text-7xl">🏥</div>
+					<h2 class="text-4xl font-black tracking-widest text-slate-300 uppercase">
 						SALA DE ESPERA · ATENDIMENTO UBS
 					</h2>
 					<p class="mt-3 text-lg text-slate-400">
-						Aguarde ser chamado pelo painel sonoro e luminoso. Tenha em mãos seu Documento com Foto e
-						Cartão do SUS.
+						Aguarde ser chamado pelo painel sonoro e luminoso. Tenha em mãos seu Documento com Foto
+						e Cartão do SUS.
 					</p>
 				</div>
 			{/if}
@@ -353,7 +362,7 @@
 								<span class="font-bold text-emerald-400 uppercase">
 									{c.consultorio}
 								</span>
-								<span class="truncate text-[11px] text-slate-400 max-w-[150px]">
+								<span class="max-w-[150px] truncate text-[11px] text-slate-400">
 									{c.medicoNome}
 								</span>
 							</div>
@@ -363,7 +372,9 @@
 			</div>
 
 			<!-- Rodapé do Painel -->
-			<div class="mt-auto border-t border-slate-800 pt-3 text-center text-[10px] text-slate-600 uppercase">
+			<div
+				class="mt-auto border-t border-slate-800 pt-3 text-center text-[10px] text-slate-600 uppercase"
+			>
 				UniSISM · Sistema Integrado de Saúde Municipal
 			</div>
 		</aside>

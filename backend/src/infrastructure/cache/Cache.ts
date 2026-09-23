@@ -136,14 +136,14 @@ class RedisCache implements Cache {
 let singleton: Cache | null = null;
 export function getCache(): Cache {
   if (singleton) return singleton;
-  const url = process.env['REDIS_URL'];
+  const url = env.REDIS_URL;
   singleton = url ? new RedisCache(url) : new NoOpCache();
   return singleton;
 }
 
 export const CACHE_TTL = {
-  ARVORE: Number(process.env['CACHE_TTL_ARVORE'] ?? 60),
-  DASHBOARD: Number(process.env['CACHE_TTL_DASHBOARD'] ?? 30),
+  ARVORE: env.CACHE_TTL_ARVORE,
+  DASHBOARD: env.CACHE_TTL_DASHBOARD,
 } as const;
 
 // Consome env pra garantir que está carregado antes dos imports

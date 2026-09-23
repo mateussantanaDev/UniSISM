@@ -37,25 +37,19 @@
 		<PanelHeader title="Situação Atual" index="01" />
 		<div class="grid grid-cols-2 gap-3 p-4 md:grid-cols-4">
 			<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Status
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Status</div>
 				<div class="mt-1.5">
 					<StatusBadge status={enc.status} />
 				</div>
 			</div>
 			<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Prioridade
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Prioridade</div>
 				<div class="mt-1.5">
 					<StatusBadge prioridade={enc.solicitacao.prioridade} />
 				</div>
 			</div>
 			<div class="border border-slate-200 bg-slate-50 px-3 py-2.5">
-				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-					Criado em
-				</div>
+				<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">Criado em</div>
 				<div class="mt-1 font-mono text-xs font-semibold text-slate-900">
 					{formatarData(enc.criadoEm)}
 				</div>
@@ -200,9 +194,7 @@
 						: 's'}
 				</div>
 			</div>
-			<div
-				class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-slate-50"
-			>
+			<div class="flex h-12 w-12 items-center justify-center border border-slate-300 bg-slate-50">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"

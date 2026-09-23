@@ -53,10 +53,7 @@
 	/** Especialidades derivadas das ingestões do dia (apenas com contagem > 0). */
 	let porEspecialidade = $derived.by(() => {
 		if (!perfil) return [] as { nome: string; volume: number; pct: number }[];
-		const total = perfil.producao.porEspecialidade.reduce(
-			(a, e) => a + e.volume,
-			0
-		);
+		const total = perfil.producao.porEspecialidade.reduce((a, e) => a + e.volume, 0);
 		if (total === 0) return [];
 		return perfil.producao.porEspecialidade
 			.map((e) => ({
@@ -76,10 +73,7 @@
 
 	let percentualMeta = $derived.by(() => {
 		if (!perfil || perfil.producao.metaMes === 0) return 0;
-		return Math.min(
-			100,
-			Math.round((perfil.producao.mes / perfil.producao.metaMes) * 100)
-		);
+		return Math.min(100, Math.round((perfil.producao.mes / perfil.producao.metaMes) * 100));
 	});
 </script>
 
@@ -87,18 +81,18 @@
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-4">
 		<MetricCard
 			label="Hoje"
-			value={carregando ? '—' : perfil?.producao.hoje ?? 0}
+			value={carregando ? '—' : (perfil?.producao.hoje ?? 0)}
 			sublabel="encaminhamentos"
 		/>
 		<MetricCard
 			label="Esta Semana"
-			value={carregando ? '—' : perfil?.producao.semana ?? 0}
+			value={carregando ? '—' : (perfil?.producao.semana ?? 0)}
 			sublabel="últimos 7 dias"
 			accent="default"
 		/>
 		<MetricCard
 			label="Este Mês"
-			value={carregando ? '—' : perfil?.producao.mes ?? 0}
+			value={carregando ? '—' : (perfil?.producao.mes ?? 0)}
 			sublabel={formatarMesAno()}
 			accent="success"
 		/>
@@ -135,10 +129,7 @@
 								<div class="font-mono text-[10px] font-bold text-slate-700">
 									{h.volume}
 								</div>
-								<div
-									class="w-full bg-blue-900 transition-all"
-									style="height: {pct}%"
-								></div>
+								<div class="w-full bg-blue-900 transition-all" style="height: {pct}%"></div>
 								<div class="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
 									{h.hora}
 								</div>
@@ -201,7 +192,7 @@
 			<PanelHeader title="Tempo Médio" subtitle="PDF → Consolidação" index="03" />
 			<div class="px-4 py-4">
 				<div class="font-mono text-4xl font-bold text-slate-900">
-					{carregando ? '—' : perfil?.producao.tempoMedio ?? '—'}
+					{carregando ? '—' : (perfil?.producao.tempoMedio ?? '—')}
 				</div>
 				<div class="mt-1 text-[11px] text-slate-600">GET /me/profile</div>
 			</div>
@@ -223,7 +214,7 @@
 			<PanelHeader title="Volume do Ano" subtitle="Acumulado até hoje" index="05" />
 			<div class="px-4 py-4">
 				<div class="font-mono text-4xl font-bold text-slate-900">
-					{carregando ? '—' : perfil?.producao.ano ?? 0}
+					{carregando ? '—' : (perfil?.producao.ano ?? 0)}
 				</div>
 				<div class="mt-1 text-[11px] text-slate-600">
 					{carregando ? '—' : `Meta mês · ${perfil?.producao.metaMes ?? '—'}`}

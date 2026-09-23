@@ -409,7 +409,9 @@ CREATE TRIGGER tfd_audit_no_delete BEFORE DELETE ON tfd_audit_log
 ## 5. Endpoints HTTP
 
 Base: `/v1/tfd/`. Todos exigem `Authorization: Bearer <jwt>` e role compatível
-(ver §3). Erros seguem o padrão `{ "error": { "code": "...", "message": "..." } }`.
+(ver §3). Quando `API_KEY` estiver configurada no backend, também exigem
+`x-api-key` ou o header definido em `API_KEY_HEADER`. Erros seguem o padrão
+`{ "error": { "code": "...", "message": "..." } }`.
 
 ### 5.1 Frota
 
@@ -458,6 +460,8 @@ Base: `/v1/tfd/`. Todos exigem `Authorization: Bearer <jwt>` e role compatível
 | POST   | `/viagens/:id/iniciar` | `{ kmInicialHodometro }` | `ViagemFrota` |
 | POST   | `/viagens/:id/concluir` | `{ kmFinalHodometro, observacoes? }` | `ViagemFrota` |
 | POST   | `/viagens/:id/cancelar` | `{ motivo }` | `ViagemFrota` |
+| POST   | `/viagens/:id/km-gestor` | `{ kmInicialHodometro?, kmFinalHodometro?, justificativa }` | `ViagemFrota` |
+| POST   | `/viagens/:id/alocar` | `{ solicitacaoId, numeroAssento? }` | `ViagemFrota` |
 | POST   | `/viagens/:id/passageiros` | `{ solicitacaoId }` | `ViagemFrota` |
 | DELETE | `/viagens/:id/passageiros/:pid` | — | `ViagemFrota` |
 | POST   | `/viagens/:id/passageiros/:pid/presenca` | `{ presenca, observacao? }` | `ViagemFrota` |
@@ -501,6 +505,7 @@ de 10 chars + auditoria.
 | Método | Rota | Body | Response |
 |---|---|---|---|
 | GET    | `/ajudas-custo` | `?status=&pacienteId=` | `AjudaCusto[]` |
+| GET    | `/ajudas-custo/:id` | — | `AjudaCusto` |
 | POST   | `/ajudas-custo` | `SolicitarAjudaCustoRequest` | `AjudaCusto` |
 | POST   | `/ajudas-custo/:id/autorizar` | — | `AjudaCusto` |
 | POST   | `/ajudas-custo/:id/pagar` | `multipart { metodoPagamento, file }` | `AjudaCusto` |
@@ -515,12 +520,24 @@ status ≠ NEGADA/CANCELADA).
 | Método | Rota | Body / Query | Response |
 |---|---|---|---|
 | GET    | `/auditoria` | `?recursoTipo=&recursoId=&desde=&ate=` | `RegistroAuditoriaTFD[]` |
-| GET    | `/auditoria/:id` | — | `RegistroAuditoriaTFD` |
 | GET    | `/auditoria/exportar-tj?mes=YYYY-MM` | — | ZIP com CSVs + manifest hash |
+| GET    | `/auditoria/verificar` | — | resultado da verificação da cadeia hash |
+| GET    | `/auditoria/:id` | — | `RegistroAuditoriaTFD` |
 
 **Apenas ADMIN/DEV.** Endpoint imutável — nunca aceita POST/PATCH/DELETE.
 
-### 5.9 Relatórios
+### 5.9 Solicitações do App Paciente
+
+| Método | Rota | Body / Query | Response |
+|---|---|---|---|
+| GET    | `/solicitacoes-paciente` | `?status=&viagemId=&prioridade=` | `TfdPacienteSolicAdminDto[]` |
+| GET    | `/solicitacoes-paciente/:id` | — | `TfdPacienteSolicAdminDto` |
+| POST   | `/solicitacoes-paciente/:id/aprovar` | `{ numeroAssento? }` | `TfdPacienteSolicAdminDto` |
+| POST   | `/solicitacoes-paciente/:id/recusar` | `{ motivo }` | `TfdPacienteSolicAdminDto` |
+| POST   | `/solicitacoes-paciente/:id/embarque` | — | `TfdPacienteSolicAdminDto` |
+| POST   | `/solicitacoes-paciente/:id/concluir` | — | `TfdPacienteSolicAdminDto` |
+
+### 5.10 Relatórios
 
 Reaproveita o módulo `Relatorio` existente (§API.md sobre Relatórios) com
 novos `TipoRelatorioTFD`:
@@ -555,7 +572,7 @@ O primeiro registro de cada prefeitura usa `'0' x 64` como anterior (genesis).
 ### 6.2 Verificação de integridade
 
 ```sql
--- Endpoint POST /v1/tfd/auditoria/verificar (DEV apenas)
+-- Endpoint GET /v1/tfd/auditoria/verificar (ADMIN/DEV)
 -- Re-calcula hash de todos os registros e compara com armazenado.
 -- Qualquer discrepância → 500 com lista de IDs corrompidos.
 ```
@@ -668,7 +685,7 @@ de download: 7 dias (SSE-KMS).
 - [ ] Job assíncrono de hash da cadeia (BullMQ ou pg_notify)
 - [ ] ClamAV em sidecar pra scan de anexos
 
-### Endpoints (47 rotas)
+### Endpoints (57 rotas)
 - [ ] Frota: 7 rotas
 - [ ] Motoristas: 7 rotas
 - [ ] Solicitações: 7 rotas
@@ -719,7 +736,7 @@ api.tfd.auditoria.list/byId/exportarTJ
 
 E os tipos correspondentes em `src/lib/api/types.ts` (já exportados).
 
-**Quando o backend subir as 47 rotas seguindo este documento, basta criar a
+**Quando o backend subir as 57 rotas seguindo este documento, basta criar a
 classe `TfdApi` em `client.ts` e remover o import do `tfd-mock.ts`. Nenhuma
 linha de UI precisa mudar.**
 

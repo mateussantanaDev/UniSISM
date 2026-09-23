@@ -44,6 +44,9 @@ async function limparRateLimitKeys(): Promise<void> {
 const CPF_VALIDO = '11144477735';
 const CPF_OUTRO = '39053344705';
 const CPF_FMT = '111.444.777-35';
+const ATENDENTE_MATRICULA = 'SMOKE-E3-001';
+const ATENDENTE_EMAIL = 'at-e3@example.com';
+const ATENDENTE_CPF = '11122233344';
 
 let falhas = 0;
 function assert(label: string, ok: boolean, extra?: unknown): void {
@@ -94,16 +97,43 @@ async function ensureSetup(): Promise<{
       },
     });
   }
-  let at = await prisma.atendente.findUnique({ where: { matricula: 'SMOKE-E3-001' } });
+  let at = await prisma.atendente.findFirst({
+    where: {
+      OR: [
+        { matricula: ATENDENTE_MATRICULA },
+        { email: ATENDENTE_EMAIL },
+        { cpf: ATENDENTE_CPF },
+      ],
+    },
+  });
   if (!at) {
     const h = await bcrypt.hash('senha123', 8);
     at = await prisma.atendente.create({
       data: {
-        matricula: 'SMOKE-E3-001',
+        matricula: ATENDENTE_MATRICULA,
         nome: 'ATENDENTE E3',
-        email: 'at-e3@example.com',
+        email: ATENDENTE_EMAIL,
         senhaHash: h,
-        cpf: '11122233344',
+        cpf: ATENDENTE_CPF,
+        role: 'ATENDENTE_UBS',
+        ubsId: ubs.id,
+        prefeituraId: pref.id,
+      },
+    });
+  } else if (
+    at.matricula !== ATENDENTE_MATRICULA ||
+    at.email !== ATENDENTE_EMAIL ||
+    at.cpf !== ATENDENTE_CPF ||
+    at.ubsId !== ubs.id ||
+    at.prefeituraId !== pref.id
+  ) {
+    at = await prisma.atendente.update({
+      where: { id: at.id },
+      data: {
+        matricula: ATENDENTE_MATRICULA,
+        nome: 'ATENDENTE E3',
+        email: ATENDENTE_EMAIL,
+        cpf: ATENDENTE_CPF,
         role: 'ATENDENTE_UBS',
         ubsId: ubs.id,
         prefeituraId: pref.id,

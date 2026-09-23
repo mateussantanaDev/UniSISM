@@ -20,13 +20,18 @@
 			label: 'Recepção & Fila',
 			href: '/ubs/recepcao/fila',
 			shortcut: 'F',
-			quando: () => auth.me?.escopo === 'UBS' || auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN'
+			quando: () =>
+				auth.me?.escopo === 'UBS' || auth.me?.role === 'DESENVOLVEDOR' || auth.me?.role === 'ADMIN'
 		},
 		{
 			label: 'Consultório Médico',
 			href: '/ubs/medico/agenda',
 			shortcut: 'C',
-			quando: () => auth.podeConsolidarEncaminhamento || auth.me?.role === 'MEDICO' || auth.me?.role === 'MEDICO_ESPECIALISTA' || auth.me?.role === 'DESENVOLVEDOR'
+			quando: () =>
+				auth.podeConsolidarEncaminhamento ||
+				auth.me?.role === 'MEDICO' ||
+				auth.me?.role === 'MEDICO_ESPECIALISTA' ||
+				auth.me?.role === 'DESENVOLVEDOR'
 		},
 		{
 			label: 'Painel TV (Chamada)',
@@ -106,7 +111,9 @@
 				<span>{item.label}</span>
 				<kbd
 					class="border px-1.5 py-0.5 text-[9px] font-normal
-					{active ? 'border-blue-900 bg-white text-blue-900' : 'border-slate-300 bg-slate-100 text-slate-500'}"
+					{active
+						? 'border-blue-900 bg-white text-blue-900'
+						: 'border-slate-300 bg-slate-100 text-slate-500'}"
 				>
 					{item.shortcut}
 				</kbd>
@@ -120,12 +127,14 @@
 		class="group flex w-full items-center gap-2.5 border-t-2 border-l-2 bg-gradient-to-b from-white to-slate-50 px-4 py-3 text-left transition-colors
 			{perfilAtivo
 			? 'border-t-slate-200 border-l-blue-900 bg-slate-100'
-			: 'border-t-slate-200 border-l-transparent hover:bg-slate-100 hover:border-l-slate-300'}"
+			: 'border-t-slate-200 border-l-transparent hover:border-l-slate-300 hover:bg-slate-100'}"
 		aria-label="Abrir perfil do atendente"
 	>
 		<div
 			class="flex h-9 w-9 shrink-0 items-center justify-center border font-mono text-[11px] font-bold text-white
-				{perfilAtivo ? 'border-blue-900 bg-blue-900' : 'border-slate-300 bg-blue-900 group-hover:border-blue-900'}"
+				{perfilAtivo
+				? 'border-blue-900 bg-blue-900'
+				: 'border-slate-300 bg-blue-900 group-hover:border-blue-900'}"
 		>
 			{auth.me?.iniciais ?? '··'}
 		</div>
@@ -139,7 +148,9 @@
 			</div>
 			<div class="flex items-center gap-1.5 text-[11px] text-emerald-700">
 				<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
-				<span class="font-semibold truncate" title={formatarCargoPerfil(auth.me)}>{formatarCargoPerfil(auth.me)}</span>
+				<span class="truncate font-semibold" title={formatarCargoPerfil(auth.me)}
+					>{formatarCargoPerfil(auth.me)}</span
+				>
 			</div>
 		</div>
 		<svg

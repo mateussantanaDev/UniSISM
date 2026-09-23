@@ -6,10 +6,7 @@
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { AtendimentoUbsItem, PrioridadeUbs, StatusAtendimentoUbs } from '$lib/api/types';
-	import {
-		PRIORIDADE_LABEL,
-		TIPO_ATENDIMENTO_LABEL
-	} from '$lib/api/types';
+	import { PRIORIDADE_LABEL, TIPO_ATENDIMENTO_LABEL } from '$lib/api/types';
 	import {
 		IconAlertTriangle,
 		IconCheck,
@@ -109,9 +106,7 @@
 		return () => clearInterval(timer);
 	});
 
-	let proximoPaciente = $derived(
-		itens.find((i) => i.status === 'AGUARDANDO') ?? null
-	);
+	let proximoPaciente = $derived(itens.find((i) => i.status === 'AGUARDANDO') ?? null);
 
 	let pacienteChamadoAtual = $derived(
 		itens.find((i) => i.status === 'CHAMADO' || i.status === 'EM_ATENDIMENTO') ?? null
@@ -188,15 +183,19 @@
 
 <div class="flex flex-col gap-5 font-mono">
 	{#if erro}
-		<div class="border border-red-700 bg-red-50 p-3 text-xs font-bold text-red-900 flex items-center gap-2">
-			<IconAlertTriangle size={14} class="text-red-700 shrink-0" />
+		<div
+			class="flex items-center gap-2 border border-red-700 bg-red-50 p-3 text-xs font-bold text-red-900"
+		>
+			<IconAlertTriangle size={14} class="shrink-0 text-red-700" />
 			<span>{erro}</span>
 		</div>
 	{/if}
 
 	{#if sucesso}
-		<div class="border border-emerald-700 bg-emerald-50 p-3 text-xs font-bold text-emerald-900 flex items-center gap-2">
-			<IconCheck size={14} class="text-emerald-700 shrink-0" />
+		<div
+			class="flex items-center gap-2 border border-emerald-700 bg-emerald-50 p-3 text-xs font-bold text-emerald-900"
+		>
+			<IconCheck size={14} class="shrink-0 text-emerald-700" />
 			<span>{sucesso}</span>
 		</div>
 	{/if}
@@ -216,11 +215,11 @@
 		</div>
 
 		<div class="flex items-center gap-3">
-			<div class="flex items-center gap-2 bg-blue-950/60 px-3 py-1.5 border border-blue-800">
+			<div class="flex items-center gap-2 border border-blue-800 bg-blue-950/60 px-3 py-1.5">
 				<span class="text-[10px] font-bold tracking-wider text-blue-300 uppercase">Meu Local:</span>
 				<select
 					bind:value={meuConsultorio}
-					class="bg-blue-900 text-xs font-bold text-white border-0 focus:outline-none cursor-pointer"
+					class="cursor-pointer border-0 bg-blue-900 text-xs font-bold text-white focus:outline-none"
 				>
 					<option value="Consultório 01">Consultório 01</option>
 					<option value="Consultório 02">Consultório 02</option>
@@ -233,7 +232,7 @@
 			<a
 				href="/ubs/recepcao/painel"
 				target="_blank"
-				class="border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white uppercase hover:bg-white/20 transition flex items-center gap-1"
+				class="flex items-center gap-1 border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white uppercase transition hover:bg-white/20"
 			>
 				<IconDeviceTv size={14} />
 				<span>Painel TV</span>
@@ -244,13 +243,13 @@
 	<!-- Métricas do Dia -->
 	<section class="grid grid-cols-2 gap-3 md:grid-cols-5">
 		<MetricCard label="Total Designado" value={total} sublabel="Atendimentos hoje" />
+		<MetricCard label="Na Fila" value={aguardando} sublabel="Aguardando chamada" accent="warning" />
 		<MetricCard
-			label="Na Fila"
-			value={aguardando}
-			sublabel="Aguardando chamada"
+			label="Chamado Agora"
+			value={chamados}
+			sublabel="Em deslocamento"
 			accent="warning"
 		/>
-		<MetricCard label="Chamado Agora" value={chamados} sublabel="Em deslocamento" accent="warning" />
 		<MetricCard
 			label="Em Consulta"
 			value={emAtendimento}
@@ -266,7 +265,7 @@
 			<div class="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<span
-						class="inline-block bg-blue-900 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider"
+						class="inline-block bg-blue-900 px-2 py-0.5 text-[10px] font-black tracking-wider text-white uppercase"
 					>
 						{pacienteChamadoAtual.status === 'EM_ATENDIMENTO'
 							? 'EM CONSULTA ATUALMENTE'
@@ -276,7 +275,9 @@
 						{pacienteChamadoAtual.senha} · {pacienteChamadoAtual.pacienteNome}
 					</div>
 					<div class="text-xs text-slate-600">
-						CPF: {pacienteChamadoAtual.pacienteCpf} · {TIPO_ATENDIMENTO_LABEL[pacienteChamadoAtual.tipoAtendimento]} · {PRIORIDADE_LABEL[pacienteChamadoAtual.prioridade]}
+						CPF: {pacienteChamadoAtual.pacienteCpf} · {TIPO_ATENDIMENTO_LABEL[
+							pacienteChamadoAtual.tipoAtendimento
+						]} · {PRIORIDADE_LABEL[pacienteChamadoAtual.prioridade]}
 					</div>
 				</div>
 
@@ -285,7 +286,7 @@
 						<button
 							type="button"
 							onclick={() => chamarPaciente(pacienteChamadoAtual!)}
-							class="border border-blue-900 bg-white px-3 py-2 text-xs font-bold text-blue-900 uppercase hover:bg-blue-100 flex items-center gap-1"
+							class="flex items-center gap-1 border border-blue-900 bg-white px-3 py-2 text-xs font-bold text-blue-900 uppercase hover:bg-blue-100"
 						>
 							<IconVolume size={14} />
 							<span>Re-chamar TV</span>
@@ -293,7 +294,7 @@
 						<button
 							type="button"
 							onclick={() => iniciarConsulta(pacienteChamadoAtual!)}
-							class="border border-emerald-700 bg-emerald-700 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800 flex items-center gap-1"
+							class="flex items-center gap-1 border border-emerald-700 bg-emerald-700 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-emerald-800"
 						>
 							<IconPlayerPlay size={14} />
 							<span>Iniciar Consulta</span>
@@ -305,7 +306,7 @@
 								pacienteAtendimentoAtual = pacienteChamadoAtual;
 								modalSoapAberto = true;
 							}}
-							class="border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800 flex items-center gap-1"
+							class="flex items-center gap-1 border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold text-white uppercase hover:bg-blue-800"
 						>
 							<IconNotes size={14} />
 							<span>Continuar Registro SOAP</span>
@@ -327,7 +328,7 @@
 			<div class="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<span
-						class="inline-block bg-amber-600 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider"
+						class="inline-block bg-amber-600 px-2 py-0.5 text-[10px] font-black tracking-wider text-white uppercase"
 					>
 						PRÓXIMO NA FILA DE ESPERA (RECOMENDADO)
 					</span>
@@ -335,8 +336,9 @@
 						{proximoPaciente.senha} · {proximoPaciente.pacienteNome}
 					</div>
 					<div class="text-xs text-slate-700">
-						Prioridade: <strong>{PRIORIDADE_LABEL[proximoPaciente.prioridade]}</strong> ·
-						Chegada: {new Date(proximoPaciente.horarioChegada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+						Prioridade: <strong>{PRIORIDADE_LABEL[proximoPaciente.prioridade]}</strong> · Chegada: {new Date(
+							proximoPaciente.horarioChegada
+						).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
 						{#if proximoPaciente.queixaBreve}
 							· Queixa: "{proximoPaciente.queixaBreve}"
 						{/if}
@@ -347,7 +349,7 @@
 					<button
 						type="button"
 						onclick={() => chamarPaciente(proximoPaciente!)}
-						class="border-2 border-blue-900 bg-blue-900 px-5 py-2.5 text-xs font-black text-white uppercase tracking-wider hover:bg-blue-800 shadow-sm"
+						class="border-2 border-blue-900 bg-blue-900 px-5 py-2.5 text-xs font-black tracking-wider text-white uppercase shadow-sm hover:bg-blue-800"
 					>
 						📢 Chamar Paciente Agora
 					</button>
@@ -366,7 +368,7 @@
 			<button
 				type="button"
 				onclick={carregarFilaMedico}
-				class="border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 uppercase"
+				class="border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
 			>
 				↻ Atualizar Fila
 			</button>
@@ -375,7 +377,9 @@
 		<div class="overflow-x-auto">
 			<table class="w-full border-collapse text-left text-xs">
 				<thead>
-					<tr class="border-b border-slate-200 bg-slate-100 text-[10px] tracking-wider text-slate-600 uppercase">
+					<tr
+						class="border-b border-slate-200 bg-slate-100 text-[10px] tracking-wider text-slate-600 uppercase"
+					>
 						<th class="px-3 py-2.5">Posição & Senha</th>
 						<th class="px-3 py-2.5">Prioridade</th>
 						<th class="px-3 py-2.5">Paciente</th>
@@ -401,7 +405,8 @@
 					{:else}
 						{#each itens as item, idx (item.id)}
 							<tr
-								class="hover:bg-blue-50/40 transition-colors {prioridadeCores[item.prioridade].border}"
+								class="transition-colors hover:bg-blue-50/40 {prioridadeCores[item.prioridade]
+									.border}"
 							>
 								<!-- Senha & Posição -->
 								<td class="px-3 py-2.5">
@@ -413,7 +418,9 @@
 								<!-- Prioridade -->
 								<td class="px-3 py-2.5">
 									<span
-										class="inline-block px-2 py-0.5 text-[10px] uppercase {prioridadeCores[item.prioridade].badge}"
+										class="inline-block px-2 py-0.5 text-[10px] uppercase {prioridadeCores[
+											item.prioridade
+										].badge}"
 									>
 										{PRIORIDADE_LABEL[item.prioridade]}
 									</span>
@@ -444,7 +451,7 @@
 										{TIPO_ATENDIMENTO_LABEL[item.tipoAtendimento]}
 									</div>
 									{#if item.queixaBreve}
-										<div class="truncate text-[10px] text-slate-500 italic max-w-xs">
+										<div class="max-w-xs truncate text-[10px] text-slate-500 italic">
 											"{item.queixaBreve}"
 										</div>
 									{/if}
@@ -453,10 +460,10 @@
 								<!-- Status -->
 								<td class="px-3 py-2.5 text-center">
 									<span
-										class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider
+										class="inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase
 										{item.status === 'AGUARDANDO' ? 'bg-amber-100 text-amber-900' : ''}
-										{item.status === 'CHAMADO' ? 'bg-blue-600 text-white font-black' : ''}
-										{item.status === 'EM_ATENDIMENTO' ? 'bg-emerald-700 text-white font-black' : ''}
+										{item.status === 'CHAMADO' ? 'bg-blue-600 font-black text-white' : ''}
+										{item.status === 'EM_ATENDIMENTO' ? 'bg-emerald-700 font-black text-white' : ''}
 										{item.status === 'CONCLUIDO' ? 'bg-slate-100 text-slate-700' : ''}
 										{item.status === 'FALTOU' ? 'bg-red-50 text-red-800' : ''}"
 									>
@@ -471,7 +478,7 @@
 											<button
 												type="button"
 												onclick={() => chamarPaciente(item)}
-												class="border border-blue-900 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 hover:bg-blue-900 hover:text-white transition flex items-center gap-1"
+												class="flex items-center gap-1 border border-blue-900 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 transition hover:bg-blue-900 hover:text-white"
 											>
 												<IconVolume size={12} />
 												<span>Chamar TV</span>
@@ -482,7 +489,7 @@
 											<button
 												type="button"
 												onclick={() => iniciarConsulta(item)}
-												class="border border-emerald-700 bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-emerald-800 transition flex items-center gap-1"
+												class="flex items-center gap-1 border border-emerald-700 bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-emerald-800"
 											>
 												<IconPlayerPlay size={12} />
 												<span>Atender</span>
@@ -496,7 +503,7 @@
 													pacienteAtendimentoAtual = item;
 													modalSoapAberto = true;
 												}}
-												class="border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-blue-800 transition flex items-center gap-1"
+												class="flex items-center gap-1 border border-blue-900 bg-blue-900 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-blue-800"
 											>
 												<IconNotes size={12} />
 												<span>SOAP</span>
@@ -507,7 +514,7 @@
 											href="/ubs/pacientes/{item.pacienteId}"
 											target="_blank"
 											title="Abrir Prontuário Clínico Completo"
-											class="border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1"
+											class="flex items-center gap-1 border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100"
 										>
 											<IconFileText size={12} />
 											<span>Prontuário</span>
@@ -525,27 +532,48 @@
 
 <!-- Modal Prontuário Clínico SOAP -->
 {#if modalSoapAberto && !!pacienteAtendimentoAtual}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs">
-		<div class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]">
-			<div class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-				<div class="font-bold uppercase tracking-wider text-xs">Prontuário de Atendimento Clínico (SOAP) · UBS</div>
-				<button onclick={() => (modalSoapAberto = false)} class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
+	>
+		<div
+			class="w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+		>
+			<div
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
+			>
+				<div class="text-xs font-bold tracking-wider uppercase">
+					Prontuário de Atendimento Clínico (SOAP) · UBS
+				</div>
+				<button
+					onclick={() => (modalSoapAberto = false)}
+					class="text-sm font-bold text-slate-400 hover:text-white">✕</button
+				>
 			</div>
 
 			<div class="p-5">
-				<form onsubmit={(e) => { e.preventDefault(); finalizarConsultaSoap(); }} class="flex flex-col gap-4 font-mono text-xs">
+				<form
+					onsubmit={(e) => {
+						e.preventDefault();
+						finalizarConsultaSoap();
+					}}
+					class="flex flex-col gap-4 font-mono text-xs"
+				>
 					<div class="border border-blue-300 bg-blue-50/60 p-3">
 						<div class="text-sm font-black text-slate-900">
 							{pacienteAtendimentoAtual.pacienteNome}
 						</div>
 						<div class="text-[11px] text-slate-600">
-							CPF: {pacienteAtendimentoAtual.pacienteCpf} · Senha: {pacienteAtendimentoAtual.senha} · {TIPO_ATENDIMENTO_LABEL[pacienteAtendimentoAtual.tipoAtendimento]}
+							CPF: {pacienteAtendimentoAtual.pacienteCpf} · Senha: {pacienteAtendimentoAtual.senha} ·
+							{TIPO_ATENDIMENTO_LABEL[pacienteAtendimentoAtual.tipoAtendimento]}
 						</div>
 					</div>
 
 					<!-- Registro Estruturado SOAP -->
 					<div>
-						<label for="f-subjetivo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+						<label
+							for="f-subjetivo"
+							class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+						>
 							S · Subjetivo (Queixa Principal, Anamnese e História Atual)
 						</label>
 						<textarea
@@ -558,7 +586,10 @@
 					</div>
 
 					<div>
-						<label for="f-objetivo" class="mb-1 block text-[10px] font-bold text-slate-700 uppercase">
+						<label
+							for="f-objetivo"
+							class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
+						>
 							O · Objetivo (Exame Físico, Sinais Vitais, PA, FC, Ausculta)
 						</label>
 						<textarea

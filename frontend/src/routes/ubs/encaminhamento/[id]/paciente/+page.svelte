@@ -50,25 +50,19 @@
 				</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Idade
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Idade</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">
 					{calcularIdade(enc.paciente.dataNascimento)} anos
 				</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Sexo
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Sexo</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">
 					{sexoLabel[enc.paciente.sexo]}
 				</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Telefone
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Telefone</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{enc.paciente.telefone}</dd>
 			</div>
 		</dl>

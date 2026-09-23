@@ -94,9 +94,7 @@ export function setNovoEncaminhamentoContext(ctx: NovoEncaminhamentoContext) {
 export function useNovoEncaminhamento(): NovoEncaminhamentoContext {
 	const ctx = getContext<NovoEncaminhamentoContext>(KEY);
 	if (!ctx) {
-		throw new Error(
-			'useNovoEncaminhamento deve ser chamado dentro de /ubs/novo-encaminhamento'
-		);
+		throw new Error('useNovoEncaminhamento deve ser chamado dentro de /ubs/novo-encaminhamento');
 	}
 	return ctx;
 }

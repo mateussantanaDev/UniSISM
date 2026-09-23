@@ -140,12 +140,7 @@
 				mono
 				bind:value={pacienteTelefone}
 			/>
-			<FormField
-				label="Endereço"
-				name="pacienteEndereco"
-				span={8}
-				bind:value={pacienteEndereco}
-			/>
+			<FormField label="Endereço" name="pacienteEndereco" span={8} bind:value={pacienteEndereco} />
 		</div>
 	</section>
 
@@ -158,12 +153,7 @@
 		</div>
 		<div class="grid grid-cols-12 gap-3">
 			<FormField label="CID-10" name="cid10" span={3} mono bind:value={cid10} />
-			<FormField
-				label="Descrição do CID"
-				name="cidDescricao"
-				span={9}
-				bind:value={cidDescricao}
-			/>
+			<FormField label="Descrição do CID" name="cidDescricao" span={9} bind:value={cidDescricao} />
 			<FormField
 				label="Especialidade Solicitada"
 				name="especialidadeSolicitada"

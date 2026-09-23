@@ -12,6 +12,8 @@ import { buildRoutes } from '../presentation/routes';
 import { buildContainer, type Container } from './container';
 import { metricsRegistry } from '../infrastructure/metrics/prometheus';
 import { logger } from '../infrastructure/logger';
+import { NotFound } from '../shared/errors';
+import { isCorsOriginAllowed } from '../shared/cors';
 
 export interface BuiltApp {
   app: Express;
@@ -54,17 +56,12 @@ export function buildApp(): BuiltApp {
   app.use(
     cors({
       origin: (origin, cb) => {
-        const allow = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
-        if (!origin) return cb(null, true); // apps mobile / cURL / backend-to-backend
-        if (allow.includes(origin)) return cb(null, true);
-        if (/\.vercel\.app$/i.test(origin)) return cb(null, true); // permite Vercel (produção e preview)
-        if (allow.includes('*') && !env.isProd) return cb(null, true);
-        if (
-          !env.isProd
-          && /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(
-            origin,
-          )
-        ) {
+        if (isCorsOriginAllowed(origin, {
+          configuredOrigins: env.CORS_ORIGIN,
+          isProd: env.isProd,
+          allowVercelPreview: env.CORS_ALLOW_VERCEL_PREVIEW,
+          vercelProject: env.CORS_VERCEL_PROJECT,
+        })) {
           return cb(null, true);
         }
         logger.warn({ origin }, 'CORS: origin não permitida');
@@ -91,12 +88,19 @@ export function buildApp(): BuiltApp {
   app.use('/v1', buildRoutes(container));
 
   // Endpoint Prometheus — interno, sem auth. Em produção, restringir por NetworkPolicy/firewall.
-  if ((process.env['METRICS_ENABLED'] ?? 'true') === 'true') {
+  if (env.METRICS_ENABLED) {
     app.get('/metrics', async (_req, res) => {
       res.set('Content-Type', metricsRegistry.contentType);
       res.end(await metricsRegistry.metrics());
     });
   }
+
+  app.use((req, _res, next) => {
+    next(NotFound('ROTA_NAO_ENCONTRADA', 'Rota não encontrada', {
+      method: req.method,
+      path: req.path,
+    }));
+  });
 
   app.use(errorHandler);
 

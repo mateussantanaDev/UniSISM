@@ -139,7 +139,9 @@
 	</div>
 
 	<!-- Documento imprimível (A4) -->
-	<article class="print-scope mx-auto my-6 w-full max-w-[210mm] bg-white p-8 shadow-lg print:my-0 print:shadow-none">
+	<article
+		class="print-scope mx-auto my-6 w-full max-w-[210mm] bg-white p-8 shadow-lg print:my-0 print:shadow-none"
+	>
 		<!-- Cabeçalho institucional -->
 		<header class="border-b-2 border-slate-900 pb-3">
 			<div class="flex items-start justify-between">
@@ -190,9 +192,7 @@
 					</div>
 				</div>
 				<div class="col-span-3">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						CPF
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">CPF</div>
 					<div class="font-mono text-slate-900">{paciente.cpf}</div>
 				</div>
 				<div class="col-span-3">
@@ -232,9 +232,7 @@
 					<div class="text-slate-900">{estadoCivilLabel[paciente.estadoCivil] ?? '—'}</div>
 				</div>
 				<div class="col-span-3">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						Raça/Cor
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Raça/Cor</div>
 					<div class="text-slate-900">{racaLabel[paciente.racaCor] ?? '—'}</div>
 				</div>
 				<div class="col-span-3">
@@ -244,15 +242,11 @@
 					<div class="text-slate-900">{paciente.escolaridade || '—'}</div>
 				</div>
 				<div class="col-span-3">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						Profissão
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Profissão</div>
 					<div class="text-slate-900">{paciente.profissao || '—'}</div>
 				</div>
 				<div class="col-span-4">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						Telefone
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Telefone</div>
 					<div class="font-mono text-slate-900">{paciente.telefone || '—'}</div>
 				</div>
 				<div class="col-span-4">
@@ -262,15 +256,11 @@
 					<div class="font-mono text-slate-900">{paciente.telefoneSecundario || '—'}</div>
 				</div>
 				<div class="col-span-4">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						Email
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Email</div>
 					<div class="font-mono text-slate-900">{paciente.email || '—'}</div>
 				</div>
 				<div class="col-span-12">
-					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-						Endereço
-					</div>
+					<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Endereço</div>
 					<div class="text-slate-900">
 						{paciente.endereco}
 						{#if paciente.bairro}· {paciente.bairro}{/if}
@@ -291,7 +281,8 @@
 					</div>
 					<div class="text-slate-900">
 						{paciente.agenteComunitario || '—'}
-						{#if paciente.microarea} · Micro {paciente.microarea}{/if}
+						{#if paciente.microarea}
+							· Micro {paciente.microarea}{/if}
 					</div>
 				</div>
 				<div class="col-span-3">
@@ -321,7 +312,8 @@
 							<span class="font-bold text-red-800">●</span>
 							<span>
 								<strong>{a.substancia}</strong> ({a.tipo.toLowerCase()}) · gravidade
-								<strong>{a.gravidade}</strong>{#if a.observacao} · {a.observacao}{/if}
+								<strong>{a.gravidade}</strong>{#if a.observacao}
+									· {a.observacao}{/if}
 							</span>
 						</li>
 					{/each}
@@ -366,10 +358,12 @@
 					<ul class="space-y-1 text-[11px]">
 						{#each paciente.medicamentosEmUso as m (m.id)}
 							<li>
-								<strong>{m.nome}</strong> {m.dosagem} · {m.frequencia}
+								<strong>{m.nome}</strong>
+								{m.dosagem} · {m.frequencia}
 								<span class="text-slate-600">
 									· {m.prescritor} · desde {formatarData(m.desde)}
-									{#if !m.ativo} · SUSPENSO{/if}
+									{#if !m.ativo}
+										· SUSPENSO{/if}
 								</span>
 							</li>
 						{/each}
@@ -413,22 +407,28 @@
 					{#each paciente.atendimentos as a (a.id)}
 						<div class="border-b border-slate-200 pb-2 last:border-0">
 							<div class="flex items-baseline justify-between">
-								<div class="font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase">
+								<div
+									class="font-mono text-[10px] font-bold tracking-wider text-slate-700 uppercase"
+								>
 									{formatarData(a.data, true)} · {tipoAtendLabel[a.tipo] ?? a.tipo}
-									{#if a.cid10} · <span class="text-blue-900">{a.cid10}</span>{/if}
+									{#if a.cid10}
+										· <span class="text-blue-900">{a.cid10}</span>{/if}
 								</div>
 								<div class="font-mono text-[10px] text-slate-500">
 									{a.profissional} · {a.registroProfissional} · {a.unidade}
 								</div>
 							</div>
 							<div class="text-[11px] text-slate-800">
-								<strong>Queixa:</strong> {a.queixaPrincipal}
+								<strong>Queixa:</strong>
+								{a.queixaPrincipal}
 							</div>
 							<div class="text-[11px] text-slate-800">
-								<strong>Diagnóstico:</strong> {a.diagnostico || '—'}
+								<strong>Diagnóstico:</strong>
+								{a.diagnostico || '—'}
 							</div>
 							<div class="text-[11px] text-slate-800">
-								<strong>Conduta:</strong> {a.conduta}
+								<strong>Conduta:</strong>
+								{a.conduta}
 							</div>
 							{#if a.prescricaoResumo}
 								<div
@@ -455,7 +455,9 @@
 			{:else}
 				<table class="w-full border-collapse text-[10px]">
 					<thead>
-						<tr class="border-b border-slate-400 text-left font-mono tracking-wider text-slate-700 uppercase">
+						<tr
+							class="border-b border-slate-400 text-left font-mono tracking-wider text-slate-700 uppercase"
+						>
 							<th class="py-1 pr-2">Data</th>
 							<th class="py-1 pr-2">Exame</th>
 							<th class="py-1 pr-2">Cat.</th>
@@ -474,7 +476,8 @@
 								<td class="py-1 pr-2">{e.unidadeExecutora}</td>
 								<td class="py-1">
 									<strong>{e.resultado}</strong>
-									{#if e.observacao} — {e.observacao}{/if}
+									{#if e.observacao}
+										— {e.observacao}{/if}
 								</td>
 							</tr>
 						{/each}
@@ -495,7 +498,9 @@
 			{:else}
 				<table class="w-full border-collapse text-[10px]">
 					<thead>
-						<tr class="border-b border-slate-400 text-left font-mono tracking-wider text-slate-700 uppercase">
+						<tr
+							class="border-b border-slate-400 text-left font-mono tracking-wider text-slate-700 uppercase"
+						>
 							<th class="py-1 pr-2">Data</th>
 							<th class="py-1 pr-2">Vacina</th>
 							<th class="py-1 pr-2">Dose</th>
@@ -545,10 +550,11 @@
 							<div class="text-[10px] text-slate-700">
 								{formatarData(v.dataIda)} → {formatarData(v.dataVolta)} ·
 								{transporteLabel[v.transporte] ?? v.transporte}
-								{#if v.acompanhante} · com acompanhante{/if}
+								{#if v.acompanhante}
+									· com acompanhante{/if}
 								· {formatarBRL(v.custoEstimadoBRL)}
 							</div>
-							<div class="text-[11px] italic text-slate-700">Motivo: {v.motivo}</div>
+							<div class="text-[11px] text-slate-700 italic">Motivo: {v.motivo}</div>
 						</div>
 					{/each}
 				</div>
@@ -556,7 +562,9 @@
 		{/if}
 
 		<!-- Rodapé -->
-		<footer class="mt-6 border-t-2 border-slate-900 pt-2 font-mono text-[9px] tracking-wider text-slate-600 uppercase">
+		<footer
+			class="mt-6 border-t-2 border-slate-900 pt-2 font-mono text-[9px] tracking-wider text-slate-600 uppercase"
+		>
 			<div class="flex justify-between">
 				<span>UNISISM · Prontuário · Paciente #{paciente.id}</span>
 				<span>Página <span class="print-page"></span></span>

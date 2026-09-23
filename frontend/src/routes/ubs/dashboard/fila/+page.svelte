@@ -125,7 +125,9 @@
 								>
 									{e.protocolo}
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+								>
 									{e.paciente.nome}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">
@@ -203,7 +205,9 @@
 								>
 									{e.protocolo}
 								</td>
-								<td class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900">
+								<td
+									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
+								>
 									{e.paciente.nome}
 								</td>
 								<td class="border-r border-slate-100 px-3 py-2 font-sans text-slate-900">

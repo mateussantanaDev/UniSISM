@@ -19,7 +19,11 @@
 
 	let centroAtivo = $derived<'CEM' | 'CEO'>(page.url.pathname.includes('/ceo') ? 'CEO' : 'CEM');
 	let ehCeo = $derived(centroAtivo === 'CEO');
-	let nomeOrgao = $derived(ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)');
+	let nomeOrgao = $derived(
+		ehCeo
+			? 'Centro de Especialidades Odontológicas (CEO)'
+			: 'Centro de Especialidades Médicas (CEM)'
+	);
 	let siglaOrgao = $derived(ehCeo ? 'CEO' : 'CEM');
 
 	let listaPacientes = $state<PacienteResumo[]>([]);
@@ -66,7 +70,9 @@
 
 			if (Array.isArray(res)) {
 				listaPacientes = res;
-				totalRegistros = metricas.totalCadastrados || (res.length >= limite ? paginaAtual * limite + 1 : res.length);
+				totalRegistros =
+					metricas.totalCadastrados ||
+					(res.length >= limite ? paginaAtual * limite + 1 : res.length);
 				totalPaginas = Math.max(1, Math.ceil(totalRegistros / limite));
 			} else if (res && typeof res === 'object') {
 				listaPacientes = res.itens ?? [];
@@ -90,7 +96,11 @@
 				if (ehCeo) {
 					return f === 'CEO' || c === 'CENTRO_ODONTOLOGICO';
 				} else {
-					return f === 'CENTRO_ESPECIALIDADES' || f === 'CEM' || (f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO');
+					return (
+						f === 'CENTRO_ESPECIALIDADES' ||
+						f === 'CEM' ||
+						(f !== 'CEO' && c !== 'CENTRO_ODONTOLOGICO')
+					);
 				}
 			});
 		} catch (err) {
@@ -128,7 +138,10 @@
 			if (!cpf) continue;
 			const atual = mapa.get(cpf) || { total: 0 };
 			atual.total += 1;
-			if (e.agendamentoPrevisto && (!atual.ultimaData || e.agendamentoPrevisto > atual.ultimaData)) {
+			if (
+				e.agendamentoPrevisto &&
+				(!atual.ultimaData || e.agendamentoPrevisto > atual.ultimaData)
+			) {
 				atual.ultimaData = e.agendamentoPrevisto.substring(0, 10);
 				atual.ultimaEsp = e.solicitacao?.especialidadeSolicitada;
 			}
@@ -149,7 +162,7 @@
 
 	let filtrados = $derived.by(() => {
 		if (filtroEspecialidade === 'TODAS') return listaPacientes;
-		return listaPacientes.filter(p => {
+		return listaPacientes.filter((p) => {
 			const info = mapaAtendimentos.get(p.cpf);
 			return info?.ultimaEsp === filtroEspecialidade;
 		});
@@ -182,34 +195,60 @@
 	<!-- Barra de Métricas -->
 	<section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">CIDADÃOS NO CADASTRO</div>
-			<div class="mt-2 text-2xl font-black text-slate-900 font-sans">
-				{metricas.totalCadastrados ? metricas.totalCadastrados.toLocaleString('pt-BR') : totalRegistros.toLocaleString('pt-BR')}
+			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+				CIDADÃOS NO CADASTRO
 			</div>
-			<div class="mt-1 text-[10px] text-slate-500 font-mono">Base municipal integrada (SUS/PEC)</div>
+			<div class="mt-2 font-sans text-2xl font-black text-slate-900">
+				{metricas.totalCadastrados
+					? metricas.totalCadastrados.toLocaleString('pt-BR')
+					: totalRegistros.toLocaleString('pt-BR')}
+			</div>
+			<div class="mt-1 font-mono text-[10px] text-slate-500">
+				Base municipal integrada (SUS/PEC)
+			</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">COM ATENDIMENTO NO {siglaOrgao}</div>
-			<div class="mt-2 text-2xl font-black {ehCeo ? 'text-emerald-800' : 'text-blue-900'} font-sans">{mapaAtendimentos.size}</div>
-			<div class="mt-1 text-[10px] text-slate-500 font-mono">{ehCeo ? 'Tratamentos Odontológicos' : 'Consultas Especializadas'}</div>
+			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+				COM ATENDIMENTO NO {siglaOrgao}
+			</div>
+			<div
+				class="mt-2 text-2xl font-black {ehCeo ? 'text-emerald-800' : 'text-blue-900'} font-sans"
+			>
+				{mapaAtendimentos.size}
+			</div>
+			<div class="mt-1 font-mono text-[10px] text-slate-500">
+				{ehCeo ? 'Tratamentos Odontológicos' : 'Consultas Especializadas'}
+			</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">ENCAMINHAMENTOS RECEBIDOS</div>
-			<div class="mt-2 text-2xl font-black text-amber-700 font-sans">{encaminhamentosCentro.length}</div>
-			<div class="mt-1 text-[10px] text-slate-500 font-mono">Total regulado pelas UBSs</div>
+			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+				ENCAMINHAMENTOS RECEBIDOS
+			</div>
+			<div class="mt-2 font-sans text-2xl font-black text-amber-700">
+				{encaminhamentosCentro.length}
+			</div>
+			<div class="mt-1 font-mono text-[10px] text-slate-500">Total regulado pelas UBSs</div>
 		</div>
 
 		<div class="border border-slate-200 bg-white p-4">
-			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">ESPECIALIDADES ATIVAS</div>
-			<div class="mt-2 text-2xl font-black text-indigo-900 font-sans">{especialidadesUnicas.length}</div>
-			<div class="mt-1 text-[10px] text-slate-500 font-mono">{ehCeo ? 'Áreas de Saúde Bucal' : 'Clínicas Médicas'}</div>
+			<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+				ESPECIALIDADES ATIVAS
+			</div>
+			<div class="mt-2 font-sans text-2xl font-black text-indigo-900">
+				{especialidadesUnicas.length}
+			</div>
+			<div class="mt-1 font-mono text-[10px] text-slate-500">
+				{ehCeo ? 'Áreas de Saúde Bucal' : 'Clínicas Médicas'}
+			</div>
 		</div>
 	</section>
 
 	<!-- Barra de Controles e Busca -->
-	<section class="border border-slate-200 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+	<section
+		class="flex flex-col justify-between gap-3 border border-slate-200 bg-white p-4 md:flex-row md:items-center"
+	>
 		<div class="flex flex-1 items-center gap-2">
 			<div class="relative w-full max-w-md">
 				<input
@@ -217,13 +256,17 @@
 					value={busca}
 					oninput={aoMudarBusca}
 					placeholder="Buscar por Nome, CPF ou Cartão SUS na base de 58 mil cidadãos..."
-					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+					class="w-full border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs outline-none focus:border-slate-900 focus:bg-white"
 				/>
 				{#if busca}
 					<button
 						type="button"
-						onclick={() => { busca = ''; paginaAtual = 1; carregarPacientes(); }}
-						class="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-700 font-bold"
+						onclick={() => {
+							busca = '';
+							paginaAtual = 1;
+							carregarPacientes();
+						}}
+						class="absolute top-2 right-2 text-xs font-bold text-slate-400 hover:text-slate-700"
 					>
 						✕
 					</button>
@@ -233,7 +276,7 @@
 			{#if especialidadesUnicas.length > 0}
 				<select
 					bind:value={filtroEspecialidade}
-					class="border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:border-slate-900 focus:bg-white"
+					class="border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs outline-none focus:border-slate-900 focus:bg-white"
 				>
 					<option value="TODAS">TODAS AS ESPECIALIDADES</option>
 					{#each especialidadesUnicas as esp}
@@ -243,8 +286,14 @@
 			{/if}
 		</div>
 
-		<div class="text-right text-[11px] text-slate-500 font-mono">
-			Mostrando <strong>{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong>{totalRegistros.toLocaleString('pt-BR')}</strong> cidadãos
+		<div class="text-right font-mono text-[11px] text-slate-500">
+			Mostrando <strong
+				>{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(
+					paginaAtual * limite,
+					totalRegistros
+				)}</strong
+			>
+			de <strong>{totalRegistros.toLocaleString('pt-BR')}</strong> cidadãos
 		</div>
 	</section>
 
@@ -254,9 +303,11 @@
 			Carregando base de cidadãos e histórico do {siglaOrgao}...
 		</div>
 	{:else}
-		<div class="border border-slate-200 bg-white overflow-x-auto shadow-xs">
+		<div class="overflow-x-auto border border-slate-200 bg-white shadow-xs">
 			<table class="w-full text-left font-mono text-xs">
-				<thead class="border-b border-slate-200 bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
+				<thead
+					class="border-b border-slate-200 bg-slate-100 text-[10px] font-bold text-slate-600 uppercase"
+				>
 					<tr>
 						<th class="p-3">PACIENTE / CIDADÃO</th>
 						<th class="p-3">CPF / CARTÃO SUS</th>
@@ -269,42 +320,59 @@
 				<tbody class="divide-y divide-slate-100">
 					{#each filtrados as pac (pac.id)}
 						{@const info = mapaAtendimentos.get(pac.cpf)}
-						<tr class="hover:bg-slate-50 transition-colors">
+						<tr class="transition-colors hover:bg-slate-50">
 							<td class="p-3 font-sans">
 								<div class="font-bold text-slate-900">{pac.nome}</div>
-								<div class="text-[10px] text-slate-500 font-mono">Sexo: {pac.sexo} · Nasc: {pac.dataNascimento}</div>
+								<div class="font-mono text-[10px] text-slate-500">
+									Sexo: {pac.sexo} · Nasc: {pac.dataNascimento}
+								</div>
 							</td>
 							<td class="p-3">
 								<div class="font-bold text-slate-800">{pac.cpf}</div>
 								<div class="text-[10px] text-slate-500">{pac.cartaoSus || 'Sem CNS'}</div>
 							</td>
 							<td class="p-3 font-sans">
-								<span class="border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-700 font-semibold">
+								<span
+									class="border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+								>
 									{pac.unidadeVinculada || 'Rede Municipal'}
 								</span>
 							</td>
 							<td class="p-3">
 								{#if info && info.total > 0}
-									<span class="font-bold {ehCeo ? 'text-emerald-800 bg-emerald-50 border-emerald-300' : 'text-blue-900 bg-blue-50 border-blue-300'} border px-2 py-0.5 text-[10px]">
-										{info.total} {info.total === 1 ? (ehCeo ? 'Procedimento' : 'Consulta') : (ehCeo ? 'Procedimentos' : 'Consultas')}
+									<span
+										class="font-bold {ehCeo
+											? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+											: 'border-blue-300 bg-blue-50 text-blue-900'} border px-2 py-0.5 text-[10px]"
+									>
+										{info.total}
+										{info.total === 1
+											? ehCeo
+												? 'Procedimento'
+												: 'Consulta'
+											: ehCeo
+												? 'Procedimentos'
+												: 'Consultas'}
 									</span>
 								{:else}
-									<span class="text-slate-400 text-[10px]">Sem registro prévio</span>
+									<span class="text-[10px] text-slate-400">Sem registro prévio</span>
 								{/if}
 							</td>
 							<td class="p-3">
 								{#if info && info.ultimaData}
 									<div class="font-bold text-slate-800">{info.ultimaData}</div>
-									<div class="text-[10px] text-slate-500 uppercase">{info.ultimaEsp || 'Especialidade'}</div>
+									<div class="text-[10px] text-slate-500 uppercase">
+										{info.ultimaEsp || 'Especialidade'}
+									</div>
 								{:else}
-									<span class="text-slate-400 text-[10px]">—</span>
+									<span class="text-[10px] text-slate-400">—</span>
 								{/if}
 							</td>
 							<td class="p-3 text-right">
 								<button
 									type="button"
 									onclick={() => abrirDossie(pac.id)}
-									class="border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 hover:bg-slate-100 uppercase flex items-center gap-1.5 ml-auto"
+									class="ml-auto flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 uppercase hover:bg-slate-100"
 								>
 									<IconFileText size={13} />
 									<span>Dossiê Prontuário</span>
@@ -322,9 +390,17 @@
 			</table>
 
 			<!-- Barra de Paginação -->
-			<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+			<div
+				class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs"
+			>
 				<div class="font-mono text-slate-600">
-					Mostrando <strong class="text-slate-900">{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(paginaAtual * limite, totalRegistros)}</strong> de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> munícipes
+					Mostrando <strong class="text-slate-900"
+						>{totalRegistros === 0 ? 0 : (paginaAtual - 1) * limite + 1}–{Math.min(
+							paginaAtual * limite,
+							totalRegistros
+						)}</strong
+					>
+					de <strong class="text-slate-900">{totalRegistros.toLocaleString('pt-BR')}</strong> munícipes
 				</div>
 
 				<div class="flex items-center gap-1">
@@ -332,7 +408,7 @@
 						type="button"
 						onclick={() => irParaPagina(1)}
 						disabled={paginaAtual <= 1}
-						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 						title="Primeira página"
 					>
 						«
@@ -341,13 +417,15 @@
 						type="button"
 						onclick={() => irParaPagina(paginaAtual - 1)}
 						disabled={paginaAtual <= 1}
-						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 						title="Página anterior"
 					>
 						‹ Anterior
 					</button>
 
-					<span class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900">
+					<span
+						class="border border-slate-300 bg-white px-3 py-1 font-mono text-xs font-bold text-blue-900"
+					>
 						Pág. {paginaAtual} de {totalPaginas}
 					</span>
 
@@ -355,7 +433,7 @@
 						type="button"
 						onclick={() => irParaPagina(paginaAtual + 1)}
 						disabled={paginaAtual >= totalPaginas}
-						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 						title="Próxima página"
 					>
 						Próxima ›
@@ -364,7 +442,7 @@
 						type="button"
 						onclick={() => irParaPagina(totalPaginas)}
 						disabled={paginaAtual >= totalPaginas}
-						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						class="border border-slate-300 bg-white px-2 py-1 font-mono text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
 						title="Última página"
 					>
 						»
@@ -372,7 +450,10 @@
 
 					<select
 						bind:value={limite}
-						onchange={() => { paginaAtual = 1; carregarPacientes(); }}
+						onchange={() => {
+							paginaAtual = 1;
+							carregarPacientes();
+						}}
 						class="ml-2 border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700 outline-none"
 					>
 						<option value={25}>25 / pág</option>
@@ -404,6 +485,6 @@
 		operador="Operador {siglaOrgao}"
 		prefeitura="Secretaria Municipal de Saúde"
 		unidade={nomeOrgao}
-		onFechar={() => modalImprimirAberto = false}
+		onFechar={() => (modalImprimirAberto = false)}
 	/>
 {/if}

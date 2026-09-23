@@ -55,13 +55,21 @@
 			<ul class="divide-y divide-slate-100 font-mono text-[11px]">
 				<li class="flex items-center justify-between px-4 py-2.5">
 					<span class="tracking-wider text-slate-600 uppercase">Arquivo carregado</span>
-					<span class="font-bold {s.solicitacaoFile.length ? 'text-emerald-700' : 'text-slate-400'}">
+					<span
+						class="font-bold {s.solicitacaoFile.length ? 'text-emerald-700' : 'text-slate-400'}"
+					>
 						{s.solicitacaoFile.length ? '✓ SIM' : '◐ NÃO'}
 					</span>
 				</li>
 				<li class="flex items-center justify-between px-4 py-2.5">
 					<span class="tracking-wider text-slate-600 uppercase">OCR Processado</span>
-					<span class="font-bold {s.preenchido ? 'text-emerald-700' : s.extraindo ? 'text-blue-900' : 'text-slate-400'}">
+					<span
+						class="font-bold {s.preenchido
+							? 'text-emerald-700'
+							: s.extraindo
+								? 'text-blue-900'
+								: 'text-slate-400'}"
+					>
 						{s.extraindo ? '⋯ EM CURSO' : s.preenchido ? '✓ COMPLETO' : '◐ PENDENTE'}
 					</span>
 				</li>

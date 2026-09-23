@@ -71,9 +71,7 @@
 		if (porEspecialidade.length === 0) return '—';
 		const comMinimo = porEspecialidade.filter((e) => e.total >= 3);
 		if (comMinimo.length === 0) return '—';
-		const sorted = [...comMinimo].sort(
-			(a, b) => b.rejeitados / b.total - a.rejeitados / a.total
-		);
+		const sorted = [...comMinimo].sort((a, b) => b.rejeitados / b.total - a.rejeitados / a.total);
 		return sorted[0].nome;
 	});
 </script>
@@ -143,7 +141,9 @@
 									<td class="border-r border-slate-100 px-3 py-2 text-slate-500">
 										{String(i + 1).padStart(2, '0')}
 									</td>
-									<td class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900">
+									<td
+										class="border-r border-slate-100 px-3 py-2 font-sans font-bold text-slate-900"
+									>
 										{e.nome}
 									</td>
 									<td class="border-r border-slate-100 px-3 py-2 font-bold text-slate-900">

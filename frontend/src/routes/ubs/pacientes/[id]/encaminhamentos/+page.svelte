@@ -1,5 +1,4 @@
 <script lang="ts">
-	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import HistoricoTable from '$lib/presentation/components/HistoricoTable.svelte';
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
@@ -70,9 +69,7 @@
 
 	{#if !carregando && doPaciente.length === 0}
 		<div class="border border-slate-200 bg-white p-8 text-center">
-			<div
-				class="font-mono text-xs font-bold tracking-widest text-slate-600 uppercase"
-			>
+			<div class="font-mono text-xs font-bold tracking-widest text-slate-600 uppercase">
 				Nenhum encaminhamento registrado
 			</div>
 			<p class="mt-2 text-xs text-slate-500">

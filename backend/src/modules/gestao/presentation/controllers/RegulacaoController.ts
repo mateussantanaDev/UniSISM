@@ -181,11 +181,11 @@ export class RegulacaoController {
         } else {
           await this.aprovarUC.exec(id, scope, autor, {
             nota: body.observacoes,
-            filaDestino: body.filaDestino as any,
+            filaDestino: body.filaDestino,
           });
         }
         processados++;
-      } catch (err) {
+      } catch (_err) {
         // ignora se falhar individualmente no lote
       }
     }

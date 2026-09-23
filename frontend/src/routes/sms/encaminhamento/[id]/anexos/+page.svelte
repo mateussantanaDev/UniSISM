@@ -48,7 +48,9 @@
 	let anexosInfectados = $derived(enc.anexos.filter((a) => a.scanStatus === 'INFECTADO').length);
 	let anexosPendentes = $derived(enc.anexos.filter((a) => a.scanStatus === 'PENDENTE').length);
 	let ultimoAnexoData = $derived(
-		enc.anexos.length > 0 ? formatarDataHoraPartes(enc.anexos[enc.anexos.length - 1].uploadEm) : { data: '—', hora: 'Sem anexos' }
+		enc.anexos.length > 0
+			? formatarDataHoraPartes(enc.anexos[enc.anexos.length - 1].uploadEm)
+			: { data: '—', hora: 'Sem anexos' }
 	);
 </script>
 
@@ -79,8 +81,9 @@
 		>
 			<span class="text-base">⛔</span>
 			<div>
-				{anexosInfectados} ANEXO{anexosInfectados > 1 ? 'S' : ''} INFECTADO{anexosInfectados > 1 ? 'S' : ''} ·
-				DOWNLOAD BLOQUEADO. A UBS DE ORIGEM PRECISA REENVIAR O ARQUIVO.
+				{anexosInfectados} ANEXO{anexosInfectados > 1 ? 'S' : ''} INFECTADO{anexosInfectados > 1
+					? 'S'
+					: ''} · DOWNLOAD BLOQUEADO. A UBS DE ORIGEM PRECISA REENVIAR O ARQUIVO.
 			</div>
 		</div>
 	{/if}
@@ -168,8 +171,8 @@
 												: 'Arquivo bloqueado pelo scan de segurança'}
 										class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase
 											{scanLiberado
-												? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
-												: 'cursor-not-allowed text-slate-400'}"
+											? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
+											: 'cursor-not-allowed text-slate-400'}"
 									>
 										Visualizar
 									</button>
@@ -183,8 +186,8 @@
 												: 'Arquivo bloqueado pelo scan de segurança'}
 										class="border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase
 											{scanLiberado
-												? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
-												: 'cursor-not-allowed text-slate-400'}"
+											? 'text-slate-700 hover:border-blue-900 hover:text-blue-900'
+											: 'cursor-not-allowed text-slate-400'}"
 									>
 										Baixar
 									</button>

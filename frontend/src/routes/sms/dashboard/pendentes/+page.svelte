@@ -35,9 +35,7 @@
 
 	let urgentes = $derived(
 		pendencias.filter(
-			(e) =>
-				e.solicitacao.prioridade === 'URGENTE' ||
-				e.solicitacao.prioridade === 'EMERGENCIA'
+			(e) => e.solicitacao.prioridade === 'URGENTE' || e.solicitacao.prioridade === 'EMERGENCIA'
 		).length
 	);
 </script>

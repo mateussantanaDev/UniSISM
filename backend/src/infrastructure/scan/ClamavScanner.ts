@@ -11,6 +11,7 @@
  * (docker image `clamav/clamav` já inclui freshclam).
  */
 import NodeClam from 'clamscan';
+import { env } from '../../shared/env';
 import { prisma } from '../database/prisma';
 import { logger } from '../logger';
 import { avScanDuration, avScanInfectados } from '../metrics/prometheus';
@@ -93,8 +94,8 @@ class ClamavScanner implements IAnexoScanner {
 }
 
 export function buildScanner(): IAnexoScanner {
-  const host = process.env['CLAMAV_HOST'];
-  const port = Number(process.env['CLAMAV_PORT'] ?? 3310);
+  const host = env.CLAMAV_HOST;
+  const port = env.CLAMAV_PORT;
   if (!host) {
     logger.info('scanner: no-op (ClamAV desativado — defina CLAMAV_HOST)');
     return new NoopScanner();

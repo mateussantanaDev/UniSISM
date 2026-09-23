@@ -14,13 +14,7 @@
 
 export type TipoVeiculo = 'VAN' | 'ONIBUS' | 'CARRO' | 'AMBULANCIA';
 export type StatusVeiculo = 'ATIVO' | 'EM_MANUTENCAO' | 'INATIVO';
-export type Combustivel =
-	| 'DIESEL'
-	| 'GASOLINA'
-	| 'ETANOL'
-	| 'FLEX'
-	| 'GNV'
-	| 'ELETRICO';
+export type Combustivel = 'DIESEL' | 'GASOLINA' | 'ETANOL' | 'FLEX' | 'GNV' | 'ELETRICO';
 
 export interface Veiculo {
 	id: string;
@@ -110,11 +104,7 @@ export type StatusSolicitacaoTFD =
 	| 'CANCELADA';
 
 export type PrioridadeTFD = 'ELETIVA' | 'PRIORITARIA' | 'URGENTE';
-export type TipoAnexoSolicitacaoTFD =
-	| 'COMPROVANTE_ENCAMINHAMENTO'
-	| 'EXAME'
-	| 'LAUDO'
-	| 'OUTRO';
+export type TipoAnexoSolicitacaoTFD = 'COMPROVANTE_ENCAMINHAMENTO' | 'EXAME' | 'LAUDO' | 'OUTRO';
 export type StatusScanAnexo = 'PENDENTE' | 'LIMPO' | 'INFECTADO' | 'FALHOU';
 
 export interface AnexoSolicitacaoTFD {
@@ -253,12 +243,7 @@ export interface ListSolicitacoesQuery {
 // ============================================================
 
 export type StatusViagem = 'AGENDADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
-export type PresencaPassageiro =
-	| 'AGUARDANDO'
-	| 'CONFIRMADO'
-	| 'EMBARCADO'
-	| 'AUSENTE'
-	| 'DESISTIU';
+export type PresencaPassageiro = 'AGUARDANDO' | 'CONFIRMADO' | 'EMBARCADO' | 'AUSENTE' | 'DESISTIU';
 
 export interface PassageiroViagem {
 	id: string;
@@ -333,6 +318,8 @@ export interface AtualizarViagemRequest {
 	horaPrevistaRetorno?: string;
 	destino?: string;
 	unidadeDestino?: string;
+	veiculoId?: string | null;
+	motoristaId?: string | null;
 	rotaResumo?: string;
 	kmEstimados?: number;
 	observacoes?: string;
@@ -372,11 +359,7 @@ export interface ListViagensQuery {
 // Abastecimento
 // ============================================================
 
-export type StatusAbastecimento =
-	| 'SOLICITADO'
-	| 'LIBERADO'
-	| 'REALIZADO'
-	| 'NEGADO';
+export type StatusAbastecimento = 'SOLICITADO' | 'LIBERADO' | 'REALIZADO' | 'NEGADO';
 
 export interface Abastecimento {
 	id: string;
@@ -573,18 +556,9 @@ export interface AporteSaldoAjudaCusto {
 // Ajuda de Custo
 // ============================================================
 
-export type StatusAjudaCusto =
-	| 'PENDENTE'
-	| 'AUTORIZADA'
-	| 'PAGA'
-	| 'NEGADA'
-	| 'CANCELADA';
+export type StatusAjudaCusto = 'PENDENTE' | 'AUTORIZADA' | 'PAGA' | 'NEGADA' | 'CANCELADA';
 
-export type CategoriaAjuda =
-	| 'ALIMENTACAO'
-	| 'HOSPEDAGEM'
-	| 'DESLOCAMENTO_LOCAL'
-	| 'OUTRO';
+export type CategoriaAjuda = 'ALIMENTACAO' | 'HOSPEDAGEM' | 'DESLOCAMENTO_LOCAL' | 'OUTRO';
 
 export type MetodoPagamento = 'PIX' | 'TRANSFERENCIA' | 'DINHEIRO_RH';
 

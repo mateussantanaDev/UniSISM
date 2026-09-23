@@ -122,7 +122,9 @@
 			</span>
 		</PanelHeader>
 
-		<div class="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
 			<input
 				type="text"
 				bind:value={busca}
@@ -130,7 +132,9 @@
 				class="flex-1 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 			/>
 		</div>
-		<div class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5"
+		>
 			<span class="mr-2 font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase">
 				Status
 			</span>
@@ -175,10 +179,7 @@
 						{/each}
 					{:else if lista.length === 0}
 						<tr>
-							<td
-								colspan="8"
-								class="px-3 py-12 text-center font-sans text-sm text-slate-500"
-							>
+							<td colspan="8" class="px-3 py-12 text-center font-sans text-sm text-slate-500">
 								Nenhuma solicitação encontrada.
 							</td>
 						</tr>

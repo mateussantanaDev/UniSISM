@@ -7,11 +7,7 @@
 	import { api } from '$lib/api';
 	import { mensagemErroTfd } from '$lib/api/erros-tfd';
 	import { formatarBRL, formatarDataHora, mesAtual } from '$lib/presentation/utils/tfdFormat';
-	import type {
-		AporteSaldoAjudaCusto,
-		FonteRecurso,
-		SaldoAjudaCusto
-	} from '$lib/api/tfd-types';
+	import type { AporteSaldoAjudaCusto, FonteRecurso, SaldoAjudaCusto } from '$lib/api/tfd-types';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 	import { onMount } from 'svelte';
 
@@ -86,10 +82,7 @@
 			erroAporte = 'Justificativa precisa ter pelo menos 10 caracteres.';
 			return;
 		}
-		if (
-			(aporteFonte === 'EMPENHO' || aporteFonte === 'PORTARIA') &&
-			!aporteDoc.trim()
-		) {
+		if ((aporteFonte === 'EMPENHO' || aporteFonte === 'PORTARIA') && !aporteDoc.trim()) {
 			erroAporte = 'Informe o número do empenho/portaria.';
 			return;
 		}
@@ -190,7 +183,8 @@
 				? 'border-emerald-700 bg-emerald-50 text-emerald-900'
 				: 'border-red-700 bg-red-50 text-red-900'}"
 		>
-			{mensagem.tipo === 'ok' ? '✓' : '⚠'} {mensagem.texto}
+			{mensagem.tipo === 'ok' ? '✓' : '⚠'}
+			{mensagem.texto}
 		</div>
 	{/if}
 
@@ -388,8 +382,8 @@
 	</div>
 
 	<div class="border-l-4 border-blue-900 bg-blue-50 px-4 py-2 font-sans text-[12px] text-blue-900">
-		<strong class="font-mono tracking-wider uppercase">Modelo:</strong> o saldo de ajuda de custo é
-		um “pote único” da prefeitura. Cada ajuda autorizada reserva valor; cada pagamento debita do consumido.
+		<strong class="font-mono tracking-wider uppercase">Modelo:</strong> o saldo de ajuda de custo é um
+		“pote único” da prefeitura. Cada ajuda autorizada reserva valor; cada pagamento debita do consumido.
 		Tetos por categoria definem o limite máximo de cada item.
 	</div>
 </div>
@@ -489,11 +483,7 @@
 		{/if}
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (aportarAberto = false)}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (aportarAberto = false)} />
 			<PrimaryButton label="Confirmar Aporte" onclick={aportar} loading={processandoAporte} />
 		</div>
 	</div>
@@ -574,11 +564,7 @@
 		{/if}
 
 		<div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
-			<PrimaryButton
-				label="Cancelar"
-				variant="secondary"
-				onclick={() => (ajustarAberto = false)}
-			/>
+			<PrimaryButton label="Cancelar" variant="secondary" onclick={() => (ajustarAberto = false)} />
 			<PrimaryButton label="Confirmar Ajuste" onclick={ajustar} loading={processandoAjuste} />
 		</div>
 	</div>

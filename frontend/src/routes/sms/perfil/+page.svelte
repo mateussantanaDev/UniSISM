@@ -42,9 +42,7 @@
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.matricula}</dd>
 			</div>
 			<div class="col-span-4">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Admissão
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Admissão</dt>
 				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarData(p.dataAdmissao)}</dd>
 			</div>
 			<div class="col-span-4">
@@ -61,9 +59,7 @@
 				<dd class="text-xs text-slate-600">{p.funcao}</dd>
 			</div>
 			<div class="col-span-12">
-				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-					Lotação
-				</dt>
+				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Lotação</dt>
 				<dd class="mt-0.5 text-sm text-slate-900">{p.lotacao}</dd>
 			</div>
 		</dl>
@@ -116,11 +112,7 @@
 
 	<!-- Atividade -->
 	<div class="col-span-12 border border-slate-200 bg-white">
-		<PanelHeader
-			title="Atividade Recente"
-			subtitle="Últimas ações desta sessão"
-			index="03"
-		/>
+		<PanelHeader title="Atividade Recente" subtitle="Últimas ações desta sessão" index="03" />
 		<ul class="divide-y divide-slate-100">
 			{#each p.atividadeRecente as ev, i (i)}
 				<li class="flex items-start justify-between gap-3 px-4 py-2.5">
