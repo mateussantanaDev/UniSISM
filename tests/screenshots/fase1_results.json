@@ -1,0 +1,16 @@
+{
+  "steps": [
+    {
+      "title": "Navegação até /login",
+      "status": "PASS",
+      "detail": "Screenshot salvo: 01_login_screen.png"
+    },
+    {
+      "title": "Execução do Playwright",
+      "status": "FAIL",
+      "detail": "page.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[type=\"email\"]')\u001b[22m\n"
+    }
+  ],
+  "issuesFound": [],
+  "improvements": []
+}

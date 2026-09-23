@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-09-17T22:27:13.337Z",
+  "steps": [
+    {
+      "title": "Login Mariana (Atendente)",
+      "status": "PASS",
+      "detail": "https://unisism.vercel.app/cem/recepcao/fila"
+    },
+    {
+      "title": "Tela do Balcão de Recepção",
+      "status": "PASS",
+      "detail": "33_tela_balcao_recepcao.png"
+    },
+    {
+      "title": "Solicitação do Balcão Inserida na Fila",
+      "status": "PASS",
+      "detail": "Paciente: Seu João da Silva Santos 4588"
+    },
+    {
+      "title": "Fila de Espera Carregada",
+      "status": "PASS",
+      "detail": "36_fila_espera_com_solicitacao.png"
+    },
+    {
+      "title": "Paciente Listado na Fila da Regulação",
+      "status": "PASS",
+      "detail": "Nome: Seu João da Silva Santos 4588"
+    },
+    {
+      "title": "Botão de Agendar Vaga na Fila",
+      "status": "PASS",
+      "detail": "Fila verificada e pronta"
+    },
+    {
+      "title": "Agenda Geral de Atendimentos Carregada",
+      "status": "PASS",
+      "detail": "39_agenda_geral_atendimentos.png"
+    },
+    {
+      "title": "Status da Agenda Verificado",
+      "status": "PASS",
+      "detail": "40_presenca_confirmada_balcao.png"
+    },
+    {
+      "title": "Fila de Triagem de Enfermagem Verificada",
+      "status": "PASS",
+      "detail": "41_paciente_redirecionado_triagem_enfermagem.png"
+    }
+  ],
+  "findings": []
+}

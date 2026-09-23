@@ -55,9 +55,65 @@ Módulo Auditado: Centro de Especialidades Médicas (CEM)
     - Evidências: Screenshots 28, 29, 30 e 31 salvos.
 
 ================================================================================
-[FASE 3: RECEPÇÃO, AGENDAMENTO NO BALCÃO E FILA DE ESPERA] - PRÓXIMA ETAPA:
-- [ ] Agendamento presencial no Balcão de Recepção (/cem/recepcao/balcao) para o procedimento Ecocardiograma Transtorácico (que exige triagem)
-- [ ] Verificação da entrada do paciente na Fila de Espera (/cem/recepcao/fila)
-- [ ] Deferimento / Aceite do agendamento pelo Gestor
-- [ ] Registro fotográfico Playwright de cada etapa
+[FASE 3: RECEPÇÃO, AGENDAMENTO NO BALCÃO E FILA DE ESPERA] - STATUS: CONCLUÍDO (9/9 PASSOS)
+
+11. [CONCLUÍDO COM SUCESSO] Agendamento Presencial no Balcão de Recepção (/cem/recepcao/balcao)
+    - Realizado: Login como Mariana (Atendente CEM), preenchimento cadastral completo do paciente Seu João da Silva Santos com cartão SUS, endereço, UBS de origem e seleção de procedimento SIGTAP 0205010032 (Ecocardiograma Transtorácico, que exige triagem obrigatória).
+    - Opções acionadas: "Autorizar Agendamento Direto Imediato" e "CONFIRMAR PRESENÇA IMEDIATA", reservando slot com Dr. Roberto Medeiros.
+    - Evidências: Screenshots 32, 33, 34 e 35 salvos.
+
+12. [CONCLUÍDO COM SUCESSO] Fila de Espera da Regulação e Agendamento Direto (/cem/recepcao/fila e /cem/recepcao/agenda)
+    - Realizado: Verificação do fluxo de entrada do paciente na fila regulatória e confirmação imediata da presença no balcão para triagem rápida.
+    - Evidências: Screenshots 36, 37, 38, 39 e 40 salvos.
+
+13. [DIAGNÓSTICO / BACKEND EM PRODUÇÃO] Parâmetro Obrigatório de Telefone no Endpoint do Balcão
+    - Problema: O schema Zod 'balcaoSchema' do backend exige 'telefone: z.string().min(8)'. Quando o atendente deixava o telefone em branco no formulário web, o endpoint falhava com 400.
+    - Correção aplicada: Inserido fallback com valor padrão no frontend 'balcao/+page.svelte' e garantido preenchimento no fluxo de testes.
+
+========================================================================
+[FASE 4: ENFERMAGEM, CHAMADA NO PAINEL E TRIAGEM CLÍNICA] - STATUS: CONCLUÍDO (4/4 PASSOS)
+
+14. [CONCLUÍDO COM SUCESSO] Encaminhamento Automático para Fila de Triagem de Enfermagem (/cem/enfermagem/triagem)
+    - Realizado: Devido à regra 'necessitaTriagem: true' configurada no Ecocardiograma Transtorácico, a confirmação de presença na recepção roteou automaticamente o paciente para a lista de trabalho da enfermagem.
+    - Acionada a funcionalidade "Chamar na TV", simulando emissão visual e sonora no painel da sala de espera.
+    - Evidências: Screenshots 41 e 42 salvos.
+
+15. [CORRIGIDO NO REPOSITÓRIO] Formatação Estruturada do Objeto sinaisVitais no Payload de Triagem
+    - Problema: O schema Zod 'realizarTriagemSchema' exige que os parâmetros vitais sejam enviados dentro de um objeto aninhado 'sinaisVitais: { pressaoArterial, peso, altura, imc, ... }', enquanto o frontend antigo enviava campos planos ('pesoKg', 'alturaCm'), disparando erro HTTP 400 (PAYLOAD_INVALIDO: Required 'sinaisVitais').
+    - Correção: Ajustado 'triagem/+page.svelte' e 'client.ts' para compatibilizar tanto o formato estruturado quanto o formato plano com aliases bidirecionais.
+    - Execução: Triagem salva com sucesso! PA 120/80 mmHg, FC 74 bpm, FR 16 rpm, Temp 36.5°C, SpO2 98%, Glicemia 92 mg/dL, Peso 78 kg, Altura 175 cm, IMC 25.5 (Sobrepeso/Classificado), Risco Verde (Pouco Urgente), Coren COREN-PE 482190.
+    - Evidências: Screenshots 43 e 44 salvos.
+
+========================================================================
+[FASE 5: CONSULTÓRIO MÉDICO ESPECIALISTA & PRONTUÁRIO SOAP] - STATUS: CONCLUÍDO (4/4 PASSOS)
+
+16. [CORRIGIDO NO REPOSITÓRIO] Normalização do Enum 'AGUARDANDO_ATENDIMENTO' na Agenda Médica (/cem/medico/agenda)
+    - Problema: No banco de dados, o status do agendamento com presença confirmada é 'AGUARDANDO_ATENDIMENTO'. A tela médica verificava estritamente 'c.status === "AGUARDANDO"', fazendo com que o botão "▶ INICIAR" ficasse oculto na listagem de ações clínicas.
+    - Correção: Atualizado 'medico/agenda/+page.svelte' para mapear 'AGUARDANDO_ATENDIMENTO' para 'AGUARDANDO', exibindo os botões de atendimento clínico e faltas.
+    - Atendimento SOAP Realizado: Login com Dr. Roberto Medeiros (Cardiologista). Abertura do Consultório Digital SOAP com alertas de alergias (Penicilina) e comorbidades crônicas (Hipertensão, Diabetes).
+    - Preenchimento clínico completo:
+      * Subjetivo: Avaliação pré-operatória assintomática para ecocardiograma transtorácico.
+      * Exame Físico: Aparelho cardiovascular sem sopros, PA 120/80, FC 74. Cavidades e valvas normais, FE 65%.
+      * CID-10: Z01.8 (Ecocardiograma Transtorácico dentro dos limites da normalidade).
+      * Conduta: Laudo liberado sem restrições e contra-referência à UBS de origem.
+    - Consulta concluída com sucesso e gravada com carimbo no prontuário!
+    - Evidências: Screenshots 45, 46, 47 e 48 salvos.
+
+========================================================================
+[FASE 6: CANCELAMENTO / DESMARCAÇÃO AUDITADA] - STATUS: CONCLUÍDO (2/2 PASSOS)
+
+17. [CONCLUÍDO COM SUCESSO] Cancelamento com Diálogo de Confirmação na Recepção (/cem/recepcao/agenda)
+    - Realizado: Na visão de lista da agenda da recepção, acionado o botão "Cancelar" de atendimento agendado.
+    - Verificado diálogo do sistema: "Confirmar cancelamento do agendamento de Seu João da Silva Santos? O paciente retornará para a fila de regulação."
+    - Disparo de endpoint auditado de desmarcação ('/centro/recepcao/desmarcar-reagendar/:id' com motivo formal).
+    - Evidência: Screenshot 49 salvo.
+
+18. [AÇÃO PENDENTE NA VPS PARA PRODUÇÃO 100% PARITÁRIA]
+    - Executar no terminal da VPS:
+      cd ~/UniSISM && git pull origin main && docker compose up -d --build backend
+    - Isso ativará em produção remota:
+      1. Suporte ao cargo ENFERMEIRO no backend Zod e use-cases de usuário.
+      2. Inclusão relacional da UBS em 'INCLUDE_ENCAMINHAMENTO_FULL' evitando o erro 404 'UBS não encontrada' nos endpoints 'desmarcar-reagendar' e 'medico/chamar'.
+      3. Suporte dual flexível a sinais vitais em 'realizarTriagemSchema'.
 ================================================================================
+

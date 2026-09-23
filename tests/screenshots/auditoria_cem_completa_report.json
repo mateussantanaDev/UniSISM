@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-09-17T22:41:09.307Z",
+  "steps": [
+    {
+      "title": "Login Mariana (Atendente)",
+      "status": "PASS",
+      "detail": "https://unisism.vercel.app/cem/recepcao/fila"
+    },
+    {
+      "title": "Tela do Balcão de Recepção Carregada",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Paciente Inserido na Fila de Regulação pelo Balcão",
+      "status": "PASS",
+      "detail": "Paciente: Seu João da Silva Santos 8570"
+    },
+    {
+      "title": "Paciente Localizado na Fila da Regulação",
+      "status": "PASS",
+      "detail": "Seu João da Silva Santos 8570"
+    },
+    {
+      "title": "Modal de Agendamento/Regulação Aberto",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Agendamento Confirmado pela Regulação",
+      "status": "PASS",
+      "detail": "Dr. Roberto Medeiros - 08:00"
+    },
+    {
+      "title": "Status da Agenda Geral Verificado",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Fila de Triagem de Enfermagem Carregada",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Triagem Clínica Verificada",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Agenda Médica do Especialista Carregada",
+      "status": "PASS",
+      "detail": "Dr. Roberto Medeiros"
+    },
+    {
+      "title": "Módulo de Consulta do Especialista Verificado",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "title": "Fluxo de Cancelamento Verificado",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "findings": []
+}

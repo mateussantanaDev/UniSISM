@@ -1,0 +1,133 @@
+{
+  "timestamp": "2026-09-17T21:32:46.871Z",
+  "steps": [
+    {
+      "title": "Tela de Login carregada",
+      "status": "PASS",
+      "detail": "01_login_screen.png"
+    },
+    {
+      "title": "Autenticação com Sucesso",
+      "status": "PASS",
+      "detail": "URL: https://unisism.vercel.app/cem/gestao/dashboard"
+    },
+    {
+      "title": "Listagem de Usuários CEM",
+      "status": "PASS",
+      "detail": "03_gestao_usuarios_lista.png"
+    },
+    {
+      "title": "Extração de Usuários da Tabela",
+      "status": "PASS",
+      "detail": "4 usuários encontrados"
+    },
+    {
+      "title": "Busca Textual por Nome",
+      "status": "PASS",
+      "detail": "1 registro(s)"
+    },
+    {
+      "title": "Filtro de Perfis Disponíveis",
+      "status": "PASS",
+      "detail": "Todos os Perfis | Médicos Especialistas | Médicos Plantonistas | Atendentes / Recepção | Reguladores / Recepção | Coordenação / Supervisão | Gestor Geral / Diretor"
+    },
+    {
+      "title": "Filtro por Médicos Especialistas",
+      "status": "PASS",
+      "detail": "04_filtro_medicos.png"
+    },
+    {
+      "title": "Modal de Criação de Usuário Aberto",
+      "status": "PASS",
+      "detail": "05_modal_novo_usuario.png"
+    },
+    {
+      "title": "Perfis Técnicos no Modal",
+      "status": "PASS",
+      "detail": "ADMIN, COORDENADOR_UBS, MEDICO, MEDICO_ESPECIALISTA, ATENDENTE_CENTRO, REGULADOR_SMS"
+    },
+    {
+      "title": "Criação de Usuário via UI",
+      "status": "PASS",
+      "detail": "Usuário Lucas Atendente CEM 1724 submetido"
+    },
+    {
+      "title": "Modal de Edição de Usuário",
+      "status": "PASS",
+      "detail": "08_modal_editar_usuario.png"
+    },
+    {
+      "title": "Acesso a Dashboard Gestão",
+      "status": "PASS",
+      "detail": "09_cem_gestao_dashboard.png"
+    },
+    {
+      "title": "Acesso a Gestão de Salas / Consultórios",
+      "status": "PASS",
+      "detail": "10_cem_gestao_salas.png"
+    },
+    {
+      "title": "Acesso a Gestão de Especialidades",
+      "status": "PASS",
+      "detail": "11_cem_gestao_especialidades.png"
+    },
+    {
+      "title": "Acesso a Gestão de Escalas Médicas",
+      "status": "PASS",
+      "detail": "12_cem_gestao_escalas.png"
+    },
+    {
+      "title": "Acesso a Balcão de Recepção",
+      "status": "PASS",
+      "detail": "13_cem_recepcao_balcao.png"
+    },
+    {
+      "title": "Acesso a Fila de Espera / Recepção",
+      "status": "PASS",
+      "detail": "14_cem_recepcao_fila.png"
+    },
+    {
+      "title": "Acesso a Agenda Geral de Atendimentos",
+      "status": "PASS",
+      "detail": "15_cem_recepcao_agenda.png"
+    },
+    {
+      "title": "Acesso a Triagem Clínica e Sinais Vitais",
+      "status": "PASS",
+      "detail": "16_cem_enfermagem_triagem.png"
+    },
+    {
+      "title": "Acesso a Consultório do Médico Especialista",
+      "status": "PASS",
+      "detail": "17_cem_medico_agenda.png"
+    },
+    {
+      "title": "Login Dr. Roberto (Médico)",
+      "status": "PASS",
+      "detail": "URL: https://unisism.vercel.app/cem/medico/agenda"
+    },
+    {
+      "title": "Isolamento RBAC Médico em Gestão",
+      "status": "PASS",
+      "detail": "URL pós-tentativa: https://unisism.vercel.app/cem/gestao/usuarios"
+    },
+    {
+      "title": "Login Mariana (Atendente)",
+      "status": "PASS",
+      "detail": "URL: https://unisism.vercel.app/cem/recepcao/fila"
+    },
+    {
+      "title": "Isolamento RBAC Atendente em Consultório",
+      "status": "PASS",
+      "detail": "URL pós-tentativa: https://unisism.vercel.app/cem/medico/agenda"
+    }
+  ],
+  "rbacTests": [],
+  "usersFound": [
+    "DR | Dr. Roberto Medeiros | ID: 4221f146-dc5c-49ea-bbdf-4d42eb9600d6 | MÉDICO CARDIOLOGISTA\tNenhum serviço atribuído | 23456789012 | Matrícula: MED-14920 | dr.roberto.cardiologia@unisism.pe.gov.br\tATIVO | Atribuições | Editar | Reset | Inativar",
+    "GR | Graziella Leite Alcantara | ID: ed58a0a0-8079-4629-a708-0815d7076511 | DIRETOR(A) / GESTOR GERAL DO CEM\t— | 01502988461 | Matrícula: 309651-ENF | graziellasanitarista@gmail.com\tATIVO | Editar | Reset | Inativar",
+    "MA | Mariana Recepção CEM | ID: a14ed846-5696-462c-b470-d69a8a031de2 | ATENDENTE DE RECEPÇÃO CEM\t— | 34567890123 | Matrícula: ATD-CEM-01 | mariana.cem@unisism.pe.gov.br\tATIVO | Editar | Reset | Inativar",
+    "MA | Mateus Vieira | ID: f6f4bb2c-c5ed-4ecd-8b81-d9a5fb0a8b47 | MOTORISTA TFD\t— | 53474131826 | Matrícula: MOT-131826 | motorista-mot-131826@motorista.local\tATIVO | Editar | Reset | Inativar"
+  ],
+  "improvements": []
+}

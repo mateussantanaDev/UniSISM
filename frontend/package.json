@@ -56,9 +56,11 @@
 	},
 	"dependencies": {
 		"@tabler/icons-svelte": "^3.46.0",
-		"html2pdf.js": "^0.14.0"
+		"html2pdf.js": "^0.14.0",
+		"vercel": "^59.25.4"
 	},
 	"overrides": {
 		"cookie": "0.7.2"
+	}
 	}
 }

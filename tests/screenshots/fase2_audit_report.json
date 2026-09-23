@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-09-17T22:00:36.313Z",
+  "steps": [
+    {
+      "title": "Autenticação Gestora",
+      "status": "PASS",
+      "detail": "https://unisism.vercel.app/cem/gestao/dashboard"
+    },
+    {
+      "title": "Tela Gestão de Salas Carregada",
+      "status": "PASS",
+      "detail": "22_cem_gestao_salas_inicial.png"
+    },
+    {
+      "title": "Consultório CONS-04 Cadastrado",
+      "status": "PASS",
+      "detail": "24_cem_sala_cadastrada_sucesso.png"
+    },
+    {
+      "title": "Tela Catálogo SIGTAP Carregada",
+      "status": "PASS",
+      "detail": "25_cem_gestao_especialidades_inicial.png"
+    },
+    {
+      "title": "Procedimento Ecocardiograma com Triagem Obrigatória Cadastrado",
+      "status": "PASS",
+      "detail": "27_cem_procedimento_cadastrado_com_triagem.png"
+    },
+    {
+      "title": "Acesso à Matriz de Vagas / Cotas",
+      "status": "PASS",
+      "detail": "28_cem_gestao_vagas_cotas.png"
+    },
+    {
+      "title": "Aba de Escalas Médicas Ativa",
+      "status": "PASS",
+      "detail": "29_cem_grade_escalas_lista.png"
+    },
+    {
+      "title": "Escala Médica Especialista Cadastrada",
+      "status": "PASS",
+      "detail": "31_cem_escala_criada_sucesso.png"
+    }
+  ],
+  "findings": []
+}
