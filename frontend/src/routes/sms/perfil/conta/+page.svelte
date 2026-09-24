@@ -9,8 +9,8 @@
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil!);
 
-	function formatarData(iso: string | null | undefined) {
-		if (!iso) return 'Não informada';
+	function formatarDataContaSms(iso: string | null | undefined): string {
+		if (!iso || typeof iso !== 'string' || !iso.trim() || iso === 'Invalid Date') return 'Não informada';
 		const d = new Date(iso);
 		if (isNaN(d.getTime())) return 'Não informada';
 		return d.toLocaleDateString('pt-BR');
@@ -25,17 +25,17 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Nome Completo
 				</dt>
-				<dd class="mt-0.5 text-base font-bold text-slate-900">{p.nome}</dd>
+				<dd class="mt-0.5 text-base font-bold text-slate-900">{p?.nome}</dd>
 			</div>
 			<div class="col-span-6">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">CPF</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.cpf}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p?.cpf}</dd>
 			</div>
 			<div class="col-span-6">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Data de Nascimento
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarData(p.dataNascimento)}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarDataContaSms(p?.dataNascimento)}</dd>
 			</div>
 			<div class="col-span-12">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">

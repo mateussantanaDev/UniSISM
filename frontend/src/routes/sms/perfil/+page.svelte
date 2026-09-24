@@ -11,20 +11,21 @@
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil as AtendentePerfil);
 
-	function formatarData(iso: string | null | undefined) {
-		if (!iso) return 'Não informada';
+	function formatarDataPerfilSms(iso: string | null | undefined): string {
+		if (!iso || typeof iso !== 'string' || !iso.trim() || iso === 'Invalid Date') return 'Não informada';
 		const d = new Date(iso);
 		if (isNaN(d.getTime())) return 'Não informada';
 		return d.toLocaleDateString('pt-BR');
 	}
 
-	function tempoCasa(iso: string | null | undefined): string {
-		if (!iso) return '—';
+	function tempoCasaPerfilSms(iso: string | null | undefined): string {
+		if (!iso || typeof iso !== 'string' || !iso.trim() || iso === 'Invalid Date') return '—';
 		const d = new Date(iso);
 		if (isNaN(d.getTime())) return '—';
 		const hoje = new Date();
 		let anos = hoje.getFullYear() - d.getFullYear();
 		let meses = hoje.getMonth() - d.getMonth();
+		if (isNaN(anos) || isNaN(meses)) return '—';
 		if (meses < 0) {
 			anos--;
 			meses += 12;
@@ -55,13 +56,13 @@
 			</div>
 			<div class="col-span-4">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Admissão</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarData(p.dataAdmissao)}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarDataPerfilSms(p?.dataAdmissao)}</dd>
 			</div>
 			<div class="col-span-4">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Tempo de Casa
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{tempoCasa(p.dataAdmissao)}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{tempoCasaPerfilSms(p?.dataAdmissao)}</dd>
 			</div>
 			<div class="col-span-12">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
