@@ -81,8 +81,11 @@ export class MeUseCase {
                   : 'SMS');
 
     let cargo = a.cargo;
-    if (a.role === 'REGULADOR_SMS') {
-      cargo = 'Regulador(a) da SMS';
+    if (tipoUnidade === 'SMS' || a.role === 'REGULADOR_SMS') {
+      if (a.role === 'ADMIN') cargo = 'Diretor(a) / Gestor(a) da SMS';
+      else if (a.role === 'REGULADOR_SMS' || cargoUpper.includes('REGULADOR')) cargo = 'Regulador(a) da SMS';
+      else if (a.role === 'COORDENADOR_UBS' || cargoUpper.includes('COORDENADOR')) cargo = 'Coordenador(a) da SMS';
+      else cargo = 'Gestor(a) da SMS';
     } else if (!cargo || cargoUpper.includes('ATENDENTE DE REGULAÇÃO') || cargoUpper.includes('REGULADOR(A) DO CEO')) {
       if (tipoUnidade === 'CEO') {
         if (a.role === 'COORDENADOR_UBS') cargo = 'Coordenador(a) do CEO';
