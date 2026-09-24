@@ -35,6 +35,8 @@
 		await auth.logout();
 	}
 
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
+
 	let tabs = $derived([
 		{ label: 'Visão Geral', href: '/ubs/perfil', shortcut: '1' },
 		{ label: 'Conta', href: '/ubs/perfil/conta', shortcut: '2' },
@@ -63,7 +65,7 @@
 					{perfil?.nome ?? 'Carregando...'}
 				</div>
 				<div class="font-mono text-[11px] text-slate-600">
-					{perfil?.cargo ?? ''} · Matrícula {perfil?.matricula ?? ''}
+					{formatarCargoPerfil(perfil, 'UBS')} · Matrícula {perfil?.matricula ?? ''}
 				</div>
 			</div>
 		</div>

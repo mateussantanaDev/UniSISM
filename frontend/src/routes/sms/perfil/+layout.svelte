@@ -31,6 +31,8 @@
 		}
 	});
 
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
+
 	let tabs = $derived([
 		{ label: 'Visão Geral', href: '/sms/perfil', shortcut: '1' },
 		{ label: 'Conta', href: '/sms/perfil/conta', shortcut: '2' },
@@ -59,7 +61,7 @@
 					{perfil?.nome ?? auth.me?.nome ?? 'Carregando...'}
 				</div>
 				<div class="font-mono text-[11px] text-slate-600">
-					{perfil?.cargo ?? auth.me?.cargo ?? ''} · Matrícula {perfil?.matricula ??
+					{formatarCargoPerfil(perfil ?? auth.me, 'SMS')} · Matrícula {perfil?.matricula ??
 						auth.me?.matricula ??
 						''}
 				</div>
