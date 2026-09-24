@@ -71,7 +71,7 @@
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Admissão</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarData(p.dataAdmissao)}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarDataContaSms(p?.dataAdmissao)}</dd>
 			</div>
 		</dl>
 	</div>
