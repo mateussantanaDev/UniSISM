@@ -1,3 +1,4 @@
+<!-- Build 2026.04.1 -->
 <script lang="ts">
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import MetricCard from '$lib/presentation/components/MetricCard.svelte';
