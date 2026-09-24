@@ -43,6 +43,30 @@
 		isEspecialidadeOdonto,
 		pertenceAoOrgaoCentro
 	} from '$lib/domain/centro/alocadorInteligenteEscala';
+	import { useAuth } from '$lib/presentation/contexts/authContext';
+
+	const auth = useAuth();
+	let isGestor = $derived.by(() => {
+		const role = String(auth.me?.role || '').toUpperCase();
+		const cargo = String(auth.me?.cargo || '').toUpperCase();
+		if (
+			role === 'ADMIN' ||
+			role === 'COORDENADOR_UBS' ||
+			role === 'DESENVOLVEDOR' ||
+			role === 'GESTOR_TFD'
+		) {
+			return true;
+		}
+		if (
+			cargo.includes('GESTOR') ||
+			cargo.includes('DIRETOR') ||
+			cargo.includes('COORDENADOR') ||
+			cargo.includes('ADMINISTRADOR')
+		) {
+			return true;
+		}
+		return false;
+	});
 
 	// Centro Selecionado determinado pelo órgão / rota ou detecção de especialidade/profissional
 	let centroManual = $state<TipoCentro | null>(null);
@@ -166,22 +190,110 @@
 	let mensagemSlotBackend = $state('');
 	let confirmarPresencaImediata = $state(false);
 
+	const CARGOS_E_ROLES_INVALIDOS = [
+		'atendente',
+		'recepcao',
+		'recepção',
+		'regulador',
+		'coordenador',
+		'diretor',
+		'gestor',
+		'enfermeiro',
+		'motorista',
+		'desenvolvedor',
+		'administrador',
+		'técnico',
+		'auxiliar',
+		'recepcionista',
+		'supervisão',
+		'gerente',
+		'cirurgião-dentista especialista',
+		'cirurgião-dentista plantonista',
+		'médico especialista',
+		'médico plantonista',
+		'clínica especializada',
+		'odontologia especializada'
+	];
+
+	const ESPECIALIDADES_PADRAO_CEM = [
+		'Cardiologia',
+		'Cirurgia Geral',
+		'Dermatologia',
+		'Endocrinologia',
+		'Gastroenterologia',
+		'Ginecologia e Obstetrícia',
+		'Neurologia',
+		'Oftalmologia',
+		'Ortopedia e Traumatologia',
+		'Otorrinolaringologia',
+		'Pediatria',
+		'Psiquiatria',
+		'Urologia',
+		'Clínica Médica'
+	];
+
+	const ESPECIALIDADES_PADRAO_CEO = [
+		'Endodontia',
+		'Periodontia',
+		'Cirurgia Oral / Bucomaxilofacial',
+		'Odontopediatria',
+		'Prótese Dentária',
+		'Radiologia Odontológica',
+		'Pacientes com Necessidades Especiais (PNE)',
+		'Estomatologia',
+		'Dentística / Restauração',
+		'Ortodontia',
+		'Odontologia Geral'
+	];
+
+	function isEspecialidadeValida(nome?: string | null): boolean {
+		if (!nome) return false;
+		const txt = nome.trim().toLowerCase();
+		if (!txt || txt.length < 3) return false;
+		for (const cargo of CARGOS_E_ROLES_INVALIDOS) {
+			if (txt === cargo) return false;
+			if (
+				txt.startsWith('atendente') ||
+				txt.startsWith('regulador') ||
+				txt.startsWith('coordenador') ||
+				txt.startsWith('diretor')
+			) {
+				return false;
+			}
+		}
+		if (
+			txt.includes('especialista') &&
+			(txt.includes('dentista') || txt.includes('médico') || txt.includes('medico'))
+		) {
+			return false;
+		}
+		return true;
+	}
+
 	// Especialidades obtidas 100% dos Serviços Habilitados no Centro e Escalas do Banco
 	let especialidadesCadastradas = $derived.by(() => {
 		const sets = new Set<string>();
 		// 1. Serviços / Consultas cadastrados no catálogo oficial do Centro
 		for (const s of catalogoServicos) {
 			if (s.ativa !== false && s.tipoServico !== 'PROCEDIMENTO' && s.nome) {
-				sets.add(s.nome.trim());
+				if (isEspecialidadeValida(s.nome)) {
+					sets.add(s.nome.trim());
+				}
 			}
 		}
 		// 2. Especialidades dos profissionais com escala cadastrada no Centro
 		for (const e of escalasDoBanco) {
-			if (e.especialidade) {
+			if (e.especialidade && isEspecialidadeValida(e.especialidade)) {
 				sets.add(e.especialidade.trim());
 			}
 		}
-		return Array.from(sets).sort();
+
+		const res = Array.from(sets).sort((a, b) => a.localeCompare(b));
+		if (res.length > 0) return res;
+
+		return (ehCeo ? ESPECIALIDADES_PADRAO_CEO : ESPECIALIDADES_PADRAO_CEM).sort((a, b) =>
+			a.localeCompare(b)
+		);
 	});
 
 	// Procedimentos SIGTAP obtidos 100% do catálogo oficial cadastrado no Centro
@@ -816,7 +928,9 @@
 				for (const p of profissionaisList) {
 					if (p.nome) {
 						const esp =
-							p.especialidade || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada');
+							p.especialidade && isEspecialidadeValida(p.especialidade)
+								? p.especialidade
+								: (ehCeo ? 'Odontologia Geral' : 'Clínica Médica');
 						const chave = `${p.nome}_${esp}`.toLowerCase();
 						if (!mapaEscalas.has(chave)) {
 							mapaEscalas.set(chave, {
@@ -1796,228 +1910,209 @@
 						</div>
 					{/if}
 
-					<!-- Profissional / Especialista da Escala -->
-					<div class="relative flex flex-col gap-1">
-						<label
-							for="medico-search-btn"
-							class="flex items-center justify-between font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
-						>
-							<span>{rotuloProfissional} <span class="text-red-700">*</span></span>
-							{#if medicoSelecionado}
-								<button
-									type="button"
-									onclick={limparMedico}
-									class="text-[9px] text-red-700 hover:underline"
-								>
-									[Limpar Seleção]
-								</button>
-							{/if}
-						</label>
-
-						<!-- Indicador de Filtro Ativo por Especialidade -->
-						{#if especialidade}
-							<div
-								class="flex items-center justify-between border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono text-[10px] text-blue-950"
+					<!-- Profissional / Especialista da Escala (Apenas para Gestão/Admin) -->
+					{#if isGestor}
+						<div class="relative flex flex-col gap-1">
+							<label
+								for="medico-search-btn"
+								class="flex items-center justify-between font-mono text-[9px] font-semibold tracking-widest text-slate-500 uppercase"
 							>
-								<span class="flex items-center gap-1.5">
-									<span class="py-0.2 bg-blue-900 px-1.5 text-[8px] font-bold text-white"
-										>FILTRO ATIVO</span
-									>
-									<span
-										>Apenas especialistas habilitados para: <strong
-											>{especialidade.toUpperCase()}</strong
-										></span
-									>
-								</span>
-								<span class="font-bold text-blue-900">
-									{medicosFiltrados.length} médico(s)
-								</span>
-							</div>
-						{/if}
-
-						<button
-							id="medico-search-btn"
-							type="button"
-							onclick={() => (dropdownAberto = !dropdownAberto)}
-							class="flex w-full items-center justify-between border border-slate-300 bg-white px-2.5 py-2 text-left font-sans text-xs text-slate-900 outline-none focus:border-blue-900"
-						>
-							<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
+								<span>{rotuloProfissional} <span class="text-red-700">*</span></span>
 								{#if medicoSelecionado}
-									{medicoSelecionado.nome} — {especialidade || medicoSelecionado.especialidade} ({medicoSelecionado.registro})
-								{:else if medicosFiltrados.length === 0}
-									Nenhum {rotuloProfissional.toLowerCase()} cadastrado para {especialidade ||
-										'o centro'} no {siglaOrgao}
-								{:else if especialidade}
-									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is)
-									para {especialidade})...
-								{:else}
-									Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is))...
+									<button
+										type="button"
+										onclick={limparMedico}
+										class="text-[9px] text-red-700 hover:underline"
+									>
+										[Limpar Seleção]
+									</button>
 								{/if}
-							</span>
-							<span class="text-[9px] font-bold text-slate-400">{dropdownAberto ? '▲' : '▼'}</span>
-						</button>
+							</label>
 
-						{#if dropdownAberto}
-							<div
-								class="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)]"
-							>
+							<!-- Indicador de Filtro Ativo por Especialidade -->
+							{#if especialidade}
 								<div
-									class="sticky top-0 flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 p-2"
+									class="flex items-center justify-between border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono text-[10px] text-blue-950"
 								>
-									<IconSearch size={14} class="shrink-0 text-slate-400" />
-									<input
-										type="text"
-										bind:value={buscaMedico}
-										placeholder={especialidade
-											? `Filtrar médico que faz ${especialidade}...`
-											: 'Filtrar por nome ou registro...'}
-										class="w-full border border-slate-300 bg-white px-2 py-1 text-xs outline-none"
-										onclick={(e) => e.stopPropagation()}
-									/>
-								</div>
-								<div class="flex flex-col">
-									{#each medicosFiltrados as med}
-										<button
-											type="button"
-											onclick={() => selecionarMedico(med)}
-											class="flex w-full items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5 text-left font-mono text-xs last:border-b-0 hover:bg-blue-50 hover:text-blue-900"
+									<span class="flex items-center gap-1.5">
+										<span class="py-0.2 bg-blue-900 px-1.5 text-[8px] font-bold text-white"
+											>FILTRO ATIVO</span
 										>
-											<div class="flex flex-col gap-0.5">
-												<span class="flex items-center gap-1.5 font-bold text-slate-900">
-													<span>{med.nome}</span>
-													<span class="text-[10px] font-normal text-slate-500"
-														>({med.registro})</span
-													>
-												</span>
-												<div class="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
-													<span>Atende:</span>
-													{#each med.diasSemana || [] as dia}
-														<span
-															class="py-0.2 border border-indigo-200 bg-indigo-50 px-1 text-[9px] font-bold text-indigo-900"
+										<span
+											>Apenas especialistas habilitados para: <strong
+												>{especialidade.toUpperCase()}</strong
+											></span
+										>
+									</span>
+									<span class="font-bold text-blue-900">
+										{medicosFiltrados.length} médico(s)
+									</span>
+								</div>
+							{/if}
+
+							<button
+								id="medico-search-btn"
+								type="button"
+								onclick={() => (dropdownAberto = !dropdownAberto)}
+								class="flex w-full items-center justify-between border border-slate-300 bg-white px-2.5 py-2 text-left font-sans text-xs text-slate-900 outline-none focus:border-blue-900"
+							>
+								<span class={medicoSelecionado ? 'font-bold text-slate-900' : 'text-slate-500'}>
+									{#if medicoSelecionado}
+										{medicoSelecionado.nome} — {especialidade || medicoSelecionado.especialidade} ({medicoSelecionado.registro})
+									{:else if medicosFiltrados.length === 0}
+										Nenhum {rotuloProfissional.toLowerCase()} cadastrado para {especialidade ||
+											'o centro'} no {siglaOrgao}
+									{:else if especialidade}
+										Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is)
+										para {especialidade})...
+									{:else}
+										Selecione o {rotuloProfissional.toLowerCase()} ({medicosFiltrados.length} disponível(is))...
+									{/if}
+								</span>
+								<span class="text-[9px] font-bold text-slate-400">{dropdownAberto ? '▲' : '▼'}</span>
+							</button>
+
+							{#if dropdownAberto}
+								<div
+									class="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto border-2 border-slate-900 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.15)]"
+								>
+									<div
+										class="sticky top-0 flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 p-2"
+									>
+										<IconSearch size={14} class="shrink-0 text-slate-400" />
+										<input
+											type="text"
+											bind:value={buscaMedico}
+											placeholder={especialidade
+												? `Filtrar médico que faz ${especialidade}...`
+												: 'Filtrar por nome ou registro...'}
+											class="w-full border border-slate-300 bg-white px-2 py-1 text-xs outline-none"
+											onclick={(e) => e.stopPropagation()}
+										/>
+									</div>
+									<div class="flex flex-col">
+										{#each medicosFiltrados as med}
+											<button
+												type="button"
+												onclick={() => selecionarMedico(med)}
+												class="flex w-full items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5 text-left font-mono text-xs last:border-b-0 hover:bg-blue-50 hover:text-blue-900"
+											>
+												<div class="flex flex-col gap-0.5">
+													<span class="flex items-center gap-1.5 font-bold text-slate-900">
+														<span>{med.nome}</span>
+														<span class="text-[10px] font-normal text-slate-500"
+															>({med.registro})</span
 														>
-															{dia}
+													</span>
+													<div class="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
+														<span>Atende:</span>
+														{#each med.diasSemana || [] as dia}
+															<span
+																class="py-0.2 border border-indigo-200 bg-indigo-50 px-1 text-[9px] font-bold text-indigo-900"
+															>
+																{dia}
+															</span>
+														{/each}
+														<span class="text-slate-400"
+															>({med.horarioInicio} - {med.horarioFim})</span
+														>
+													</div>
+												</div>
+												<div class="flex shrink-0 flex-col items-end gap-1">
+													{#each med.especialidades as espItem}
+														<span
+															class="border px-1.5 py-0.5 text-[9px] font-semibold uppercase {especialidadeMatch(
+																espItem,
+																especialidade
+															)
+																? 'border-blue-900 bg-blue-900 font-bold text-white'
+																: 'border-slate-200 bg-slate-100 text-slate-700'}"
+														>
+															{espItem}
 														</span>
 													{/each}
-													<span class="text-slate-400"
-														>({med.horarioInicio} - {med.horarioFim})</span
+												</div>
+											</button>
+										{:else}
+											<div
+												class="p-4 text-center text-slate-500 text-xs font-sans flex flex-col gap-2"
+											>
+												{#if especialidade}
+													<div class="text-amber-800 font-bold">
+														Nenhum médico com atendimento cadastrado para "{especialidade}".
+													</div>
+													<div class="text-[11px] text-slate-600">
+														Cadastre o profissional e atribua esta especialidade na tela de Gestão de
+														Usuários ou Matriz de Vagas.
+													</div>
+													<a
+														href="/{siglaOrgao.toLowerCase()}/gestao/usuarios"
+														class="bg-blue-900 text-white px-3 py-1 font-mono text-[10px] font-bold uppercase self-center hover:bg-blue-950"
 													>
-												</div>
+														Atribuir Médico no {siglaOrgao} →
+													</a>
+												{:else}
+													<div>
+														Selecione a especialidade solicitada acima para listar os médicos
+														especialistas.
+													</div>
+												{/if}
 											</div>
-											<div class="flex shrink-0 flex-col items-end gap-1">
-												{#each med.especialidades as espItem}
-													<span
-														class="border px-1.5 py-0.5 text-[9px] font-semibold uppercase {especialidadeMatch(
-															espItem,
-															especialidade
-														)
-															? 'border-blue-900 bg-blue-900 font-bold text-white'
-															: 'border-slate-200 bg-slate-100 text-slate-700'}"
-													>
-														{espItem}
-													</span>
-												{/each}
-											</div>
-										</button>
-									{:else}
-										<div
-											class="p-4 text-center text-slate-500 text-xs font-sans flex flex-col gap-2"
-										>
-											{#if especialidade}
-												<div class="text-amber-800 font-bold">
-													Nenhum médico com atendimento cadastrado para "{especialidade}".
-												</div>
-												<div class="text-[11px] text-slate-600">
-													Cadastre o profissional e atribua esta especialidade na tela de Gestão de
-													Usuários ou Matriz de Vagas.
-												</div>
-												<a
-													href="/{siglaOrgao.toLowerCase()}/gestao/usuarios"
-													class="bg-blue-900 text-white px-3 py-1 font-mono text-[10px] font-bold uppercase self-center hover:bg-blue-950"
-												>
-													Atribuir Médico no {siglaOrgao} →
-												</a>
-											{:else}
-												<div>
-													Selecione a especialidade solicitada acima para listar os médicos
-													especialistas.
-												</div>
-											{/if}
-										</div>
-									{/each}
+										{/each}
+									</div>
 								</div>
-							</div>
-						{/if}
-					</div>
+							{/if}
+						</div>
+					{/if}
 
-					<!-- Prioridade Clínica SUS (Diretriz de Alocação de Vagas) -->
+					<!-- Prioridade Clínica SUS -->
 					<div class="flex flex-col gap-1.5 border border-slate-200 bg-slate-50 p-2.5">
 						<span
-							class="flex items-center justify-between font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase"
+							class="font-mono text-[9px] font-bold tracking-widest text-slate-700 uppercase"
 						>
-							<span>Prioridade Clínica (Diretriz de Alocação de Vagas) *</span>
-							<span class="text-[9px] font-normal text-blue-900">Janela de Atendimento</span>
+							Prioridade Clínica *
 						</span>
 
 						<div class="grid grid-cols-2 gap-1.5 font-mono text-[10px] sm:grid-cols-4">
 							<button
 								type="button"
 								onclick={() => (prioridade = 'ELETIVA')}
-								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								class="flex items-center justify-center border px-2 py-2.5 text-center font-bold uppercase transition-colors {prioridade ===
 								'ELETIVA'
 									? 'border-emerald-800 bg-emerald-800 text-white shadow-xs'
 									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>ELETIVA</span>
-								<span
-									class="text-[8px] font-normal {prioridade === 'ELETIVA'
-										? 'text-emerald-100'
-										: 'text-slate-500'}">15 a 30 dias</span
-								>
 							</button>
 							<button
 								type="button"
 								onclick={() => (prioridade = 'PRIORITARIA')}
-								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								class="flex items-center justify-center border px-2 py-2.5 text-center font-bold uppercase transition-colors {prioridade ===
 								'PRIORITARIA'
 									? 'border-amber-800 bg-amber-800 text-white shadow-xs'
 									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>PRIORITÁRIA</span>
-								<span
-									class="text-[8px] font-normal {prioridade === 'PRIORITARIA'
-										? 'text-amber-100'
-										: 'text-slate-500'}">7 a 10 dias (60+, PCD, TEA)</span
-								>
 							</button>
 							<button
 								type="button"
 								onclick={() => (prioridade = 'URGENTE')}
-								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								class="flex items-center justify-center border px-2 py-2.5 text-center font-bold uppercase transition-colors {prioridade ===
 								'URGENTE'
 									? 'border-orange-800 bg-orange-800 text-white shadow-xs'
 									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>URGENTE</span>
-								<span
-									class="text-[8px] font-normal {prioridade === 'URGENTE'
-										? 'text-orange-100'
-										: 'text-slate-500'}">Até 72 horas</span
-								>
 							</button>
 							<button
 								type="button"
 								onclick={() => (prioridade = 'EMERGENCIA')}
-								class="flex flex-col items-center justify-center gap-0.5 border px-2 py-2 text-center font-bold uppercase transition-colors {prioridade ===
+								class="flex items-center justify-center border px-2 py-2.5 text-center font-bold uppercase transition-colors {prioridade ===
 								'EMERGENCIA'
 									? 'animate-pulse border-red-900 bg-red-900 text-white shadow-xs'
 									: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 							>
 								<span>EMERGÊNCIA</span>
-								<span
-									class="text-[8px] font-normal {prioridade === 'EMERGENCIA'
-										? 'text-red-100'
-										: 'text-slate-500'}">Mesmo Dia / Encaixe</span
-								>
 							</button>
 						</div>
 					</div>
@@ -2106,7 +2201,7 @@
 					{/if}
 
 					<!-- SELETOR VISUAL DA ESCALA DO ESPECIALISTA (DIAS E HORÁRIOS LIVRES) -->
-					{#if gradeDisponibilidade.length > 0}
+					{#if (ehCeo || isGestor) && gradeDisponibilidade.length > 0}
 						<div
 							class="flex flex-col gap-3 border border-slate-300 bg-slate-50 p-3 font-mono text-xs"
 						>
@@ -2366,16 +2461,18 @@
 				<div
 					class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-1"
 				>
-					<label
-						class="flex cursor-pointer items-center gap-2 font-mono text-xs text-slate-700 select-none hover:text-slate-900"
-					>
-						<input
-							type="checkbox"
-							bind:checked={agendarDireto}
-							class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-0"
-						/>
-						<span>Autorizar Agendamento Direto Imediato (Exceção / Encaixe de Urgência)</span>
-					</label>
+					{#if isGestor}
+						<label
+							class="flex cursor-pointer items-center gap-2 font-mono text-xs text-slate-700 select-none hover:text-slate-900"
+						>
+							<input
+								type="checkbox"
+								bind:checked={agendarDireto}
+								class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-0"
+							/>
+							<span>Autorizar Agendamento Direto Imediato (Exceção / Encaixe de Urgência)</span>
+						</label>
+					{/if}
 
 					<button
 						type="button"
