@@ -7,7 +7,8 @@
 
 	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
 
-	const BUILD_VER = '2026.04.v2';
+	import { BUILD_TIMESTAMP } from './build_trigger';
+	const BUILD_VER = BUILD_TIMESTAMP;
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil as AtendentePerfil);
 
