@@ -37,37 +37,45 @@ export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): st
 		}
 	}
 
-	// Se o cargo foi definido explicitamente e não é o placeholder legado genérico
+	// Se o cargo foi definido explicitamente e não é um placeholder legado ou incompatível com a face atual
 	if (cargo && !cargoUpper.includes('ATENDENTE DE REGULAÇÃO')) {
-		if (tipo === 'CEO') {
-			if (
-				cargoUpper.includes('COORDENADOR') &&
-				(cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
-			) {
-				return 'Coordenador(a) do CEO';
+		if (tipo === 'SMS' && (cargoUpper.includes('CEO') || cargoUpper.includes('CEM'))) {
+			// Ignora o cargo legado antigo do banco incompatível com a face SMS
+		} else if (tipo === 'CEO' && cargoUpper.includes('CEM')) {
+			// Ignora o cargo CEM incompatível com CEO
+		} else if (tipo === 'CEM' && cargoUpper.includes('CEO')) {
+			// Ignora o cargo CEO incompatível com CEM
+		} else {
+			if (tipo === 'CEO') {
+				if (
+					cargoUpper.includes('COORDENADOR') &&
+					(cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
+				) {
+					return 'Coordenador(a) do CEO';
+				}
+				if (
+					cargoUpper.includes('REGULADOR') &&
+					(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
+				) {
+					return 'Regulador(a) do CEO';
+				}
 			}
-			if (
-				cargoUpper.includes('REGULADOR') &&
-				(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEO'))
-			) {
-				return 'Regulador(a) do CEO';
+			if (tipo === 'CEM') {
+				if (
+					cargoUpper.includes('COORDENADOR') &&
+					(cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
+				) {
+					return 'Coordenador(a) do CEM';
+				}
+				if (
+					cargoUpper.includes('REGULADOR') &&
+					(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
+				) {
+					return 'Regulador(a) do CEM';
+				}
 			}
+			return cargo;
 		}
-		if (tipo === 'CEM') {
-			if (
-				cargoUpper.includes('COORDENADOR') &&
-				(cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
-			) {
-				return 'Coordenador(a) do CEM';
-			}
-			if (
-				cargoUpper.includes('REGULADOR') &&
-				(cargoUpper.includes('SMS') || cargoUpper.includes('UBS') || !cargoUpper.includes('CEM'))
-			) {
-				return 'Regulador(a) do CEM';
-			}
-		}
-		return cargo;
 	}
 
 	if (tipo === 'SMS') {

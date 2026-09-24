@@ -3,11 +3,16 @@
 	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
 	import { usePerfil } from '$lib/presentation/contexts/perfilContext';
 
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
+
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil!);
 
-	function formatarData(iso: string) {
-		return new Date(iso).toLocaleDateString('pt-BR');
+	function formatarData(iso: string | null | undefined) {
+		if (!iso) return 'Não informada';
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return 'Não informada';
+		return d.toLocaleDateString('pt-BR');
 	}
 </script>
 
@@ -53,7 +58,7 @@
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Cargo</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p.cargo}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p)}</dd>
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Função</dt>

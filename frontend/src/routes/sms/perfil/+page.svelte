@@ -4,15 +4,22 @@
 	import { usePerfil } from '$lib/presentation/contexts/perfilContext';
 	import type { AtendentePerfil } from '$lib/api/types';
 
+	import { formatarCargoPerfil } from '$lib/presentation/utils/usuarioUtils';
+
 	const ctx = usePerfil();
 	let p = $derived(ctx.perfil as AtendentePerfil);
 
-	function formatarData(iso: string) {
-		return new Date(iso).toLocaleDateString('pt-BR');
+	function formatarData(iso: string | null | undefined) {
+		if (!iso) return 'Não informada';
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return 'Não informada';
+		return d.toLocaleDateString('pt-BR');
 	}
 
-	function tempoCasa(iso: string): string {
+	function tempoCasa(iso: string | null | undefined): string {
+		if (!iso) return '—';
 		const d = new Date(iso);
+		if (isNaN(d.getTime())) return '—';
 		const hoje = new Date();
 		let anos = hoje.getFullYear() - d.getFullYear();
 		let meses = hoje.getMonth() - d.getMonth();
@@ -20,6 +27,9 @@
 			anos--;
 			meses += 12;
 		}
+		if (anos < 0) return 'Recente';
+		if (anos === 0 && meses === 0) return 'Menos de 1m';
+		if (anos === 0) return `${meses}m`;
 		return `${anos}a ${meses}m`;
 	}
 </script>
@@ -55,7 +65,7 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Cargo / Função
 				</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p.cargo}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p)}</dd>
 				<dd class="text-xs text-slate-600">{p.funcao}</dd>
 			</div>
 			<div class="col-span-12">
