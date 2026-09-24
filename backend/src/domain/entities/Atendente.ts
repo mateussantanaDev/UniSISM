@@ -70,6 +70,8 @@ export interface AtendentePerfil {
   dataNascimento: string;
   cargo: string;
   funcao: string;
+  role?: string;
+  tipoUnidade?: string;
   lotacao: string;
   unidade: string;
   dataAdmissao: string;

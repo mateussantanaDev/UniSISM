@@ -58,7 +58,7 @@
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Cargo</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p)}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p, 'SMS')}</dd>
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Função</dt>

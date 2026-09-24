@@ -65,7 +65,7 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Cargo / Função
 				</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p)}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p, 'SMS')}</dd>
 				<dd class="text-xs text-slate-600">{p.funcao}</dd>
 			</div>
 			<div class="col-span-12">

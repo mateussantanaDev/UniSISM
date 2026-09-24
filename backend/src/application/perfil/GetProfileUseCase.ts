@@ -131,6 +131,8 @@ export class GetProfileUseCase {
       dataNascimento: ymd(a.dataNascimento),
       cargo: a.cargo,
       funcao: a.funcao,
+      role: a.role,
+      tipoUnidade: a.tipoUnidade,
       lotacao: a.ubs
         ? `${a.ubs.nome} · ${a.ubs.municipio} / ${a.ubs.uf}`
         : a.prefeitura

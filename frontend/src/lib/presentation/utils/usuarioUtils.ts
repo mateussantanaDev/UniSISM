@@ -11,14 +11,41 @@ export interface UsuarioFormatavel {
  * Retorna o título/cargo profissional contextualizado de acordo com o papel e o tipo de unidade (CEO, CEM, UBS, SMS, TFD).
  * Evita que usuários de Centros (ex: Coordenador do CEO) apareçam como "Coordenador UBS" na Secretaria de Saúde.
  */
-export function formatarCargoPerfil(u: UsuarioFormatavel | null | undefined): string {
+export function formatarCargoPerfil(
+	u: UsuarioFormatavel | null | undefined,
+	faceContext?: string | null
+): string {
 	if (!u) return '—';
 	const role = String(u.role || '').toUpperCase();
 	const cargo = String(u.cargo || '').trim();
 	const cargoUpper = cargo.toUpperCase();
 	const funcaoUpper = String(u.funcao || '').toUpperCase();
 
-	let tipo = String(u.tipoUnidade || '').toUpperCase();
+	let tipo = String(faceContext || u.tipoUnidade || '').toUpperCase();
+
+	// Se o contexto ou tipo é SMS, forçar a titulação funcional da Secretaria de Saúde
+	if (tipo === 'SMS' || faceContext?.toUpperCase() === 'SMS') {
+		if (cargoUpper.includes('REGULADOR') || role === 'REGULADOR_SMS') {
+			return 'Regulador(a) da SMS';
+		}
+		if (cargoUpper.includes('COORDENADOR') || role === 'COORDENADOR_UBS') {
+			return 'Coordenador(a) da SMS';
+		}
+		if (cargoUpper.includes('DIRETOR') || cargoUpper.includes('GESTOR') || role === 'ADMIN') {
+			return 'Diretor(a) / Gestor(a) da SMS';
+		}
+		if (cargoUpper.includes('ATENDENTE') || role === 'ATENDENTE_CENTRO' || role === 'ATENDENTE_UBS') {
+			return 'Atendente / Recepção da SMS';
+		}
+		if (cargoUpper.includes('ENFERMEIRO') || role === 'ENFERMEIRO') {
+			return 'Enfermeiro(a) / Regulação';
+		}
+		if (cargoUpper.includes('MÉDICO') || cargoUpper.includes('MEDICO') || role === 'MEDICO') {
+			return 'Médico(a) Regulador(a)';
+		}
+		return 'Regulador(a) da SMS';
+	}
+
 	if (!tipo || tipo === 'NULL' || tipo === 'UNDEFINED') {
 		if (
 			cargoUpper.includes('CEO') ||
