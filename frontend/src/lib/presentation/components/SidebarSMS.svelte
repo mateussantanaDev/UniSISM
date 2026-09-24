@@ -160,8 +160,8 @@
 		<div class="truncate text-xs font-semibold text-slate-900">
 			{auth.me?.prefeitura ?? auth.me?.unidade ?? 'UNISISM'}
 		</div>
-		{#if auth.me?.escopo === 'PREFEITURA' && auth.me?.cargo}
-			<div class="truncate text-[11px] text-slate-600">{auth.me.cargo}</div>
+		{#if auth.me?.escopo === 'PREFEITURA'}
+			<div class="truncate text-[11px] text-slate-600">{formatarCargoPerfil(auth.me, 'SMS')}</div>
 		{/if}
 	</div>
 
@@ -226,8 +226,8 @@
 			</div>
 			<div class="flex items-center gap-1.5 text-[11px] text-emerald-700">
 				<span class="inline-block h-1.5 w-1.5 bg-emerald-600"></span>
-				<span class="truncate font-semibold" title={formatarCargoPerfil(auth.me)}
-					>{formatarCargoPerfil(auth.me)}</span
+				<span class="truncate font-semibold" title={formatarCargoPerfil(auth.me, 'SMS')}
+					>{formatarCargoPerfil(auth.me, 'SMS')}</span
 				>
 			</div>
 		</div>
