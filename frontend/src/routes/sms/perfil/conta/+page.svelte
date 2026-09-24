@@ -35,17 +35,17 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Data de Nascimento
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarDataContaSms(p?.dataNascimento)}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p?.dataNascimento ? formatarDataContaSms(p.dataNascimento) : 'Não informada'}</dd>
 			</div>
 			<div class="col-span-12">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Email Corporativo
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.email}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p?.email}</dd>
 			</div>
 			<div class="col-span-6">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Telefone</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p.telefone}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p?.telefone}</dd>
 			</div>
 		</dl>
 	</div>
@@ -55,7 +55,7 @@
 		<dl class="divide-y divide-slate-100 font-mono text-[11px]">
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Matrícula</dt>
-				<dd class="mt-0.5 text-sm font-bold text-slate-900">{p.matricula}</dd>
+				<dd class="mt-0.5 text-sm font-bold text-slate-900">{p?.matricula}</dd>
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Cargo</dt>
@@ -64,14 +64,14 @@
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Função</dt>
 				<dd class="mt-0.5 font-sans text-xs text-slate-900">
-					{p.funcao && !p.funcao.toUpperCase().includes('CEO') && !p.funcao.toUpperCase().includes('CEM')
+					{p?.funcao && !p.funcao.toUpperCase().includes('CEO') && !p.funcao.toUpperCase().includes('CEM')
 						? p.funcao
 						: 'Regulação e Gestão da Secretaria de Saúde'}
 				</dd>
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Admissão</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarDataContaSms(p?.dataAdmissao)}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p?.dataAdmissao ? formatarDataContaSms(p.dataAdmissao) : 'Não informada'}</dd>
 			</div>
 		</dl>
 	</div>
