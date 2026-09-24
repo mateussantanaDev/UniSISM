@@ -129,7 +129,7 @@ export class GetProfileUseCase {
       cpf: a.cpf,
       telefone: a.telefone ?? '',
       dataNascimento: ymd(a.dataNascimento),
-      cargo: a.cargo,
+      cargo: a.role === 'REGULADOR_SMS' ? 'Regulador(a) da SMS' : a.cargo,
       funcao: a.funcao,
       role: a.role,
       tipoUnidade: a.tipoUnidade,

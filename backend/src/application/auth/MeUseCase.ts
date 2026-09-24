@@ -81,21 +81,21 @@ export class MeUseCase {
                   : 'SMS');
 
     let cargo = a.cargo;
-    if (!cargo || cargoUpper.includes('ATENDENTE DE REGULAÇÃO')) {
+    if (a.role === 'REGULADOR_SMS') {
+      cargo = 'Regulador(a) da SMS';
+    } else if (!cargo || cargoUpper.includes('ATENDENTE DE REGULAÇÃO') || cargoUpper.includes('REGULADOR(A) DO CEO')) {
       if (tipoUnidade === 'CEO') {
         if (a.role === 'COORDENADOR_UBS') cargo = 'Coordenador(a) do CEO';
         else if (a.role === 'ADMIN') cargo = 'Diretor(a) / Gestor Geral do CEO';
         else if (a.role === 'MEDICO') cargo = 'Cirurgião-Dentista Especialista';
         else if (a.role === 'MEDICO_ESPECIALISTA') cargo = 'Cirurgião-Dentista Plantonista';
         else if (a.role === 'ATENDENTE_CENTRO' || a.role === 'ATENDENTE_UBS') cargo = 'Atendente / Recepção CEO';
-        else if (a.role === 'REGULADOR_SMS') cargo = 'Regulador(a) do CEO';
       } else if (tipoUnidade === 'CEM') {
         if (a.role === 'COORDENADOR_UBS') cargo = 'Coordenador(a) do CEM';
         else if (a.role === 'ADMIN') cargo = 'Diretor(a) / Gestor Geral do CEM';
         else if (a.role === 'MEDICO') cargo = 'Médico(a) Especialista';
         else if (a.role === 'MEDICO_ESPECIALISTA') cargo = 'Médico(a) Plantonista';
         else if (a.role === 'ATENDENTE_CENTRO' || a.role === 'ATENDENTE_UBS') cargo = 'Atendente / Recepção CEM';
-        else if (a.role === 'REGULADOR_SMS') cargo = 'Regulador(a) do CEM';
       }
     }
 
