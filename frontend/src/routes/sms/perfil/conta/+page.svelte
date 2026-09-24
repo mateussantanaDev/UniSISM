@@ -62,7 +62,11 @@
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Função</dt>
-				<dd class="mt-0.5 font-sans text-xs text-slate-900">{p.funcao}</dd>
+				<dd class="mt-0.5 font-sans text-xs text-slate-900">
+					{p.funcao && !p.funcao.toUpperCase().includes('CEO') && !p.funcao.toUpperCase().includes('CEM')
+						? p.funcao
+						: 'Regulação e Gestão da Secretaria de Saúde'}
+				</dd>
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Admissão</dt>

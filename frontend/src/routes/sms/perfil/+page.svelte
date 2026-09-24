@@ -66,7 +66,11 @@
 					Cargo / Função
 				</dt>
 				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarCargoPerfil(p, 'SMS')}</dd>
-				<dd class="text-xs text-slate-600">{p.funcao}</dd>
+				{#if p.funcao && !p.funcao.toUpperCase().includes('CEO') && !p.funcao.toUpperCase().includes('CEM')}
+					<dd class="text-xs text-slate-600">{p.funcao}</dd>
+				{:else}
+					<dd class="text-xs text-slate-600">Regulação e Gestão da Secretaria de Saúde</dd>
+				{/if}
 			</div>
 			<div class="col-span-12">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Lotação</dt>
