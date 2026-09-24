@@ -129,10 +129,10 @@ export class GetProfileUseCase {
       cpf: a.cpf,
       telefone: a.telefone ?? '',
       dataNascimento: ymd(a.dataNascimento),
-      cargo: a.role === 'REGULADOR_SMS' ? 'Regulador(a) da SMS' : a.cargo,
-      funcao: a.funcao,
+      cargo: (a.role === 'REGULADOR_SMS' ? 'Regulador(a) da SMS' : a.cargo) ?? 'Profissional da Saúde',
+      funcao: a.funcao ?? 'Regulação e Gestão',
       role: a.role,
-      tipoUnidade: a.tipoUnidade,
+      tipoUnidade: a.tipoUnidade ?? undefined,
       lotacao: a.ubs
         ? `${a.ubs.nome} · ${a.ubs.municipio} / ${a.ubs.uf}`
         : a.prefeitura
