@@ -1,7 +1,7 @@
 {
   "name": "unisism",
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build && rm -rf .vercel && cp -r frontend/.vercel ."
+    "build": "npm --prefix frontend run build && rm -rf .vercel && cp -r frontend/.vercel ."
   },
   "devDependencies": {
     "autoprefixer": "^10.5.0",
