@@ -35,7 +35,7 @@
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
 					Data de Nascimento
 				</dt>
-				<dd class="mt-0.5 font-mono text-sm text-slate-900">{p?.dataNascimento ? formatarDataContaSms(p.dataNascimento) : 'Não informada'}</dd>
+				<dd class="mt-0.5 font-mono text-sm text-slate-900">{formatarDataContaSms(p?.dataNascimento)}</dd>
 			</div>
 			<div class="col-span-12">
 				<dt class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
@@ -71,7 +71,7 @@
 			</div>
 			<div class="px-4 py-2.5">
 				<dt class="tracking-widest text-slate-500 uppercase">Admissão</dt>
-				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{p?.dataAdmissao ? formatarDataContaSms(p.dataAdmissao) : 'Não informada'}</dd>
+				<dd class="mt-0.5 text-sm font-semibold text-slate-900">{formatarDataContaSms(p?.dataAdmissao)}</dd>
 			</div>
 		</dl>
 	</div>
