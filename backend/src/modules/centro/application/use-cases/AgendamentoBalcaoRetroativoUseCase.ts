@@ -82,6 +82,48 @@ export class AgendamentoBalcaoRetroativoUseCase {
         },
       });
 
+      // Se o status retroativo for AGUARDANDO, garantir que o paciente vá para a fila de espera do médico atribuído
+      if (statusVal === 'AGUARDANDO') {
+        const pacienteObj = await tx.paciente.findUnique({ where: { id: input.pacienteId } });
+        if (pacienteObj) {
+          const especLower = input.especialidade.toLowerCase();
+          const isOdonto = especLower.includes('odonto') || especLower.includes('dent') || especLower.includes('buco') || especLower.includes('protese');
+          await tx.encaminhamento.create({
+            data: {
+              protocolo: `RET-${protocolo}`,
+              status: 'APROVADO',
+              canalRoteamento: isOdonto ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES',
+              destinoRegulacao: isOdonto ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES',
+              pacienteId: pacienteObj.id,
+              pacienteNome: pacienteObj.nome,
+              pacienteCpf: pacienteObj.cpf,
+              pacienteCartaoSus: pacienteObj.cartaoSus || '000000000000000',
+              pacienteDataNascimento: pacienteObj.dataNascimento,
+              pacienteSexo: pacienteObj.sexo,
+              pacienteTelefone: pacienteObj.telefone,
+              pacienteEndereco: pacienteObj.endereco,
+              medicoSolicitante: input.medicoNome || 'Recepção (Balcão)',
+              crm: '000000',
+              especialidadeSolicitada: input.especialidade,
+              cid10: 'Z00',
+              cidDescricao: 'Digitalização de Ficha Antiga (Data Histórica)',
+              justificativaClinica: 'Lançamento Retroativo de Ficha de Papel em Espera',
+              prioridade: 'ELETIVA',
+              dataSolicitacao: dataRetroativaDate,
+              unidadeOrigem: isOdonto ? 'Balcão do Centro Odontológico' : 'Balcão do Centro de Especialidades',
+              atendenteResponsavel: 'Recepção',
+              ubsId: pacienteObj.ubsId,
+              agendamentoPrevisto: new Date(),
+              profissionalAgendado: input.medicoNome || 'Especialista da Escala',
+              localAgendamento: isOdonto ? 'Centro Odontológico' : 'Centro de Especialidades',
+              statusAtendimentoCentro: 'AGUARDANDO_ATENDIMENTO',
+              presencaRegistradaEm: new Date(),
+              observacoesRegulacao: `Digitalização de Ficha Antiga (Data Histórica: ${input.dataRetroativa}) - Inserido na Fila de Espera do Médico`,
+            },
+          });
+        }
+      }
+
       await tx.auditoriaLog.create({
         data: {
           acao: 'CENTRO_BALCAO_AGENDAMENTO_RETROATIVO',

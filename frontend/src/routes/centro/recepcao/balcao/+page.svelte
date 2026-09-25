@@ -1134,6 +1134,14 @@
 					});
 					protocoloFinal = resRetro.protocolo;
 				} else {
+					const isAguardandoRetro = habilitarRetroativo && statusRetroativo === 'AGUARDANDO';
+					const presencaFinal = confirmarPresencaImediata || isAguardandoRetro;
+					const statusAtendimentoFinal = isAguardandoRetro
+						? 'AGUARDANDO_ATENDIMENTO'
+						: (efetuarAgendamentoDireto && confirmarPresencaImediata
+							? 'AGUARDANDO_ATENDIMENTO'
+							: undefined);
+
 					const resBalcao = await api.centroRecepcao.agendarBalcao({
 						paciente: pacientePayload,
 						solicitacao: solicitacaoPayload,
@@ -1146,11 +1154,8 @@
 						ubsId: pacienteUbsId || undefined,
 						status: habilitarRetroativo ? statusRetroativo : undefined,
 						centro: siglaOrgao,
-						confirmarPresenca: efetuarAgendamentoDireto ? confirmarPresencaImediata : false,
-						statusAtendimento:
-							efetuarAgendamentoDireto && confirmarPresencaImediata
-								? 'AGUARDANDO_ATENDIMENTO'
-								: undefined,
+						confirmarPresenca: presencaFinal,
+						statusAtendimento: statusAtendimentoFinal,
 						agendarDireto: efetuarAgendamentoDireto
 					});
 
