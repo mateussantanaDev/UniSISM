@@ -387,10 +387,10 @@
 			if (busca.trim()) {
 				const q = busca.toLowerCase();
 				return (
-					e.paciente.nome.toLowerCase().includes(q) ||
-					e.paciente.cpf.includes(q) ||
-					e.protocolo.toLowerCase().includes(q) ||
-					e.solicitacao.cid10.toLowerCase().includes(q)
+					(e.paciente?.nome ?? '').toLowerCase().includes(q) ||
+					(e.paciente?.cpf ?? '').includes(q) ||
+					(e.protocolo ?? '').toLowerCase().includes(q) ||
+					(e.solicitacao?.cid10 ?? '').toLowerCase().includes(q)
 				);
 			}
 			return true;
@@ -540,9 +540,10 @@
 
 	// Desmarcar consulta
 	async function desmarcarConsulta(enc: Encaminhamento) {
+		const nomePac = enc.paciente?.nome ?? 'Paciente';
 		if (
 			!confirm(
-				`Confirmar cancelamento do agendamento de ${enc.paciente.nome}? O paciente retornará para a fila de regulação.`
+				`Confirmar cancelamento do agendamento de ${nomePac}? O paciente retornará para a fila de regulação.`
 			)
 		) {
 			return;
@@ -554,7 +555,7 @@
 				acao: 'DESMARCAR',
 				motivo: 'Consulta desmarcada na recepção do Centro.'
 			});
-			mensagemSucesso = `✓ Consulta do paciente ${enc.paciente.nome} cancelada e retornada para a fila com sucesso.`;
+			mensagemSucesso = `✓ Consulta do paciente ${nomePac} cancelada e retornada para a fila com sucesso.`;
 			if (timerMensagem) clearTimeout(timerMensagem);
 			timerMensagem = setTimeout(() => {
 				mensagemSucesso = '';
@@ -575,7 +576,8 @@
 				observacao: 'Presença confirmada pela Recepção do Centro.'
 			});
 			(enc as any).statusAtendimentoCentro = status;
-			mensagemSucesso = `✓ Presença do paciente ${enc.paciente.nome} confirmada! Paciente aguarda atendimento na recepção.`;
+			const nomePac = enc.paciente?.nome ?? 'Paciente';
+			mensagemSucesso = `✓ Presença do paciente ${nomePac} confirmada! Paciente aguarda atendimento na recepção.`;
 			if (timerMensagem) clearTimeout(timerMensagem);
 			timerMensagem = setTimeout(() => {
 				mensagemSucesso = '';
@@ -1309,9 +1311,9 @@
 									<div class="flex flex-col">
 										<div class="flex items-center gap-2">
 											<span class="font-sans text-sm font-bold text-slate-900"
-												>{enc.paciente.nome}</span
+												>{enc.paciente?.nome ?? 'Paciente não informado'}</span
 											>
-											<span class="font-mono text-xs text-slate-500">(CPF: {enc.paciente.cpf})</span
+											<span class="font-mono text-xs text-slate-500">(CPF: {enc.paciente?.cpf ?? ''})</span
 											>
 											<StatusBadge prioridade={enc.solicitacao.prioridade} />
 										</div>
@@ -1458,8 +1460,8 @@
 									<td
 										class="border-r border-slate-100 px-3 py-2.5 font-sans font-semibold text-slate-900"
 									>
-										<div>{enc.paciente.nome}</div>
-										<div class="font-mono text-[10px] text-slate-500">{enc.paciente.cpf}</div>
+										<div>{enc.paciente?.nome ?? 'Paciente não informado'}</div>
+										<div class="font-mono text-[10px] text-slate-500">{enc.paciente?.cpf ?? ''}</div>
 									</td>
 									<td
 										class="border-r border-slate-100 px-3 py-2.5 font-sans font-semibold text-slate-900"
@@ -1580,7 +1582,7 @@
 		isOpen={modalRealocarAberto}
 		onClose={() => (modalRealocarAberto = false)}
 		title="REALOCAÇÃO E REMANEJAMENTO NA ESCALA DO CENTRO"
-		subtitle={`Protocolo: ${encaminhamentoParaRealocar.protocolo} · Paciente: ${encaminhamentoParaRealocar.paciente.nome}`}
+		subtitle={`Protocolo: ${encaminhamentoParaRealocar.protocolo} · Paciente: ${encaminhamentoParaRealocar.paciente?.nome ?? 'Paciente'}`}
 		maxWidth="lg"
 	>
 		<div class="flex flex-col gap-4 font-mono text-xs">
@@ -1597,12 +1599,12 @@
 			<div class="flex flex-col gap-1 border border-purple-200 bg-purple-50 p-3.5 font-sans">
 				<div class="flex items-center justify-between">
 					<div class="text-sm font-bold text-purple-950">
-						{encaminhamentoParaRealocar.paciente.nome}
+						{encaminhamentoParaRealocar.paciente?.nome ?? 'Paciente não informado'}
 					</div>
 					<StatusBadge prioridade={encaminhamentoParaRealocar.solicitacao.prioridade} />
 				</div>
 				<div class="font-mono text-xs text-purple-900">
-					CPF: {encaminhamentoParaRealocar.paciente.cpf} · Especialidade:
+					CPF: {encaminhamentoParaRealocar.paciente?.cpf ?? 'Não informado'} · Especialidade:
 					<strong>{encaminhamentoParaRealocar.solicitacao.especialidadeSolicitada}</strong>
 				</div>
 				<div class="mt-1 border-t border-purple-200 pt-1 text-[11px] text-purple-800">
@@ -1793,13 +1795,13 @@
 				</div>
 				<div class="flex justify-between border-b border-slate-200 pb-1">
 					<span class="text-slate-500 uppercase">Paciente:</span>
-					<span class="font-bold text-slate-900">{comprovanteSelecionado.paciente.nome}</span>
+					<span class="font-bold text-slate-900">{comprovanteSelecionado.paciente?.nome ?? 'Paciente não informado'}</span>
 				</div>
 				<div class="flex justify-between border-b border-slate-200 pb-1">
 					<span class="text-slate-500 uppercase">CPF:</span>
-					<span class="font-bold text-slate-900">{comprovanteSelecionado.paciente.cpf}</span>
+					<span class="font-bold text-slate-900">{comprovanteSelecionado.paciente?.cpf ?? 'Não informado'}</span>
 				</div>
-				{#if comprovanteSelecionado.paciente.cartaoSus}
+				{#if comprovanteSelecionado.paciente?.cartaoSus}
 					<div class="flex justify-between border-b border-slate-200 pb-1">
 						<span class="text-slate-500 uppercase">Cartão SUS:</span>
 						<span class="font-bold text-slate-900">{comprovanteSelecionado.paciente.cartaoSus}</span

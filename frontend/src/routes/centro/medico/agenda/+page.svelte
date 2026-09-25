@@ -132,8 +132,8 @@
 			if (busca.trim()) {
 				const q = busca.toLowerCase();
 				return (
-					c.paciente.nome.toLowerCase().includes(q) ||
-					c.paciente.cpf.includes(q) ||
+					(c.paciente?.nome ?? '').toLowerCase().includes(q) ||
+					(c.paciente?.cpf ?? '').includes(q) ||
 					c.protocolo.toLowerCase().includes(q) ||
 					c.solicitacao.cid10.toLowerCase().includes(q) ||
 					(c.solicitacao.especialidadeSolicitada &&
@@ -1884,10 +1884,9 @@
 
 								<!-- Paciente -->
 								<td class="border-r border-slate-100 px-3 py-2.5 font-sans">
-									<div class="font-bold text-slate-900">{c.paciente.nome}</div>
+									<div class="font-bold text-slate-900">{c.paciente?.nome ?? 'Paciente não informado'}</div>
 									<div class="font-mono text-[10px] text-slate-500">
-										CPF: {c.paciente.cpf} · {calcularIdade(c.paciente.dataNascimento)} anos ({c
-											.paciente.sexo})
+										CPF: {c.paciente?.cpf ?? 'Não informado'} · {c.paciente?.dataNascimento ? `${calcularIdade(c.paciente.dataNascimento)} anos` : ''} ({c.paciente?.sexo ?? 'M'})
 									</div>
 								</td>
 

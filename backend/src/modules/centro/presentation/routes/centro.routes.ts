@@ -53,6 +53,18 @@ export function buildCentroRoutes(
     'ATENDENTE_CENTRO',
   );
 
+  const gestaoLeituraRoles = requireRole(
+    'REGULADOR_SMS',
+    'COORDENADOR_UBS',
+    'ADMIN',
+    'DESENVOLVEDOR',
+    'ATENDENTE_CENTRO',
+    'ATENDENTE_UBS',
+    'ENFERMEIRO',
+    'MEDICO',
+    'MEDICO_ESPECIALISTA',
+  );
+
   // ───── Terminal Smart TV (Sala de Espera) ─────
   router.get('/centro/tv/chamadas', recepcaoController.getTvChamadas);
   router.post('/centro/tv/parear', recepcaoController.postTvParear);
@@ -97,29 +109,29 @@ export function buildCentroRoutes(
   router.post('/centro/medico/retorno', authenticate, medicoRoles, medicoController.postAgendarRetorno);
 
   // ───── Gestão & Diretoria Executiva (Fase 3 / ERP v3.1.0) ─────
-  router.get('/centro/gestao/dashboard', authenticate, gestaoRoles, gestaoController.getDashboard);
-  router.get('/centro/gestao/cotas', authenticate, gestaoRoles, gestaoController.getCotas);
+  router.get('/centro/gestao/dashboard', authenticate, gestaoLeituraRoles, gestaoController.getDashboard);
+  router.get('/centro/gestao/cotas', authenticate, gestaoLeituraRoles, gestaoController.getCotas);
   router.put('/centro/gestao/cotas/:ubsId', authenticate, gestaoRoles, gestaoController.putCota);
 
-  router.get('/centro/gestao/profissionais', authenticate, gestaoRoles, gestaoController.getProfissionais);
-  router.get('/centro/gestao/escalas', authenticate, gestaoRoles, gestaoController.getEscalas);
+  router.get('/centro/gestao/profissionais', authenticate, gestaoLeituraRoles, gestaoController.getProfissionais);
+  router.get('/centro/gestao/escalas', authenticate, gestaoLeituraRoles, gestaoController.getEscalas);
   router.post('/centro/gestao/escalas', authenticate, gestaoRoles, gestaoController.postEscala);
   router.put('/centro/gestao/escalas/:id', authenticate, gestaoRoles, gestaoController.putEscala);
   router.delete('/centro/gestao/escalas/:id', authenticate, gestaoRoles, gestaoController.deleteEscala);
 
-  router.get('/centro/gestao/salas', authenticate, gestaoRoles, gestaoController.getSalas);
+  router.get('/centro/gestao/salas', authenticate, gestaoLeituraRoles, gestaoController.getSalas);
   router.post('/centro/gestao/salas', authenticate, gestaoRoles, gestaoController.postSala);
   router.put('/centro/gestao/salas/:id', authenticate, gestaoRoles, gestaoController.putSala);
   router.delete('/centro/gestao/salas/:id', authenticate, gestaoRoles, gestaoController.deleteSala);
 
-  router.get('/centro/gestao/especialidades', authenticate, gestaoRoles, gestaoController.getEspecialidades);
+  router.get('/centro/gestao/especialidades', authenticate, gestaoLeituraRoles, gestaoController.getEspecialidades);
   router.post('/centro/gestao/especialidades', authenticate, gestaoRoles, gestaoController.postEspecialidade);
   router.put('/centro/gestao/especialidades/:id', authenticate, gestaoRoles, gestaoController.putEspecialidade);
   router.delete('/centro/gestao/especialidades/:id', authenticate, gestaoRoles, gestaoController.deleteEspecialidade);
 
   router.post('/centro/gestao/remanejamento-lote', authenticate, gestaoRoles, gestaoController.postRemanejamentoLote);
-  router.get('/centro/gestao/relatorios/bpa', authenticate, gestaoRoles, gestaoController.getRelatorioBpa);
-  router.get('/centro/gestao/auditoria', authenticate, gestaoRoles, gestaoController.getAuditoria);
+  router.get('/centro/gestao/relatorios/bpa', authenticate, gestaoLeituraRoles, gestaoController.getRelatorioBpa);
+  router.get('/centro/gestao/auditoria', authenticate, gestaoLeituraRoles, gestaoController.getAuditoria);
 
   // ───── CRM WhatsApp Multi-Atendentes & Meta Cloud API ─────
   if (whatsappController) {

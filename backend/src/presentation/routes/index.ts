@@ -200,7 +200,17 @@ export function buildRoutes(deps: Deps): Router {
   router.get(
     '/admin/prefeituras',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'REGULADOR_SMS', 'COORDENADOR_UBS'),
+    requireRole(
+      'DESENVOLVEDOR',
+      'ADMIN',
+      'REGULADOR_SMS',
+      'COORDENADOR_UBS',
+      'ATENDENTE_CENTRO',
+      'ATENDENTE_UBS',
+      'ENFERMEIRO',
+      'MEDICO',
+      'MEDICO_ESPECIALISTA',
+    ),
     deps.admin.getPrefeituras,
   );
 
@@ -265,7 +275,17 @@ export function buildRoutes(deps: Deps): Router {
   router.get(
     '/admin/usuarios',
     authenticate,
-    requireRole('DESENVOLVEDOR', 'ADMIN', 'COORDENADOR_UBS', 'REGULADOR_SMS'),
+    requireRole(
+      'DESENVOLVEDOR',
+      'ADMIN',
+      'COORDENADOR_UBS',
+      'REGULADOR_SMS',
+      'ATENDENTE_CENTRO',
+      'ATENDENTE_UBS',
+      'ENFERMEIRO',
+      'MEDICO',
+      'MEDICO_ESPECIALISTA',
+    ),
     deps.admin.getUsuarios,
   );
   router.patch(

@@ -587,8 +587,8 @@
 								<td
 									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
 								>
-									<div>{enc.paciente.nome}</div>
-									<div class="font-mono text-[10px] text-slate-500">{enc.paciente.cpf}</div>
+									<div>{enc.paciente?.nome ?? 'Paciente não informado'}</div>
+									<div class="font-mono text-[10px] text-slate-500">{enc.paciente?.cpf ?? ''}</div>
 								</td>
 								<td
 									class="border-r border-slate-100 px-3 py-2 font-sans font-semibold text-slate-900"
@@ -726,16 +726,16 @@
 					<div class="font-mono text-[9px] font-bold tracking-widest text-slate-500 uppercase">
 						Paciente em Fila
 					</div>
-					<div class="mt-0.5 text-sm font-bold text-slate-900">{selecionado.paciente.nome}</div>
+					<div class="mt-0.5 text-sm font-bold text-slate-900">{selecionado?.paciente?.nome ?? 'Paciente não informado'}</div>
 					<div class="mt-1 font-mono text-[10px] text-slate-600">
-						CPF · {selecionado.paciente.cpf}
+						CPF · {selecionado?.paciente?.cpf ?? 'Não informado'}
 					</div>
-					{#if selecionado.paciente.nomeMae}
+					{#if selecionado?.paciente?.nomeMae}
 						<div class="font-mono text-[10px] text-slate-600">
 							Mãe · {selecionado.paciente.nomeMae}
 						</div>
 					{/if}
-					{#if selecionado.paciente.racaCor}
+					{#if selecionado?.paciente?.racaCor}
 						<div class="font-mono text-[10px] text-slate-600">
 							Etnia · {selecionado.paciente.racaCor}
 						</div>
@@ -1011,10 +1011,10 @@
 						>
 					</div>
 					<div class="text-sm font-black text-slate-900">
-						{encParaExcluir.paciente.nome}
+						{encParaExcluir?.paciente?.nome ?? 'Paciente não informado'}
 					</div>
 					<div class="font-mono text-[11px] text-slate-600">
-						CPF: {encParaExcluir.paciente.cpf}
+						CPF: {encParaExcluir?.paciente?.cpf ?? 'Não informado'}
 					</div>
 					{#if encParaExcluir.criadoPorNome}
 						<div class="mt-1 border-t border-slate-200 pt-1 font-mono text-[10px] text-slate-500">
