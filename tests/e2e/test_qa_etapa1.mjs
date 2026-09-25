@@ -34,23 +34,26 @@ import path from 'path';
 
 		const bodyText = await page.locator('body').innerText();
 
-		const cargoMatch = bodyText.includes('Regulador(a) da SMS') || bodyText.includes('Regulador');
+		const cargoMatch =
+			bodyText.includes('Regulador(a) da SMS') ||
+			bodyText.includes('Diretor(a) / Gestor(a) da SMS') ||
+			bodyText.includes('Gestor(a) da SMS');
 		const noCeoCargoInSms = !bodyText.includes('Regulador(a) do CEO');
 		const noInvalidDate = !bodyText.includes('Invalid Date');
 		const noNaN = !bodyText.includes('NaNa NaNm');
 
 		console.log('--- RESULTADOS ETAPA 1 (SMS PERFIL) ---');
-		console.log('Cargo exibido como Regulador(a) da SMS:', cargoMatch);
+		console.log('Cargo SMS formatado dinamicamente (SMS):', cargoMatch);
 		console.log('Sem a string legada "Regulador(a) do CEO":', noCeoCargoInSms);
 		console.log('Sem "Invalid Date":', noInvalidDate);
 		console.log('Sem "NaNa NaNm":', noNaN);
 
 		report.checks.push({
-			name: 'Cargo SMS formatado dinamicamente (Regulador(a) da SMS)',
+			name: 'Cargo SMS formatado dinamicamente (Regulador(a) / Diretor(a) da SMS)',
 			passed: cargoMatch && noCeoCargoInSms,
 			detail: bodyText
 				.split('\n')
-				.filter((l) => l.includes('Regulador') || l.includes('Cargo'))
+				.filter((l) => l.includes('Regulador') || l.includes('Diretor') || l.includes('Gestor') || l.includes('Cargo'))
 				.join(' | ')
 		});
 

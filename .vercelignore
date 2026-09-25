@@ -1,0 +1,9 @@
+node_modules
+backend
+frontend/node_modules
+.git
+tests/screenshots
+.svelte-kit
+frontend/.svelte-kit
+frontend/.vercel
+.vercel
