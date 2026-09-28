@@ -164,6 +164,17 @@ export class GetIntegracoesUseCase {
 
     if (provider === 's3') {
       const bucket = env.S3_BUCKET;
+      if (!bucket || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY) {
+        return {
+          nome: 'Storage S3',
+          descricao: 'Armazenamento de anexos e relatórios',
+          tipo: 'Interno',
+          status: 'offline',
+          latencyMs: 0,
+          mensagem: 'Configuração S3 pendente — preencha S3_BUCKET e credenciais no .env ou use STORAGE_PROVIDER=disk',
+        };
+      }
+
       try {
         const clientConfig = {
           region: env.S3_REGION,
@@ -201,6 +212,9 @@ export class GetIntegracoesUseCase {
     // Disk
     const uploadDir = env.UPLOAD_DIR;
     try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
       fs.accessSync(uploadDir, fs.constants.W_OK);
       const latencyMs = Date.now() - start;
       return {
