@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import net from 'node:net';
-import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { S3Client, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 import type { ConfiguracaoIntegracao } from '../../../generated/prisma';
 import { PdfParseService } from '../../infrastructure/services/PdfParseService';
 import { prisma } from '../../infrastructure/database/prisma';
@@ -186,11 +186,15 @@ export class GetIntegracoesUseCase {
           forcePathStyle: env.S3_FORCE_PATH_STYLE,
         };
         const client = new S3Client(clientConfig);
-        await client.send(new HeadBucketCommand({ Bucket: bucket }));
+        try {
+          await client.send(new HeadBucketCommand({ Bucket: bucket }));
+        } catch {
+          await client.send(new CreateBucketCommand({ Bucket: bucket }));
+        }
         const latencyMs = Date.now() - start;
         return {
           nome: 'Storage S3',
-          descricao: 'Armazenamento de anexos e relatórios',
+          descricao: 'Armazenamento de anexos e relatórios (Self-hosted MinIO/S3)',
           tipo: 'Interno',
           status: 'online',
           latencyMs,
