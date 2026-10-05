@@ -112,28 +112,20 @@
 	<title>Prontuário & Dossiê Clínico · UniSISM Águas Belas</title>
 </svelte:head>
 
-<div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 space-y-6">
-	<!-- Top Bar -->
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4">
-		<div>
-			<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-				DOSSIÊ CLÍNICO DIGITAL DO CIDADÃO
-			</div>
-			<h1 class="font-mono text-lg font-bold tracking-wide text-slate-900 sm:text-xl uppercase flex items-center gap-2">
-				<IconNotes size={20} class="text-blue-900" />
-				<span>Prontuário e Histórico de Saúde</span>
-			</h1>
-			<p class="text-xs text-slate-600 mt-0.5">
-				Consultas ambulatoriais, carteira de vacinas, laudos e condições crônicas registradas na rede municipal.
-			</p>
-		</div>
+<div class="space-y-4">
+	<!-- Topo da Página Mobile -->
+	<div class="flex items-center justify-between border-b border-slate-200 pb-3">
+		<h1 class="font-mono text-base font-bold text-slate-900 uppercase flex items-center gap-2">
+			<IconNotes size={18} class="text-blue-900" />
+			<span>Prontuário Digital</span>
+		</h1>
 
 		<button
 			onclick={carregarDados}
 			disabled={loading}
-			class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 disabled:opacity-50 transition-colors"
+			class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-800 uppercase hover:bg-slate-50 disabled:opacity-50"
 		>
-			<IconRefresh size={14} class={loading ? 'animate-spin' : ''} />
+			<IconRefresh size={13} class={loading ? 'animate-spin' : ''} />
 			<span>Atualizar</span>
 		</button>
 	</div>

@@ -12,8 +12,7 @@
 		IconNotes,
 		IconBell,
 		IconUser,
-		IconLogout,
-		IconActivity
+		IconLogout
 	} from '@tabler/icons-svelte';
 
 	let { children } = $props();
@@ -34,8 +33,7 @@
 			month: '2-digit',
 			year: 'numeric',
 			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit'
+			minute: '2-digit'
 		})
 	);
 
@@ -90,11 +88,11 @@
 	});
 
 	const navItems = [
-		{ href: '/paciente', label: 'Início', crumb: 'INÍCIO', icon: IconHome, exact: true },
-		{ href: '/paciente/encaminhamentos', label: 'Consultas', crumb: 'CONSULTAS & ENCAMINHAMENTOS', icon: IconCalendarEvent },
-		{ href: '/paciente/tfd', label: 'TFD', crumb: 'TRANSPORTE TFD', icon: IconBus },
-		{ href: '/paciente/dossie', label: 'Dossiê Clínico', crumb: 'DOSSIÊ CLÍNICO', icon: IconNotes },
-		{ href: '/paciente/perfil', label: 'Meu Perfil', crumb: 'PERFIL DO CIDADÃO', icon: IconUser }
+		{ href: '/paciente', label: 'Início', icon: IconHome, exact: true },
+		{ href: '/paciente/encaminhamentos', label: 'Consultas', icon: IconCalendarEvent },
+		{ href: '/paciente/tfd', label: 'TFD', icon: IconBus },
+		{ href: '/paciente/dossie', label: 'Prontuário', icon: IconNotes },
+		{ href: '/paciente/perfil', label: 'Perfil', icon: IconUser }
 	];
 
 	function isAtivo(itemHref: string, exact = false) {
@@ -102,54 +100,43 @@
 		if (exact) return currentPath === itemHref;
 		return currentPath.startsWith(itemHref);
 	}
-
-	let crumbAtual = $derived.by(() => {
-		const item = navItems.find((n) => isAtivo(n.href, n.exact));
-		if (page.url.pathname === '/paciente/notificacoes') return 'NOTIFICAÇÕES';
-		if (page.url.pathname === '/paciente/trocar-senha') return 'SEGURANÇA · TROCAR SENHA';
-		if (page.url.pathname === '/paciente/esqueci-senha') return 'RECUPERAÇÃO DE ACESSO';
-		return item ? item.crumb : 'PORTAL DO CIDADÃO';
-	});
 </script>
 
 <svelte:head>
-	<title>Portal do Cidadão · UniSISM Águas Belas</title>
+	<title>UniSISM · Portal do Cidadão</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
-	<!-- Top Bar Municipal -->
+<div class="flex min-h-screen flex-col bg-slate-100/70 font-sans text-slate-900">
+	<!-- Top Bar Mobile & Desktop (App Native Header) -->
 	<header
-		class="sticky top-0 z-40 border-b border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 px-4 py-3 sm:px-6 shadow-sm"
+		class="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm"
 	>
-		<div class="mx-auto flex max-w-[1600px] items-center justify-between">
-			<!-- Logo / Crumb -->
-			<div class="flex items-center gap-3">
-				<a href="/paciente" class="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-					<div
-						class="flex h-8 w-8 items-center justify-center bg-blue-900 font-mono text-xs font-bold text-white"
-					>
-						SUS
+		<div class="mx-auto flex max-w-2xl items-center justify-between">
+			<!-- Logo / Município -->
+			<a href="/paciente" class="flex items-center gap-2 transition-opacity hover:opacity-90">
+				<div class="flex h-8 w-8 items-center justify-center bg-blue-900 font-mono text-xs font-black text-white">
+					SUS
+				</div>
+				<div class="leading-none">
+					<div class="flex items-center gap-1.5">
+						<span class="font-mono text-sm font-black tracking-tight text-slate-900">UniSISM</span>
+						<span class="border border-blue-900 bg-blue-50 px-1 py-0.2 font-mono text-[9px] font-bold text-blue-900 uppercase">
+							Cidadão
+						</span>
 					</div>
-					<div class="leading-tight">
-						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-							ÁGUAS BELAS · PORTAL DO CIDADÃO
-						</div>
-						<div class="font-mono text-sm font-bold tracking-wide text-slate-900 uppercase">
-							UniSISM · {crumbAtual}
-						</div>
-					</div>
-				</a>
-			</div>
+					<div class="text-[10px] text-slate-500 font-mono mt-0.5">Águas Belas · PE</div>
+				</div>
+			</a>
 
 			<!-- Desktop Nav Tabs -->
-			<nav class="hidden md:flex items-center gap-1 border-x border-slate-200 px-3">
+			<nav class="hidden md:flex items-center gap-1">
 				{#each navItems as item}
 					{@const ativo = isAtivo(item.href, item.exact)}
 					<a
 						href={item.href}
-						class="flex items-center gap-1.5 border px-3 py-1.5 font-mono text-xs font-bold tracking-wider uppercase transition-all {ativo
+						class="flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-xs font-bold uppercase transition-all {ativo
 							? 'border-blue-900 bg-blue-900 text-white'
-							: 'border-transparent text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900'}"
+							: 'border-transparent text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'}"
 					>
 						<item.icon size={15} />
 						<span>{item.label}</span>
@@ -157,35 +144,15 @@
 				{/each}
 			</nav>
 
-			<!-- Right Status & User Badges -->
-			<div class="flex items-center gap-3">
-				<div class="hidden items-center gap-2 lg:flex">
-					<span
-						class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-emerald-800"
-					>
-						SUS · ATIVO
-					</span>
-					{#if me}
-						<span
-							class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-slate-700"
-						>
-							CPF {me.cpfFormatado || me.cpf}
-						</span>
-					{/if}
-				</div>
-
-				<div class="hidden text-right font-mono text-[11px] leading-tight text-slate-700 sm:block">
-					<div class="font-bold">{relogio}</div>
-					<div class="text-[10px] tracking-wider text-slate-500">UTC−03 · BRASÍLIA</div>
-				</div>
-
+			<!-- Right Status & Notifications -->
+			<div class="flex items-center gap-2">
 				<!-- Notificações -->
 				<a
 					href="/paciente/notificacoes"
-					class="relative flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+					class="relative flex h-8 w-8 items-center justify-center border border-slate-200 bg-slate-50 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
 					title="Notificações"
 				>
-					<IconBell size={16} />
+					<IconBell size={17} />
 					{#if contagemNotificacoes > 0}
 						<span
 							class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center bg-red-700 font-mono text-[9px] font-bold text-white"
@@ -195,57 +162,41 @@
 					{/if}
 				</a>
 
-				<!-- Perfil / Logout -->
-				{#if me}
-					<button
-						onclick={logout}
-						class="flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 transition-colors hover:border-red-700 hover:bg-red-50 hover:text-red-800"
-						title="Encerrar sessão"
-					>
-						<IconLogout size={16} />
-					</button>
-				{/if}
+				<!-- Perfil Rápido -->
+				<a
+					href="/paciente/perfil"
+					class="flex h-8 w-8 items-center justify-center border border-slate-200 bg-blue-900 font-mono text-xs font-bold text-white transition-opacity hover:opacity-90"
+					title="Meu Perfil"
+				>
+					{me?.nome ? me.nome.charAt(0).toUpperCase() : 'P'}
+				</a>
 			</div>
 		</div>
 	</header>
 
-	<!-- Main Content Container with bottom padding on mobile for nav bar -->
-	<main class="flex-1 pb-24 md:pb-8">
-		{#if carregando}
-			<div class="flex h-64 items-center justify-center">
-				<div class="flex flex-col items-center gap-3">
-					<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
-					<span class="font-mono text-xs font-bold tracking-widest text-slate-600 uppercase">
-						Carregando dados do cidadão...
-					</span>
+	<!-- Main App Content: max-w-2xl for native smartphone / tablet app width -->
+	<main class="flex-1 pb-20 md:pb-10">
+		<div class="mx-auto w-full max-w-2xl px-4 py-4 sm:px-6">
+			{#if carregando}
+				<div class="flex h-64 items-center justify-center">
+					<div class="flex flex-col items-center gap-2">
+						<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
+						<span class="font-mono text-xs font-bold tracking-wider text-slate-500 uppercase">
+							Carregando...
+						</span>
+					</div>
 				</div>
-			</div>
-		{:else}
-			{@render children()}
-		{/if}
-	</main>
-
-	<!-- Desktop Municipal Footer -->
-	<footer
-		class="hidden md:flex items-center justify-between border-t border-slate-200 bg-gradient-to-r from-white to-slate-50 px-6 py-2 font-mono text-[10px] tracking-wider text-slate-500"
-	>
-		<div>UNISISM v0.1.0 · PORTAL DO CIDADÃO · ÁGUAS BELAS - PE</div>
-		<div class="flex items-center gap-3">
-			{#if me}
-				<span>CIDADÃO: {me.nome}</span>
-				<span>CPF: {me.cpfFormatado}</span>
-				{#if me.cns}
-					<span>CNS: {me.cns}</span>
-				{/if}
+			{:else}
+				{@render children()}
 			{/if}
 		</div>
-	</footer>
+	</main>
 
-	<!-- Mobile Bottom Navigation Bar (B2G Brutalist) -->
+	<!-- Mobile Bottom Navigation Bar (App Experience) -->
 	<nav
-		class="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-300 bg-white md:hidden shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+		class="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-300 bg-white md:hidden shadow-[0_-2px_10px_rgba(0,0,0,0.06)]"
 	>
-		<div class="grid grid-cols-5">
+		<div class="mx-auto grid max-w-2xl grid-cols-5">
 			{#each navItems as item}
 				{@const ativo = isAtivo(item.href, item.exact)}
 				<a
@@ -255,7 +206,7 @@
 						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
 				>
 					<div class="relative">
-						<item.icon size={19} stroke={ativo ? 2.4 : 1.8} />
+						<item.icon size={20} stroke={ativo ? 2.4 : 1.8} />
 						{#if item.href === '/paciente/notificacoes' && contagemNotificacoes > 0}
 							<span
 								class="absolute -top-1 -right-1.5 flex h-3.5 w-3.5 items-center justify-center bg-red-700 font-mono text-[8px] font-bold text-white"

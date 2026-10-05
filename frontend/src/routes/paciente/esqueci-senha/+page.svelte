@@ -53,15 +53,11 @@
 	<div class="border border-slate-200 bg-white shadow-sm">
 		<!-- Header -->
 		<div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-			<div class="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">
-				<span class="inline-block h-2 w-2 bg-blue-900"></span>
-				RECUPERAÇÃO DE ACESSO · CIDADÃO
-			</div>
-			<h1 class="mt-1 font-mono text-lg font-bold text-slate-900 uppercase">
-				Recuperar Senha
+			<h1 class="font-mono text-base font-bold text-slate-900 uppercase">
+				Recuperar Acesso
 			</h1>
-			<p class="mt-1 text-[11px] text-slate-600">
-				Informe seu CPF para receber instruções de redefinição de acesso do portal.
+			<p class="mt-0.5 text-xs text-slate-500">
+				Informe seu CPF para recuperar sua senha.
 			</p>
 		</div>
 

@@ -14,13 +14,11 @@
 		IconNotes,
 		IconVaccine,
 		IconBuildingHospital,
-		IconCheck,
 		IconClock,
 		IconPhone,
 		IconMapPin,
 		IconChevronRight,
 		IconArrowRight,
-		IconAlertCircle,
 		IconSpeakerphone
 	} from '@tabler/icons-svelte';
 
@@ -60,10 +58,10 @@
 	function statusEncaminhamentoLabel(status: string) {
 		switch (status) {
 			case 'AGUARDANDO_REGULACAO':
-				return { texto: 'AGUARDANDO REGULAÇÃO', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
+				return { texto: 'AGUARDANDO VAGA', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
 			case 'APROVADO':
 			case 'AGENDADO':
-				return { texto: 'CONSULTA AGENDADA', classes: 'border-emerald-700 text-emerald-800 bg-emerald-50' };
+				return { texto: 'CONSULTA MARCADA', classes: 'border-emerald-700 text-emerald-800 bg-emerald-50' };
 			case 'PENDENTE':
 			case 'PENDENCIA_DOCUMENTO':
 				return { texto: 'PENDÊNCIA', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
@@ -80,15 +78,15 @@
 	function statusTfdLabel(status: string) {
 		switch (status) {
 			case 'AGUARDANDO':
-				return { texto: 'AGUARDANDO APROVAÇÃO', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
+				return { texto: 'AGUARDANDO', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
 			case 'APROVADA':
-				return { texto: 'VIAGEM APROVADA', classes: 'border-emerald-700 text-emerald-800 bg-emerald-50' };
+				return { texto: 'CONFIRMADA', classes: 'border-emerald-700 text-emerald-800 bg-emerald-50' };
 			case 'EMBARCADA':
-				return { texto: 'EMBARQUE CONFIRMADO', classes: 'border-blue-700 text-blue-800 bg-blue-50' };
+				return { texto: 'EMBARCADO', classes: 'border-blue-700 text-blue-800 bg-blue-50' };
 			case 'RECUSADA':
-				return { texto: 'NÃO AUTORIZADA', classes: 'border-red-700 text-red-800 bg-red-50' };
+				return { texto: 'RECUSADA', classes: 'border-red-700 text-red-800 bg-red-50' };
 			case 'CONCLUIDA':
-				return { texto: 'VIAGEM CONCLUÍDA', classes: 'border-slate-400 text-slate-700 bg-slate-100' };
+				return { texto: 'CONCLUÍDA', classes: 'border-slate-400 text-slate-700 bg-slate-100' };
 			default:
 				return { texto: status, classes: 'border-slate-400 text-slate-700 bg-slate-100' };
 		}
@@ -117,62 +115,50 @@
 </script>
 
 <svelte:head>
-	<title>Painel do Cidadão · UniSISM Águas Belas</title>
+	<title>Início · UniSISM</title>
 </svelte:head>
 
-<div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 space-y-6">
-	<!-- Saudação & Identificação Municipal -->
-	<section class="border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
-		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<div class="space-y-4">
+	<!-- Saudação Mobile Native -->
+	<section class="border border-slate-200 bg-white p-4 shadow-sm">
+		<div class="flex items-center justify-between">
 			<div>
 				<div class="flex items-center gap-2">
-					<h1 class="font-mono text-lg font-bold tracking-tight text-slate-900 sm:text-xl uppercase">
-						CIDADÃO: {auth.me?.nome || 'PACIENTE'}
+					<h1 class="font-mono text-base font-bold text-slate-900">
+						Olá, {primeiroNome}!
 					</h1>
-					<span
-						class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-emerald-800"
-					>
-						SUS · ATIVO
+					<span class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-800 uppercase">
+						SUS Ativo
 					</span>
 				</div>
-				<div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs text-slate-600">
-					<span>CPF: <strong>{auth.me?.cpfFormatado || '•••••••••••'}</strong></span>
-					{#if auth.me?.cns}
-						<span>CARTÃO SUS: <strong>{auth.me.cns}</strong></span>
-					{/if}
-					<span>MUNICÍPIO: <strong>ÁGUAS BELAS - PE</strong></span>
-				</div>
+				<p class="font-mono text-xs text-slate-500 mt-0.5">
+					CPF: {auth.me?.cpfFormatado || '•••••••••••'}
+				</p>
 			</div>
 
 			{#if minhaUbs}
-				<div class="border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-					<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-						UBS DE REFERÊNCIA
-					</div>
-					<div class="mt-0.5 font-bold text-slate-900 truncate max-w-[260px]">
-						{minhaUbs.nome}
-					</div>
+				<div class="text-right font-mono text-[11px]">
+					<div class="text-[9px] text-slate-400 uppercase font-bold">Minha UBS</div>
+					<div class="font-bold text-slate-800 truncate max-w-[140px]">{minhaUbs.nome}</div>
 				</div>
 			{/if}
 		</div>
 	</section>
 
-	<!-- Comunicados da Secretaria de Saúde -->
+	<!-- Comunicados Rápidos se houver -->
 	{#if banners.length > 0}
-		<section class="border-l-4 border-l-blue-900 border border-slate-200 bg-blue-950 p-4 text-white shadow-sm">
-			<div class="flex items-start gap-3">
-				<div class="bg-blue-900 p-2 text-white shrink-0">
-					<IconSpeakerphone size={20} />
-				</div>
-				<div class="flex-1">
-					<div class="font-mono text-[10px] font-bold tracking-widest uppercase text-blue-300">
-						COMUNICADO OFICIAL · SECRETARIA MUNICIPAL DE SAÚDE
+		<section class="border-l-4 border-l-blue-900 border border-slate-200 bg-blue-950 p-3.5 text-white shadow-sm font-mono">
+			<div class="flex items-start gap-2.5">
+				<IconSpeakerphone size={18} class="text-blue-300 shrink-0 mt-0.5" />
+				<div>
+					<div class="text-[9px] font-bold tracking-widest uppercase text-blue-300">
+						AVISO
 					</div>
-					<h3 class="font-mono text-sm font-bold text-white mt-1 uppercase">
+					<h3 class="text-xs font-bold text-white uppercase mt-0.5">
 						{banners[0].titulo}
 					</h3>
 					{#if banners[0].corpo || banners[0].subtitulo}
-						<p class="text-xs text-blue-100 mt-1 leading-relaxed">
+						<p class="text-[11px] text-blue-100 font-sans mt-0.5 leading-relaxed">
 							{banners[0].corpo || banners[0].subtitulo}
 						</p>
 					{/if}
@@ -181,25 +167,18 @@
 		</section>
 	{/if}
 
-	<!-- Seção: Encaminhamento Ativo / Consulta -->
+	<!-- Card: Encaminhamento / Consulta Ativa -->
 	<section class="border border-slate-200 bg-white shadow-sm">
-		<div
-			class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5"
-		>
-			<div class="flex items-center gap-2">
-				<span class="flex h-5 w-5 items-center justify-center bg-blue-900 font-mono text-[10px] font-bold text-white">
-					01
-				</span>
-				<h2 class="font-mono text-xs font-bold tracking-widest text-slate-900 uppercase">
-					Encaminhamento em Andamento na Regulação
-				</h2>
+		<div class="border-b border-slate-100 bg-slate-50 px-4 py-2 flex items-center justify-between">
+			<div class="font-mono text-xs font-bold tracking-wider text-slate-800 uppercase">
+				Próxima Consulta / Pedido
 			</div>
 			<a
 				href="/paciente/encaminhamentos"
-				class="font-mono text-[11px] font-bold tracking-wider text-blue-900 uppercase hover:underline flex items-center gap-1"
+				class="font-mono text-[10px] font-bold text-blue-900 uppercase hover:underline flex items-center gap-0.5"
 			>
 				<span>Ver todos</span>
-				<IconChevronRight size={14} />
+				<IconChevronRight size={13} />
 			</a>
 		</div>
 
@@ -207,237 +186,151 @@
 			{#if encaminhamentoAtivo}
 				{@const badge = statusEncaminhamentoLabel(encaminhamentoAtivo.status)}
 				<div class="flex flex-col gap-3">
-					<div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
+					<div class="flex items-start justify-between gap-2">
 						<div>
-							<div class="flex items-center gap-2">
-								<span
-									class="inline-block border px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider {badge.classes}"
-								>
-									{badge.texto}
-								</span>
-								<span class="font-mono text-xs text-slate-500">
-									PROTOCOLO: <strong>{encaminhamentoAtivo.protocolo}</strong>
-								</span>
-							</div>
-							<h3 class="font-mono text-base font-bold text-slate-900 mt-2 uppercase">
-								{encaminhamentoAtivo.solicitacao?.especialidadeSolicitada || 'CONSULTA ESPECIALIZADA'}
+							<span class="inline-block border px-1.5 py-0.5 font-mono text-[10px] font-bold {badge.classes}">
+								{badge.texto}
+							</span>
+							<h3 class="font-mono text-sm font-bold text-slate-900 uppercase mt-1.5">
+								{encaminhamentoAtivo.solicitacao?.especialidadeSolicitada || 'Consulta Especializada'}
 							</h3>
-							{#if encaminhamentoAtivo.solicitacao?.cid10}
-								<div class="font-mono text-xs text-slate-600 mt-0.5">
-									CID-10: <strong>{encaminhamentoAtivo.solicitacao.cid10}</strong>
-								</div>
-							{/if}
+							<div class="font-mono text-[11px] text-slate-500 mt-0.5">
+								Protocolo: #{encaminhamentoAtivo.protocolo}
+							</div>
 						</div>
 
-						<div class="text-right font-mono text-xs">
-							<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">SOLICITADO EM</div>
-							<div class="font-bold text-slate-900 mt-0.5">
-								{formatarData(encaminhamentoAtivo.criadoEm)}
-							</div>
+						<div class="text-right font-mono text-[11px] text-slate-500">
+							<div>{formatarData(encaminhamentoAtivo.criadoEm)}</div>
 						</div>
 					</div>
 
 					{#if encaminhamentoAtivo.agendamentoPrevisto}
-						<div class="border border-emerald-300 bg-emerald-50/70 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-							<div class="flex items-center gap-3">
-								<div class="bg-emerald-700 p-2 text-white shrink-0">
-									<IconCalendarEvent size={20} />
+						<div class="border border-emerald-300 bg-emerald-50/70 p-3 flex items-center justify-between gap-2">
+							<div>
+								<div class="font-mono text-xs font-bold text-emerald-950 uppercase">
+									{formatarDataHora(encaminhamentoAtivo.agendamentoPrevisto)}
 								</div>
-								<div>
-									<div class="font-mono text-xs font-bold text-emerald-950 uppercase">
-										DATA MARCADA: {formatarDataHora(encaminhamentoAtivo.agendamentoPrevisto)}
-									</div>
-									<div class="text-xs text-emerald-900 mt-0.5">
-										Local: <strong>{encaminhamentoAtivo.localAgendamento || 'Centro de Especialidades Médicas (CEM)'}</strong>
-									</div>
+								<div class="text-[11px] text-emerald-900 mt-0.5">
+									{encaminhamentoAtivo.localAgendamento || 'Centro de Especialidades Médicas (CEM)'}
 								</div>
 							</div>
 
 							<a
 								href="/paciente/encaminhamentos"
-								class="inline-flex items-center justify-center gap-2 border border-blue-900 bg-blue-900 px-4 py-2 font-mono text-xs font-bold tracking-widest text-white uppercase hover:bg-blue-950 transition-colors"
+								class="border border-blue-900 bg-blue-900 px-3 py-1.5 font-mono text-xs font-bold text-white uppercase hover:bg-blue-950"
 							>
-								<span>Comprovante</span>
-								<IconArrowRight size={14} />
+								Ver
 							</a>
 						</div>
 					{:else}
-						<div class="flex items-center justify-between border border-amber-200 bg-amber-50/60 p-3 text-xs">
-							<div class="flex items-center gap-2 text-amber-900">
-								<IconClock size={16} class="text-amber-700 shrink-0" />
-								<span>Aguardando a Central de Regulação Municipal autorizar e liberar vaga médica.</span>
-							</div>
-							<a
-								href="/paciente/encaminhamentos"
-								class="font-mono text-xs font-bold text-blue-900 uppercase hover:underline"
-							>
-								Acompanhar Fila →
-							</a>
+						<div class="flex items-center gap-2 border border-amber-200 bg-amber-50/60 p-2.5 font-mono text-xs text-amber-900">
+							<IconClock size={16} class="text-amber-700 shrink-0" />
+							<span>Aguardando a regulação médica liberar vaga.</span>
 						</div>
 					{/if}
 				</div>
 			{:else}
-				<div class="border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center">
-					<div class="font-mono text-xs font-bold text-slate-700 uppercase">
-						Nenhum encaminhamento em fila no momento
-					</div>
-					<p class="text-xs text-slate-500 mt-1 max-w-lg mx-auto">
-						Todas as suas solicitações estão regulares. Caso necessite de nova consulta especializada ou exame, dirija-se à sua UBS de referência para acolhimento médico.
-					</p>
+				<div class="text-center py-6 font-mono text-xs text-slate-500">
+					Nenhuma consulta pendente na fila no momento.
 				</div>
 			{/if}
 		</div>
 	</section>
 
-	<!-- Seção: Grid de Serviços Municipais -->
-	<section>
-		<div class="mb-3 flex items-center gap-2 border-b border-slate-200 pb-2">
-			<span class="flex h-5 w-5 items-center justify-center bg-blue-900 font-mono text-[10px] font-bold text-white">
-				02
-			</span>
-			<h2 class="font-mono text-xs font-bold tracking-widest text-slate-900 uppercase">
-				Serviços de Saúde do Cidadão
-			</h2>
-		</div>
+	<!-- Grid de Ações Rápidas (Mobile Touch Tiles) -->
+	<section class="grid grid-cols-2 gap-2.5">
+		<!-- Consultas -->
+		<a
+			href="/paciente/encaminhamentos"
+			class="border border-slate-200 bg-white p-3.5 shadow-sm hover:border-blue-900 transition-all flex flex-col justify-between"
+		>
+			<div class="flex items-center justify-between">
+				<IconCalendarEvent size={20} class="text-blue-900" />
+				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">SUS</span>
+			</div>
+			<div class="mt-3">
+				<div class="font-mono text-xs font-bold text-slate-900 uppercase">Consultas</div>
+				<div class="text-[10px] text-slate-500 mt-0.5">Encaminhamentos e datas</div>
+			</div>
+		</a>
 
-		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			<!-- Consultas -->
-			<a
-				href="/paciente/encaminhamentos"
-				class="group relative flex flex-col border border-slate-200 bg-white p-4 transition-all hover:border-blue-900 hover:shadow-md"
-			>
-				<div class="absolute top-0 left-0 h-full w-1 bg-blue-900"></div>
-				<div class="flex items-center justify-between">
-					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-						CONSULTAS
-					</span>
-					<IconCalendarEvent size={18} class="text-blue-900" />
-				</div>
-				<div class="mt-3 font-mono text-sm font-bold text-slate-900 uppercase">
-					Encaminhamentos
-				</div>
-				<div class="mt-1 text-[11px] text-slate-600">
-					Acompanhamento de pedidos, datas marcadas e comprovantes de atendimento.
-				</div>
-			</a>
+		<!-- TFD -->
+		<a
+			href="/paciente/tfd"
+			class="border border-slate-200 bg-white p-3.5 shadow-sm hover:border-blue-900 transition-all flex flex-col justify-between"
+		>
+			<div class="flex items-center justify-between">
+				<IconBus size={20} class="text-purple-900" />
+				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">VIAGENS</span>
+			</div>
+			<div class="mt-3">
+				<div class="font-mono text-xs font-bold text-slate-900 uppercase">Transporte TFD</div>
+				<div class="text-[10px] text-slate-500 mt-0.5">Vagas Recife e região</div>
+			</div>
+		</a>
 
-			<!-- TFD -->
-			<a
-				href="/paciente/tfd"
-				class="group relative flex flex-col border border-slate-200 bg-white p-4 transition-all hover:border-blue-900 hover:shadow-md"
-			>
-				<div class="absolute top-0 left-0 h-full w-1 bg-purple-900"></div>
-				<div class="flex items-center justify-between">
-					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-						TRANSPORTE TFD
-					</span>
-					<IconBus size={18} class="text-purple-900" />
-				</div>
-				<div class="mt-3 font-mono text-sm font-bold text-slate-900 uppercase">
-					Viagens Fora do Domicílio
-				</div>
-				<div class="mt-1 text-[11px] text-slate-600">
-					Solicitação de vagas na frota para Recife, Caruaru e Garanhuns.
-				</div>
-			</a>
+		<!-- Prontuário -->
+		<a
+			href="/paciente/dossie"
+			class="border border-slate-200 bg-white p-3.5 shadow-sm hover:border-blue-900 transition-all flex flex-col justify-between"
+		>
+			<div class="flex items-center justify-between">
+				<IconNotes size={20} class="text-emerald-800" />
+				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">CLÍNICO</span>
+			</div>
+			<div class="mt-3">
+				<div class="font-mono text-xs font-bold text-slate-900 uppercase">Prontuário</div>
+				<div class="text-[10px] text-slate-500 mt-0.5">Histórico e receitas</div>
+			</div>
+		</a>
 
-			<!-- Histórico -->
-			<a
-				href="/paciente/dossie"
-				class="group relative flex flex-col border border-slate-200 bg-white p-4 transition-all hover:border-blue-900 hover:shadow-md"
-			>
-				<div class="absolute top-0 left-0 h-full w-1 bg-emerald-700"></div>
-				<div class="flex items-center justify-between">
-					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-						PRONTUÁRIO
-					</span>
-					<IconNotes size={18} class="text-emerald-800" />
-				</div>
-				<div class="mt-3 font-mono text-sm font-bold text-slate-900 uppercase">
-					Dossiê Clínico Digital
-				</div>
-				<div class="mt-1 text-[11px] text-slate-600">
-					Histórico de atendimentos médicos, receitas e condutas ambulatoriais.
-				</div>
-			</a>
-
-			<!-- Vacinas -->
-			<a
-				href="/paciente/dossie"
-				class="group relative flex flex-col border border-slate-200 bg-white p-4 transition-all hover:border-blue-900 hover:shadow-md"
-			>
-				<div class="absolute top-0 left-0 h-full w-1 bg-amber-600"></div>
-				<div class="flex items-center justify-between">
-					<span class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-						IMUNIZAÇÃO
-					</span>
-					<IconVaccine size={18} class="text-amber-700" />
-				</div>
-				<div class="mt-3 font-mono text-sm font-bold text-slate-900 uppercase">
-					Carteira de Vacinas
-				</div>
-				<div class="mt-1 text-[11px] text-slate-600">
-					Registro de doses aplicadas, lotes e cronograma vacinal municipal.
-				</div>
-			</a>
-		</div>
+		<!-- Vacinas -->
+		<a
+			href="/paciente/dossie"
+			class="border border-slate-200 bg-white p-3.5 shadow-sm hover:border-blue-900 transition-all flex flex-col justify-between"
+		>
+			<div class="flex items-center justify-between">
+				<IconVaccine size={20} class="text-amber-700" />
+				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">DOSES</span>
+			</div>
+			<div class="mt-3">
+				<div class="font-mono text-xs font-bold text-slate-900 uppercase">Vacinas</div>
+				<div class="text-[10px] text-slate-500 mt-0.5">Carteira digital</div>
+			</div>
+		</a>
 	</section>
 
-	<!-- Seção: Transporte TFD Recente -->
+	<!-- Transporte TFD Recente se houver -->
 	{#if solicitacoesTfd.length > 0}
 		{@const solic = solicitacoesTfd[0]}
 		{@const badgeTfd = statusTfdLabel(solic.status)}
-		<section class="border border-slate-200 bg-white shadow-sm">
-			<div
-				class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5"
-			>
-				<div class="flex items-center gap-2">
-					<span class="flex h-5 w-5 items-center justify-center bg-blue-900 font-mono text-[10px] font-bold text-white">
-						03
-					</span>
-					<h2 class="font-mono text-xs font-bold tracking-widest text-slate-900 uppercase">
-						Última Solicitação de Viagem TFD
-					</h2>
+		<section class="border border-slate-200 bg-white shadow-sm font-mono">
+			<div class="border-b border-slate-100 bg-slate-50 px-4 py-2 flex items-center justify-between">
+				<div class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+					<IconBus size={15} class="text-purple-900" />
+					<span>Última Viagem TFD</span>
 				</div>
-				<a
-					href="/paciente/tfd"
-					class="font-mono text-[11px] font-bold tracking-wider text-blue-900 uppercase hover:underline"
-				>
-					Ver todas as viagens →
-				</a>
+				<span class="border px-1.5 py-0.2 text-[9px] font-bold uppercase {badgeTfd.classes}">
+					{badgeTfd.texto}
+				</span>
 			</div>
 
-			<div class="p-4">
-				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
-					<div class="flex items-center gap-2">
-						<IconBus size={18} class="text-purple-900" />
-						<span class="font-mono text-sm font-bold text-slate-900 uppercase">
-							DESTINO: {solic.viagem.destinoCidade} {#if solic.viagem.destinoLocal}({solic.viagem.destinoLocal}){/if}
-						</span>
-					</div>
-					<span
-						class="inline-block border px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider {badgeTfd.classes}"
-					>
-						{badgeTfd.texto}
-					</span>
+			<div class="p-3.5 text-xs">
+				<div class="font-bold text-slate-900 uppercase">
+					Destino: {solic.viagem.destinoCidade}
 				</div>
-
-				<div class="mt-3 grid grid-cols-2 gap-3 text-xs font-mono sm:grid-cols-4">
-					<div class="border border-slate-200 bg-slate-50 p-2.5">
-						<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">DATA SAÍDA</span>
-						<strong class="text-slate-900">{formatarData(solic.viagem.dataPartida)}</strong>
+				<div class="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-600">
+					<div>
+						<span class="text-slate-400 block text-[9px] uppercase">Data</span>
+						<strong class="text-slate-800">{formatarData(solic.viagem.dataPartida)}</strong>
 					</div>
-					<div class="border border-slate-200 bg-slate-50 p-2.5">
-						<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">HORÁRIO</span>
-						<strong class="text-slate-900">{solic.viagem.horaPartida}</strong>
+					<div>
+						<span class="text-slate-400 block text-[9px] uppercase">Hora</span>
+						<strong class="text-slate-800">{solic.viagem.horaPartida}</strong>
 					</div>
-					<div class="border border-slate-200 bg-slate-50 p-2.5">
-						<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">LOCAL EMBARQUE</span>
-						<strong class="text-slate-900 truncate block">{solic.viagem.localEmbarque}</strong>
-					</div>
-					<div class="border border-slate-200 bg-slate-50 p-2.5">
-						<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">ASSENTO</span>
-						<strong class="text-blue-950 font-black">{solic.numeroAssento || 'A DEFINIR'}</strong>
+					<div>
+						<span class="text-slate-400 block text-[9px] uppercase">Assento</span>
+						<strong class="text-blue-950 font-bold">{solic.numeroAssento || '—'}</strong>
 					</div>
 				</div>
 			</div>
@@ -446,37 +339,27 @@
 
 	<!-- UBS de Referência Info Card -->
 	{#if minhaUbs}
-		<section class="border border-slate-200 bg-white shadow-sm">
-			<div
-				class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase"
-			>
-				<IconBuildingHospital size={16} class="text-blue-900" />
-				<span>Unidade Básica de Saúde (UBS) Vinculada</span>
-			</div>
-
-			<div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+		<section class="border border-slate-200 bg-white p-3.5 shadow-sm font-mono text-xs">
+			<div class="flex items-center justify-between">
 				<div>
-					<h3 class="font-mono text-sm font-bold text-slate-900 uppercase">{minhaUbs.nome}</h3>
+					<div class="text-[9px] font-bold text-slate-400 uppercase">Unidade de Atendimento</div>
+					<h3 class="font-bold text-slate-900 uppercase mt-0.5">{minhaUbs.nome}</h3>
 					{#if minhaUbs.endereco}
-						<div class="text-slate-600 flex items-center gap-1.5 mt-1 font-mono text-xs">
-							<IconMapPin size={14} class="text-slate-400 shrink-0" />
-							<span>{minhaUbs.endereco} {minhaUbs.bairro ? `· ${minhaUbs.bairro}` : ''}</span>
+						<div class="text-[11px] text-slate-500 font-sans mt-0.5">
+							{minhaUbs.endereco}
 						</div>
 					{/if}
-					<div class="text-slate-500 font-mono text-[11px] mt-1">
-						HORÁRIO: {minhaUbs.horarioFuncionamento || 'Segunda a Sexta das 07:00 às 17:00'}
-					</div>
 				</div>
 
 				{#if minhaUbs.telefone || minhaUbs.whatsapp}
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-1.5 shrink-0">
 						{#if minhaUbs.telefone}
 							<a
 								href="tel:{minhaUbs.telefone.replace(/\D/g, '')}"
-								class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 transition-colors"
+								class="border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50"
+								title="Ligar"
 							>
 								<IconPhone size={14} />
-								<span>Ligar</span>
 							</a>
 						{/if}
 						{#if minhaUbs.whatsapp}
@@ -484,9 +367,9 @@
 								href="https://wa.me/55{minhaUbs.whatsapp.replace(/\D/g, '')}"
 								target="_blank"
 								rel="noreferrer"
-								class="inline-flex items-center gap-1.5 border border-emerald-700 bg-emerald-700 px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-white uppercase hover:bg-emerald-800 transition-colors"
+								class="border border-emerald-700 bg-emerald-700 px-2.5 py-1 text-white font-bold text-[10px] uppercase hover:bg-emerald-800"
 							>
-								<span>WhatsApp</span>
+								WhatsApp
 							</a>
 						{/if}
 					</div>

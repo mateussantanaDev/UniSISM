@@ -136,28 +136,20 @@
 	<title>Consultas e Encaminhamentos · UniSISM Águas Belas</title>
 </svelte:head>
 
-<div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 space-y-6">
-	<!-- Topo da Página -->
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4">
-		<div>
-			<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-				CENTRAL MUNICIPAL DE REGULAÇÃO
-			</div>
-			<h1 class="font-mono text-lg font-bold tracking-wide text-slate-900 sm:text-xl uppercase flex items-center gap-2">
-				<IconCalendarEvent size={20} class="text-blue-900" />
-				<span>Minhas Consultas e Encaminhamentos</span>
-			</h1>
-			<p class="text-xs text-slate-600 mt-0.5">
-				Acompanhamento da fila regulatória, datas de atendimento e locais de consulta especializada.
-			</p>
-		</div>
+<div class="space-y-4">
+	<!-- Topo da Página Mobile -->
+	<div class="flex items-center justify-between border-b border-slate-200 pb-3">
+		<h1 class="font-mono text-base font-bold text-slate-900 uppercase flex items-center gap-2">
+			<IconCalendarEvent size={18} class="text-blue-900" />
+			<span>Minhas Consultas</span>
+		</h1>
 
 		<button
 			onclick={carregarEncaminhamentos}
 			disabled={carregando}
-			class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 disabled:opacity-50 transition-colors"
+			class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-800 uppercase hover:bg-slate-50 disabled:opacity-50"
 		>
-			<IconRefresh size={14} class={carregando ? 'animate-spin' : ''} />
+			<IconRefresh size={13} class={carregando ? 'animate-spin' : ''} />
 			<span>Atualizar</span>
 		</button>
 	</div>

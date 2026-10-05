@@ -10,10 +10,9 @@
 		IconBuildingHospital,
 		IconLock,
 		IconLogout,
-		IconAlertCircle,
-		IconCheck,
 		IconPhone,
-		IconMapPin
+		IconMapPin,
+		IconChevronRight
 	} from '@tabler/icons-svelte';
 
 	const auth = usePacienteAuth();
@@ -102,150 +101,147 @@
 </script>
 
 <svelte:head>
-	<title>Meu Perfil · UniSISM Águas Belas</title>
+	<title>Meu Perfil · UniSISM</title>
 </svelte:head>
 
-<div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 space-y-6">
-	<!-- Top Bar -->
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4">
-		<div>
-			<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-				CADASTRO MUNICIPAL DO USUÁRIO DO SUS
-			</div>
-			<h1 class="font-mono text-lg font-bold tracking-wide text-slate-900 sm:text-xl uppercase flex items-center gap-2">
-				<IconUser size={20} class="text-blue-900" />
-				<span>Perfil do Cidadão</span>
-			</h1>
-			<p class="text-xs text-slate-600 mt-0.5">
-				Dados cadastrais, identificação no Cartão SUS e segurança de acesso ao portal.
-			</p>
-		</div>
-
-		<button
-			type="button"
-			onclick={handleLogout}
-			class="inline-flex items-center gap-1.5 border border-red-700 bg-white px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-red-800 uppercase hover:bg-red-50 transition-colors"
-		>
-			<IconLogout size={14} />
-			<span>Encerrar Sessão</span>
-		</button>
-	</div>
-
-	<!-- Perfil Header Card -->
-	<div class="border border-slate-200 bg-white p-5 shadow-sm">
-		<div class="flex items-center gap-4">
+<div class="space-y-4">
+	<!-- Perfil Card do Aplicativo -->
+	<div class="border border-slate-200 bg-white p-4 shadow-sm">
+		<div class="flex items-center gap-3.5">
 			<div class="h-14 w-14 shrink-0 bg-blue-900 font-mono text-xl font-bold text-white flex items-center justify-center">
 				{auth.me?.nome ? auth.me.nome.charAt(0).toUpperCase() : 'P'}
 			</div>
 			<div class="flex-1 min-w-0">
-				<div class="flex items-center gap-2">
-					<h2 class="font-mono text-base font-bold text-slate-900 uppercase truncate">
-						{auth.me?.nome || 'PACIENTE UNISISM'}
-					</h2>
-					<span class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-800 uppercase">
-						ATIVO NO SUS
+				<h2 class="font-mono text-base font-bold text-slate-900 uppercase truncate">
+					{auth.me?.nome || 'Paciente'}
+				</h2>
+				<div class="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-slate-600">
+					<span>CPF: <strong>{auth.me?.cpfFormatado || formatarCpf(auth.me?.cpf)}</strong></span>
+					<span class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-800 uppercase">
+						SUS ATIVO
 					</span>
 				</div>
-				<div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-slate-600">
-					<span>CPF: <strong>{auth.me?.cpfFormatado || formatarCpf(auth.me?.cpf)}</strong></span>
-					{#if auth.me?.cns}
-						<span>CNS: <strong>{auth.me.cns}</strong></span>
-					{/if}
-				</div>
+				{#if auth.me?.cns}
+					<div class="mt-0.5 font-mono text-[11px] text-slate-500">
+						Cartão SUS: {auth.me.cns}
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
 
-	<!-- Informações Pessoais -->
+	<!-- Meus Dados Cadastrais -->
 	<div class="border border-slate-200 bg-white shadow-sm">
-		<div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase">
-			Dados Cadastrais
+		<div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-xs font-bold tracking-wider text-slate-900 uppercase flex items-center gap-2">
+			<IconUser size={16} class="text-blue-900" />
+			<span>Meus Dados</span>
 		</div>
 
-		<div class="p-5 space-y-4">
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-				<div class="border border-slate-200 bg-slate-50 p-3">
-					<span class="text-[10px] font-bold text-slate-500 uppercase">Nome Completo</span>
-					<p class="font-bold text-slate-900 mt-0.5">{auth.me?.nome || '—'}</p>
-				</div>
-
-				<div class="border border-slate-200 bg-slate-50 p-3">
-					<span class="text-[10px] font-bold text-slate-500 uppercase">Data de Nascimento</span>
-					<p class="font-bold text-slate-900 mt-0.5">{formatarDataNasc(auth.me?.dataNascimento)}</p>
-				</div>
-
-				<div class="border border-slate-200 bg-slate-50 p-3">
-					<span class="text-[10px] font-bold text-slate-500 uppercase">Telefone / WhatsApp</span>
-					<p class="font-bold text-slate-900 mt-0.5">{auth.me?.telefone || 'Não informado'}</p>
-				</div>
-
-				<div class="border border-slate-200 bg-slate-50 p-3">
-					<span class="text-[10px] font-bold text-slate-500 uppercase">E-mail Cadastrado</span>
-					<p class="font-bold text-slate-900 mt-0.5">{auth.me?.email || 'Não informado'}</p>
-				</div>
-
-				<div class="border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-					<span class="text-[10px] font-bold text-slate-500 uppercase">Endereço Residencial</span>
-					<p class="font-bold text-slate-900 mt-0.5">{auth.me?.endereco || 'Cadastrado junto à UBS de referência'}</p>
-				</div>
+		<div class="divide-y divide-slate-100 text-xs font-mono">
+			<div class="p-3 flex items-center justify-between">
+				<span class="text-slate-500 uppercase">Nome</span>
+				<span class="font-bold text-slate-900 text-right">{auth.me?.nome || '—'}</span>
 			</div>
-
-			<p class="font-mono text-[11px] text-slate-500">
-				* Para atualizar seu número de telefone, endereço ou documentos civis, compareça à recepção da sua Unidade Básica de Saúde.
-			</p>
+			<div class="p-3 flex items-center justify-between">
+				<span class="text-slate-500 uppercase">Nascimento</span>
+				<span class="font-bold text-slate-900 text-right">{formatarDataNasc(auth.me?.dataNascimento)}</span>
+			</div>
+			<div class="p-3 flex items-center justify-between">
+				<span class="text-slate-500 uppercase">Telefone</span>
+				<span class="font-bold text-slate-900 text-right">{auth.me?.telefone || 'Não informado'}</span>
+			</div>
+			<div class="p-3 flex items-center justify-between">
+				<span class="text-slate-500 uppercase">E-mail</span>
+				<span class="font-bold text-slate-900 text-right">{auth.me?.email || 'Não informado'}</span>
+			</div>
+			<div class="p-3 flex flex-col gap-1">
+				<span class="text-slate-500 uppercase">Endereço</span>
+				<span class="font-bold text-slate-900">{auth.me?.endereco || 'Cadastrado na UBS de referência'}</span>
+			</div>
 		</div>
 	</div>
 
-	<!-- UBS de Referência -->
+	<!-- Minha UBS de Referência -->
 	{#if ubs}
 		<div class="border border-slate-200 bg-white shadow-sm">
-			<div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase flex items-center gap-2">
+			<div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-xs font-bold tracking-wider text-slate-900 uppercase flex items-center gap-2">
 				<IconBuildingHospital size={16} class="text-blue-900" />
-				<span>Unidade Básica de Referência</span>
+				<span>Minha UBS de Referência</span>
 			</div>
-			<div class="p-5 font-mono text-xs space-y-2">
-				<h3 class="font-bold text-slate-900 text-sm uppercase">{ubs.nome}</h3>
-				{#if ubs.endereco}
-					<p class="text-slate-600 flex items-center gap-1.5">
-						<IconMapPin size={14} class="text-slate-400 shrink-0" />
-						<span>{ubs.endereco} {ubs.bairro ? `· ${ubs.bairro}` : ''}</span>
-					</p>
-				{/if}
-				{#if ubs.telefone}
-					<p class="text-slate-600 flex items-center gap-1.5">
-						<IconPhone size={14} class="text-slate-400 shrink-0" />
-						<span>{ubs.telefone}</span>
-					</p>
-				{/if}
-				{#if ubs.horarioFuncionamento}
-					<p class="text-slate-500 mt-1">
-						HORÁRIO: {ubs.horarioFuncionamento}
-					</p>
+			<div class="p-4 space-y-3 font-mono text-xs">
+				<div>
+					<h3 class="font-bold text-slate-900 uppercase">{ubs.nome}</h3>
+					{#if ubs.endereco}
+						<p class="text-slate-600 flex items-center gap-1.5 mt-1">
+							<IconMapPin size={14} class="text-slate-400 shrink-0" />
+							<span>{ubs.endereco} {ubs.bairro ? `· ${ubs.bairro}` : ''}</span>
+						</p>
+					{/if}
+					{#if ubs.horarioFuncionamento}
+						<p class="text-slate-500 text-[11px] mt-0.5">
+							{ubs.horarioFuncionamento}
+						</p>
+					{/if}
+				</div>
+
+				{#if ubs.telefone || ubs.whatsapp}
+					<div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+						{#if ubs.telefone}
+							<a
+								href="tel:{ubs.telefone.replace(/\D/g, '')}"
+								class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs font-bold text-slate-800 uppercase hover:bg-slate-50"
+							>
+								<IconPhone size={14} />
+								<span>Ligar</span>
+							</a>
+						{/if}
+						{#if ubs.whatsapp}
+							<a
+								href="https://wa.me/55{ubs.whatsapp.replace(/\D/g, '')}"
+								target="_blank"
+								rel="noreferrer"
+								class="inline-flex items-center gap-1.5 border border-emerald-700 bg-emerald-700 px-3 py-1.5 font-mono text-xs font-bold text-white uppercase hover:bg-emerald-800"
+							>
+								<span>WhatsApp</span>
+							</a>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</div>
 	{/if}
 
-	<!-- Segurança & Acesso -->
-	<div class="border border-slate-200 bg-white shadow-sm">
-		<div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-4 py-2.5 font-mono text-xs font-bold tracking-widest text-slate-900 uppercase flex items-center gap-2">
-			<IconLock size={16} class="text-blue-900" />
-			<span>Segurança da Conta</span>
-		</div>
-
-		<div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs">
-			<div>
-				<p class="font-bold text-slate-900 uppercase">Senha de Acesso ao Portal</p>
-				<p class="text-slate-500 text-[11px] font-sans mt-0.5">Altere sua senha pessoal de acesso ao portal web e aplicativo do cidadão.</p>
+	<!-- Opções de Conta -->
+	<div class="border border-slate-200 bg-white shadow-sm divide-y divide-slate-100 font-mono text-xs">
+		<button
+			type="button"
+			onclick={() => (mostrarModalSenha = true)}
+			class="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+		>
+			<div class="flex items-center gap-2.5">
+				<IconLock size={16} class="text-blue-900" />
+				<div>
+					<div class="font-bold text-slate-900 uppercase">Alterar Senha</div>
+					<div class="text-[11px] text-slate-500 font-sans">Atualize sua senha de acesso ao aplicativo</div>
+				</div>
 			</div>
-			<button
-				type="button"
-				onclick={() => (mostrarModalSenha = true)}
-				class="border border-slate-300 bg-white px-4 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 transition-colors shrink-0"
-			>
-				Alterar Senha
-			</button>
-		</div>
+			<IconChevronRight size={16} class="text-slate-400" />
+		</button>
+
+		<button
+			type="button"
+			onclick={handleLogout}
+			class="w-full p-4 flex items-center justify-between text-left hover:bg-red-50 transition-colors text-red-800"
+		>
+			<div class="flex items-center gap-2.5">
+				<IconLogout size={16} class="text-red-700" />
+				<div>
+					<div class="font-bold uppercase">Sair da Conta</div>
+					<div class="text-[11px] text-red-600 font-sans">Encerrar sessão neste dispositivo</div>
+				</div>
+			</div>
+			<IconChevronRight size={16} class="text-red-400" />
+		</button>
 	</div>
 </div>
 
@@ -254,8 +250,8 @@
 	<Modal
 		isOpen={mostrarModalSenha}
 		onClose={() => (mostrarModalSenha = false)}
-		title="ALTERAR SENHA DE ACESSO"
-		subtitle="Defina uma nova credencial para acesso ao portal"
+		title="ALTERAR SENHA"
+		subtitle="Defina uma nova senha para acessar o aplicativo"
 		maxWidth="sm"
 	>
 		<div class="space-y-4 p-1">
@@ -323,7 +319,7 @@
 						Cancelar
 					</button>
 					<PrimaryButton
-						label="Atualizar Senha"
+						label="Salvar"
 						type="submit"
 						loading={alterandoSenha}
 					/>
