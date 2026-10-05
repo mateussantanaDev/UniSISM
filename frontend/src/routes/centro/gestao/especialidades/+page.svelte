@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
@@ -48,6 +49,7 @@
 
 	// Modal State
 	let modalNovaAberto = $state(false);
+	let editandoId = $state<string | null>(null);
 	let erroModal = $state('');
 	let formNome = $state('');
 	let formCodigo = $state('');
@@ -64,21 +66,7 @@
 		try {
 			const res = await api.centroGestao.listEspecialidades({ centro: siglaOrgao });
 			if (Array.isArray(res)) {
-				listaEspecialidades = (res as any[]).map((e) => ({
-					...e,
-					tipoServico:
-						e.tipoServico ||
-						(e.nome.toLowerCase().includes('exame') ||
-						e.nome.toLowerCase().includes('procedimento') ||
-						e.nome.toLowerCase().includes('eletro') ||
-						e.nome.toLowerCase().includes('eco') ||
-						e.nome.toLowerCase().includes('ultra') ||
-						e.nome.toLowerCase().includes('biópsia') ||
-						e.nome.toLowerCase().includes('raspagem') ||
-						e.nome.toLowerCase().includes('canal')
-							? 'PROCEDIMENTO'
-							: 'CONSULTA')
-				}));
+				listaEspecialidades = res as EspecialidadeSigtap[];
 			} else {
 				listaEspecialidades = [];
 			}
@@ -94,18 +82,45 @@
 		carregarEspecialidades();
 	});
 
+	function abrirFormulario(esp?: EspecialidadeSigtap) {
+		editandoId = esp?.id ?? null;
+		formNome = esp?.nome ?? '';
+		formCodigo = esp?.codigoSigtap ?? '';
+		formTempo = esp?.tempoPadraoMinutos ?? 20;
+		formValor = esp?.valorTabelaBrl ?? 0;
+		formTipoServico = esp?.tipoServico ?? 'CONSULTA';
+		formDocs = (esp?.documentosObrigatorios ?? []).filter((d) => !d.startsWith('CENTRO:')).join(', ');
+		formPreparo = esp?.preparoRequerido ?? '';
+		formNecessitaTriagem = esp?.necessitaTriagem ?? false;
+		erroModal = '';
+		modalNovaAberto = true;
+	}
+
 	async function cadastrarEspecialidade() {
 		if (!formNome.trim() || !formCodigo.trim()) {
 			erroModal = 'Preencha o nome e o código SIGTAP / SIA-SUS.';
 			return;
 		}
+		if (!/^(?:\d{10}|\d{2}\.\d{2}\.\d{2}\.\d{3}-\d)$/.test(formCodigo.trim())) {
+			erroModal = 'Código SIGTAP deve ter 10 dígitos (ex.: 03.01.01.007-2).';
+			return;
+		}
+		if (!Number.isInteger(Number(formTempo)) || Number(formTempo) <= 0 || Number(formTempo) > 1440) {
+			erroModal = 'Tempo padrão deve ser um número inteiro entre 1 e 1440 minutos.';
+			return;
+		}
+		if (!Number.isFinite(Number(formValor)) || Number(formValor) < 0) {
+			erroModal = 'Valor de repasse não pode ser negativo.';
+			return;
+		}
+
 		erroModal = '';
 
 		const nova = {
 			nome: formNome.trim(),
 			codigoSigtap: formCodigo.trim(),
-			tempoPadraoMinutos: Number(formTempo) || 20,
-			valorTabelaBrl: Number(formValor) || 0,
+			tempoPadraoMinutos: Number(formTempo),
+			valorTabelaBrl: Number(formValor),
 			documentosObrigatorios: formDocs
 				.split(',')
 				.map((s) => s.trim())
@@ -118,7 +133,8 @@
 		};
 
 		try {
-			await api.centroGestao.criarEspecialidade(nova as any);
+			if (editandoId) await api.centroGestao.atualizarEspecialidade(editandoId, nova);
+			else await api.centroGestao.criarEspecialidade(nova);
 			await carregarEspecialidades();
 			modalNovaAberto = false;
 			formNome = '';
@@ -126,11 +142,11 @@
 			formDocs = '';
 			formPreparo = '';
 			formNecessitaTriagem = false;
-			mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" cadastrado com sucesso no catálogo do ${siglaOrgao}!`;
+			mensagemSucesso = `✓ ${nova.tipoServico === 'PROCEDIMENTO' ? 'Procedimento' : 'Consulta'} "${nova.nome}" ${editandoId ? 'atualizado' : 'cadastrado'} com sucesso no catálogo do ${siglaOrgao}!`;
 			setTimeout(() => (mensagemSucesso = ''), 4000);
 		} catch (e: any) {
 			console.error(e);
-			erroModal = `Falha ao cadastrar especialidade: ${e?.message || 'Erro do servidor'}`;
+			erroModal = `Falha ao salvar serviço: ${e?.message || 'Erro do servidor'}`;
 		}
 	}
 
@@ -233,7 +249,7 @@
 			</div>
 
 			<button
-				onclick={() => (modalNovaAberto = true)}
+				onclick={() => abrirFormulario()}
 				class="border border-blue-900 bg-blue-900 px-4 py-2 text-xs font-bold tracking-wider text-white uppercase hover:bg-blue-950"
 			>
 				+ Habilitar Serviço / SIGTAP
@@ -335,6 +351,7 @@
 								</span>
 							</td>
 							<td class="p-3 text-right">
+								<button type="button" onclick={() => abrirFormulario(esp)} class="mr-2 border border-slate-300 px-2.5 py-1 text-[10px] font-bold">Editar</button>
 								<button
 									type="button"
 									onclick={() => excluirEspecialidade(esp.id, esp.nome)}
@@ -363,13 +380,14 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
+			use:dialogAccessibility={{ label: editandoId ? 'Editar Serviço / SIGTAP' : 'Habilitar Novo Serviço / SIGTAP', onClose: () => (modalNovaAberto = false) }}
 			class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
 				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
 			>
 				<div class="text-xs font-bold tracking-wider uppercase">
-					+ Habilitar Novo Serviço / SIGTAP
+					{editandoId ? 'Editar Serviço / SIGTAP' : '+ Habilitar Novo Serviço / SIGTAP'}
 				</div>
 				<button
 					onclick={() => (modalNovaAberto = false)}
@@ -437,7 +455,7 @@
 						>
 						<input
 							id="esp-tempo"
-							type="number"
+							type="number" min="1" max="1440"
 							bind:value={formTempo}
 							class="border border-slate-300 p-2 text-xs"
 						/>
@@ -448,7 +466,7 @@
 						>
 						<input
 							id="esp-val"
-							type="number"
+							type="number" min="0"
 							step="0.01"
 							bind:value={formValor}
 							class="border border-slate-300 p-2 text-xs"

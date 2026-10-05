@@ -14,7 +14,7 @@ export interface ListUsuariosFiltro {
 export class ListUsuariosUseCase {
   async exec(filtro: ListUsuariosFiltro) {
     const where = {
-      ...whereByScopeAtendente(filtro.scope),
+      AND: [whereByScopeAtendente(filtro.scope)],
       ...(filtro.role ? { role: filtro.role as never } : {}),
       ...(filtro.ubsId ? { ubsId: filtro.ubsId } : {}),
       ...(filtro.prefeituraId

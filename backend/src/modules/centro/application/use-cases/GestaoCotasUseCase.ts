@@ -1,220 +1,48 @@
-import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
-import { NotFound } from '../../../../shared/errors';
+import { BadRequest, NotFound } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
-
 import { filterEspecialidadesByCentro } from '../../shared/centroClassifier';
-
-export interface CotaUbsDTO {
-  ubsId: string;
-  ubsNome: string;
-  totalCotasMes: number;
-  alocadas: number;
-  disponiveis: number;
-  status: 'NORMAL' | 'CRITICO' | 'ESGOTADO';
-  especialidades: Record<string, number>;
+import { dataLocalCentro, dataHoraCentro } from '../../shared/escalaCentro';
+export interface CotaUbsDTO { ubsId: string; ubsNome: string; competencia: string; totalCotasMes: number; alocadas: number; disponiveis: number; status: 'NORMAL' | 'CRITICO' | 'ESGOTADO'; especialidades: Record<string, number> }
+function mesValido(valor?: string) {
+  const mes = valor ?? dataLocalCentro().slice(0,7);
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) throw BadRequest('COMPETENCIA_INVALIDA','Informe a competência no formato AAAA-MM.');
+  return mes;
 }
-
 export class GestaoCotasUseCase {
-  async listarCotas(scope: AccessScope, centro?: string): Promise<CotaUbsDTO[]> {
-    const whereUbs: any = { ativa: true };
-    if (scope.kind === 'PREFEITURA') {
-      whereUbs.prefeituraId = scope.prefeituraId;
-    } else if (scope.kind === 'UBS') {
-      whereUbs.id = scope.ubsId;
-    }
-
-    const ubsList = await prisma.ubs.findMany({
-      where: whereUbs,
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    });
-
-    if (ubsList.length === 0) return [];
-
-    // Busca especialidades cadastradas ativas para a prefeitura/centro
-    const whereEsp: any = { ativa: true };
-    if (scope.kind === 'PREFEITURA') {
-      whereEsp.prefeituraId = scope.prefeituraId;
-    }
-    const espList = await prisma.especialidadeCatalogo.findMany({
-      where: whereEsp,
-      select: { nome: true, documentosObrigatorios: true },
-      orderBy: { nome: 'asc' },
-    });
-
-    const centroNorm = centro ? centro.toUpperCase() : undefined;
-    const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
-
-    const especialidadesCentro = filterEspecialidadesByCentro(espList, centro).map((e) => e.nome);
-
-    const ubsIds = ubsList.map((u) => u.id);
-    const now = new Date();
-    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-
-    // Batch 1: Busca todas as cotas das UBSs de uma só vez
-    const cotasRecords = await prisma.cotaUbs.findMany({
-      where: { ubsId: { in: ubsIds } },
-    });
-    const cotasMap = new Map(cotasRecords.map((c) => [c.ubsId, c]));
-
-    // Batch 2: Agrupa contagem de encaminhamentos aprovados por UBS
-    const alocadasList = await prisma.encaminhamento.groupBy({
-      by: ['ubsId'],
-      _count: { _all: true },
-      where: {
-        ubsId: { in: ubsIds },
-        status: StatusEncaminhamento.APROVADO,
-        OR: ehCeo
-          ? [
-              { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
-              { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
-              { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
-              { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } },
-              { especialidadeSolicitada: { in: especialidadesCentro } },
-            ]
-          : [
-              { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-              { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
-            ],
-        AND: [
-          {
-            OR: [
-              { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
-              {
-                AND: [
-                  { agendamentoPrevisto: null },
-                  { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    });
-    const alocadasMap = new Map(alocadasList.map((a) => [a.ubsId, a._count._all]));
-
-    return ubsList.map((ubs) => {
-      const cotaRecord = cotasMap.get(ubs.id);
-      const countAlocadas = alocadasMap.get(ubs.id) ?? 0;
-
-      const storedEsp = (cotaRecord?.especialidades as Record<string, number>) || {};
-      const especialidadesFiltradas: Record<string, number> = {};
-
-      for (const espNome of especialidadesCentro) {
-        especialidadesFiltradas[espNome] = storedEsp[espNome] ?? 0;
-      }
-
-      const totalCotasMes = Object.values(especialidadesFiltradas).length > 0
-        ? Object.values(especialidadesFiltradas).reduce((a, b) => a + b, 0)
-        : (cotaRecord?.totalCotasMes ?? 0);
-
-      const disponiveis = Math.max(0, totalCotasMes - countAlocadas);
-      let status: 'NORMAL' | 'CRITICO' | 'ESGOTADO' = 'NORMAL';
-      if (disponiveis === 0) status = 'ESGOTADO';
-      else if (disponiveis < 30) status = 'CRITICO';
-
-      return {
-        ubsId: ubs.id,
-        ubsNome: ubs.nome,
-        totalCotasMes,
-        alocadas: countAlocadas,
-        disponiveis,
-        status,
-        especialidades: especialidadesFiltradas,
-      };
+  async listarCotas(scope: AccessScope, centro?: string, competencia?: string): Promise<CotaUbsDTO[]> {
+    const mes = mesValido(competencia), inicio = dataHoraCentro(`${mes}-01`);
+    const proximo = new Date(`${mes}-01T12:00:00Z`); proximo.setUTCMonth(proximo.getUTCMonth()+1);
+    const fim = dataHoraCentro(proximo.toISOString().slice(0,10));
+    const ubs = await prisma.ubs.findMany({ where: { ativa: true, ...(scope.kind === 'UBS' ? { id: scope.ubsId } : scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}) }, select: { id: true, nome: true }, orderBy: { nome: 'asc' } });
+    const catalogo = await prisma.especialidadeCatalogo.findMany({ where: { ativa: true, ...(scope.kind === 'GLOBAL' ? {} : { prefeituraId: scope.prefeituraId ?? '__SEM_PREFEITURA__' }) }, select: { nome: true, documentosObrigatorios: true } });
+    const nomes = filterEspecialidadesByCentro(catalogo, centro).map(e=>e.nome);
+    const ids = ubs.map(u=>u.id), canal = centro === 'CEO' || centro === 'CENTRO_ODONTOLOGICO' ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES';
+    const [registros, alocadas] = await Promise.all([
+      prisma.cotaUbs.findMany({ where: { ubsId: { in: ids }, competencia: mes } }),
+      prisma.encaminhamento.groupBy({ by: ['ubsId'], _count: { _all: true }, where: { ubsId: { in: ids }, status: 'APROVADO', deletadoEm: null, agendamentoPrevisto: { gte: inicio, lt: fim }, OR: [{ canalRoteamento: canal },{ destinoRegulacao: canal }] } })
+    ]);
+    return ubs.map(u=>{
+      const registro = registros.find(r=>r.ubsId===u.id); const saved = (registro?.especialidades ?? {}) as Record<string,number>;
+      const especialidades = Object.fromEntries(nomes.map(n=>[n,saved[n]??0]));
+      const totalCotasMes = Object.values(especialidades).reduce((a,b)=>a+b,0), count=alocadas.find(a=>a.ubsId===u.id)?._count._all??0;
+      const disponiveis=Math.max(0,totalCotasMes-count);
+      return { ubsId:u.id,ubsNome:u.nome,competencia:mes,totalCotasMes,alocadas:count,disponiveis,status:disponiveis===0?'ESGOTADO':disponiveis<20?'CRITICO':'NORMAL',especialidades };
     });
   }
-
-  async atualizarCota(
-    ubsId: string,
-    data: { totalCotasMes: number; especialidades: Record<string, number> },
-    scope: AccessScope,
-    atendenteId: string,
-  ): Promise<CotaUbsDTO> {
-    const ubs = await prisma.ubs.findUnique({
-      where: { id: ubsId },
-      select: { id: true, nome: true, prefeituraId: true },
+  async atualizarCota(ubsId:string, data:{totalCotasMes:number;especialidades:Record<string,number>;competencia?:string;centro?:string},scope:AccessScope,atendenteId:string):Promise<CotaUbsDTO> {
+    const competencia=mesValido(data.competencia);
+    if(Object.values(data.especialidades).some(n=>!Number.isInteger(n)||n<0)||data.totalCotasMes!==Object.values(data.especialidades).reduce((a,b)=>a+b,0)) throw BadRequest('COTAS_INVALIDAS','As cotas devem ser inteiras, não negativas e corresponder ao total.');
+    const ubs=await prisma.ubs.findUnique({where:{id:ubsId},select:{id:true,nome:true,prefeituraId:true}});
+    if(!ubs||(scope.kind==='PREFEITURA'&&ubs.prefeituraId!==scope.prefeituraId)||(scope.kind==='UBS'&&ubs.id!==scope.ubsId))throw NotFound('UBS_NAO_ENCONTRADA','UBS não encontrada');
+    await prisma.$transaction(async tx=>{
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`centro-cotas:${ubsId}:${competencia}`}))`;
+      const anterior=await tx.cotaUbs.findUnique({where:{ubsId_competencia:{ubsId,competencia}}});
+      const especialidades={...((anterior?.especialidades??{}) as Record<string,number>),...data.especialidades};
+      const totalCotasMes=Object.values(especialidades).reduce((a,b)=>a+b,0);
+      await tx.cotaUbs.upsert({where:{ubsId_competencia:{ubsId,competencia}},create:{ubsId,competencia,totalCotasMes,especialidades},update:{totalCotasMes,especialidades}});
+      await tx.auditoriaLog.create({data:{acao:'CENTRO_GESTAO_ATUALIZAR_COTAS',recurso:'CENTRO_ESPECIALIDADES',recursoId:ubsId,atendenteId,payload:{...data,competencia}}});
     });
-    if (!ubs) {
-      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
-    }
-    if (scope.kind === 'PREFEITURA' && ubs.prefeituraId !== scope.prefeituraId) {
-      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
-    }
-    if (scope.kind === 'UBS' && ubs.id !== scope.ubsId) {
-      throw NotFound('UBS_NAO_ENCONTRADA', 'UBS não encontrada');
-    }
-
-    const res = await prisma.cotaUbs.upsert({
-      where: { ubsId },
-      create: {
-        ubsId,
-        totalCotasMes: data.totalCotasMes,
-        especialidades: data.especialidades,
-      },
-      update: {
-        totalCotasMes: data.totalCotasMes,
-        especialidades: data.especialidades,
-      },
-    });
-
-    await prisma.auditoriaLog.create({
-      data: {
-        acao: 'CENTRO_GESTAO_ATUALIZAR_COTAS',
-        recurso: 'CENTRO_ESPECIALIDADES',
-        recursoId: ubsId,
-        atendenteId,
-        payload: data,
-      },
-    });
-
-    const now = new Date();
-    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-
-    const countAlocadas = await prisma.encaminhamento.count({
-      where: {
-        ubsId,
-        status: StatusEncaminhamento.APROVADO,
-        OR: [
-          { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-          { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
-          { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
-          { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
-          { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
-          { localAgendamento: { contains: 'CADEIRA', mode: 'insensitive' } },
-        ],
-        AND: [
-          {
-            OR: [
-              { agendamentoPrevisto: { gte: startOfMonth, lte: endOfMonth } },
-              {
-                AND: [
-                  { agendamentoPrevisto: null },
-                  { criadoEm: { gte: startOfMonth, lte: endOfMonth } },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    });
-
-    const disponiveis = Math.max(0, res.totalCotasMes - countAlocadas);
-    let status: 'NORMAL' | 'CRITICO' | 'ESGOTADO' = 'NORMAL';
-    if (disponiveis === 0) status = 'ESGOTADO';
-    else if (disponiveis < 30) status = 'CRITICO';
-
-    return {
-      ubsId: res.ubsId,
-      ubsNome: ubs?.nome || 'UBS',
-      totalCotasMes: res.totalCotasMes,
-      alocadas: countAlocadas,
-      disponiveis,
-      status,
-      especialidades: (res.especialidades as Record<string, number>) || {},
-    };
+    return (await this.listarCotas(scope,data.centro,competencia)).find(r=>r.ubsId===ubsId)!;
   }
 }

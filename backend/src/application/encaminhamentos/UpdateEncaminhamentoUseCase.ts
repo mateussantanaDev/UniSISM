@@ -1,3 +1,4 @@
+import { resolverProfissionalCentro } from '../../modules/centro/shared/profissionalCentro';
 /**
  * Edição limitada de um encaminhamento.
  *
@@ -148,6 +149,8 @@ export class UpdateEncaminhamentoUseCase {
     }
     if (input.profissionalAgendado !== undefined && input.profissionalAgendado !== existe.profissionalAgendado) {
       data.profissionalAgendado = input.profissionalAgendado;
+      const profissional = await resolverProfissionalCentro(existe.ubsId, input.profissionalAgendado);
+      data.profissionalCentro = profissional ? { connect: { id: profissional.id } } : { disconnect: true };
       camposAlterados.push('profissionalAgendado');
     }
     if (input.cidadeAgendamento !== undefined && input.cidadeAgendamento !== existe.cidadeAgendamento) {

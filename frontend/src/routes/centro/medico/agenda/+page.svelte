@@ -62,6 +62,8 @@
 		protocolo: string;
 		horario: string;
 		status: 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'FALTOU';
+		rascunhoSOAP?: Record<string, any> | null;
+	presencaRegistradaEm?: string | null;
 		pacienteId: string;
 		paciente: {
 			nome: string;
@@ -153,6 +155,41 @@
 	let tabAtendimento = $state<'SOAP' | 'PRESCRICAO' | 'EXAMES' | 'ATESTADO' | 'CONTRA_REFERENCIA'>(
 		'SOAP'
 	);
+	let alertasPaciente = $state<PacienteCompleto | null>(null);
+	let rascunhoStatus = $state('');
+	let rascunhoTimer: ReturnType<typeof setTimeout> | undefined;
+	function sinaisFormulario(): SinaisVitaisTriagem {
+		const numero = (v: string) => v.trim() === '' ? undefined : Number(v);
+		return { pressaoArterial:soapPa, frequenciaCardiaca:numero(soapFc), pesoKg:numero(soapPeso), alturaCm:numero(soapAltura), saturacaoO2:numero(soapSpo2), temperatura:numero(soapTemp), glicemiaCapilar:numero(soapGlicemia) };
+	}
+	function rascunhoAtual() {
+		return { queixaPrincipal:soapQueixa, exameFisico:soapExameFisico, cid10:soapCid10, diagnostico:soapDiagnostico, conduta:soapConduta, prescricaoResumo:soapPrescricao, sinaisVitais:sinaisFormulario(), procedimentos:procedimentosRealizados };
+	}
+	async function salvarRascunho(id: string, draft: Record<string, any>) {
+		try {
+			await api.centroMedico.salvarRascunhoSoap(id, draft);
+			const c = consultas.find(c => c.id === id); if(c) c.rascunhoSOAP = draft;
+			if (consultaAtiva?.id === id) rascunhoStatus = 'Rascunho salvo';
+			return true;
+		} catch (e: any) { if(consultaAtiva?.id === id) rascunhoStatus = `Rascunho não salvo: ${e?.message || 'sem conexão'}`; return false; }
+	}
+	$effect(() => {
+		const id = consultaAtiva?.id; const draft = rascunhoAtual();
+		if (rascunhoTimer) clearTimeout(rascunhoTimer);
+		if (!id || salvandoAtendimento) return;
+		rascunhoStatus = 'Salvando rascunho…';
+		rascunhoTimer = setTimeout(() => salvarRascunho(id, draft), 450);
+	});
+	async function pausarConsulta() {
+		if (!consultaAtiva) return;
+		if (rascunhoTimer) clearTimeout(rascunhoTimer);
+		if (!await salvarRascunho(consultaAtiva.id, rascunhoAtual())) return;
+		consultaAtiva = null;
+		if (timerInterval) clearInterval(timerInterval);
+	}
+	function avisarRascunho(e: BeforeUnloadEvent) {
+		if (consultaAtiva && rascunhoStatus !== 'Rascunho salvo') { e.preventDefault(); e.returnValue = ''; }
+	}
 	let soapQueixa = $state('');
 	let soapExameFisico = $state('');
 	let soapPa = $state('');
@@ -276,8 +313,7 @@
 		erroModalRetorno = '';
 		try {
 			const dtFmt = dados.dataRetorno.split('-').reverse().join('/');
-			try {
-				await api.centroMedico.agendarRetornoDirect({
+			await api.centroMedico.agendarRetornoDirect({
 					consultaId: consultaAtiva.id,
 					pacienteId: consultaAtiva.pacienteId,
 					medicoNome: dados.medicoRetornoNome || medicoLogado,
@@ -285,12 +321,6 @@
 					horaRetorno: dados.horaRetorno,
 					observacoes: dados.obsRetorno
 				} as any);
-			} catch (e) {
-				console.info(
-					'[UniSISM] Endpoint /v1/centro/medico/retorno em transição — gravando retorno localmente.',
-					e
-				);
-			}
 
 			// Adiciona à conduta da consulta ativa
 			soapConduta += `\n\nRETORNO AGENDADO (DATA MANUAL): ${dtFmt} às ${dados.horaRetorno} com Dr(a). ${dados.medicoRetornoNome || medicoLogado}. Obs: ${dados.obsRetorno}`;
@@ -347,15 +377,22 @@
 		{ codigo: 'L20', descricao: 'Dermatite atópica' }
 	];
 
-	// Form fields for Prescrição / Exames / Atestado / Contra-Referência
-	let atestadoDias = $state(1);
-	let atestadoMotivo = $state('Necessidade de repouso para recuperação médica.');
-	let examesPedidosTexto = $state(
-		'1. Eletrocardiógrafo 12 canais (ECG de repouso)\n2. Ecocardiograma Transtorácico'
-	);
-	let contraReferenciaTexto = $state(
-		'Devolutiva para a UBS de origem: Paciente avaliado pela Cardiologia com diagnóstico de Hipertensão arterial essencial (I10). Mantida conduta medicamentosa. Retorno em 60 dias.'
-	);
+	let documentoTipo = $state('RECEITA');
+	let documentoConteudo = $state('');
+	let documentoDias = $state(1);
+	let documentoEmitindo = $state(false);
+	let documentoMensagem = $state('');
+	async function emitirDocumento() {
+		if(!consultaAtiva || documentoEmitindo) return;
+		documentoEmitindo=true; documentoMensagem='';
+		try {
+			const emitido=await api.centroMedico.emitirDocumento(consultaAtiva.id,{tipo:documentoTipo,conteudo:documentoConteudo, ...(documentoTipo==='ATESTADO'?{dias:documentoDias}:{})});
+			const arquivo=await api.centroMedico.downloadDocumento(emitido.id);
+			const url=URL.createObjectURL(arquivo.blob),link=document.createElement('a');link.href=url;link.download=arquivo.filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+			documentoMensagem=`Documento registrado e PDF gerado. Código: ${emitido.id}`;
+		} catch(e:any) {documentoMensagem=`Não foi possível emitir/baixar: ${e?.message || 'erro de conexão'}`;}
+		finally {documentoEmitindo=false;}
+	}
 
 	// Modals State
 	let modalSolicitacaoAberto = $state(false);
@@ -471,43 +508,9 @@
 		'Transplante de Órgãos'
 	];
 
-	function extrairHorarioReal(enc: any, idx: number): string {
-		if (enc.observacoesRegulacao) {
-			const match = enc.observacoesRegulacao.match(/(\d{2}:\d{2})/);
-			if (match) return match[1];
-		}
-		if (enc.horaAgendamento && typeof enc.horaAgendamento === 'string') {
-			return enc.horaAgendamento.substring(0, 5);
-		}
-		if (
-			enc.agendamentoPrevisto &&
-			typeof enc.agendamentoPrevisto === 'string' &&
-			enc.agendamentoPrevisto.includes('T')
-		) {
-			const d = new Date(enc.agendamentoPrevisto);
-			if (!isNaN(d.getTime())) {
-				const h = d.getUTCHours().toString().padStart(2, '0');
-				const m = d.getUTCMinutes().toString().padStart(2, '0');
-				if (h !== '00' || m !== '00') {
-					return `${h}:${m}`;
-				}
-			}
-		}
-		const horasPadrao = [
-			'08:00',
-			'08:30',
-			'09:00',
-			'09:30',
-			'10:00',
-			'10:30',
-			'11:00',
-			'13:30',
-			'14:00',
-			'14:30',
-			'15:00',
-			'15:30'
-		];
-		return horasPadrao[idx % horasPadrao.length];
+	function extrairHorarioReal(enc: any, _idx: number): string {
+		if (!enc.agendamentoPrevisto) return 'Sem horário';
+		return new Date(enc.agendamentoPrevisto).toLocaleTimeString('pt-BR', { timeZone:'America/Recife', hour:'2-digit', minute:'2-digit' });
 	}
 
 	// Initial dataset generator / API loader
@@ -517,17 +520,26 @@
 		try {
 			// Consome endpoint v3.0.0 de agenda do especialista (centro-doc-back.md)
 			try {
-				const resCentro = await api.centroMedico.listAgenda({ data: dataAgenda });
+				const resCentro = await api.centroMedico.listAgenda({ data: dataAgenda, centro: centroAtivo === 'CEO' ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES' });
 				if (resCentro && Array.isArray(resCentro.agenda)) {
 					consultas = resCentro.agenda.map((enc, idx) => ({
 						id: enc.id,
+						rascunhoSOAP: enc.rascunhoSOAP,
+						presencaRegistradaEm: enc.presencaRegistradaEm,
+						necessitaTriagem: enc.necessitaTriagem,
+						triagemRealizada: enc.triagemRealizada,
+						triagemDados: enc.triagemDados,
+						triagemEm: enc.triagemEm || undefined,
+						triagemPorNome: enc.triagemPorNome || undefined,
+						triagemCoren: enc.triagemCoren || undefined,
+						atendimentoSOAP: enc.atendimentoSOAP,
 						protocolo: enc.protocolo,
 						horario: extrairHorarioReal(enc, idx),
 						status: (enc.statusAtendimentoCentro === 'AGUARDANDO_ATENDIMENTO' ||
 						enc.statusAtendimentoCentro === 'AGENDADO'
 							? 'AGUARDANDO'
 							: enc.statusAtendimentoCentro || 'AGUARDANDO') as any,
-						pacienteId: (enc.paciente as any).id || enc.id,
+						pacienteId: enc.paciente.id || '',
 						paciente: {
 							nome: enc.paciente.nome,
 							cpf: enc.paciente.cpf,
@@ -553,52 +565,8 @@
 					return;
 				}
 			} catch (errMedico) {
-				console.info('[UniSISM] Tentando recuperar agenda via /v1/encaminhamentos.', errMedico);
+				throw errMedico;
 			}
-
-			// Consulta via API de encaminhamentos aprovados
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
-			const filtradosCentro = res.filter((e) => pertenceAoOrgaoCentro(e, centroAtivo));
-			const agendados = filtradosCentro.filter(
-				(e) => !e.agendamentoPrevisto || e.agendamentoPrevisto.substring(0, 10) === dataAgenda
-			);
-
-			consultas = agendados.map((enc, idx) => {
-				return {
-					id: enc.id,
-					protocolo: enc.protocolo,
-					horario: extrairHorarioReal(enc, idx),
-					status: ((enc as any).statusAtendimentoCentro || 'AGUARDANDO') as any,
-					pacienteId: (enc.paciente as any).id || enc.id,
-					paciente: {
-						nome: enc.paciente.nome,
-						cpf: enc.paciente.cpf,
-						cartaoSus: enc.paciente.cartaoSus || '',
-						dataNascimento: enc.paciente.dataNascimento || '',
-						sexo: enc.paciente.sexo || 'M',
-						telefone: enc.paciente.telefone || '',
-						endereco: enc.paciente.endereco || ''
-					},
-					solicitacao: {
-						medicoSolicitante: enc.solicitacao.medicoSolicitante || '',
-						crm: enc.solicitacao.crm || '',
-						especialidadeSolicitada: enc.solicitacao.especialidadeSolicitada || '',
-						cid10: enc.solicitacao.cid10 || '',
-						cidDescricao: enc.solicitacao.cidDescricao || '',
-						justificativaClinica: enc.solicitacao.justificativaClinica || '',
-						prioridade: enc.solicitacao.prioridade || 'ELETIVA',
-						dataSolicitacao: enc.solicitacao.dataSolicitacao || ''
-					},
-					unidadeOrigem: enc.unidadeOrigem || 'Unidade de Origem',
-					observacoesRegulacao: enc.observacoesRegulacao || '',
-					necessitaTriagem: (enc as any).necessitaTriagem,
-					triagemRealizada: (enc as any).triagemRealizada,
-					triagemEm: (enc as any).triagemEm,
-					triagemPorNome: (enc as any).triagemPorNome,
-					triagemCoren: (enc as any).triagemCoren,
-					triagemDados: (enc as any).triagemDados
-				};
-			});
 		} catch (e: any) {
 			console.error(e);
 			erroGlobal = `Falha ao carregar agenda do servidor: ${e?.message || 'Erro de conexão'}`;
@@ -715,24 +683,18 @@
 	}
 
 	function podeIniciarAtendimento(status: string): boolean {
-		return ['AGUARDANDO', 'AGUARDANDO_ATENDIMENTO', 'AGENDADO'].includes(status);
+		return ['AGUARDANDO', 'AGUARDANDO_ATENDIMENTO', 'AGENDADO', 'EM_ATENDIMENTO'].includes(status);
 	}
 
 	// Attendance Actions
 	async function iniciarAtendimento(c: ConsultaAgenda) {
-		// Update status
+		if (consultaAtiva) await pausarConsulta();
+		try { await api.centroMedico.chamarPaciente(c.id); }
+		catch (e: any) { erroGlobal = e?.message || 'Não foi possível iniciar o atendimento'; return; }
 		c.status = 'EM_ATENDIMENTO';
 		consultaAtiva = c;
-
-		// Notifica o backend sobre o início da chamada no consultório
-		try {
-			await api.centroMedico.chamarPaciente(c.id);
-		} catch (errChamar) {
-			console.info(
-				'[UniSISM] Endpoint /v1/centro/medico/chamar em transição — usando estado local.',
-				errChamar
-			);
-		}
+		alertasPaciente = null; documentoConteudo=''; documentoMensagem='';
+		api.pacientes.byId(c.pacienteId).then(p => { if (consultaAtiva?.id === c.id) alertasPaciente = p; }).catch(() => { if (consultaAtiva?.id === c.id) erroSoapForm = 'Não foi possível carregar os alertas do prontuário. Consulte o dossiê antes de prescrever.'; });
 
 		// Reset SOAP form com dados reais da solicitação
 		procedimentosRealizados = c.solicitacao?.procedimentoSolicitado
@@ -753,8 +715,8 @@
 		if (c.triagemDados) {
 			soapPa = c.triagemDados.pressaoArterial || '';
 			soapFc = c.triagemDados.frequenciaCardiaca ? String(c.triagemDados.frequenciaCardiaca) : '';
-			soapPeso = c.triagemDados.pesoKg ? String(c.triagemDados.pesoKg) : '';
-			soapAltura = c.triagemDados.alturaCm ? String(c.triagemDados.alturaCm) : '';
+			soapPeso = (c.triagemDados.pesoKg ?? c.triagemDados.peso) ? String(c.triagemDados.pesoKg ?? c.triagemDados.peso) : '';
+			soapAltura = (c.triagemDados.alturaCm ?? c.triagemDados.altura) ? String(c.triagemDados.alturaCm ?? c.triagemDados.altura) : '';
 			soapSpo2 = c.triagemDados.saturacaoO2 ? String(c.triagemDados.saturacaoO2) : '';
 			soapTemp = c.triagemDados.temperatura ? String(c.triagemDados.temperatura) : '';
 			soapGlicemia = c.triagemDados.glicemiaCapilar ? String(c.triagemDados.glicemiaCapilar) : '';
@@ -776,6 +738,14 @@
 		soapDiagnostico = c.solicitacao?.cidDescricao || '';
 		soapConduta = '';
 		soapPrescricao = '';
+		const d = c.rascunhoSOAP;
+		if (d) {
+			soapQueixa = d.queixaPrincipal || ''; soapExameFisico = d.exameFisico || '';
+			soapCid10 = d.cid10 || ''; soapDiagnostico = d.diagnostico || ''; soapConduta = d.conduta || ''; soapPrescricao = d.prescricaoResumo || '';
+			const v = d.sinaisVitais || {};
+			soapPa = v.pressaoArterial || ''; soapFc = String(v.frequenciaCardiaca ?? ''); soapPeso = String(v.pesoKg ?? ''); soapAltura = String(v.alturaCm ?? ''); soapSpo2 = String(v.saturacaoO2 ?? ''); soapTemp = String(v.temperatura ?? ''); soapGlicemia = String(v.glicemiaCapilar ?? '');
+			procedimentosRealizados = d.procedimentos || [];
+		}
 		erroSoapForm = '';
 
 		// Start Timer
@@ -809,58 +779,21 @@
 					: '';
 			const condutaCompleta = soapConduta + procResumo;
 
-			// Register attendance via dedicated Centro SOAP endpoint (v3.0.0 centro-doc-back.md)
-			try {
-				await api.centroMedico.registrarAtendimentoSoap(consultaAtiva.id, {
-					subjetivo: soapQueixa,
-					objetivo: `${soapExameFisico}\nSinais Vitais: PA ${soapPa || '—'} mmHg | FC ${soapFc || '—'} bpm | Peso ${soapPeso || '—'}kg`,
-					avaliacao: soapDiagnostico,
-					plano: condutaCompleta,
-					queixaPrincipal: soapQueixa,
-					diagnostico: soapDiagnostico,
-					cid10: soapCid10,
-					conduta: condutaCompleta,
-					prescricaoResumo: soapPrescricao
-				});
-			} catch (errSoap) {
-				console.info(
-					'[UniSISM] Endpoint /v1/centro/medico/atendimento/:id em transição — usando fallback pacientes.addAtendimento',
-					errSoap
-				);
-				try {
-					await api.pacientes.addAtendimento(consultaAtiva.pacienteId, {
-						data: new Date().toISOString(),
-						tipo: 'CONSULTA_MEDICA',
-						profissional: medicoLogado,
-						registroProfissional: 'CRM 12345',
-						especialidade: 'Cardiologia',
-						unidade: 'Centro Municipal de Especialidades',
-						queixaPrincipal: soapQueixa,
-						diagnostico: soapDiagnostico,
-						cid10: soapCid10,
-						conduta: condutaCompleta,
-						prescricaoResumo: soapPrescricao
-					});
-				} catch (e) {
-					console.warn(
-						'Backend API não disponivel para gravação do PEC — gravando estado local.',
-						e
-					);
-				}
-			}
-
+			if (rascunhoTimer) clearTimeout(rascunhoTimer);
+			const resultado = await api.centroMedico.registrarAtendimentoSoap(consultaAtiva.id, {
+				subjetivo: soapQueixa, objetivo: soapExameFisico, exameFisico: soapExameFisico,
+				sinaisVitais: sinaisFormulario(), avaliacao: soapDiagnostico, plano: condutaCompleta,
+				queixaPrincipal: soapQueixa, diagnostico: soapDiagnostico, cid10: soapCid10,
+				conduta: condutaCompleta, prescricaoResumo: soapPrescricao
+			});
 			if (procedimentosRealizados.length > 0) {
 				try {
-					await api.centroMedico.registrarProcedimentos(consultaAtiva.id, {
-						procedimentos: procedimentosRealizados.map((p) => ({
-							codigoSigtap: p.codigoSigtap,
-							nome: p.nome,
-							quantidade: p.quantidade,
-							valorUnitario: p.valorUnitario
-						}))
-					});
-				} catch (eProc) {
-					console.info('[UniSISM] Registro de procedimentos faturáveis:', eProc);
+					await api.centroMedico.registrarProcedimentos(resultado.encaminhamento.atendimentoId || consultaAtiva.id, {
+						idempotencyKey: `${consultaAtiva.id}:conclusao`,
+						procedimentos: procedimentosRealizados.map(p => ({codigoSigtap:p.codigoSigtap, nome:p.nome, quantidade:p.quantidade, valorUnitario:p.valorUnitario}))
+					} as any);
+				} catch (e: any) {
+					throw new Error(`A consulta foi salva, mas os procedimentos não foram gravados: ${e?.message || 'falha de conexão'}. Tente concluir novamente para reenviar os procedimentos.`);
 				}
 			}
 
@@ -884,7 +817,9 @@
 
 			// Stop timer & close
 			if (timerInterval) clearInterval(timerInterval);
+			consultaAtiva.rascunhoSOAP = null;
 			consultaAtiva = null;
+			rascunhoStatus = '';
 
 			if (timerMensagem) clearTimeout(timerMensagem);
 			timerMensagem = setTimeout(() => {
@@ -898,13 +833,14 @@
 		}
 	}
 
-	function marcarFalta(c: ConsultaAgenda) {
+	async function marcarFalta(c: ConsultaAgenda) {
 		if (
 			confirm(
 				`Confirmar que o paciente ${c.paciente.nome} faltou à consulta agendada para às ${c.horario}?`
 			)
 		) {
-			c.status = 'FALTOU';
+			try { await api.centroMedico.registrarFalta(c.id); c.status = 'FALTOU'; }
+			catch(e:any) { erroGlobal = e?.message || 'Não foi possível registrar a falta'; }
 		}
 	}
 
@@ -980,6 +916,7 @@
 			try {
 				const resTfd = await api.centroMedico.criarEncaminhamentoIntermunicipal({
 					pacienteId: consultaAtiva.pacienteId,
+					encaminhamentoId: consultaAtiva.id,
 					solicitacao: {
 						especialidadeSolicitada: `${dados.especialidade} (${dados.municipioDestino})`,
 						cid10: dados.cid10,
@@ -992,32 +929,7 @@
 					protocoloObtido = resTfd.encaminhamento.protocolo;
 				}
 			} catch (errInter) {
-				console.info(
-					'[UniSISM] Endpoint /v1/centro/medico/encaminhamento-intermunicipal em transição — usando fallback encaminhamentos.create',
-					errInter
-				);
-				const criado = await api.encaminhamentos.create({
-					paciente: {
-						nome: consultaAtiva.paciente.nome,
-						cpf: consultaAtiva.paciente.cpf.replace(/\D/g, ''),
-						cartaoSus: consultaAtiva.paciente.cartaoSus,
-						dataNascimento: consultaAtiva.paciente.dataNascimento,
-						sexo: consultaAtiva.paciente.sexo,
-						telefone: consultaAtiva.paciente.telefone,
-						endereco: consultaAtiva.paciente.endereco
-					},
-					solicitacao: {
-						medicoSolicitante: medicoLogado,
-						crm: 'CRM 12345',
-						especialidadeSolicitada: `${dados.especialidade} (${dados.municipioDestino})`,
-						cid10: dados.cid10,
-						cidDescricao: dados.diagnostico,
-						justificativaClinica: `[ENCAMINHAMENTO INTERMUNICIPAL PARA REGULAÇÃO SMS / TFD]\nMunicípio Destino: ${dados.municipioDestino}\nTransporte: ${dados.transporte} | Acompanhante: ${dados.acompanhante ? 'Sim' : 'Não'}\n\nLaudo Médico:\n${dados.justificativa.trim()}`,
-						prioridade: dados.prioridade,
-						dataSolicitacao: new Date().toISOString().substring(0, 10)
-					}
-				});
-				protocoloObtido = criado.protocolo;
+				throw errInter;
 			}
 
 			protocoloReferenciaGerado = protocoloObtido;
@@ -1042,6 +954,8 @@
 		}
 	}
 </script>
+
+<svelte:window onbeforeunload={avisarRascunho} />
 
 <div class="flex flex-col gap-4 font-mono text-xs">
 	<!-- Banner de Sucesso Global -->
@@ -1211,7 +1125,7 @@
 
 					<button
 						type="button"
-						onclick={() => (consultaAtiva = null)}
+						onclick={pausarConsulta}
 						class="border border-red-400/40 bg-red-900/60 px-2.5 py-1 text-xs font-bold text-white uppercase hover:bg-red-800"
 						title="Minimizar consulta"
 					>
@@ -1220,19 +1134,20 @@
 				</div>
 			</div>
 
+			<p aria-live="polite" class="px-3 py-1 text-xs">{rascunhoStatus}</p>
 			<!-- Alertas Rápidos de Alergias e Crônicas -->
 			<div class="grid grid-cols-1 border-b border-slate-200 bg-slate-50 text-xs md:grid-cols-3">
 				<div
 					class="flex items-center gap-2 border-r border-slate-200 bg-red-50 p-3 font-semibold text-red-900"
 				>
 					<span class="bg-red-700 px-1.5 py-0.5 text-[10px] font-bold text-white">ALERTA</span>
-					<span>Alergia Registrada: <strong class="underline">PENICILINA (GRAVE)</strong></span>
+					<span>Alergias: <strong>{alertasPaciente?.alergias?.map(a => `${a.substancia} (${a.gravidade})`).join(', ') || consultaAtiva.triagemDados?.alergiasRelatadas || (alertasPaciente ? 'Sem informação registrada' : 'Carregando prontuário…')}</strong></span>
 				</div>
 				<div class="border-r border-slate-200 p-3 font-sans text-slate-800">
-					<strong>Condições Crônicas:</strong> Hipertensão Arterial (I10), Diabetes Mellitus (E11)
+					<strong>Condições Crônicas:</strong> {alertasPaciente?.condicoesCronicas?.filter(c => c.ativo).map(c => c.descricao).join(', ') || 'Sem informação registrada'}
 				</div>
 				<div class="p-3 font-sans text-slate-800">
-					<strong>Medicamentos Ativos:</strong> Losartana 50mg, Metformina 850mg
+					<strong>Medicamentos Ativos:</strong> {alertasPaciente?.medicamentosEmUso?.filter(m => m.ativo).map(m => `${m.nome} ${m.dosagem}`).join(', ') || consultaAtiva.triagemDados?.medicamentosEmUso || 'Sem informação registrada'}
 				</div>
 			</div>
 
@@ -1518,6 +1433,16 @@
 							{/each}
 						</div>
 					</div>
+
+					<section class="space-y-2 border border-slate-300 bg-white p-3" aria-label="Documentos clínicos">
+						<h3 class="text-sm font-bold">Documentos clínicos</h3>
+						<label for="documento-tipo" class="block text-xs">Tipo de documento</label>
+						<select id="documento-tipo" bind:value={documentoTipo} onchange={()=>{documentoConteudo=documentoTipo==='RECEITA'?soapPrescricao:''; documentoMensagem='';}} class="w-full border p-2 text-sm"><option value="RECEITA">Receita</option><option value="ATESTADO">Atestado</option><option value="PEDIDO_EXAMES">Pedido de exames</option><option value="CONTRARREFERENCIA">Contrarreferência</option></select>
+						{#if documentoTipo==='ATESTADO'}<label for="documento-dias" class="block text-xs">Dias de afastamento</label><input id="documento-dias" type="number" min="1" max="365" bind:value={documentoDias} class="w-full border p-2" />{/if}
+						<label for="documento-conteudo" class="block text-xs">Conteúdo revisado pelo médico</label><textarea id="documento-conteudo" rows="4" bind:value={documentoConteudo} class="w-full border p-2 text-sm"></textarea>
+						<button type="button" onclick={emitirDocumento} disabled={documentoEmitindo || !documentoConteudo.trim()} class="bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{documentoEmitindo ? 'Gerando…' : 'Registrar e baixar PDF'}</button>
+						<p class="text-xs" aria-live="polite">{documentoMensagem || 'O PDF inclui os dados do paciente e espaço para assinatura do profissional.'}</p>
+					</section>
 
 					<!-- PROCEDIMENTOS REALIZADOS NO ATENDIMENTO (1 ou mais) -->
 					<div class="flex flex-col gap-2 border border-purple-300 bg-purple-50/40 p-3">

@@ -11,5 +11,6 @@ export function scopeFromRequest(req: Request): AccessScope {
     role: auth.role as RoleAtendente,
     ubsId: auth.ubsId ?? null,
     prefeituraId: auth.prefeituraId ?? null,
+    tipoUnidade: auth.tipoUnidade ?? null,
   });
 }

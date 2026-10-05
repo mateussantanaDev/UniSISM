@@ -369,6 +369,7 @@ model Atendente {
   metodoTwoFA String?
 
   senhaAlteradaEm DateTime @default(now())
+  trocaSenhaObrigatoria Boolean @default(false)
   deletadoEm      DateTime?
 
   // Vinculação de Unidade (CEO / CEM / UBS / SMS / TFD)
@@ -386,6 +387,7 @@ model Atendente {
   criadoPorId String?
   criadoPor   Atendente?  @relation("CriadoPor", fields: [criadoPorId], references: [id])
   criou       Atendente[] @relation("CriadoPor")
+  agendamentosCentro Encaminhamento[] @relation("ProfissionalAgendado")
 
   refreshTokens   RefreshToken[]
   passwordResets  PasswordResetCode[]
@@ -620,7 +622,14 @@ model Atendimento {
   cid10                String
   conduta              String
   prescricaoResumo     String?
+  subjetivo            String?
+  objetivo             String?
+  avaliacao            String?
+  plano                String?
+  exameFisico          String?
+  sinaisVitais         Json?
   procedimentosRealizados AtendimentoProcedimentoRealizado[]
+  encaminhamentoCentro Encaminhamento? @relation("AtendimentoCentro")
 
   @@index([pacienteId, data])
   @@map("atendimentos")
@@ -700,6 +709,9 @@ model MedicoAtendente {
 // ============================================================
 
 model Encaminhamento {
+  tipoServico TipoServicoCentro @default(CONSULTA)
+  procedimentoSolicitado String?
+  codigoSigtapSolicitado String?
   id              String               @id @default(uuid())
   protocolo       String               @unique
   status          StatusEncaminhamento @default(AGUARDANDO_REGULACAO)
@@ -739,6 +751,10 @@ model Encaminhamento {
   // Usados pelo app do paciente pra mostrar "Sua consulta" rica.
   localAgendamento     String?
   profissionalAgendado String?
+  profissionalAgendadoId String?
+  profissionalCentro Atendente? @relation("ProfissionalAgendado", fields: [profissionalAgendadoId], references: [id], onDelete: SetNull)
+  atendimentoId String? @unique
+  atendimentoCentro Atendimento? @relation("AtendimentoCentro", fields: [atendimentoId], references: [id], onDelete: SetNull)
   /// Cidade onde a consulta ocorre — campo EXPLÍCITO (não derivar do localAgendamento).
   /// Usado pra `podeSolicitarTfd` (compara com município da UBS de origem).
   cidadeAgendamento    String?
@@ -782,6 +798,9 @@ model Encaminhamento {
   triagemPorNome     String?
   triagemCoren       String?
   triagemDados       Json?
+  rascunhoSOAP       Json?
+  rascunhoSOAPEm     DateTime?
+  chamadaMedicoEm    DateTime?
   chamadaTriagemEm   DateTime?
   consultorioTriagem String?
 
@@ -796,6 +815,7 @@ model Encaminhamento {
 
   @@index([ubsId, status, criadoEm])
   @@index([pacienteId])
+  @@index([profissionalAgendadoId])
   @@index([atendenteId])
   @@map("encaminhamentos")
 }
@@ -2009,6 +2029,10 @@ model ConfiguracaoIntegracao {
 // ============================================================
 
 model EscalaEspecialista {
+  ausenciaInicio String?
+  ausenciaFim String?
+  acaoAusencia String?
+  observacoes String?
   id              String             @id @default(uuid())
   prefeituraId    String?
   medicoId        String?
@@ -2043,12 +2067,14 @@ model EscalaEspecialista {
 
 model CotaUbs {
   id            String   @id @default(uuid())
-  ubsId         String   @unique
+  ubsId         String
+  competencia   String
   totalCotasMes Int      @default(350)
   especialidades Json
   criadoEm      DateTime @default(now())
   atualizadoEm  DateTime @updatedAt
 
+  @@unique([ubsId, competencia])
   @@map("cotas_ubs")
 }
 
@@ -2076,6 +2102,7 @@ model SalaConsultorio {
 }
 
 model EspecialidadeCatalogo {
+  tipoServico TipoServicoCentro @default(CONSULTA)
   id                     String   @id @default(uuid())
   nome                   String
   codigoSigtap           String?

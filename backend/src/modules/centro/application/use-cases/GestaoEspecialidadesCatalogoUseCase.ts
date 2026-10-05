@@ -7,6 +7,7 @@ import { filterEspecialidadesByCentro, isEspecialidadeOdonto } from '../../share
 export interface EspecialidadeCatalogoDTO {
   id?: string;
   nome: string;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
   codigoSigtap?: string | null;
   tempoPadraoMinutos: number;
   valorTabelaBrl: number;
@@ -39,6 +40,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
     const dtoArray = lista.map((e) => ({
       id: e.id,
       nome: e.nome,
+      tipoServico: e.tipoServico,
       codigoSigtap: e.codigoSigtap,
       tempoPadraoMinutos: e.tempoPadraoMinutos,
       valorTabelaBrl: e.valorTabelaBrl,
@@ -82,9 +84,10 @@ export class GestaoEspecialidadesCatalogoUseCase {
     const res = await prisma.especialidadeCatalogo.create({
       data: {
         nome: data.nome,
+        tipoServico: data.tipoServico ?? 'CONSULTA',
         codigoSigtap: data.codigoSigtap || null,
-        tempoPadraoMinutos: data.tempoPadraoMinutos || 20,
-        valorTabelaBrl: data.valorTabelaBrl || 0,
+        tempoPadraoMinutos: data.tempoPadraoMinutos ?? 20,
+        valorTabelaBrl: data.valorTabelaBrl ?? 0,
         documentosObrigatorios: docs,
         preparoRequerido: data.preparoRequerido || null,
         necessitaTriagem: data.necessitaTriagem !== undefined ? data.necessitaTriagem : false,
@@ -106,6 +109,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
     return {
       id: res.id,
       nome: res.nome,
+      tipoServico: res.tipoServico,
       codigoSigtap: res.codigoSigtap,
       tempoPadraoMinutos: res.tempoPadraoMinutos,
       valorTabelaBrl: res.valorTabelaBrl,
@@ -129,10 +133,11 @@ export class GestaoEspecialidadesCatalogoUseCase {
       where: { id },
       data: {
         ...(data.nome && { nome: data.nome }),
+        ...(data.tipoServico !== undefined && { tipoServico: data.tipoServico }),
         ...(data.codigoSigtap !== undefined && { codigoSigtap: data.codigoSigtap }),
         ...(data.tempoPadraoMinutos && { tempoPadraoMinutos: data.tempoPadraoMinutos }),
         ...(data.valorTabelaBrl !== undefined && { valorTabelaBrl: data.valorTabelaBrl }),
-        ...(data.documentosObrigatorios && { documentosObrigatorios: data.documentosObrigatorios }),
+        ...(data.documentosObrigatorios && { documentosObrigatorios: [...data.documentosObrigatorios.filter((d) => !d.startsWith('CENTRO:')), ...existing.documentosObrigatorios.filter((d) => d.startsWith('CENTRO:'))] }),
         ...(data.preparoRequerido !== undefined && { preparoRequerido: data.preparoRequerido }),
         ...(data.necessitaTriagem !== undefined && { necessitaTriagem: data.necessitaTriagem }),
         ...(data.ativa !== undefined && { ativa: data.ativa }),
@@ -152,6 +157,7 @@ export class GestaoEspecialidadesCatalogoUseCase {
     return {
       id: res.id,
       nome: res.nome,
+      tipoServico: res.tipoServico,
       codigoSigtap: res.codigoSigtap,
       tempoPadraoMinutos: res.tempoPadraoMinutos,
       valorTabelaBrl: res.valorTabelaBrl,

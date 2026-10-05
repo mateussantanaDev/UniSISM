@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	interface PacienteInfo {
 		nome: string;
 		cpf: string;
@@ -73,7 +74,8 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs backdrop-blur-xs"
 	>
 		<div
-			class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.15)]"
+			use:dialogAccessibility={{ label: 'Agendar retorno do paciente', onClose }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.15)]"
 		>
 			<div
 				class="flex items-center justify-between border-b border-slate-200 bg-purple-900 px-5 py-3 text-white"

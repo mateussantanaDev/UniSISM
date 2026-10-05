@@ -3,6 +3,7 @@ export interface AccessTokenPayload {
   role: string;
   ubsId?: string | null;
   prefeituraId?: string | null;
+  tipoUnidade?: string | null;
   sid?: string; // sessaoId
 
   // Face 4 · App do motorista — usados apenas quando role === 'MOTORISTA_TFD'.

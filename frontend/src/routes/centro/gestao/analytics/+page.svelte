@@ -21,8 +21,8 @@
 	onMount(async () => {
 		try {
 			const [encs, dash] = await Promise.all([
-				api.encaminhamentos.list({ limit: 1000 }).catch(() => []),
-				api.centroGestao.obterDashboard().catch(() => null)
+				api.centroMedico.listRegistros({ centro: ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES' }).catch(() => []),
+				api.centroGestao.obterDashboard({centro: siglaOrgao}).catch(() => null)
 			]);
 
 			encaminhamentos = encs.filter((e) => {
@@ -54,10 +54,13 @@
 		encaminhamentos.filter((e) => (e as any).statusAtendimentoCentro === 'FALTOU').length
 	);
 	let taxaComparecimento = $derived(
-		totalAtendimentos > 0
-			? Math.round(((totalAtendimentos - faltas) / Math.max(1, totalAtendimentos)) * 100)
-			: 100
+		concluidos + faltas > 0 ? Math.round(concluidos / (concluidos + faltas) * 100) : 0
 	);
+
+	let tempoMedioFila = $derived.by(() => {
+		const valores = encaminhamentos.filter(e => e.agendamentoPrevisto && e.solicitacao?.dataSolicitacao).map(e => (new Date(e.agendamentoPrevisto!).getTime() - new Date(e.solicitacao.dataSolicitacao).getTime()) / 86400000).filter(n => Number.isFinite(n) && n >= 0);
+		return valores.length ? `${(valores.reduce((a,b) => a+b, 0) / valores.length).toFixed(1)} dias` : 'Sem dados';
+	});
 
 	// Distribuição por Especialidade
 	let porEspecialidade = $derived.by(() => {
@@ -141,7 +144,7 @@
 						? 'text-emerald-800'
 						: 'text-blue-900'} font-sans"
 				>
-					4.2 dias
+					{tempoMedioFila}
 				</div>
 				<div class="mt-1 font-mono text-[10px] text-slate-500">Da triagem SMS ao atendimento</div>
 			</div>

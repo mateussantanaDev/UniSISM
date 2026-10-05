@@ -61,6 +61,10 @@ export interface ProntuarioCompletoDTO {
     diagnostico: string;
     cid10: string;
     conduta: string;
+    exameFisico?: string | null;
+    sinaisVitais?: unknown;
+    subjetivo?: string | null;
+    objetivo?: string | null;
     prescricaoResumo?: string | null;
   }>;
   examesRealizados: Array<{
@@ -163,6 +167,7 @@ export class ObterProntuarioPacienteMedicoUseCase {
         diagnostico: at.diagnostico,
         cid10: at.cid10,
         conduta: at.conduta,
+        exameFisico:at.exameFisico, sinaisVitais:at.sinaisVitais, subjetivo:at.subjetivo, objetivo:at.objetivo,
         prescricaoResumo: at.prescricaoResumo,
       })),
       examesRealizados: pac.exames.map((ex) => ({

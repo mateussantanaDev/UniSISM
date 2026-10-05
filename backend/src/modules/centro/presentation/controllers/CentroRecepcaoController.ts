@@ -1,3 +1,5 @@
+import { sinaisVitaisCentroSchema } from '../../shared/dadosClinicosCentro';
+import { cpfSchema, dataNascimentoSchema, codigoSigtapSchema } from '../../../../shared/cadastroValidation';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { paramString } from '../../../../shared/http';
@@ -18,8 +20,7 @@ import type { GestaoEscalasUseCase } from '../../application/use-cases/GestaoEsc
 import type { TriagemEnfermagemUseCase } from '../../application/use-cases/TriagemEnfermagemUseCase';
 import { NotFound } from '../../../../shared/errors';
 import { prisma } from '../../../../infrastructure/database/prisma';
-import { CanalRoteamento, DestinoRegulacao } from '../../../../../generated/prisma';
-import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
+import { ListarChamadasTvUseCase } from '../../application/use-cases/ListarChamadasTvUseCase';
 
 const chamarTriagemSchema = z.object({
   consultorio: z.string().optional(),
@@ -27,21 +28,7 @@ const chamarTriagemSchema = z.object({
 
 const realizarTriagemSchema = z.object({
   consultorio: z.string().optional(),
-  sinaisVitais: z.object({
-    pressaoArterial: z.string().optional(),
-    frequenciaCardiaca: z.number().optional(),
-    frequenciaRespiratoria: z.number().optional(),
-    temperatura: z.number().optional(),
-    glicemiaCapilar: z.number().optional(),
-    saturacaoO2: z.number().optional(),
-    peso: z.number().optional(),
-    altura: z.number().optional(),
-    imc: z.number().optional(),
-    classificacaoImc: z.string().optional(),
-    classificacaoRisco: z.enum(['VERMELHO', 'LARANJA', 'AMARELO', 'VERDE', 'AZUL']).optional(),
-    queixaPrincipal: z.string().optional(),
-    observacoes: z.string().optional(),
-  }).optional(),
+  sinaisVitais: sinaisVitaisCentroSchema.optional(),
   pressaoArterial: z.string().optional(),
   frequenciaCardiaca: z.number().optional(),
   frequenciaRespiratoria: z.number().optional(),
@@ -60,6 +47,7 @@ const realizarTriagemSchema = z.object({
 
 const agendarSchema = z.object({
   profissional: z.string().optional(),
+  profissionalId: z.string().optional(),
   nota: z.string().optional(),
   localAgendamento: z.string().optional(),
   dataAgendada: z.string().optional(),
@@ -85,13 +73,13 @@ const calcularSlotSchema = z.object({
 const balcaoSchema = z.object({
   paciente: z.object({
     nome: z.string().min(2),
-    cpf: z.string().min(11),
+    cpf: cpfSchema,
     cartaoSus: z.string().optional(),
-    dataNascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    dataNascimento: dataNascimentoSchema,
     sexo: z.enum(['M', 'F', 'OUTRO']),
     telefone: z.string().min(8),
-    endereco: z.string().min(1),
-    bairro: z.string().optional(),
+    endereco: z.string().trim().min(3),
+    bairro: z.string().trim().min(1, 'Informe o bairro.'),
     municipio: z.string().optional(),
     uf: z.string().optional(),
     cep: z.string().optional(),
@@ -102,6 +90,9 @@ const balcaoSchema = z.object({
     medicoSolicitante: z.string().default('Médico de Balcão'),
     crm: z.string().default('000000'),
     especialidadeSolicitada: z.string().min(2),
+    tipoServico: z.enum(['CONSULTA', 'PROCEDIMENTO']).default('CONSULTA'),
+    procedimentoSolicitado: z.string().trim().optional(),
+    codigoSigtapSolicitado: codigoSigtapSchema.optional(),
     cid10: z.string().min(2),
     cidDescricao: z.string().default('Solicitação direta de balcão'),
     justificativaClinica: z.string().min(3),
@@ -110,11 +101,14 @@ const balcaoSchema = z.object({
   }),
   nota: z.string().optional(),
   medicoDesejado: z.string().optional(),
+  medicoId: z.string().optional(),
   dataAgendada: z.string().optional(),
   horaAgendada: z.string().optional(),
   consultorio: z.string().optional(),
-  ubsId: z.string().optional(),
+  ubsId: z.string().min(1, 'Selecione a UBS de origem.'),
   centro: z.string().optional(),
+  modoData:z.enum(['MANUAL','AUTODATA','RETROATIVO']).optional(),
+  statusRetroativo:z.enum(['CONCLUIDO','AGUARDANDO','FALTOU']).optional(),
   confirmarPresenca: z.boolean().optional(),
   statusAtendimento: z.string().optional(),
   agendarDireto: z.boolean().optional().default(false),
@@ -146,12 +140,13 @@ const remarcarSchema = z.object({
 });
 
 const procedimentosSchema = z.object({
+  idempotencyKey: z.string().min(8).max(160).optional(),
   procedimentos: z.array(
     z.object({
       codigoSigtap: z.string().optional(),
       nome: z.string().min(2),
       quantidade: z.number().int().positive().optional(),
-      valorUnitario: z.number().optional(),
+      valorUnitario: z.number().nonnegative().optional(),
       observacao: z.string().optional(),
     }),
   ).min(1),
@@ -240,6 +235,7 @@ export class CentroRecepcaoController {
       {
         id,
         profissional: body.profissional,
+        profissionalId: body.profissionalId,
         nota: body.nota,
         localAgendamento: body.localAgendamento,
         dataAgendada: body.dataAgendada,
@@ -346,12 +342,15 @@ export class CentroRecepcaoController {
     const result = await this.balcaoUC.exec(
       {
         centro: body.centro || (req.query.centro as string | undefined),
+        modoData:body.modoData,
+        statusRetroativo:body.statusRetroativo,
         confirmarPresenca: body.confirmarPresenca,
         statusAtendimento: body.statusAtendimento,
         paciente: body.paciente,
         solicitacao: body.solicitacao,
         nota: body.nota,
         medicoDesejado: body.medicoDesejado,
+        medicoId: body.medicoId,
         dataAgendada: body.dataAgendada,
         horaAgendada: body.horaAgendada,
         consultorio: body.consultorio,
@@ -428,6 +427,13 @@ export class CentroRecepcaoController {
     res.json({ encaminhamento: result });
   };
 
+  getProcedimentos = async (req: Request, res: Response): Promise<void> => {
+    res.json({ procedimentos: await this.procedimentosUC.listar(paramString(req, 'id'), scopeFromRequest(req), req.auth!.sub) });
+  };
+  deleteProcedimento = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.procedimentosUC.remover(paramString(req, 'id'), paramString(req, 'procedimentoId'), scopeFromRequest(req), req.auth!.sub));
+  };
+
   postProcedimentos = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
     const scope = scopeFromRequest(req);
@@ -437,6 +443,7 @@ export class CentroRecepcaoController {
       {
         atendimentoId: id,
         procedimentos: body.procedimentos,
+        idempotencyKey: body.idempotencyKey,
       },
       scope,
       req.auth!.sub,
@@ -453,100 +460,12 @@ export class CentroRecepcaoController {
   };
 
   getTvChamadas = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const centroQuery = ((req.query.centro as string) || 'CEM').toUpperCase();
-      const ehCeo = centroQuery === 'CEO';
-
-      const rows = await prisma.encaminhamento.findMany({
-        where: {
-          status: 'APROVADO',
-          statusAtendimentoCentro: {
-            in: ['EM_ATENDIMENTO', 'AGUARDANDO_ATENDIMENTO'],
-          },
-          ...(ehCeo
-            ? {
-                OR: [
-                  { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },
-                  { destinoRegulacao: DestinoRegulacao.CENTRO_ODONTOLOGICO },
-                  { localAgendamento: { contains: 'CEO', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Endodont', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Periodont', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Prótese', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Protese', mode: 'insensitive' } },
-                  { especialidadeSolicitada: { contains: 'Estomatol', mode: 'insensitive' } },
-                ],
-              }
-            : {
-                OR: [
-                  { canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES },
-                  { destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES },
-                  {
-                    AND: [
-                      { canalRoteamento: null, destinoRegulacao: null },
-                      { NOT: { especialidadeSolicitada: { contains: 'Odonto', mode: 'insensitive' } } },
-                      { NOT: { especialidadeSolicitada: { contains: 'Bucomaxilo', mode: 'insensitive' } } },
-                      { NOT: { localAgendamento: { contains: 'CEO', mode: 'insensitive' } } },
-                    ],
-                  },
-                ],
-              }),
-        },
-        include: INCLUDE_ENCAMINHAMENTO_FULL,
-        orderBy: { atualizadoEm: 'desc' },
-        take: 30,
-      });
-
-      const fullList = rows.map((r) => rowParaEncaminhamento(r as any));
-
-      const filtrados = fullList;
-
-      const chamadas = filtrados.map((r, idx) => {
-        const num = ((idx % 8) + 1).toString().padStart(2, '0');
-        const ehChamadaTriagem = !!r.chamadaTriagemEm && (!r.atendimentoIniciadoEm || new Date(r.chamadaTriagemEm) > new Date(r.atendimentoIniciadoEm));
-        const local = ehChamadaTriagem
-          ? (r.consultorioTriagem || 'SALA DE TRIAGEM 01 — ENFERMAGEM')
-          : (ehCeo ? `CADEIRA ODONTOLÓGICA ${num} — SETOR B` : `CONSULTÓRIO ${num} — ALA A`);
-        const prof = ehChamadaTriagem
-          ? (r.triagemPorNome ? `Enf. ${r.triagemPorNome}` : 'Equipe de Enfermagem')
-          : (r.profissionalAgendado || (ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'));
-        const esp = ehChamadaTriagem
-          ? 'Triagem Clínica & Sinais Vitais'
-          : (r.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'));
-        const chamadoEmData = (ehChamadaTriagem && r.chamadaTriagemEm) ? r.chamadaTriagemEm : (r.atendimentoIniciadoEm || r.atualizadoEm || r.criadoEm);
-
-        return {
-          id: r.id,
-          protocolo: r.protocolo,
-          pacienteNome: r.paciente?.nome || 'Paciente Identificado',
-          consultorio: local,
-          medicoNome: prof,
-          especialidade: esp,
-          tipo: (ehChamadaTriagem ? 'TRIAGEM' : 'CONSULTA') as 'CONSULTA' | 'TRIAGEM',
-          horario: new Date(chamadoEmData).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          status: r.statusAtendimentoCentro,
-          chamadoEm: chamadoEmData,
-        };
-      });
-
-      chamadas.sort((a, b) => new Date(b.chamadoEm).getTime() - new Date(a.chamadoEm).getTime());
-
-      const chamadaAtual = chamadas.length > 0 ? chamadas[0] : null;
-      const ultimasChamadas = chamadas.slice(1, 6);
-
-      res.json({
-        centro: ehCeo ? 'CEO' : 'CEM',
-        nomeCentro: ehCeo ? 'Centro de Especialidades Odontológicas (CEO)' : 'Centro de Especialidades Médicas (CEM)',
-        tipoLocal: ehCeo ? 'CADEIRA ODONTOLÓGICA' : 'CONSULTÓRIO',
-        chamadaAtual,
-        ultimasChamadas,
-        totalChamadas: chamadas.length,
-        servidorHorario: new Date().toISOString(),
-      });
-    } catch (_err) {
-      res.status(500).json({ error: { code: 'ERRO_TV_CHAMADAS', message: 'Falha ao buscar chamadas da TV' } });
+    const centro = String(req.query.centro || 'CEM').toUpperCase();
+    if (centro !== 'CEM' && centro !== 'CEO') {
+      res.status(400).json({ error: { code: 'CENTRO_INVALIDO', message: 'Informe CEM ou CEO.' } });
+      return;
     }
+    res.json(await new ListarChamadasTvUseCase().exec(centro));
   };
 
   getFilaTriagem = async (req: Request, res: Response): Promise<void> => {
@@ -594,11 +513,13 @@ export class CentroRecepcaoController {
       temperatura: body.temperatura,
       glicemiaCapilar: body.glicemiaCapilar,
       saturacaoO2: body.saturacaoO2,
-      peso: body.pesoKg,
-      altura: body.alturaCm,
+      pesoKg: body.pesoKg,
+      alturaCm: body.alturaCm,
       imc: body.imc,
       classificacaoRisco: body.classificacaoRisco,
       queixaPrincipal: body.queixaPrincipal,
+      alergiasRelatadas: body.alergiasRelatadas,
+      medicamentosEmUso: body.medicamentosEmUso,
     };
 
     const result = await this.triagemUC.realizarTriagem(

@@ -31,11 +31,16 @@ const SESSION_EXPIRED_CODES = new Set([
 	'TOKEN_EXPIRADO',
 	'TOKEN_AUSENTE',
 	'NAO_AUTENTICADO',
-	'SESSAO_INDETERMINADA'
+	'SESSAO_INDETERMINADA',
+	'SESSAO_REVOGADA'
 ]);
 
 if (browser) {
 	api.setOnUnauthorized((code) => {
+		if (code === 'TROCA_SENHA_OBRIGATORIA') {
+			goto('/login/trocar-senha', { replaceState: true });
+			return;
+		}
 		if (!SESSION_EXPIRED_CODES.has(code)) return;
 		api.tokens.set(null);
 		if (!location.pathname.startsWith('/login')) {

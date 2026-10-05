@@ -4,6 +4,7 @@
  *   GLOBAL      → DESENVOLVEDOR (acesso a tudo)
  *   PREFEITURA  → ADMIN, REGULADOR_SMS (escopo: todos UBS daquela prefeitura)
  *   UBS         → COORDENADOR_UBS, ATENDENTE_UBS (escopo: apenas a UBS)
+ * Coordenadores CEM/CEO sem vínculo UBS usam somente a prefeitura vinculada.
  */
 import type { RoleAtendente } from '../../generated/prisma';
 import { Forbidden, NotFound } from './errors';
@@ -18,6 +19,7 @@ export interface AuthContext {
   role: RoleAtendente;
   ubsId?: string | null;
   prefeituraId?: string | null;
+  tipoUnidade?: string | null;
 }
 
 export function buildScope(ctx: AuthContext): AccessScope {
@@ -39,6 +41,19 @@ export function buildScope(ctx: AuthContext): AccessScope {
       }
       return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
     case 'COORDENADOR_UBS':
+      // Um vínculo UBS existente nunca é ampliado para toda a prefeitura.
+      // A exceção dos centros exige tipo explícito emitido pelo servidor;
+      // ausência de UBS, sozinha, não concede acesso municipal.
+      if (!ctx.ubsId && (ctx.tipoUnidade === 'CEM' || ctx.tipoUnidade === 'CEO')) {
+        if (!ctx.prefeituraId) {
+          throw Forbidden('USUARIO_SEM_PREFEITURA', 'Usuário sem prefeitura vinculada');
+        }
+        return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
+      }
+      if (!ctx.ubsId) {
+        throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');
+      }
+      return { kind: 'UBS', ubsId: ctx.ubsId, prefeituraId: ctx.prefeituraId ?? undefined };
     case 'ATENDENTE_UBS':
       if (!ctx.ubsId) {
         throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');

@@ -139,6 +139,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  trocaSenhaObrigatoria?: boolean;
 	token: string;
 	refreshToken: string;
 	expiresIn: number; // segundos
@@ -300,6 +301,7 @@ export interface MetricasDashboard {
  * preencheu é sobrescrito por OCR ruim.
  */
 export interface Paciente {
+  id?: string;
 	nome: string;
 	cpf: string;
 	cartaoSus: string;
@@ -337,6 +339,7 @@ export interface SolicitacaoMedica {
 	dataSolicitacao: string; // YYYY-MM-DD
 	tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
 	procedimentoSolicitado?: string;
+	codigoSigtapSolicitado?: string;
 }
 
 export interface AnexoDocumento {
@@ -368,6 +371,7 @@ export interface RespostaSUS {
 export type FilaDestino = 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CEO';
 
 export interface Encaminhamento {
+  atendimentoConcluidoEm?: string | null;
 	id: string;
 	protocolo: string; // "UBS-2026-100137"
 	status: StatusEncaminhamento;
@@ -380,6 +384,12 @@ export interface Encaminhamento {
 	observacoesRegulacao?: string;
 	agendamentoPrevisto?: string | null;
 	profissionalAgendado?: string | null;
+  profissionalAgendadoId?: string | null;
+  atendimentoId?: string | null;
+  atendimentoIniciadoEm?: string | null;
+  documentosClinicos?: Array<{id:string;tipo:string;emitidoEm:string}>;
+  rascunhoSOAP?: Record<string, any> | null;
+  atendimentoSOAP?: { exameFisico?: string | null; sinaisVitais?: any; objetivo?: string | null; subjetivo?: string | null; avaliacao?: string | null; plano?: string | null; cid10: string; diagnostico: string; conduta: string; queixaPrincipal: string; prescricaoResumo: string | null; concluidoEm: string };
 	profissionalAtribuido?: string | null;
 	localAgendamento?: string | null;
 	statusAtendimentoCentro?: StatusAtendimentoCentro | null;
@@ -1227,6 +1237,11 @@ export interface PacienteMeResponse {
 	senhaProvisoria: boolean;
 	email: string | null;
 	telefone: string | null;
+	cns?: string | null;
+	dataNascimento?: string | null;
+	endereco?: string | null;
+	ubsReferenciaId?: string | null;
+	ubsReferenciaNome?: string | null;
 }
 
 export interface NotificacaoPacienteDTO {
@@ -1392,6 +1407,9 @@ export type StatusAtendimentoCentro =
 export type CanalRoteamento = 'SUS' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO';
 
 export interface EncaminhamentoCentroItem {
+	rascunhoSOAP?: Record<string, any> | null;
+	atendimentoId?: string | null;
+	atendimentoSOAP?: any;
 	id: string;
 	protocolo: string;
 	status: StatusEncaminhamento;
@@ -1442,6 +1460,7 @@ export interface ListFilaEsperaResponse {
 }
 
 export interface AgendarConsultaCentroRequest {
+  profissionalId?: string;
 	profissional?: string;
 	nota?: string;
 	localAgendamento?: string;
@@ -1500,6 +1519,9 @@ export interface RegistrarPresencaCentroRequest {
 export type ConfirmarPresencaCentroRequest = RegistrarPresencaCentroRequest;
 
 export interface AgendarBalcaoCentroRequest {
+	modoData?: 'MANUAL'|'AUTODATA'|'RETROATIVO';
+	statusRetroativo?: 'CONCLUIDO'|'AGUARDANDO'|'FALTOU';
+  medicoId?: string;
 	paciente: Paciente;
 	solicitacao: SolicitacaoMedica;
 	nota?: string;
@@ -1561,6 +1583,7 @@ export interface ItemProcedimentoRealizado {
 }
 
 export interface RegistrarProcedimentosAtendimentoRequest {
+	idempotencyKey?: string;
 	procedimentos: ItemProcedimentoRealizado[];
 }
 
@@ -1588,6 +1611,7 @@ export interface ListAgendaMedicoResponse {
 }
 
 export interface RegistrarAtendimentoSoapCentroRequest {
+	sinaisVitais?: SinaisVitaisTriagem;
 	subjetivo?: string;
 	objetivo?: string;
 	avaliacao?: string;
@@ -1684,16 +1708,22 @@ export interface DashboardGestaoCentroResponse {
 }
 
 export interface CotaUbsCentro {
+	competencia?: string;
+	centro?: string;
 	ubsId: string;
 	ubsNome?: string;
 	totalCotasMes: number;
 	alocadas?: number;
 	disponiveis?: number;
-	status?: 'NORMAL' | 'ALERTA' | 'ESGOTADA';
+	status?: 'NORMAL' | 'ALERTA' | 'ESGOTADA' | 'CRITICO' | 'ESGOTADO';
 	especialidades: Record<string, number>;
 }
 
 export interface EscalaMedicoCentro {
+	ausenciaInicio?: string | null;
+	ausenciaFim?: string | null;
+	acaoAusencia?: 'FILA_ESPERA' | 'REMANEJAR' | null;
+	pacientesAfetados?: number;
 	id?: string;
 	medicoId?: string;
 	medicoNome: string;
@@ -2072,7 +2102,9 @@ export interface WhatsAppConfigDTO {
 	phoneNumberId: string;
 	wabaId?: string | null;
 	accessTokenMascarado?: string;
-	webhookVerifyToken: string;
+	accessTokenConfigurado?: boolean;
+	webhookVerifyTokenConfigurado?: boolean;
+	statusIntegracao: 'NAO_CONFIGURADA' | 'DEMONSTRATIVA' | 'CONFIGURADA';
 	businessPhoneNumber?: string | null;
 	nomeExibicao?: string | null;
 	ativo: boolean;
@@ -2086,8 +2118,8 @@ export interface WhatsAppConfigDTO {
 export interface SalvarWhatsAppConfigRequest {
 	phoneNumberId: string;
 	wabaId?: string;
-	accessToken: string;
-	webhookVerifyToken: string;
+	accessToken?: string;
+	webhookVerifyToken?: string;
 	businessPhoneNumber?: string;
 	nomeExibicao?: string;
 	ativo?: boolean;
@@ -2189,3 +2221,136 @@ export interface EnviarTemplateWhatsAppRequest {
 		textoExtra?: string;
 	};
 }
+
+// ============================================================
+// PACIENTE APP / PORTAL WEB DO PACIENTE (Face 3)
+// ============================================================
+
+export interface TfdViagemPacienteDto {
+	id: string;
+	destinoCidade: string;
+	destinoUf: string;
+	destinoLocal: string;
+	dataPartida: string; // ISO 8601
+	horaPartida: string; // "HH:MM"
+	localEmbarque: string;
+	vagasTotal: number;
+	vagasOcupadas: number;
+	veiculoDescricao: string;
+	veiculoPlaca: string;
+	motoristaNome: string | null;
+	observacoes: string | null;
+	coordOrigem?: { lat: number; lng: number } | null;
+	coordDestino?: { lat: number; lng: number } | null;
+}
+
+export interface TfdSolicitacaoPacienteDto {
+	id: string;
+	viagemId: string;
+	status: 'AGUARDANDO' | 'APROVADA' | 'RECUSADA' | 'CANCELADA' | 'EMBARCADA' | 'CONCLUIDA';
+	prioridade: 'NORMAL' | 'PRIORITARIA' | 'URGENTE';
+	criadaEm: string;
+	viagem: TfdViagemPacienteDto;
+	numeroAssento: string | null;
+	justificativaPaciente: string | null;
+	motivoRecusa: string | null;
+	encaminhamentoId: string | null;
+	encaminhamentoProtocolo: string | null;
+	acompanhante: string | null;
+	aprovadaEm: string | null;
+}
+
+export interface CriarSolicitacaoTfdPacienteRequest {
+	viagemId: string;
+	justificativa: string;
+	encaminhamentoId?: string;
+	acompanhante?: string;
+}
+
+export interface DossieResumoDto {
+	totalEncaminhamentos: number;
+	totalAtendimentos: number;
+	totalVacinas: number;
+	totalExames: number;
+	tipoSanguineo: string | null;
+	alergias: string[];
+	condicoesCronicas: string[];
+	medicamentosUsoContinuo: string[];
+}
+
+export type AtendimentoTipoApp =
+	| 'CONSULTA_MEDICA'
+	| 'ENFERMAGEM'
+	| 'VACINACAO'
+	| 'CURATIVO'
+	| 'ODONTOLOGICO'
+	| 'PROCEDIMENTO'
+	| 'ACOLHIMENTO';
+
+export interface AtendimentoDto {
+	id: string;
+	data: string; // ISO 8601
+	tipo: AtendimentoTipoApp;
+	localNome: string;
+	profissionalNome: string;
+	profissionalEspecialidade: string | null;
+	queixaPrincipal: string | null;
+	cid10: string | null;
+	cid10Descricao: string | null;
+	condutaResumida: string | null;
+}
+
+export interface VacinacaoDto {
+	id: string;
+	vacina: string;
+	dose: string;
+	aplicadaEm: string;
+	localAplicacao: string;
+	lote: string | null;
+	fabricante: string | null;
+	via: string | null;
+	aplicadorNome: string | null;
+}
+
+export interface ExameDto {
+	id: string;
+	nome: string;
+	realizadoEm: string;
+	solicitanteNome: string;
+	unidadeExecutora: string | null;
+	categoria: string | null;
+	alterado: boolean;
+	resultadoStatus: 'NORMAL' | 'ALTERADO' | 'CRITICO' | 'PENDENTE';
+	resultadoResumo: string | null;
+	observacoes: string | null;
+}
+
+export interface UbsMinhaDto {
+	id: string;
+	nome: string;
+	endereco: string | null;
+	bairro: string | null;
+	cidade: string;
+	uf: string;
+	cep: string | null;
+	telefone: string | null;
+	whatsapp: string | null;
+	email: string | null;
+	horarios: Record<string, { abre: string; fecha: string } | null> | null;
+	horarioFuncionamento: string;
+	coordenadoresNomes: string[];
+	latitude: number | null;
+	longitude: number | null;
+	observacoes: string | null;
+}
+
+export interface BannerPacienteDto {
+	id: string;
+	titulo: string;
+	subtitulo?: string | null;
+	corpo?: string | null;
+	imagemUrl?: string | null;
+	linkUrl?: string | null;
+	criadoEm: string;
+}
+

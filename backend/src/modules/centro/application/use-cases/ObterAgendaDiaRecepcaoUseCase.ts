@@ -1,3 +1,4 @@
+import { hojeRecife, intervaloDiaRecife } from '../../shared/dataCentro';
 import { StatusEncaminhamento, CanalRoteamento, Prisma } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -15,18 +16,13 @@ export interface ObterAgendaDiaInput {
 
 export class ObterAgendaDiaRecepcaoUseCase {
   async exec(input: ObterAgendaDiaInput, scope: AccessScope): Promise<Encaminhamento[]> {
-    const targetDateStr = input.data || new Date().toISOString().substring(0, 10);
-    const startOfDay = new Date(`${targetDateStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${targetDateStr}T23:59:59.999Z`);
+    const targetDateStr = input.data || hojeRecife();
 
     const isOdonto = input.centro === 'CENTRO_ODONTOLOGICO' || (input.centro as string) === 'CEO';
     const where: Prisma.EncaminhamentoWhereInput = {
       deletadoEm: null,
       status: StatusEncaminhamento.APROVADO,
-      agendamentoPrevisto: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
+      agendamentoPrevisto: intervaloDiaRecife(targetDateStr),
       OR: isOdonto
         ? [
             { canalRoteamento: CanalRoteamento.CENTRO_ODONTOLOGICO },

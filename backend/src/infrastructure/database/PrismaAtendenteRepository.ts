@@ -33,7 +33,7 @@ export class PrismaAtendenteRepository implements IAtendenteRepository {
   async atualizarSenha(id: string, senhaHash: string): Promise<void> {
     await prisma.atendente.update({
       where: { id },
-      data: { senhaHash, senhaAlteradaEm: new Date() },
+      data: { senhaHash, senhaAlteradaEm: new Date(), trocaSenhaObrigatoria: false },
     });
   }
 

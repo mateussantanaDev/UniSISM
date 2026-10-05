@@ -44,7 +44,7 @@
 		totalCotasMes: number;
 		alocadas: number;
 		disponiveis: number;
-		status: 'NORMAL' | 'ALERTA' | 'ESGOTADA';
+		status: 'NORMAL' | 'ALERTA' | 'ESGOTADA' | 'CRITICO' | 'ESGOTADO';
 		especialidades: Record<string, number>; // { 'Cardiologia': 40, 'Oftalmologia': 30 }
 	}
 
@@ -59,7 +59,10 @@
 		horarioFim: string;
 		duracaoMinutos: number;
 		vagasPorTurno: number;
-		status: 'ATIVA' | 'FERIAS' | 'BLOQUEADA_PARCIAL';
+		status: 'ATIVA' | 'FERIAS' | 'LICENCA' | 'BLOQUEADA';
+		medicoId?: string;
+		ausenciaInicio?: string | null;
+		ausenciaFim?: string | null;
 		observacoes?: string;
 		tipoRecorrencia?: 'SEMANAL' | 'QUINZENAL' | 'DATAS_ESPECIFICAS' | 'MUTIRAO';
 		datasEspecificas?: string[];
@@ -70,7 +73,10 @@
 
 	// State
 	let abaAtiva = $state<'cotas' | 'escalas' | 'remanejamento'>('cotas');
-	let mesReferencia = $state('2026-07');
+	const hojeLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Recife' }).format(new Date());
+	let mesReferencia = $state(hojeLocal().slice(0,7));
+	let escalaEditandoId = $state<string | null>(null);
+	let tipoAusencia = $state<'FERIAS' | 'LICENCA' | 'BLOQUEADA'>('FERIAS');
 	let buscaEspecialista = $state('');
 	let mensagemSucesso = $state('');
 	let erroGlobal = $state('');
@@ -165,20 +171,20 @@
 	// Disparo de Avisos ao Paciente (Falta Médica / Mudança de Dia)
 	let modalDispararAvisoAberto = $state(false);
 	let avisoMedicoNome = $state('');
-	let avisoData = $state(new Date().toISOString().substring(0, 10));
+	let avisoData = $state(hojeLocal());
 	let avisoTipoMotivo = $state<'FALTA_MEDICA' | 'MUDANCA_DIA' | 'FERIAS_LICENCA'>('FALTA_MEDICA');
 	let avisoNovaData = $state('');
 	let avisoMensagemPersonalizada = $state('');
 	let avisoCanais = $state({
 		app: true,
-		sms: true,
-		whatsapp: true
+		sms: false,
+		whatsapp: false
 	});
 	let disparandoAviso = $state(false);
 
 	function abrirModalDispararAviso(medicoNome?: string) {
 		avisoMedicoNome = medicoNome || opcoesMedicos[0]?.nome || '';
-		avisoData = new Date().toISOString().substring(0, 10);
+		avisoData = hojeLocal();
 		avisoTipoMotivo = 'FALTA_MEDICA';
 		avisoNovaData = '';
 		atualizarTextoPreviewAviso();
@@ -203,50 +209,21 @@
 	let salvandoEscala = $state(false);
 
 	async function dispararAvisoPacientes() {
-		if (!avisoMedicoNome.trim()) {
-			erroModalAviso = `Selecione o ${rotuloProfissional.toLowerCase()}.`;
-			return;
-		}
-
-		disparandoAviso = true;
-		erroModalAviso = '';
-		let totalNotificados = 0;
+		if (!avisoMedicoNome.trim() || !avisoData || !avisoMensagemPersonalizada.trim()) { erroModalAviso = 'Informe profissional, data e mensagem.'; return; }
+		disparandoAviso = true; erroModalAviso = '';
 		try {
-			try {
-				const res = await api.centroGestao.dispararNotificacoesAusencia({
-					medicoNome: avisoMedicoNome,
-					dataAfetada: avisoData,
-					tipoMotivo: avisoTipoMotivo,
-					novaData: avisoNovaData || undefined,
-					mensagem: avisoMensagemPersonalizada,
-					canais: avisoCanais
-				} as any);
-				totalNotificados = res?.totalNotificados ?? 0;
-			} catch (e) {
-				console.info('[UniSISM] Disparo de notificações via API concluído.', e);
-			}
-
+			const res = await api.centroGestao.dispararNotificacoesAusencia({ medicoNome: avisoMedicoNome, dataAfetada: avisoData, tipoMotivo: avisoTipoMotivo, novaData: avisoNovaData || undefined, mensagem: avisoMensagemPersonalizada, canais: avisoCanais });
 			modalDispararAvisoAberto = false;
-			const dtFmt = avisoData ? avisoData.split('-').reverse().join('/') : avisoData;
-			const totalMsg =
-				totalNotificados > 0
-					? `\n[Total: ${totalNotificados} paciente(s) notificado(s) em tempo real]`
-					: '';
-			mensagemSucesso = `✓ DISPARO DE AVISO CONCLUÍDO COM SUCESSO!\nNotificação enviada ao App do Paciente UniSISM, SMS e WhatsApp dos pacientes agendados com ${avisoMedicoNome} para o dia ${dtFmt}.${totalMsg}`;
-		} catch (err: any) {
-			console.error(err);
-			erroModalAviso = `Falha ao disparar notificações: ${err?.message || 'Erro do servidor'}`;
-		} finally {
-			disparandoAviso = false;
-			setTimeout(() => (mensagemSucesso = ''), 6000);
-		}
+			mensagemSucesso = `Aviso registrado no aplicativo para ${res.totalNotificados ?? 0} paciente(s).`;
+		} catch (e: any) { erroModalAviso = e.message || 'Não foi possível registrar os avisos.'; }
+		finally { disparandoAviso = false; }
 	}
 
 	// Remanejamento State
 	let remOrigemMedico = $state('');
-	let remOrigemData = $state(new Date().toISOString().substring(0, 10));
+	let remOrigemData = $state(hojeLocal());
 	let remDestinoMedico = $state('');
-	let remDestinoData = $state(new Date().toISOString().substring(0, 10));
+	let remDestinoData = $state(hojeLocal());
 	let processandoRemanejamento = $state(false);
 
 	// Derived metrics
@@ -297,7 +274,7 @@
 	onMount(async () => {
 		try {
 			const [cotasRes, escalasRes, profissionaisRes, especialidadesRes] = await Promise.allSettled([
-				api.centroGestao.listCotas({ centro: siglaOrgao }),
+				api.centroGestao.listCotas({ centro: siglaOrgao, competencia: mesReferencia }),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }),
 				api.centroGestao.listProfissionais({ centro: siglaOrgao }),
 				api.centroGestao.listEspecialidades({ centro: siglaOrgao })
@@ -341,37 +318,24 @@
 		modalAjustarCotasAberto = true;
 	}
 
+	async function carregarCotas() {
+		try { cotasUbsList = await api.centroGestao.listCotas({ centro: siglaOrgao, competencia: mesReferencia }) as CotaUbs[]; erroGlobal = ''; }
+		catch(e: any) { erroGlobal = e.message || 'Não foi possível carregar as cotas.'; }
+	}
 	async function salvarAjusteCotas() {
 		if (!ubsSelecionadaCota) return;
-		const idx = cotasUbsList.findIndex((c) => c.ubsId === ubsSelecionadaCota!.ubsId);
-		if (idx !== -1) {
-			const soma = Object.values(ubsSelecionadaCota.especialidades).reduce((a, b) => a + b, 0);
-			ubsSelecionadaCota.totalCotasMes = soma;
-			ubsSelecionadaCota.disponiveis = Math.max(0, soma - ubsSelecionadaCota.alocadas);
-			ubsSelecionadaCota.status =
-				ubsSelecionadaCota.disponiveis === 0
-					? 'ESGOTADA'
-					: ubsSelecionadaCota.disponiveis < 20
-						? 'ALERTA'
-						: 'NORMAL';
-			cotasUbsList[idx] = ubsSelecionadaCota;
-
-			try {
-				await api.centroGestao.atualizarCotas(ubsSelecionadaCota.ubsId, {
-					ubsId: ubsSelecionadaCota.ubsId,
-					totalCotasMes: ubsSelecionadaCota.totalCotasMes,
-					especialidades: ubsSelecionadaCota.especialidades
-				});
-			} catch (err) {
-				console.info('[UniSISM] Atualização de cotas salva.', err);
-			}
-		}
-		modalAjustarCotasAberto = false;
-		mensagemSucesso = '✓ Cotas da UBS atualizadas com sucesso pelo Diretor!';
-		setTimeout(() => (mensagemSucesso = ''), 4000);
+		const valores = Object.values(ubsSelecionadaCota.especialidades);
+		if (valores.some(v => !Number.isInteger(v) || v < 0)) { erroGlobal = 'Informe cotas inteiras e não negativas.'; return; }
+		try {
+			await api.centroGestao.atualizarCotas(ubsSelecionadaCota.ubsId, { ubsId: ubsSelecionadaCota.ubsId, competencia: mesReferencia, centro: siglaOrgao, totalCotasMes: valores.reduce((a,b)=>a+b,0), especialidades: ubsSelecionadaCota.especialidades });
+			await carregarCotas(); modalAjustarCotasAberto = false;
+			mensagemSucesso = `Cotas de ${mesReferencia} salvas.`;
+		} catch(e: any) { erroGlobal = e.message || 'Não foi possível salvar as cotas.'; }
 	}
 
 	function abrirNovaEscala() {
+		escalaEditandoId = null;
+		novoTipoServico = 'CONSULTA';
 		erroModalEscala = '';
 		if (listaProfissionais.length > 0) {
 			const primeiro = listaProfissionais[0];
@@ -422,12 +386,10 @@
 		}
 
 		erroModalEscala = '';
-		const [hIni, mIni] = novoHorarioInicio.split(':').map(Number);
-		const [hFim, mFim] = novoHorarioFim.split(':').map(Number);
-		const duracaoTotalMin =
-			!isNaN(hIni) && !isNaN(hFim) ? hFim * 60 + (mFim || 0) - (hIni * 60 + (mIni || 0)) : 240;
-		const duracaoValida = duracaoTotalMin > 0 ? duracaoTotalMin : 240;
-		const vagasCalculadas = Math.floor(duracaoValida / (novaDuracao || 20));
+		const minutos = (hora: string) => { const [h,m] = hora.split(':').map(Number); return h*60+m; };
+		const total = minutos(novoHorarioFim)-minutos(novoHorarioInicio);
+		if (!(total > 0) || novaDuracao <= 0 || !Number.isInteger(novasVagas) || novasVagas < 1 || novasVagas > Math.floor(total/novaDuracao)) { erroModalEscala = 'Horários, duração e capacidade devem permitir todos os atendimentos sem sobreposição.'; return; }
+		if (novoTipoRecorrencia === 'QUINZENAL' && !novaDataInicioRecorrencia) { erroModalEscala = 'Informe a data inicial do ciclo quinzenal.'; return; }
 
 		const nova: EscalaEspecialista = {
 			id: 'esc-' + (escalasList.length + 1),
@@ -438,7 +400,7 @@
 			horarioInicio: novoHorarioInicio,
 			horarioFim: novoHorarioFim,
 			duracaoMinutos: novaDuracao,
-			vagasPorTurno: Math.max(4, isNaN(vagasCalculadas) ? 12 : vagasCalculadas),
+			vagasPorTurno: novasVagas,
 			status: 'ATIVA',
 			tipoRecorrencia: novoTipoRecorrencia,
 			datasEspecificas: novasDatasEspecificas,
@@ -448,7 +410,7 @@
 
 		try {
 			salvandoEscala = true;
-			const escalaCriada = await api.centroGestao.criarEscala({
+			const dados = {
 				medicoId: profissionalSelecionadoId || undefined,
 				medicoNome: nova.medicoNome,
 				crm: nova.crm,
@@ -459,12 +421,13 @@
 				horarioFim: nova.horarioFim,
 				duracaoMinutos: nova.duracaoMinutos,
 				vagasPorTurno: nova.vagasPorTurno,
-				status: nova.status,
+				status: escalaEditandoId ? escalasList.find(e => e.id === escalaEditandoId)?.status || 'ATIVA' : nova.status,
 				tipoRecorrencia: novoTipoRecorrencia,
 				datasEspecificas: novasDatasEspecificas,
 				isMutirao: novoTipoRecorrencia === 'MUTIRAO' || novoIsMutirao,
 				dataInicioRecorrencia: novaDataInicioRecorrencia || undefined
-			});
+			};
+			const escalaCriada = escalaEditandoId ? await api.centroGestao.atualizarEscala(escalaEditandoId, dados) : await api.centroGestao.criarEscala(dados);
 
 			const atualizadas = await api.centroGestao.listEscalas({ centro: siglaOrgao });
 			if (Array.isArray(atualizadas) && atualizadas.length > 0) {
@@ -477,7 +440,7 @@
 			}
 
 			modalNovaEscalaAberto = false;
-			mensagemSucesso = `✓ Nova escala para ${nova.medicoNome} cadastrada e salva com sucesso no servidor!`;
+			mensagemSucesso = `✓ Escala de ${nova.medicoNome} salva com sucesso no servidor!`;
 			setTimeout(() => (mensagemSucesso = ''), 4000);
 		} catch (err: any) {
 			console.error(err);
@@ -487,6 +450,22 @@
 		}
 	}
 
+	function editarEscala(esc: EscalaEspecialista) {
+		abrirNovaEscala(); escalaEditandoId = esc.id;
+		profissionalSelecionadoId = esc.medicoId || ''; novoMedicoNome = esc.medicoNome; novoCrm = esc.crm;
+		novaEspecialidade = esc.especialidade; novoTipoServico = esc.tipoServico || 'CONSULTA'; novosDias = [...esc.diasSemana];
+		novoHorarioInicio = esc.horarioInicio; novoHorarioFim = esc.horarioFim; novaDuracao = esc.duracaoMinutos; novasVagas = esc.vagasPorTurno;
+		novoTipoRecorrencia = esc.tipoRecorrencia || 'SEMANAL'; novasDatasEspecificas = [...(esc.datasEspecificas || [])]; novaDataInicioRecorrencia = esc.dataInicioRecorrencia || '';
+	}
+	async function reativarEscala(esc: EscalaEspecialista) {
+		try { await api.centroGestao.atualizarEscala(esc.id, { status: 'ATIVA', ausenciaInicio: null, ausenciaFim: null, acaoAusencia: null }); escalasList = await api.centroGestao.listEscalas({centro:siglaOrgao}) as EscalaEspecialista[]; mensagemSucesso = 'Escala reativada.'; }
+		catch(e: any) { erroGlobal = e.message; }
+	}
+	async function removerEscala(esc: EscalaEspecialista) {
+		if(!confirm(`Inativar a escala de ${esc.medicoNome}?`)) return;
+		try { await api.centroGestao.excluirEscala(esc.id); escalasList = escalasList.filter(e=>e.id!==esc.id); mensagemSucesso = 'Escala inativada.'; }
+		catch(e: any) { erroGlobal = e.message; }
+	}
 	function toggleDia(dia: string) {
 		if (novosDias.includes(dia)) {
 			novosDias = novosDias.filter((d) => d !== dia);
@@ -497,7 +476,7 @@
 
 	function abrirRegistroFerias(esc: EscalaEspecialista) {
 		escalaFerias = esc;
-		dataInicioFerias = new Date().toISOString().substring(0, 10);
+		dataInicioFerias = hojeLocal();
 		const dFim = new Date();
 		dFim.setDate(dFim.getDate() + 15);
 		dataFimFerias = dFim.toISOString().substring(0, 10);
@@ -506,19 +485,12 @@
 
 	async function confirmarFerias() {
 		if (!escalaFerias) return;
-		escalaFerias.status = 'FERIAS';
-		escalaFerias.observacoes = `Férias registradas de ${dataInicioFerias} a ${dataFimFerias}.`;
+		if (!dataInicioFerias || !dataFimFerias || dataInicioFerias > dataFimFerias) { erroGlobal = 'O fim da ausência deve ser igual ou posterior ao início.'; return; }
 		try {
-			await api.centroGestao.atualizarEscala(escalaFerias.id, {
-				status: 'FERIAS',
-				observacoes: escalaFerias.observacoes
-			});
-		} catch (err) {
-			console.info('[UniSISM] Atualização de escala salva localmente.', err);
-		}
-		modalFeriasAberto = false;
-		mensagemSucesso = `✓ Férias registradas para ${escalaFerias.medicoNome}. Pacientes afetados foram notificados/remanejados!`;
-		setTimeout(() => (mensagemSucesso = ''), 5000);
+			const res = await api.centroGestao.atualizarEscala(escalaFerias.id, { status: tipoAusencia, ausenciaInicio: dataInicioFerias, ausenciaFim: dataFimFerias, acaoAusencia: acaoPacientesAfetados === 'REMANEJAR_AUTOMATICO' ? 'REMANEJAR' : 'FILA_ESPERA', observacoes: `Ausência de ${dataInicioFerias} a ${dataFimFerias}.` });
+			escalasList = await api.centroGestao.listEscalas({centro:siglaOrgao}) as EscalaEspecialista[];
+			modalFeriasAberto = false; mensagemSucesso = `Ausência registrada. ${res.pacientesAfetados ?? 0} agendamento(s) ${acaoPacientesAfetados === 'REMANEJAR_AUTOMATICO' ? 'remanejado(s)' : 'retornado(s) à fila'}.`;
+		} catch(e: any) { erroGlobal = e.message || 'Falha ao registrar ausência.'; }
 	}
 
 	async function executarRemanejamentoEmLote() {
@@ -535,14 +507,14 @@
 				dataOrigem: remOrigemData,
 				medicoDestino: remDestinoMedico,
 				dataDestino: remDestinoData,
-				notificarSms: true
+				notificarSms: false
 			});
 			const total = resRem.totalRemanejados ?? 0;
 			const totalStr = total > 0 ? `${total} paciente(s)` : 'Pacientes';
-			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\n${totalStr} de ${remOrigemMedico} (${remOrigemData}) transferidos para a agenda de ${remDestinoMedico} (${remDestinoData}). Disparo de notificação enviado.`;
+			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\n${totalStr} de ${remOrigemMedico} (${remOrigemData}) transferidos para a agenda de ${remDestinoMedico} (${remDestinoData}). Confirme a nova agenda com os pacientes.`;
 		} catch (err: any) {
 			console.info('[UniSISM] Remanejamento em lote:', err);
-			mensagemSucesso = `✓ REMANEJAMENTO EM LOTE CONCLUÍDO!\nPacientes de ${remOrigemMedico} (${remOrigemData}) transferidos para ${remDestinoMedico} (${remDestinoData}).`;
+			erroModalRemanejamento = err?.message || 'Não foi possível remanejar os pacientes.';
 		} finally {
 			processandoRemanejamento = false;
 			setTimeout(() => (mensagemSucesso = ''), 6000);
@@ -561,6 +533,8 @@
 		subtitle="Parametrização de cotas mensais de atendimento por UBS, escalas de trabalho dos profissionais ({rotuloRegistro}) e remanejamento dinâmico em lote."
 	/>
 
+	{#if erroGlobal}<div role="alert" class="border border-red-300 bg-red-50 p-3 text-red-800">{erroGlobal}</div>{/if}
+	{#if erroModalRemanejamento}<div role="alert" class="border border-red-300 bg-red-50 p-3 text-red-800">{erroModalRemanejamento}</div>{/if}
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
 		<div
@@ -603,8 +577,8 @@
 			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
 				Absenteísmo Estimado
 			</div>
-			<div class="mt-2 text-3xl font-bold text-amber-700">11.2%</div>
-			<div class="mt-1 text-[11px] text-slate-600">Média de faltas nas consultas do mês</div>
+			<div class="mt-2 text-3xl font-bold text-amber-700">—</div>
+			<div class="mt-1 text-[11px] text-slate-600">Consulte o indicador calculado em Produção</div>
 		</div>
 	</section>
 
@@ -648,6 +622,7 @@
 					<input
 						type="month"
 						bind:value={mesReferencia}
+						onchange={carregarCotas}
 						class="border border-slate-300 px-2 py-0.5 text-xs font-bold"
 					/>
 				</div>
@@ -855,7 +830,7 @@
 											<span
 												class="border border-purple-700 bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-purple-900 uppercase"
 											>
-												QUINZENAL (15 DIAS)
+												QUINZENAL (14 DIAS)
 											</span>
 											<div class="flex justify-center gap-1">
 												{#each ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as d}
@@ -939,8 +914,11 @@
 										onclick={() => abrirRegistroFerias(esc)}
 										class="border border-amber-700 bg-white px-2.5 py-1 text-[10px] font-bold text-amber-800 uppercase hover:bg-amber-50"
 									>
-										Férias
+										Ausência
 									</button>
+									<button onclick={() => editarEscala(esc)}>Editar</button>
+									{#if esc.status !== 'ATIVA'}<button onclick={() => reativarEscala(esc)}>Reativar</button>{/if}
+									<button onclick={() => removerEscala(esc)}>Inativar</button>
 								</td>
 							</tr>
 						{/each}
@@ -962,8 +940,7 @@
 					<IconAlertTriangle size={16} class="shrink-0 text-amber-700" />
 					<span
 						><strong>Painel de Domínio do Gestor:</strong> Permite mover a demanda agendada de um profissional/dia
-						afetado diretamente para a agenda de outro especialista ou nova data, disparando notificação
-						aos pacientes.</span
+						afetado diretamente para a agenda de outro especialista ou nova data disponível. Os pacientes devem ser informados após a confirmação.</span
 					>
 				</div>
 
@@ -1075,6 +1052,7 @@
 	subtitle={ubsSelecionadaCota ? ubsSelecionadaCota.ubsNome : ''}
 	maxWidth="md"
 >
+	{#if erroGlobal}<p role="alert" class="text-red-700">{erroGlobal}</p>{/if}
 	{#if ubsSelecionadaCota}
 		<div class="flex flex-col gap-4 font-mono text-xs">
 			<div class="font-sans text-xs text-slate-600">
@@ -1143,7 +1121,7 @@
 <Modal
 	isOpen={modalNovaEscalaAberto}
 	onClose={() => (modalNovaEscalaAberto = false)}
-	title="CADASTRAR NOVA ESCALA DE ATENDIMENTO — {siglaOrgao}"
+	title="{escalaEditandoId ? 'EDITAR ESCALA' : 'CADASTRAR NOVA ESCALA'} — {siglaOrgao}"
 	subtitle="Definição de grade de horários do {rotuloProfissional.toLowerCase()}"
 	maxWidth="md"
 >
@@ -1270,7 +1248,7 @@
 						? 'border-purple-900 bg-purple-900 text-white'
 						: 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}"
 				>
-					Quinzenal (15 dias)
+					Quinzenal (14 dias)
 				</button>
 				<button
 					type="button"
@@ -1290,7 +1268,7 @@
 					onclick={() => {
 						novoTipoRecorrencia = 'MUTIRAO';
 						novoIsMutirao = true;
-						if (novasVagas < 30) novasVagas = 40;
+						novasVagas = 40; novoHorarioInicio = '08:00'; novoHorarioFim = '18:00'; novaDuracao = 15;
 						if (!novosDias.includes('SAB')) novosDias = ['SAB'];
 					}}
 					class="border p-2 text-center text-[11px] font-bold transition-colors {novoTipoRecorrencia ===
@@ -1332,7 +1310,7 @@
 						class="mt-2 flex flex-col gap-1 border border-purple-200 bg-purple-50 p-2.5 text-purple-950"
 					>
 						<label for="esc-ini-quinz" class="text-[10px] font-bold uppercase">
-							Data Inicial de Início do Ciclo Quinzenal (Opcional)
+							Data Inicial de Início do Ciclo Quinzenal *
 						</label>
 						<input
 							id="esc-ini-quinz"
@@ -1341,7 +1319,7 @@
 							class="border border-purple-300 bg-white p-1.5 font-mono text-xs font-bold text-slate-800"
 						/>
 						<span class="text-[10px] text-purple-800">
-							Define a primeira semana de atendimento para alternar quinzenalmente (a cada 15 dias).
+							Define a primeira semana de atendimento para alternar quinzenalmente (a cada 14 dias).
 						</span>
 					</div>
 				{/if}
@@ -1550,6 +1528,8 @@
 >
 	{#if escalaFerias}
 		<div class="flex flex-col gap-4 font-mono text-xs">
+			<label for="tipo-ausencia">Tipo de ausência</label><select id="tipo-ausencia" bind:value={tipoAusencia}><option value="FERIAS">Férias</option><option value="LICENCA">Licença</option><option value="BLOQUEADA">Bloqueio</option></select>
+			{#if erroGlobal}<p role="alert" class="text-red-700">{erroGlobal}</p>{/if}
 			<div class="grid grid-cols-2 gap-3">
 				<div class="flex flex-col gap-1">
 					<label for="fer-ini" class="text-[10px] font-bold text-slate-600 uppercase"
@@ -1601,7 +1581,7 @@
 						bind:group={acaoPacientesAfetados}
 						value="FILA_AVISO_SMS"
 					/>
-					<span>Retornar para fila com notificação aos pacientes</span>
+					<span>Retornar pacientes para a fila de agendamento</span>
 				</label>
 			</div>
 
@@ -1640,8 +1620,8 @@
 			>
 				<IconDeviceMobile size={16} class="shrink-0 text-purple-900" />
 				<span
-					><strong>Disparo aos Pacientes:</strong> Envia notificação instantânea para o
-					<strong>App do Paciente UniSISM</strong>, SMS e WhatsApp para todos os cidadãos agendados
+					><strong>Disparo aos Pacientes:</strong> Registra um aviso no
+					<strong>App do Paciente UniSISM</strong>, para os cidadãos agendados
 					com o profissional selecionado na data informada.</span
 				>
 			</div>
@@ -1733,12 +1713,12 @@
 						<span class="font-bold text-purple-900">App do Paciente (Push)</span>
 					</label>
 					<label class="flex cursor-pointer items-center gap-1.5">
-						<input type="checkbox" bind:checked={avisoCanais.sms} />
-						<span>SMS Direct</span>
+						<input type="checkbox" bind:checked={avisoCanais.sms} disabled />
+						<span>SMS (indisponível)</span>
 					</label>
 					<label class="flex cursor-pointer items-center gap-1.5">
-						<input type="checkbox" bind:checked={avisoCanais.whatsapp} />
-						<span>WhatsApp Bot</span>
+						<input type="checkbox" bind:checked={avisoCanais.whatsapp} disabled />
+						<span>WhatsApp (use o CRM)</span>
 					</label>
 				</div>
 			</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
-	import { api, ApiError } from '$lib/api';
+	import { api } from '$lib/api';
 	import PanelHeader from '$lib/presentation/components/PanelHeader.svelte';
 	import Modal from '$lib/presentation/components/Modal.svelte';
 	import {
@@ -28,11 +28,12 @@
 	let rotuloRegistro = $derived(ehCeo ? 'CRO' : 'CRM');
 
 	interface ProducaoMedico {
+		id: string;
 		medicoNome: string;
 		crm: string;
 		especialidade: string;
 		atendimentosMes: number;
-		tempoMedioMinutos: number;
+		tempoMedioMinutos: number | null;
 		faltasPaciente: number;
 		taxaAbsenteismo: number;
 		encaminhamentosTFD: number;
@@ -50,6 +51,7 @@
 	}
 
 	interface AtendimentoProcedimentoGestor {
+		historicoSemProntuario?: boolean;
 		id: string;
 		protocolo: string;
 		dataAtendimento: string;
@@ -71,7 +73,11 @@
 
 	// State
 	let abaAtiva = $state<'dashboard' | 'relatorios' | 'ajustes' | 'auditoria'>('dashboard');
-	let periodoMes = $state('2026-07');
+	const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Recife' }).format(new Date());
+	let periodoMes = $state(hoje.slice(0, 7));
+	let erroCarregamento = $state('');
+	let salvandoProcedimento = $state(false);
+	let chaveProcedimento = $state('');
 	let filtroEspecialidade = $state('TODAS');
 	let gerandoRelatorio = $state(false);
 	let mensagemSucesso = $state('');
@@ -115,8 +121,8 @@
 		'BPA_SUS' | 'ABSENTEISMO_UBS' | 'DEMANDA_REPRIMIDA' | 'TFD_INTERMUNICIPAL'
 	>('BPA_SUS');
 	let relatorioFormato = $state<'PDF' | 'CSV' | 'XLSX'>('PDF');
-	let relatorioDataInicio = $state('2026-07-01');
-	let relatorioDataFim = $state('2026-07-27');
+	let relatorioDataInicio = $state(hoje.slice(0, 7) + '-01');
+	let relatorioDataFim = $state(hoje);
 
 	// Real Data from API
 	let listaProducaoMedica = $state<ProducaoMedico[]>([]);
@@ -132,12 +138,7 @@
 	let totalTfdGerados = $derived(
 		listaProducaoMedica.reduce((acc, m) => acc + m.encaminhamentosTFD, 0)
 	);
-	let absenteismoMedioGlobal = $derived(
-		(
-			listaProducaoMedica.reduce((acc, m) => acc + m.taxaAbsenteismo, 0) /
-			(listaProducaoMedica.length || 1)
-		).toFixed(1)
-	);
+	let absenteismoMedioGlobal = $derived((100 * listaProducaoMedica.reduce((s, m) => s + m.faltasPaciente, 0) / Math.max(1, listaProducaoMedica.reduce((s, m) => s + m.atendimentosMes + m.faltasPaciente, 0))).toFixed(1));
 
 	let producaoFiltrada = $derived(
 		listaProducaoMedica.filter(
@@ -146,7 +147,7 @@
 	);
 
 	function abrirAjusteProcedimentoGestor(atend: AtendimentoProcedimentoGestor) {
-		atendimentoSelecionadoAjuste = atend;
+		atendimentoSelecionadoAjuste = atend; erroModalAjuste = ''; chaveProcedimento = crypto.randomUUID();
 		novoProcCodigo = '02.11.02.003-6';
 		novoProcNome = 'Eletrocardiograma (ECG)';
 		novoProcQtd = 1;
@@ -163,215 +164,61 @@
 		erroModalAjuste = '';
 	}
 
-	function adicionarProcedimentoGestor() {
-		if (!atendimentoSelecionadoAjuste) return;
-		if (!novoProcNome.trim()) {
-			erroModalAjuste = 'Informe o nome do procedimento.';
-			return;
-		}
-		erroModalAjuste = '';
-
-		const item = {
-			id: 'pa-' + Date.now(),
-			codigoSigtap: novoProcCodigo.trim() || '00.00.00.000-0',
-			nome: novoProcNome.trim(),
-			quantidade: Math.max(1, novoProcQtd),
-			valorUnitarioBrl: novoProcValor,
-			adicionadoPor: 'GESTOR' as const
-		};
-
-		atendimentoSelecionadoAjuste.procedimentosAdicionados.push(item);
-
-		// Recalculate doctor BPA production
-		const med = listaProducaoMedica.find(
-			(m) => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome
-		);
-		if (med) {
-			med.valorBpaEstimadoBRL += item.valorUnitarioBrl * item.quantidade;
-		}
-
-		// Persist via dedicated API
-		api.centroMedico
-			.registrarProcedimentos(atendimentoSelecionadoAjuste.id, {
-				procedimentos: [
-					{
-						codigoSigtap: item.codigoSigtap,
-						nome: item.nome,
-						quantidade: item.quantidade,
-						valorUnitario: item.valorUnitarioBrl
-					}
-				]
-			})
-			.catch((err) => console.info('[UniSISM] Registro de faturamento pelo gestor:', err));
-
-		// Log in auditoria
-		logsAuditoria.unshift({
-			id: 'log-' + Date.now(),
-			timestamp: new Date().toISOString(),
-			operador: auth.me?.nome || 'Diretor de Gestão',
-			papel: 'DIRETOR_GESTAO',
-			acao: 'LANÇAMENTO_RETROATIVO_PROCEDIMENTO',
-			detalhes: `Lançado procedimento ${item.nome} (${item.codigoSigtap}) no atendimento de ${atendimentoSelecionadoAjuste.pacienteNome} (${atendimentoSelecionadoAjuste.medicoNome})`,
-			ip: '192.168.10.15'
-		});
-
-		mensagemSucesso = `✓ Procedimento ${item.nome} lançado pelo Gestor no atendimento de ${atendimentoSelecionadoAjuste.pacienteNome}! Faturamento SIGTAP atualizado (+R$ ${(item.valorUnitarioBrl * item.quantidade).toFixed(2)}).`;
-		if (timerMensagem) clearTimeout(timerMensagem);
-		timerMensagem = setTimeout(() => (mensagemSucesso = ''), 5000);
+	async function adicionarProcedimentoGestor() {
+		if (!atendimentoSelecionadoAjuste || salvandoProcedimento) return;
+		if (!novoProcNome.trim() || !Number.isInteger(novoProcQtd) || novoProcQtd < 1 || novoProcValor < 0 || !Number.isFinite(novoProcValor)) { erroModalAjuste = 'Informe nome, quantidade inteira positiva e valor não negativo.'; return; }
+		salvandoProcedimento = true; erroModalAjuste = '';
+		const id = atendimentoSelecionadoAjuste.id;
+		try {
+			await api.centroMedico.registrarProcedimentos(id, { idempotencyKey: chaveProcedimento, procedimentos: [{ codigoSigtap: novoProcCodigo.trim() || undefined, nome: novoProcNome.trim(), quantidade: novoProcQtd, valorUnitario: novoProcValor }] });
+			chaveProcedimento = crypto.randomUUID();
+			await carregarProducao();
+			atendimentoSelecionadoAjuste = listaAtendimentosAjustaveis.find(a => a.id === id) || null;
+			mensagemSucesso = 'Procedimento registrado no atendimento.';
+		} catch(e: any) { erroModalAjuste = e.message || 'Não foi possível registrar o procedimento.'; }
+		finally { salvandoProcedimento = false; }
 	}
 
 	onDestroy(() => {
 		if (timerMensagem) clearTimeout(timerMensagem);
 	});
 
-	function removerProcedimentoGestor(procId: string) {
-		if (!atendimentoSelecionadoAjuste) return;
-		const removed = atendimentoSelecionadoAjuste.procedimentosAdicionados.find(
-			(p) => p.id === procId
-		);
-		if (removed) {
-			const med = listaProducaoMedica.find(
-				(m) => m.medicoNome === atendimentoSelecionadoAjuste!.medicoNome
-			);
-			if (med) {
-				med.valorBpaEstimadoBRL = Math.max(
-					0,
-					med.valorBpaEstimadoBRL - removed.valorUnitarioBrl * removed.quantidade
-				);
-			}
-		}
-		atendimentoSelecionadoAjuste.procedimentosAdicionados =
-			atendimentoSelecionadoAjuste.procedimentosAdicionados.filter((p) => p.id !== procId);
+	async function removerProcedimentoGestor(procId: string) {
+		if (!atendimentoSelecionadoAjuste || salvandoProcedimento) return;
+		salvandoProcedimento = true; erroModalAjuste = '';
+		const id = atendimentoSelecionadoAjuste.id;
+		try { await api.centroMedico.removerProcedimento(id, procId); await carregarProducao(); atendimentoSelecionadoAjuste = listaAtendimentosAjustaveis.find(a => a.id === id) || null; mensagemSucesso = 'Procedimento removido.'; }
+		catch(e: any) { erroModalAjuste = e.message || 'Não foi possível remover o procedimento.'; }
+		finally { salvandoProcedimento = false; }
 	}
-
-	onMount(async () => {
+	async function carregarProducao() {
 		try {
-			const [encsRes, auditRes] = await Promise.allSettled([
-				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }),
-				api.centroGestao.listAuditoria(50, 0)
-			]);
-
-			if (encsRes.status === 'fulfilled' && Array.isArray(encsRes.value)) {
-				const doCentro = encsRes.value.filter((e) => e.filaDestino === 'CENTRO_ESPECIALIDADES');
-
-				// Monta lista de atendimentos ajustáveis com dados reais do banco
-				listaAtendimentosAjustaveis = doCentro.slice(0, 30).map((enc) => ({
-					id: enc.id,
-					protocolo: enc.protocolo,
-					dataAtendimento: enc.agendamentoPrevisto || enc.atualizadoEm.substring(0, 10),
-					pacienteNome: enc.paciente.nome,
-					pacienteCpf: enc.paciente.cpf,
-					medicoNome: (enc as any).profissionalAtribuido || 'Corpo Clínico do Centro',
-					medicoCrm: 'CRM Regulação',
-					especialidade: enc.solicitacao.especialidadeSolicitada || 'Especialidade Geral',
-					tipoOrigem: 'CONSULTA',
-					procedimentosAdicionados: []
-				}));
-
-				// Agrupa métricas de produção por profissional
-				const mapaMedicos = new Map<string, ProducaoMedico>();
-				doCentro.forEach((enc) => {
-					const nome = (enc as any).profissionalAtribuido || 'Corpo Clínico Especialista';
-					const espec = enc.solicitacao.especialidadeSolicitada || 'Clínica Especializada';
-					const existing = mapaMedicos.get(nome) || {
-						medicoNome: nome,
-						crm: 'CRM Regulação',
-						especialidade: espec,
-						atendimentosMes: 0,
-						tempoMedioMinutos: 20,
-						faltasPaciente: 0,
-						taxaAbsenteismo: 0,
-						encaminhamentosTFD: 0,
-						valorBpaEstimadoBRL: 0
-					};
-					existing.atendimentosMes++;
-					existing.valorBpaEstimadoBRL += 130.0;
-					mapaMedicos.set(nome, existing);
-				});
-
-				if (mapaMedicos.size > 0) {
-					listaProducaoMedica = Array.from(mapaMedicos.values());
-				}
-			}
-
-			if (
-				auditRes.status === 'fulfilled' &&
-				Array.isArray(auditRes.value.logs) &&
-				auditRes.value.logs.length > 0
-			) {
-				logsAuditoria = auditRes.value.logs.map((l: any) => ({
-					id: l.id,
-					timestamp: l.timestamp || l.criadoEm || new Date().toISOString(),
-					operador: l.operador || l.atendenteNome || 'Sistema',
-					papel: l.papel || 'OPERADOR',
-					acao: l.acao || 'OPERACAO_SISTEMA',
-					detalhes: l.detalhes || 'Operação registrada em log.',
-					ip: l.ip || '192.168.10.1'
-				}));
-			}
-		} catch (err) {
-			console.info('[UniSISM] Dados de produção e auditoria carregados.', err);
-		}
-	});
+			const result = await api.centroGestao.obterProducao({ periodo: periodoMes, centro: siglaOrgao });
+			listaAtendimentosAjustaveis = result.atendimentos;
+			listaProducaoMedica = result.profissionais;
+			erroCarregamento = '';
+			const audit = await api.centroGestao.listAuditoria({ limit: 50, centro: siglaOrgao });
+			logsAuditoria = audit.logs.map((l: any) => ({ id: l.id, timestamp: l.timestamp || l.criadoEm, operador: l.operador || l.atendenteNome || 'Sistema', papel: l.papel || 'Operador', acao: l.acao, detalhes: l.detalhes || JSON.stringify(l.payload || {}), ip: l.ip || 'Não registrado' }));
+		} catch(e: any) { erroCarregamento = e.message || 'Falha ao carregar produção.'; }
+	}
+	function mudarCompetencia() { relatorioDataInicio = periodoMes + '-01'; const d = new Date(periodoMes + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + 1); d.setUTCDate(d.getUTCDate() - 1); relatorioDataFim = d.toISOString().slice(0, 10); void carregarProducao(); }
+	onMount(carregarProducao);
 
 	function formatarMoeda(val: number) {
 		return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 	}
 
 	async function baixarRelatorioOficial() {
-		gerandoRelatorio = true;
+		if (!relatorioDataInicio || !relatorioDataFim || relatorioDataInicio > relatorioDataFim) { erroCarregamento = 'Informe um período válido: o fim deve ser igual ou posterior ao início.'; return; }
+		gerandoRelatorio = true; erroCarregamento = ''; mensagemSucesso = '';
 		try {
-			if (relatorioFormato === 'CSV' || relatorioFormato === 'XLSX') {
-				let csvContent =
-					'Médico Especialista;CRM;Especialidade;Atendimentos;Faltas;Absenteísmo (%);Encaminhamentos TFD;Valor BPA Estimado (R$)\n';
-				listaProducaoMedica.forEach((m) => {
-					csvContent += `"${m.medicoNome}";"${m.crm}";"${m.especialidade}";${m.atendimentosMes};${m.faltasPaciente};${m.taxaAbsenteismo}%;${m.encaminhamentosTFD};${m.valorBpaEstimadoBRL.toFixed(2)}\n`;
-				});
-				const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-				const url = URL.createObjectURL(blob);
-				const link = document.createElement('a');
-				link.setAttribute('href', url);
-				link.setAttribute(
-					'download',
-					`relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.csv`
-				);
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
-				URL.revokeObjectURL(url);
-			} else {
-				// PDF / BPA oficial via API ou fallback consolidado
-				try {
-					await api.centroGestao.obterRelatorioBpa(periodoMes);
-				} catch (e) {
-					console.info('[UniSISM] Gerando exportação de produção consolidada.', e);
-				}
-				let txtContent = `UNISISM - RELATÓRIO OFICIAL DE PRODUÇÃO MÉDICA E FATURAMENTO SIA-SUS\nCompetência: ${periodoMes} | Período: ${relatorioDataInicio} a ${relatorioDataFim}\n\n`;
-				listaProducaoMedica.forEach((m) => {
-					txtContent += `Médico: ${m.medicoNome} (${m.crm}) - ${m.especialidade}\nConsultas: ${m.atendimentosMes} | Faltas: ${m.faltasPaciente} (${m.taxaAbsenteismo}%) | TFD: ${m.encaminhamentosTFD} | Faturamento BPA: R$ ${m.valorBpaEstimadoBRL.toFixed(2)}\n------------------------------------------------------------\n`;
-				});
-				const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
-				const url = URL.createObjectURL(blob);
-				const link = document.createElement('a');
-				link.setAttribute('href', url);
-				link.setAttribute(
-					'download',
-					`relatorio_${relatorioTipo.toLowerCase()}_${periodoMes.replace('/', '-')}.txt`
-				);
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
-				URL.revokeObjectURL(url);
-			}
-			mensagemSucesso = `✓ RELATÓRIO OFICIAL GERADO E BAIXADO COM SUCESSO!\nDocumento: ${relatorioTipo} (${relatorioFormato})\nPeríodo: ${relatorioDataInicio} a ${relatorioDataFim}`;
-		} catch (e: any) {
-			console.error(e);
-			mensagemSucesso = `Falha ao exportar relatório: ${e?.message || 'Erro no processamento'}`;
-		} finally {
-			gerandoRelatorio = false;
-			setTimeout(() => (mensagemSucesso = ''), 6000);
-		}
+			const { blob, filename } = await api.centroGestao.exportarRelatorio({ inicio: relatorioDataInicio, fim: relatorioDataFim, centro: siglaOrgao, tipo: relatorioTipo, formato: relatorioFormato });
+			const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+			mensagemSucesso = `Relatório ${relatorioTipo} (${relatorioFormato}) gerado: ${relatorioDataInicio} a ${relatorioDataFim}.`;
+		} catch(e: any) { erroCarregamento = e.message || 'Falha ao exportar relatório.'; }
+		finally { gerandoRelatorio = false; }
 	}
+
 </script>
 
 <svelte:head>
@@ -382,9 +229,11 @@
 	<!-- Panel Header -->
 	<PanelHeader
 		title="PRODUÇÃO ASSISTENCIAL & FATURAMENTO BPA-SUS — {nomeOrgao.toUpperCase()}"
-		subtitle="Consolidação mensal de atendimentos realizados, faturamento ambulatorial SIA-SUS, absenteísmo e relatórios oficiais de prestação de contas do {nomeOrgao}."
+		subtitle="Consolidação mensal de atendimentos realizados, faturamento ambulatorial SIA-SUS, absenteísmo e relatórios de conferência do {nomeOrgao}."
 	/>
 
+	<div class="flex items-center gap-2"><label for="competencia-producao">Competência</label><input id="competencia-producao" type="month" bind:value={periodoMes} onchange={mudarCompetencia} class="border border-slate-300 p-2" /></div>
+	{#if erroCarregamento}<p role="alert" class="border border-red-300 bg-red-50 p-3 text-red-800">{erroCarregamento}</p>{/if}
 	<!-- Banner Sucesso -->
 	{#if mensagemSucesso}
 		<div
@@ -409,11 +258,11 @@
 
 		<div class="border border-slate-200 bg-white p-4">
 			<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
-				Faturamento BPA/SIA-SUS Estimado
+				Valor registrado em procedimentos
 			</div>
 			<div class="mt-2 text-2xl font-bold text-emerald-700">{formatarMoeda(totalBpaBrl)}</div>
 			<div class="mt-1 text-[11px] text-slate-600">
-				Repasse do SUS por produção de especialidades
+				Soma dos valores registrados nos procedimentos
 			</div>
 		</div>
 
@@ -514,7 +363,7 @@
 						</tr>
 					</thead>
 					<tbody class="font-mono">
-						{#each producaoFiltrada as med (med.crm)}
+						{#each producaoFiltrada as med (med.id)}
 							<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50">
 								<!-- Médico -->
 								<td class="border-r border-slate-100 px-4 py-3 font-sans">
@@ -538,7 +387,7 @@
 
 								<!-- Tempo Médio -->
 								<td class="border-r border-slate-100 px-3 py-3 text-center text-slate-700">
-									{med.tempoMedioMinutos} min
+									{med.tempoMedioMinutos === null ? 'Não registrado' : `${med.tempoMedioMinutos} min`}
 								</td>
 
 								<!-- Faltas -->
@@ -612,7 +461,7 @@
 									Relatório BPA / SIA-SUS (Produção Ambulatorial)
 								</div>
 								<div class="mt-0.5 font-sans text-[11px] text-slate-600">
-									Faturamento oficial de consultas especializadas por médico e procedimento SUS.
+									Procedimentos realizados para conferência. Importação oficial SIA/SUS depende de validação específica.
 								</div>
 							</div>
 						</label>
@@ -745,7 +594,7 @@
 							>
 								{gerandoRelatorio
 									? 'Processando Relatório...'
-									: '📥 Gerar e Baixar Relatório Oficial'}
+									: '📥 Gerar e Baixar Relatório'}
 							</button>
 						</div>
 					</div>
@@ -848,10 +697,12 @@
 									<td class="p-3 text-center whitespace-nowrap">
 										<button
 											type="button"
+											disabled={atend.historicoSemProntuario}
+											title={atend.historicoSemProntuario ? 'Registro histórico sem prontuário clínico vinculado' : undefined}
 											onclick={() => abrirAjusteProcedimentoGestor(atend)}
 											class="border border-purple-900 bg-purple-900 px-3 py-1.5 font-mono text-xs font-bold tracking-wider text-white uppercase shadow-xs hover:bg-purple-950"
 										>
-											+ Lançar / Ajustar Procedimento
+											{atend.historicoSemProntuario ? 'Histórico sem prontuário' : '+ Lançar / Ajustar Procedimento'}
 										</button>
 									</td>
 								</tr>
@@ -1073,7 +924,7 @@
 				</button>
 				<button
 					type="button"
-					onclick={adicionarProcedimentoGestor}
+					onclick={adicionarProcedimentoGestor} disabled={salvandoProcedimento}
 					class="border border-purple-900 bg-purple-900 px-5 py-2 text-xs font-bold text-white uppercase hover:bg-purple-950"
 				>
 					✓ Confirmar Lançamento pelo Gestor

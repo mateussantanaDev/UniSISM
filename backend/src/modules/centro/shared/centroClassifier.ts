@@ -80,21 +80,21 @@ export const ESPECIALIDADES_ODONTO: readonly string[] = [
 ];
 
 export interface ItemClassificavelCentro {
-  nome?: string;
-  especialidade?: string;
-  medicoNome?: string;
-  profissionalAgendado?: string;
-  localAgendamento?: string;
+  nome?: string | null;
+  especialidade?: string | null;
+  medicoNome?: string | null;
+  profissionalAgendado?: string | null;
+  localAgendamento?: string | null;
   canalRoteamento?: string | null;
   destinoRegulacao?: string | null;
   filaDestino?: string | null;
   solicitacao?: {
-    especialidadeSolicitada?: string;
-    crm?: string;
-    medicoSolicitante?: string;
+    especialidadeSolicitada?: string | null;
+    crm?: string | null;
+    medicoSolicitante?: string | null;
   };
   documentosObrigatorios?: string[];
-  crm?: string;
+  crm?: string | null;
 }
 
 /**

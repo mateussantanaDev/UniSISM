@@ -73,3 +73,6 @@ backend/data/
 UNISISM-motorista/.claude/
 
 .vercel
+.env*
+tests/screenshots/
+tests/qa-cem-2026-10-05/

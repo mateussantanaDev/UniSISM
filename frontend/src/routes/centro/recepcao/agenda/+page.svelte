@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
@@ -39,6 +40,7 @@
 
 	// Interfaces do Especialista com Escala Estruturada
 	interface EspecialistaAgendaItem {
+		profissionalId?: string;
 		id: string;
 		nome: string;
 		crm: string;
@@ -169,33 +171,10 @@
 	}
 
 	// Extrai horário da consulta formatado HH:MM a partir do encaminhamento, agendamentoPrevisto ou nota
-	function extrairHorario(encOuNota: any): string {
-		if (!encOuNota) return '08:00';
-		if (typeof encOuNota === 'object') {
-			const enc = encOuNota;
-			// 1. Extrai de agendamentoPrevisto se presente (formato ISO "YYYY-MM-DDTHH:mm:ss")
-			if (enc.agendamentoPrevisto) {
-				const matchIso = enc.agendamentoPrevisto.match(/T(\d{2}:\d{2})/);
-				if (matchIso) return matchIso[1];
-				try {
-					const d = new Date(enc.agendamentoPrevisto);
-					const h = String(d.getHours()).padStart(2, '0');
-					const m = String(d.getMinutes()).padStart(2, '0');
-					if (h !== '00' || m !== '00') return `${h}:${m}`;
-				} catch {}
-			}
-			// 2. Extrai de observacoesRegulacao
-			if (enc.observacoesRegulacao) {
-				const match = enc.observacoesRegulacao.match(/(\d{2}:\d{2})/);
-				if (match) return match[1];
-			}
-			return '08:00';
-		}
-		const str = String(encOuNota);
-		const matchIso = str.match(/T(\d{2}:\d{2})/);
-		if (matchIso) return matchIso[1];
-		const match = str.match(/(\d{2}:\d{2})/);
-		return match ? match[1] : '08:00';
+	function diaRecife(value?: string | null): string { if (!value) return ''; return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Intl.DateTimeFormat('en-CA',{timeZone:'America/Recife'}).format(new Date(value)); }
+	function extrairHorario(enc: any): string {
+		if (!enc?.agendamentoPrevisto) return 'Sem horário';
+		return new Date(enc.agendamentoPrevisto).toLocaleTimeString('pt-BR',{timeZone:'America/Recife',hour:'2-digit',minute:'2-digit'});
 	}
 
 	// Identifica o médico atribuído a um agendamento
@@ -213,34 +192,7 @@
 
 	// Verifica se um agendamento pertence ao especialista fornecido
 	function agendamentoPertenceAoMedico(enc: Encaminhamento, esp: EspecialistaAgendaItem): boolean {
-		const medicoEnc = extrairNomeMedicoAgendamento(enc).toLowerCase();
-		if (medicoEnc) {
-			if (
-				medicoEnc.includes(esp.nome.toLowerCase()) ||
-				esp.nome.toLowerCase().includes(medicoEnc)
-			) {
-				return true;
-			}
-			// Se tiver CRM/CRO no texto ou no especialista
-			if (
-				esp.crm &&
-				enc.solicitacao?.crm &&
-				esp.crm.replace(/\D/g, '') === enc.solicitacao.crm.replace(/\D/g, '')
-			) {
-				return true;
-			}
-			const espPrimeiroNome = esp.nome.split(' ')[0].toLowerCase();
-			if (espPrimeiroNome.length > 2 && medicoEnc.includes(espPrimeiroNome)) {
-				return true;
-			}
-		}
-		// Fallback por especialidade se nenhum médico estiver explicitamente citado
-		if (enc.solicitacao?.especialidadeSolicitada) {
-			const espEnc = enc.solicitacao.especialidadeSolicitada.toLowerCase();
-			const espMed = esp.especialidade.toLowerCase();
-			return espEnc.includes(espMed) || espMed.includes(espEnc);
-		}
-		return false;
+		return Boolean(esp.profissionalId && enc.profissionalAgendadoId === esp.profissionalId);
 	}
 
 	// Lista Consolidada de Especialistas com suas Escalas (100% Real - Cadastradas no Banco)
@@ -270,6 +222,7 @@
 					)
 				);
 				list.push({
+					profissionalId: esc.medicoId || prof?.id,
 					id: esc.id || esc.medicoId || prof?.id || nome.toLowerCase().replace(/\s+/g, '-'),
 					nome,
 					crm:
@@ -333,7 +286,7 @@
 				api.centroRecepcao
 					.listAgendaDia({ data: dataAgenda, centro: centroParam })
 					.catch(() => null),
-				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => []),
+				api.centroMedico.listRegistros({ status: 'APROVADO', centro: ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES' }).catch(() => []),
 				api.centroGestao.listEscalas({ centro: siglaOrgao }).catch(() => []),
 				api.centroGestao.listProfissionais({ centro: siglaOrgao }).catch(() => [])
 			]);
@@ -351,7 +304,7 @@
 				);
 			} else {
 				encaminhamentos = todosEncaminhamentosMes.filter(
-					(e) => e.agendamentoPrevisto?.substring(0, 10) === dataAgenda
+					(e) => diaRecife(e.agendamentoPrevisto) === dataAgenda
 				);
 			}
 		} catch (e: any) {
@@ -372,7 +325,7 @@
 
 	// Pacientes agendados na data em foco
 	let agendadosDaData = $derived(
-		todosEncaminhamentosMes.filter((e) => e.agendamentoPrevisto?.substring(0, 10) === dataAgenda)
+		todosEncaminhamentosMes.filter((e) => diaRecife(e.agendamentoPrevisto) === dataAgenda)
 	);
 
 	// Pacientes da data filtrados pelo médico em foco
@@ -425,7 +378,7 @@
 	function abrirRealocacao(enc: Encaminhamento) {
 		encaminhamentoParaRealocar = enc;
 		novaDataRealocacao = enc.agendamentoPrevisto
-			? enc.agendamentoPrevisto.substring(0, 10)
+			? diaRecife(enc.agendamentoPrevisto)
 			: dataAgenda;
 		novoHorarioRealocacao = extrairHorario(enc);
 		novoMedicoRealocacao = extrairNomeMedicoAgendamento(enc) || (especialistaAtivo?.nome ?? '');
@@ -447,13 +400,13 @@
 		const agendadosOcupados: AgendamentoOcupado[] = todosEncaminhamentosMes
 			.filter((e) => e.agendamentoPrevisto && e.id !== encaminhamentoParaRealocar!.id)
 			.map((e) => ({
-				data: e.agendamentoPrevisto!.substring(0, 10),
+				data: diaRecife(e.agendamentoPrevisto),
 				hora: extrairHorario(e),
 				medicoNome: extrairNomeMedicoAgendamento(e)
 			}));
 
 		const escalasFormatadas: EscalaProfissionalCentro[] = listaEspecialistas.map((esp) => ({
-			medicoId: esp.id,
+			medicoId: esp.profissionalId,
 			nome: esp.nome,
 			registro: esp.crm,
 			centro: centroAtivoAgenda,
@@ -500,24 +453,11 @@
 		const notaAtualizada = `Profissional: ${novoMedicoRealocacao || 'Especialista'} às ${novoHorarioRealocacao} | [REALOCAÇÃO DE ESCALA] Motivo: ${motivoRealocacao.trim()}`;
 
 		try {
-			try {
-				await api.centroRecepcao.desmarcarReagendar(encaminhamentoParaRealocar.id, {
-					acao: 'REAGENDAR',
-					novaData: novaDataRealocacao,
-					novoHorario: novoHorarioRealocacao,
-					unidadeDestino: nomeOrgao,
-					motivo: notaAtualizada
-				});
-			} catch (errReag) {
-				await api.centroRecepcao.remarcar(encaminhamentoParaRealocar.id, {
-					novaData: novaDataRealocacao,
-					novoHorario: novoHorarioRealocacao,
-					unidadeDestino: nomeOrgao,
-					motivo: notaAtualizada
-				});
-			}
+			await api.centroRecepcao.agendar(encaminhamentoParaRealocar.id, {
+				profissional:novoMedicoRealocacao, dataAgendada:novaDataRealocacao, horaAgendada:novoHorarioRealocacao, localAgendamento:nomeOrgao, nota:notaAtualizada
+			});
 
-			encaminhamentoParaRealocar.agendamentoPrevisto = novaDataRealocacao;
+			encaminhamentoParaRealocar.agendamentoPrevisto = new Date(`${novaDataRealocacao}T${novoHorarioRealocacao}:00-03:00`).toISOString();
 			encaminhamentoParaRealocar.observacoesRegulacao = notaAtualizada;
 			(encaminhamentoParaRealocar as any).profissionalAgendado = novoMedicoRealocacao;
 
@@ -700,7 +640,7 @@
 
 			// Agendamentos deste médico específico nesta data
 			const agendadosNesteDia = todosEncaminhamentosMes.filter((e) => {
-				const naData = e.agendamentoPrevisto?.substring(0, 10) === dataIso;
+				const naData = diaRecife(e.agendamentoPrevisto) === dataIso;
 				if (!naData) return false;
 				return esp ? agendamentoPertenceAoMedico(e, esp) : true;
 			});
@@ -1768,6 +1708,7 @@
 {#if modalComprovanteAberto && comprovanteSelecionado}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-sans">
 		<div
+			use:dialogAccessibility={{label:'Comprovante de agendamento',onClose:()=>modalComprovanteAberto=false}}
 			class="w-full max-w-lg border-2 border-slate-900 bg-white p-6 shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div class="flex items-center justify-between border-b-2 border-slate-900 pb-3">

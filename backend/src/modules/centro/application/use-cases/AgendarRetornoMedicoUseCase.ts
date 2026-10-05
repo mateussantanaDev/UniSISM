@@ -1,3 +1,6 @@
+import { validarReservaCentro } from '../../shared/reservaCentro';
+import { dataHoraRecife } from '../../shared/dataCentro';
+import { resolverProfissionalCentro } from '../../shared/profissionalCentro';
 import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -33,7 +36,7 @@ export class AgendarRetornoMedicoUseCase {
       throw Unprocessable('DATA_RETORNO_INVALIDA', 'dataRetorno deve ser YYYY-MM-DD.');
     }
 
-    const dataRetornoDate = new Date(`${input.dataRetorno}T${input.horaRetorno}:00.000Z`);
+    const dataRetornoDate = dataHoraRecife(input.dataRetorno, input.horaRetorno);
     if (Number.isNaN(dataRetornoDate.getTime())) {
       throw Unprocessable('DATA_HORA_INVALIDA', 'Data ou horário de retorno inválido.');
     }
@@ -62,8 +65,11 @@ export class AgendarRetornoMedicoUseCase {
 
     if (encAnterior) {
       ensureUbsAcessivel(scope, { id: encAnterior.ubsId, prefeituraId: (encAnterior as any).ubs?.prefeituraId ?? '' });
+      if (!encAnterior.pacienteId) throw Unprocessable('PACIENTE_NAO_VINCULADO','Consulta sem vínculo com paciente');
+      if (input.pacienteId && input.pacienteId !== encAnterior.pacienteId) throw BadRequest('PACIENTE_DIVERGENTE','O paciente não pertence à consulta');
+      if (['MEDICO','MEDICO_ESPECIALISTA'].includes((await prisma.atendente.findUnique({where:{id:input.doctor.id}}))?.role || '') && encAnterior.profissionalAgendadoId !== input.doctor.id) throw NotFound('ENCAMINHAMENTO_NAO_ENCONTRADO','Consulta não encontrada');
       pacienteData = {
-        id: encAnterior.pacienteId || encAnterior.id,
+        id: encAnterior.pacienteId,
         nome: encAnterior.pacienteNome,
         cpf: encAnterior.pacienteCpf,
         cartaoSus: encAnterior.pacienteCartaoSus,
@@ -104,7 +110,11 @@ export class AgendarRetornoMedicoUseCase {
       };
     }
 
+    const profissional = await resolverProfissionalCentro(pacienteData.ubsId, input.medicoNome || input.doctor.nome, (!input.medicoNome || input.medicoNome === input.doctor.nome) ? input.doctor.id : undefined);
     const created = await prisma.$transaction(async (tx) => {
+      if (!profissional) throw Unprocessable('PROFISSIONAL_OBRIGATORIO','Selecione um profissional com escala cadastrada');
+      const unidade = await tx.ubs.findUniqueOrThrow({where:{id:pacienteData.ubsId}});
+      const escala = await validarReservaCentro(tx, {prefeituraId:unidade.prefeituraId, profissionalId:profissional.id, especialidade:pacienteData.especialidade, tipoServico:encAnterior?.tipoServico || 'CONSULTA', data:dataRetornoDate});
       const ano = new Date().getUTCFullYear();
       const chave = `UBS-${ano}`;
       const seq = await tx.sequencialProtocolo.upsert({
@@ -118,8 +128,8 @@ export class AgendarRetornoMedicoUseCase {
         data: {
           protocolo,
           status: StatusEncaminhamento.APROVADO,
-          canalRoteamento: CanalRoteamento.CENTRO_ESPECIALIDADES,
-          destinoRegulacao: DestinoRegulacao.CENTRO_ESPECIALIDADES,
+          canalRoteamento: encAnterior?.canalRoteamento || CanalRoteamento.CENTRO_ESPECIALIDADES,
+          destinoRegulacao: encAnterior?.destinoRegulacao || DestinoRegulacao.CENTRO_ESPECIALIDADES,
           ubsId: pacienteData.ubsId,
           unidadeOrigem: pacienteData.unidadeOrigem,
           atendenteId: input.doctor.id,
@@ -135,14 +145,19 @@ export class AgendarRetornoMedicoUseCase {
           medicoSolicitante: input.doctor.nome,
           crm: input.doctor.matricula || '000000',
           especialidadeSolicitada: pacienteData.especialidade,
+          tipoServico: encAnterior?.tipoServico,
+          procedimentoSolicitado:encAnterior?.procedimentoSolicitado,
+          codigoSigtapSolicitado:encAnterior?.codigoSigtapSolicitado,
+          necessitaTriagem:escala.necessitaTriagem,
           cid10: pacienteData.cid10,
           cidDescricao: pacienteData.cidDescricao || 'Consulta de Retorno',
           justificativaClinica: `Retorno médico agendado pelo especialista Dr(a). ${input.doctor.nome}. ${input.observacoes ? `Obs: ${input.observacoes}` : ''}`,
           prioridade: 'ELETIVA',
           dataSolicitacao: new Date(),
           agendamentoPrevisto: dataRetornoDate,
-          profissionalAgendado: input.medicoNome || input.doctor.nome,
-          localAgendamento: 'Centro Municipal de Especialidades',
+          profissionalAgendado: profissional?.nome ?? input.medicoNome ?? input.doctor.nome,
+          profissionalAgendadoId: profissional?.id ?? null,
+          localAgendamento: encAnterior?.localAgendamento || 'Sala a definir',
           statusAtendimentoCentro: 'AGENDADO',
           observacoesRegulacao: input.observacoes || `Retorno agendado para ${input.dataRetorno} às ${input.horaRetorno}`,
           timeline: {

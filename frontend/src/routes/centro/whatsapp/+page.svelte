@@ -6,8 +6,10 @@
 		WhatsAppMensagemDTO,
 		WhatsAppConfigDTO,
 		SalvarWhatsAppConfigRequest,
-		EnviarTemplateWhatsAppRequest
+		EnviarTemplateWhatsAppRequest,
+		UsuarioListado
 	} from '$lib/api/types';
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { useAuth } from '$lib/presentation/contexts/authContext';
 
 	interface Props {
@@ -47,10 +49,10 @@
 		phoneNumberId: '',
 		wabaId: '',
 		accessToken: '',
-		webhookVerifyToken: 'unisism_meta_verify_token_2026',
-		businessPhoneNumber: '+55 75 99999-0000',
+		webhookVerifyToken: '',
+		businessPhoneNumber: '',
 		nomeExibicao: 'Central de Especialidades',
-		ativo: true,
+		ativo: false,
 		horarioInicio: '07:00',
 		horarioFim: '18:00',
 		mensagemBoasVindas:
@@ -70,7 +72,10 @@
 	} | null>(null);
 
 	// Transferência
-	let novoAtendenteNome = $state('');
+	let novoAtendenteId = $state('');
+	let atendentesTransferencia = $state<UsuarioListado[]>([]);
+	let carregandoAtendentes = $state(false);
+	let erroTransferencia = $state<string | null>(null);
 
 	// Template de Envio
 	let templateSelecionado = $state<
@@ -93,7 +98,7 @@
 
 	async function carregarConversas(silencioso = false) {
 		if (!silencioso) loading = true;
-		errorMsg = null;
+		if (!silencioso) errorMsg = null;
 		try {
 			const res = await api.centroWhatsApp.listarConversas({
 				aba: abaSelecionada,
@@ -174,7 +179,8 @@
 		textoMensagem = '';
 
 		try {
-			await api.centroWhatsApp.enviarMensagem(conversaAtiva.id, { corpo, tipo: 'TEXTO' });
+			const mensagem = await api.centroWhatsApp.enviarMensagem(conversaAtiva.id, { corpo, tipo: 'TEXTO' });
+			if (mensagem.statusEnvio === 'FALHA') throw new Error(mensagem.erroEnvio || 'A Meta recusou a mensagem. Tente novamente após corrigir a integração.');
 			await carregarDetalhesConversa(conversaAtiva.id, true);
 			await carregarConversas(true);
 		} catch (e: any) {
@@ -198,21 +204,40 @@
 		}
 	}
 
+	async function abrirTransferencia() {
+		if (!conversaAtiva) return;
+		modalTransferirAberto = true;
+		novoAtendenteId = '';
+		erroTransferencia = null;
+		carregandoAtendentes = true;
+		try {
+			const usuarios = await api.admin.listUsuarios({ ativo: true });
+			const roles = ['ADMIN', 'REGULADOR_SMS', 'COORDENADOR_UBS', 'ATENDENTE_UBS', 'ATENDENTE_CENTRO', 'ENFERMEIRO'];
+			atendentesTransferencia = usuarios.filter((u) => u.ativo && roles.includes(u.role)
+				&& (u.prefeitura?.id ?? u.ubs?.prefeitura.id ?? null) === conversaAtiva?.prefeituraId
+				&& !(u.tipoUnidade === 'CEM' && conversaAtiva?.centroTipo === 'CEO')
+				&& !(u.tipoUnidade === 'CEO' && conversaAtiva?.centroTipo === 'CEM'));
+		} catch (e: any) {
+			erroTransferencia = e.message || 'Não foi possível carregar os atendentes.';
+		} finally { carregandoAtendentes = false; }
+	}
+
 	async function transferirAtendimento() {
-		if (!conversaAtiva || !novoAtendenteNome.trim()) return;
+		const destino = atendentesTransferencia.find((u) => u.id === novoAtendenteId);
+		if (!conversaAtiva || !destino) return;
 		try {
 			await api.centroWhatsApp.transferirConversa(conversaAtiva.id, {
-				novoAtendenteId: 'ATENDENTE_' + Date.now(),
-				novoAtendenteNome: novoAtendenteNome.trim()
+				novoAtendenteId: destino.id,
+				novoAtendenteNome: destino.nome
 			});
 			modalTransferirAberto = false;
-			novoAtendenteNome = '';
+			novoAtendenteId = '';
 			await carregarDetalhesConversa(conversaAtiva.id, true);
 			await carregarConversas(true);
 			successMsg = 'Conversa transferida com sucesso!';
 			setTimeout(() => (successMsg = null), 3000);
 		} catch (e: any) {
-			errorMsg = e.message || 'Erro ao transferir atendimento.';
+			erroTransferencia = e.message || 'Erro ao transferir atendimento.';
 		}
 	}
 
@@ -238,14 +263,15 @@
 		if (!conversaAtiva) return;
 		sending = true;
 		try {
-			await api.centroWhatsApp.enviarTemplate(conversaAtiva.id, {
+			const mensagem = await api.centroWhatsApp.enviarTemplate(conversaAtiva.id, {
 				tipoTemplate: templateSelecionado,
 				variaveis: variaveisTemplate
 			});
+			if (mensagem.statusEnvio === 'FALHA') throw new Error(mensagem.erroEnvio || 'A Meta recusou a mensagem.');
 			modalTemplateAberto = false;
 			await carregarDetalhesConversa(conversaAtiva.id, true);
 			await carregarConversas(true);
-			successMsg = 'Template disparado com sucesso via WhatsApp!';
+			successMsg = 'Mensagem aceita pela Meta; entrega aguardando confirmação.';
 			setTimeout(() => (successMsg = null), 3000);
 		} catch (e: any) {
 			errorMsg = e.message || 'Erro ao enviar template.';
@@ -281,10 +307,10 @@
 				phoneNumberId: cfg.phoneNumberId || '',
 				wabaId: cfg.wabaId || '',
 				accessToken: '',
-				webhookVerifyToken: cfg.webhookVerifyToken || 'unisism_meta_verify_token_2026',
-				businessPhoneNumber: cfg.businessPhoneNumber || '+55 75 99999-0000',
+				webhookVerifyToken: '',
+				businessPhoneNumber: cfg.businessPhoneNumber || '',
 				nomeExibicao: cfg.nomeExibicao || 'Central de Regulação e Especialidades',
-				ativo: cfg.ativo !== undefined ? cfg.ativo : true,
+				ativo: cfg.ativo ?? false,
 				horarioInicio: cfg.horarioInicio || '07:00',
 				horarioFim: cfg.horarioFim || '18:00',
 				mensagemBoasVindas: cfg.mensagemBoasVindas || '',
@@ -310,8 +336,8 @@
 	}
 
 	async function salvarConfiguracoesMeta() {
-		if (!formConfig.phoneNumberId.trim() || !formConfig.webhookVerifyToken.trim()) {
-			alert('Phone Number ID e Webhook Verify Token são obrigatórios.');
+		if (formConfig.ativo && (!formConfig.phoneNumberId.trim() || (!formConfig.accessToken?.trim() && !configMeta?.accessTokenConfigurado) || (!formConfig.webhookVerifyToken?.trim() && !configMeta?.webhookVerifyTokenConfigurado))) {
+			alert('Para habilitar, informe Phone Number ID, Access Token e Webhook Verify Token. Campos de token vazios preservam os valores já salvos.');
 			return;
 		}
 		salvandoConfig = true;
@@ -681,7 +707,7 @@
 
 						<button
 							type="button"
-							onclick={() => (modalTransferirAberto = true)}
+							onclick={abrirTransferencia}
 							class="border border-slate-400 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 uppercase hover:bg-slate-50"
 						>
 							Transferir
@@ -994,7 +1020,7 @@
 <!-- Modal: Configuração da Meta WhatsApp Cloud API -->
 {#if modalConfigAberto}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
-		<div class="w-full max-w-2xl border border-slate-400 bg-white shadow-2xl">
+		<div use:dialogAccessibility={{ label: 'Configuração Meta Cloud API', onClose: () => (modalConfigAberto = false) }} class="w-full max-w-2xl border border-slate-400 bg-white shadow-2xl">
 			<header
 				class="flex items-center justify-between border-b border-slate-300 bg-slate-100 px-4 py-3"
 			>
@@ -1020,6 +1046,11 @@
 				}}
 				class="max-h-[80vh] space-y-3 overflow-y-auto p-4 text-xs"
 			>
+				<div class="border border-slate-300 bg-slate-50 p-3" role="status">
+					<strong>{configMeta?.statusIntegracao === 'DEMONSTRATIVA' ? 'Modo demonstrativo — sem conexão real' : configMeta?.statusIntegracao === 'CONFIGURADA' ? 'Credenciais salvas — teste a conexão para verificar' : 'Integração não configurada'}</strong>
+					<p class="mt-1">Salvar credenciais não confirma conexão ou entrega de mensagens.</p>
+				</div>
+				<label class="flex items-center gap-2"><input type="checkbox" bind:checked={formConfig.ativo} /> Habilitar envio de mensagens</label>
 				{#if statusConexao}
 					<div
 						class="border p-3 {statusConexao.valid
@@ -1030,7 +1061,7 @@
 							<span
 								>{statusConexao.valid
 									? '✅ Conexão Meta Válida'
-									: '❌ Falha de Autenticação na Meta'}</span
+									: 'Conexão não confirmada'}</span
 							>
 						</div>
 						{#if statusConexao.valid}
@@ -1056,7 +1087,7 @@
 							id="whatsapp-phone-number-id"
 							type="text"
 							bind:value={formConfig.phoneNumberId}
-							required
+							required={formConfig.ativo}
 							placeholder="Ex: 1048291048102"
 							class="w-full border border-slate-300 p-2 text-xs focus:border-indigo-600 focus:outline-none"
 						/>
@@ -1095,7 +1126,7 @@
 						class="w-full border border-slate-300 p-2 text-xs focus:border-indigo-600 focus:outline-none"
 					/>
 					<span class="mt-0.5 block text-[10px] text-slate-400">
-						Token permanente gerado no Meta Business Manager com permissões
+						Deixe vazio para preservar o token já salvo. Token permanente gerado no Meta Business Manager com permissões
 						`whatsapp_business_messaging`.
 					</span>
 				</div>
@@ -1110,10 +1141,10 @@
 						</label>
 						<input
 							id="whatsapp-webhook-token"
-							type="text"
+							type="password"
 							bind:value={formConfig.webhookVerifyToken}
-							required
-							placeholder="Token de verificação do Webhook"
+							required={formConfig.ativo && !configMeta?.webhookVerifyTokenConfigurado}
+							placeholder={configMeta?.webhookVerifyTokenConfigurado ? 'Já salvo — deixe vazio para manter' : 'Token de verificação do Webhook'}
 							class="w-full border border-slate-300 p-2 text-xs focus:border-indigo-600 focus:outline-none"
 						/>
 					</div>
@@ -1216,7 +1247,7 @@
 <!-- Modal: Transferir Conversa -->
 {#if modalTransferirAberto && conversaAtiva}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
-		<div class="w-full max-w-md border border-slate-400 bg-white p-4 shadow-2xl">
+		<div use:dialogAccessibility={{ label: 'Transferir Atendimento', onClose: () => (modalTransferirAberto = false) }} class="w-full max-w-md border border-slate-400 bg-white p-4 shadow-2xl">
 			<h3 class="mb-3 border-b border-slate-200 pb-2 text-xs font-bold text-slate-900 uppercase">
 				Transferir Atendimento
 			</h3>
@@ -1229,15 +1260,15 @@
 					for="whatsapp-novo-atendente"
 					class="mb-1 block text-[10px] font-bold text-slate-700 uppercase"
 				>
-					Nome do Novo Atendente *
+					Novo Atendente *
 				</label>
-				<input
-					id="whatsapp-novo-atendente"
-					type="text"
-					bind:value={novoAtendenteNome}
-					placeholder="Ex: Beatriz Lima (Recepção)"
-					class="w-full border border-slate-300 p-2 text-xs focus:border-indigo-600 focus:outline-none"
-				/>
+				<select id="whatsapp-novo-atendente" bind:value={novoAtendenteId} disabled={carregandoAtendentes}
+					class="w-full border border-slate-300 p-2 text-xs focus:border-indigo-600 focus:outline-none">
+					<option value="">{carregandoAtendentes ? 'Carregando atendentes...' : 'Selecione um atendente ativo'}</option>
+					{#each atendentesTransferencia as atendente}<option value={atendente.id}>{atendente.nome} ({atendente.role})</option>{/each}
+				</select>
+				{#if erroTransferencia}<p class="mt-2 text-red-700" role="alert">{erroTransferencia}</p>{/if}
+				{#if !carregandoAtendentes && !erroTransferencia && !atendentesTransferencia.length}<p class="mt-2">Nenhum atendente elegível encontrado neste município e centro.</p>{/if}
 			</div>
 			<div class="mt-4 flex justify-end gap-2">
 				<button
@@ -1250,6 +1281,7 @@
 				<button
 					type="button"
 					onclick={transferirAtendimento}
+					disabled={!novoAtendenteId || carregandoAtendentes}
 					class="bg-indigo-700 px-4 py-1.5 text-xs font-bold text-white uppercase hover:bg-indigo-800"
 				>
 					Confirmar Transferência
@@ -1262,7 +1294,7 @@
 <!-- Modal: Disparo de Template Oficial -->
 {#if modalTemplateAberto && conversaAtiva}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
-		<div class="w-full max-w-lg border border-slate-400 bg-white shadow-2xl">
+		<div use:dialogAccessibility={{ label: 'Modelo de mensagem', onClose: () => (modalTemplateAberto = false) }} class="w-full max-w-lg border border-slate-400 bg-white shadow-2xl">
 			<header
 				class="flex items-center justify-between border-b border-slate-300 bg-slate-100 px-4 py-2.5"
 			>

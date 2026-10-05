@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
@@ -65,12 +66,12 @@
 	let erroModal = $state('');
 
 	// Dropdown de Médicos/Dentistas com Busca (exclusivos deste órgão)
-	let medicosEspecialistas = $state<{ nome: string; especialidade: string; registro: string }[]>(
+	let medicosEspecialistas = $state<{ id?: string; nome: string; especialidade: string; registro: string }[]>(
 		[]
 	);
 	let buscaMedico = $state('');
 	let dropdownAberto = $state(false);
-	let medicoSelecionado = $state<{ nome: string; especialidade: string; registro: string } | null>(
+	let medicoSelecionado = $state<{ id?: string; nome: string; especialidade: string; registro: string } | null>(
 		null
 	);
 
@@ -103,6 +104,7 @@
 			// Carrega escalas oficiais cadastradas no banco
 			const escalasBase = Array.isArray(resEscalas) ? resEscalas : [];
 			medicosEspecialistas = escalasBase.map((e) => ({
+				id: e.medicoId || undefined,
 				nome: e.medicoNome,
 				especialidade: e.especialidade,
 				registro: e.crm
@@ -199,23 +201,17 @@
 		paginaAtual = 1;
 	});
 
-	let alocacaoInteligente = $derived.by(() => {
-		if (!selecionado) return null;
-		const agendadosOcupados: AgendamentoOcupado[] = encaminhamentos
-			.filter((e) => e.agendamentoPrevisto)
-			.map((e) => ({
-				data: e.agendamentoPrevisto!.substring(0, 10),
-				hora: (e.observacoesRegulacao || '').match(/(\d{2}:\d{2})/)?.[1] || '08:00',
-				medicoNome: (e as any).profissionalAtribuido
-			}));
-
-		return alocarVagaPorProfissionalEEscala({
-			centro: centroAtivo,
-			medicoNome: medicoSelecionado?.nome,
-			especialidade: selecionado.solicitacao.especialidadeSolicitada,
-			prioridade: selecionado.solicitacao.prioridade,
-			agendamentosExistentes: agendadosOcupados
-		});
+	let alocacaoInteligente = $state<any>(null);
+	let calculandoVaga = $state(false);
+	$effect(() => {
+		const enc = selecionado, medico=medicoSelecionado, centro=centroAtivo;
+		alocacaoInteligente=null;
+		if(!enc || !medico || !modalAgendamento) return;
+		let ativo=true; calculandoVaga=true;
+		api.centroRecepcao.calcularSlot({centro,medicoNome:medico.nome,medicoId:medico.id,especialidade:enc.solicitacao.especialidadeSolicitada,tipoServico:enc.solicitacao.tipoServico || 'CONSULTA'}).then(r=>{
+			if(ativo) alocacaoInteligente=r.alocacao ? {...r.alocacao,registro:r.alocacao.crm,centroNome:centro==='CEO'?'Centro de Especialidades Odontológicas':'Centro de Especialidades Médicas'} : null;
+		}).catch(e=>{if(ativo) erroModal=e?.message || 'Não foi possível consultar as vagas';}).finally(()=>{if(ativo)calculandoVaga=false;});
+		return ()=>{ativo=false;};
 	});
 
 	function abrirAgendamento(enc: Encaminhamento) {
@@ -224,8 +220,8 @@
 
 		if (enc.agendamentoPrevisto) {
 			modoSelecaoData = 'MANUAL';
-			dataAgendamentoManual = enc.agendamentoPrevisto.substring(0, 10);
-			horaAgendamentoManual = '09:00';
+			dataAgendamentoManual = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Recife'}).format(new Date(enc.agendamentoPrevisto));
+			horaAgendamentoManual = new Date(enc.agendamentoPrevisto).toLocaleTimeString('pt-BR',{timeZone:'America/Recife',hour:'2-digit',minute:'2-digit'});
 		} else {
 			modoSelecaoData = 'AUTO';
 			dataAgendamentoManual = new Date().toISOString().substring(0, 10);
@@ -321,8 +317,8 @@
 			dataCalculada = alocacaoInteligente.data;
 			horaCalculada = alocacaoInteligente.hora;
 		} else {
-			dataCalculada = new Date().toISOString().substring(0, 10);
-			horaCalculada = '08:30';
+			erroModal = 'Não há horário disponível. Selecione uma vaga na escala.';
+			processandoAgendamento = false; return;
 		}
 
 		const ehRemarcacao = !!selecionado.agendamentoPrevisto;
@@ -343,33 +339,24 @@
 					motivo: notaAgendamento.trim() || 'Remarcação de consulta realizada pela recepção.'
 				});
 			} else {
-				try {
-					await api.centroRecepcao.agendar(selecionado.id, {
+				await api.centroRecepcao.agendar(selecionado.id, {
 						profissional: medicoSelecionado.nome,
+						profissionalId: medicoSelecionado.id,
 						nota: notaCompleta,
 						localAgendamento: localNome,
 						dataAgendada: dataCalculada,
 						horaAgendada: horaCalculada
 					});
-				} catch (errAgendar: any) {
-					console.warn('[UniSISM] Fallback para api.encaminhamentos.aprovar', errAgendar);
-					await api.encaminhamentos.aprovar(selecionado.id, {
-						filaDestino,
-						agendamentoPrevisto: dataCalculada,
-						nota: notaCompleta
-					});
-				}
 			}
 
 			// Atualiza estado local imediatamente para refletir o agendamento
-			selecionado.agendamentoPrevisto = dataCalculada;
+			selecionado.agendamentoPrevisto = new Date(`${dataCalculada}T${horaCalculada}:00-03:00`).toISOString();
 			(selecionado as any).profissionalAtribuido = medicoSelecionado.nome;
-
-			fecharAgendamento();
-			await carregarFila();
 
 			const dtFmt = dataCalculada.split('-').reverse().join('/');
 			mensagemSucesso = `✓ ${ehRemarcacao ? 'CONSULTA REMARCADA' : 'AGENDAMENTO CONCLUÍDO'} COM SUCESSO!\nPaciente: ${selecionado.paciente.nome} | Data Agendada: ${dtFmt} às ${horaCalculada} | Médico: ${medicoSelecionado.nome}`;
+			fecharAgendamento();
+			await carregarFila();
 			if (timerMensagem) clearTimeout(timerMensagem);
 			timerMensagem = setTimeout(() => {
 				mensagemSucesso = '';
@@ -700,6 +687,7 @@
 {#if modalAgendamento && selecionado}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
 		<div
+			use:dialogAccessibility={{label:'Agendar consulta',onClose:fecharAgendamento}}
 			class="w-full max-w-lg border-2 border-slate-900 bg-white font-mono shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
@@ -981,6 +969,7 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
 	>
 		<div
+			use:dialogAccessibility={{label:'Excluir solicitação',onClose:()=>modalExcluirAberto=false}}
 			class="w-full max-w-md border-2 border-red-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.3)]"
 		>
 			<div

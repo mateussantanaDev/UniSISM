@@ -5,12 +5,23 @@
 	import { rbac } from '$lib/presentation/contexts/authContext';
 
 	onMount(async () => {
-		// Sem token: sempre /login
+		// Se tem sessão ativa de paciente: vai direto para /paciente
+		if (api.pacienteApp.hasToken()) {
+			try {
+				await api.pacienteApp.me();
+				goto('/paciente', { replaceState: true });
+				return;
+			} catch {
+				api.pacienteApp.logout();
+			}
+		}
+
+		// Sem token de equipe: vai para /login
 		if (!api.tokens.get()) {
 			goto('/login', { replaceState: true });
 			return;
 		}
-		// Com token: decide a Face pela role. Se o token estiver inválido,
+		// Com token de equipe: decide a Face pela role. Se o token estiver inválido,
 		// api.auth.me() dispara 401 → onUnauthorized já redireciona pra /login.
 		try {
 			const me = await api.auth.me();

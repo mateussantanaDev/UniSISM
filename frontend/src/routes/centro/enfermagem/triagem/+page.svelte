@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -40,7 +41,7 @@
 	let filtroStatus = $state<'TODOS' | 'AGUARDANDO' | 'CHAMADOS' | 'CONCLUIDOS'>('TODOS');
 
 	// Configuração do consultório / sala da enfermeira
-	let salaTriagemPadrao = $state('SALA DE TRIAGEM 01');
+	let salaTriagemPadrao = $state('');
 
 	// Modal de Triagem
 	let modalTriagemAberto = $state(false);
@@ -179,6 +180,11 @@
 	}
 
 	async function chamarPacienteTv(p: Encaminhamento) {
+		if (!salaTriagemPadrao.trim()) {
+			erro = 'Informe a sala de triagem antes de chamar o paciente na TV.';
+			return;
+		}
+		erro = '';
 		try {
 			await api.centroEnfermagem.chamar(p.id, {
 				consultorio: salaTriagemPadrao
@@ -403,6 +409,7 @@
 				<span class="text-[10px] font-bold text-purple-900 uppercase">Minha Sala de Triagem:</span>
 				<input
 					type="text"
+					aria-label="Minha sala de triagem"
 					value={salaTriagemPadrao}
 					onchange={(e) => atualizarSalaPadrao((e.target as HTMLInputElement).value)}
 					placeholder="Ex: SALA DE TRIAGEM 01"
@@ -690,7 +697,8 @@
 		class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
-			class="my-8 w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+			use:dialogAccessibility={{ label: 'Ficha de triagem clínica de enfermagem', onClose: () => (modalTriagemAberto = false) }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-2xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<!-- Header Modal -->
 			<div

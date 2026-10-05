@@ -1,3 +1,4 @@
+import { resolverProfissionalCentro } from '../../../centro/shared/profissionalCentro';
 /**
  * Aprovar encaminhamento (Face 2 · SMS).
  *
@@ -188,6 +189,10 @@ export class AprovarEncaminhamentoUseCase {
       resolvedDestino = 'CENTRO_ESPECIALIDADES';
     }
 
+    if (agendamento && (resolvedCanal === 'CENTRO_ESPECIALIDADES' || resolvedCanal === 'CENTRO_ODONTOLOGICO')) {
+      throw Unprocessable('AGENDAR_PELA_ESCALA_CENTRO','Aprove a solicitação sem data e use a agenda do Centro para selecionar profissional, dia e horário disponíveis');
+    }
+
     let localAg = input.localAgendamento?.trim();
     let profAg = input.profissionalAgendado?.trim();
     let cidadeAg = input.cidadeAgendamento?.trim();
@@ -212,6 +217,8 @@ export class AprovarEncaminhamentoUseCase {
         'ufAgendamento deve ser 2 letras maiúsculas (ex.: BA, SP, RJ)',
       );
     }
+
+    const profissional = profAg !== undefined ? await resolverProfissionalCentro(atual.ubsId, profAg) : undefined;
 
     const atualizado = await prisma.$transaction(async (tx) => {
       // 1. nota → OBSERVACAO
@@ -261,7 +268,7 @@ export class AprovarEncaminhamentoUseCase {
           agendamentoPrevisto: agendamento,
           ...(agendamento ? { statusAtendimentoCentro: 'AGENDADO' } : {}),
           ...(localAg !== undefined ? { localAgendamento: localAg || null } : {}),
-          ...(profAg !== undefined ? { profissionalAgendado: profAg || null } : {}),
+          ...(profAg !== undefined ? { profissionalAgendado: profAg || null, profissionalAgendadoId: profissional?.id ?? null } : {}),
           ...(cidadeAg !== undefined ? { cidadeAgendamento: cidadeAg || null } : {}),
           ...(ufAg !== undefined ? { ufAgendamento: ufAg || null } : {}),
           ...(resolvedCanal !== undefined ? { canalRoteamento: resolvedCanal } : {}),

@@ -1,3 +1,5 @@
+import { validarReservaCentro } from '../../shared/reservaCentro';
+import { dataHoraRecife } from '../../shared/dataCentro';
 import { TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -42,9 +44,12 @@ export class RemarcarEncaminhamentoRegulacaoUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
 
-    const newAgendamentoDate = new Date(`${input.novaData}T${input.novoHorario}:00.000Z`);
+    if (['EM_ATENDIMENTO','CONCLUIDO'].includes(row.statusAtendimentoCentro || '')) throw BadRequest('ATENDIMENTO_INICIADO','Não é possível remarcar atendimento já iniciado');
+    const newAgendamentoDate = dataHoraRecife(input.novaData,input.novoHorario);
 
     const updated = await prisma.$transaction(async (tx) => {
+      if (!row.profissionalAgendadoId) throw BadRequest('PROFISSIONAL_OBRIGATORIO','Selecione o profissional ao agendar');
+      const escala = await validarReservaCentro(tx,{prefeituraId:row.ubs.prefeituraId,profissionalId:row.profissionalAgendadoId,especialidade:row.especialidadeSolicitada,tipoServico:row.tipoServico,data:newAgendamentoDate,ignorarId:row.id});
       // 1. Insere evento de auditoria no histórico da timeline (tipo: REMARCACAO)
       await tx.eventoTimeline.create({
         data: {
@@ -64,6 +69,7 @@ export class RemarcarEncaminhamentoRegulacaoUseCase {
           agendamentoPrevisto: newAgendamentoDate,
           ...(input.unidadeDestino && { localAgendamento: input.unidadeDestino }),
           statusAtendimentoCentro: 'AGENDADO',
+          presencaRegistradaEm:null, necessitaTriagem:escala.necessitaTriagem, triagemRealizada:false, triagemEm:null, chamadaTriagemEm:null, chamadaMedicoEm:null,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

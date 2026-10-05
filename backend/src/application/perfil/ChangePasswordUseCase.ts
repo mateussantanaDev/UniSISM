@@ -19,6 +19,9 @@ export class ChangePasswordUseCase {
 
     const ok = await this.hasher.compare(senhaAtual, a.senhaHash);
     if (!ok) throw Unauthorized('SENHA_ATUAL_INCORRETA', 'Senha atual incorreta');
+    if (senhaAtual === novaSenha) {
+      throw BadRequest('SENHA_REUTILIZADA', 'Escolha uma senha diferente da senha atual');
+    }
 
     const novoHash = await this.hasher.hash(novaSenha);
     await this.atendentes.atualizarSenha(atendenteId, novoHash);

@@ -41,7 +41,7 @@
 				<div>
 					<div class="font-sans text-base font-bold text-slate-900">{paciente.nome}</div>
 					<div class="text-xs text-slate-600">
-						Cartão SUS: {paciente.cartaoSus} · {paciente.sexo === 'M' ? 'Masculino' : 'Feminino'} · Nascimento:
+						Cartão SUS: {paciente.cartaoSus} · {paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Feminino' : 'Outro'} · Nascimento:
 						{paciente.dataNascimento}
 					</div>
 				</div>

@@ -4,7 +4,9 @@ import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../
 import type { Encaminhamento, SinaisVitaisTriagem } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound } from '../../../../shared/errors';
+import { sinaisVitaisCentroSchema } from '../../shared/dadosClinicosCentro';
+import { intervaloDiaRecife } from '../../shared/dataCentro';
+import { NotFound, Unprocessable } from '../../../../shared/errors';
 
 export interface ChamarTriagemInput {
   encaminhamentoId: string;
@@ -50,7 +52,9 @@ export class TriagemEnfermagemUseCase {
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
 
     const now = new Date();
-    const consultorio = input.consultorio || 'SALA DE TRIAGEM 01 — ENFERMAGEM';
+    if (!row.presencaRegistradaEm) throw Unprocessable('PRESENCA_OBRIGATORIA', 'Confirme a presença antes de chamar a triagem');
+    if (['CONCLUIDO','FALTOU'].includes(row.statusAtendimentoCentro || '')) throw Unprocessable('ATENDIMENTO_ENCERRADO','Atendimento já encerrado');
+    const consultorio = input.consultorio?.trim() || row.consultorioTriagem?.trim() || 'Consulte a recepção';
     const corenStr = input.enfermeiro.coren ? ` (COREN ${input.enfermeiro.coren})` : '';
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -115,7 +119,9 @@ export class TriagemEnfermagemUseCase {
 
     const now = new Date();
     const corenStr = input.enfermeiro.coren ? ` (COREN ${input.enfermeiro.coren})` : '';
-    const sv = input.sinaisVitais;
+    if (!row.presencaRegistradaEm) throw Unprocessable('PRESENCA_OBRIGATORIA', 'Confirme a presença antes da triagem');
+    if (['CONCLUIDO','FALTOU'].includes(row.statusAtendimentoCentro || '')) throw Unprocessable('ATENDIMENTO_ENCERRADO', 'Não é possível alterar a triagem de atendimento encerrado');
+    const sv = sinaisVitaisCentroSchema.parse(input.sinaisVitais);
 
     const resumoVitais = [
       sv.pressaoArterial ? `PA: ${sv.pressaoArterial}` : null,
@@ -219,14 +225,13 @@ export class TriagemEnfermagemUseCase {
     }
 
     if (input.data && input.data.trim()) {
-      const startOfDay = new Date(`${input.data.trim()}T00:00:00.000Z`);
-      const endOfDay = new Date(`${input.data.trim()}T23:59:59.999Z`);
+      const periodo = intervaloDiaRecife(input.data.trim());
       andConditions.push({
         OR: [
-          { agendamentoPrevisto: { gte: startOfDay, lte: endOfDay } },
-          { chamadaTriagemEm: { gte: startOfDay, lte: endOfDay } },
-          { triagemEm: { gte: startOfDay, lte: endOfDay } },
-          { presencaRegistradaEm: { gte: startOfDay, lte: endOfDay } },
+          { agendamentoPrevisto: periodo },
+          { chamadaTriagemEm: periodo },
+          { triagemEm: periodo },
+          { presencaRegistradaEm: periodo },
         ],
       });
     }

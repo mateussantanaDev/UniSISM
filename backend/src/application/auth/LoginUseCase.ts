@@ -20,6 +20,7 @@ export interface LoginOutput {
   token: string;
   refreshToken: string;
   expiresIn: number;
+  trocaSenhaObrigatoria: boolean;
   atendente: {
     id: string;
     nome: string;
@@ -93,6 +94,9 @@ export class LoginUseCase {
       }).catch(() => {});
     }
 
+    if (atendente.role === 'COORDENADOR_UBS' && !atendente.ubsId && !atendente.prefeituraId) {
+      throw Forbidden('USUARIO_SEM_PREFEITURA', 'Coordenador sem prefeitura vinculada');
+    }
     const refresh = this.tokens.gerarRefresh();
     const sessao = await this.sessoes.criar({
       atendenteId: atendente.id,
@@ -124,6 +128,7 @@ export class LoginUseCase {
       sub: atendente.id,
       role: atendente.role,
       ubsId: atendente.ubsId,
+      tipoUnidade: atendente.tipoUnidade,
       prefeituraId,
       sid: sessao.sessaoId,
     });
@@ -151,6 +156,7 @@ export class LoginUseCase {
       token: accessToken,
       refreshToken: refresh.token,
       expiresIn: this.tokens.ttlAccessSeconds(),
+      trocaSenhaObrigatoria: atendente.trocaSenhaObrigatoria,
       atendente: {
         id: atendente.id,
         nome: atendente.nome,

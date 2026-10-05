@@ -1,3 +1,4 @@
+import { resolverProfissionalCentro } from '../../modules/centro/shared/profissionalCentro';
 import { Unprocessable } from '../../shared/errors';
 import type {
   Encaminhamento,
@@ -160,6 +161,7 @@ export class CreateEncaminhamentoUseCase {
         prioridade: input.solicitacao.prioridade,
       });
 
+      const profissional = await resolverProfissionalCentro(resolvedUbsId!, otimizado.doctor.nome);
       await prisma.$transaction(async (tx) => {
         await tx.eventoTimeline.createMany({
           data: [
@@ -189,6 +191,7 @@ export class CreateEncaminhamentoUseCase {
             agendamentoPrevisto: otimizado.dateTime,
             localAgendamento: 'Centro Municipal de Especialidades',
             profissionalAgendado: otimizado.doctor.nome,
+            profissionalAgendadoId: profissional?.id ?? null,
             cidadeAgendamento: criado.cidadeAgendamento || 'Município Sede',
             ufAgendamento: 'PE',
             canalRoteamento: 'CENTRO_ESPECIALIDADES',

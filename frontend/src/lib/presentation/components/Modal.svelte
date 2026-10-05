@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
+	const dialogId = $props.id();
 	interface Props {
 		isOpen?: boolean;
 		onClose?: () => void;
@@ -32,35 +34,34 @@
 		}
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' && closable && onClose) {
-			onClose();
-		}
-	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 px-4 py-10"
+		class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 px-2 py-3 sm:px-4 sm:py-10"
 		role="presentation"
 		onclick={handleBackdrop}
 	>
 		<div
-			class="flex max-h-[calc(100vh-5rem)] w-full {widths[
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby={`${dialogId}-title`}
+			aria-describedby={subtitle ? `${dialogId}-description` : undefined}
+			use:dialogAccessibility={{ label: title, onClose, closable }}
+			class="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-5rem)] w-full {widths[
 				maxWidth
 			]} flex-col border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
-				class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4"
+				class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-6 sm:py-4"
 			>
 				<div>
-					<h2 class="font-mono text-sm font-bold tracking-wide text-slate-900 uppercase">
+					<h2 id={`${dialogId}-title`} class="font-mono text-sm font-bold tracking-wide text-slate-900 uppercase">
 						{title}
 					</h2>
 					{#if subtitle}
-						<p class="mt-0.5 text-xs text-slate-600">{subtitle}</p>
+						<p id={`${dialogId}-description`} class="mt-0.5 text-xs text-slate-600">{subtitle}</p>
 					{/if}
 				</div>
 				{#if closable}
@@ -86,7 +87,7 @@
 
 			<div class="flex-1 overflow-y-auto">
 				{#if children}
-					<div class="p-6">
+					<div class="p-4 sm:p-6">
 						{@render children()}
 					</div>
 				{/if}

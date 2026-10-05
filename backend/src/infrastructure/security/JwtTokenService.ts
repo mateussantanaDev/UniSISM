@@ -60,11 +60,13 @@ export class JwtTokenService implements ITokenService {
       const result: AccessTokenPayload = { sub, role };
       const ubsId = payload['ubsId'];
       const prefeituraId = payload['prefeituraId'];
+      const tipoUnidade = payload['tipoUnidade'];
       const sid = payload['sid'];
       const motoristaId = payload['motoristaId'];
       const primeiroLogin = payload['primeiroLogin'];
       if (typeof ubsId === 'string') result.ubsId = ubsId;
       if (typeof prefeituraId === 'string') result.prefeituraId = prefeituraId;
+      if (typeof tipoUnidade === 'string') result.tipoUnidade = tipoUnidade;
       if (typeof sid === 'string') result.sid = sid;
       if (typeof motoristaId === 'string') result.motoristaId = motoristaId;
       if (typeof primeiroLogin === 'boolean') result.primeiroLogin = primeiroLogin;

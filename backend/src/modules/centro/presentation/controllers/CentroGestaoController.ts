@@ -1,3 +1,5 @@
+import { RelatoriosCentroUseCase } from '../../application/use-cases/RelatoriosCentroUseCase';
+import { codigoSigtapSchema } from '../../../../shared/cadastroValidation';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { paramString } from '../../../../shared/http';
@@ -16,7 +18,9 @@ import { prisma } from '../../../../infrastructure/database/prisma';
 import { RoleAtendente } from '../../../../../generated/prisma';
 
 const putCotaSchema = z.object({
-  totalCotasMes: z.number().int().min(1),
+  totalCotasMes: z.number().int().min(0),
+  competencia: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+  centro: z.string().optional(),
   especialidades: z.record(z.string(), z.number().int().min(0)),
 });
 
@@ -30,15 +34,19 @@ const postEscalaSchema = z.object({
   diasSemana: z.array(z.string()).default([]).optional(),
   horarioInicio: z.string().regex(/^\d{2}:\d{2}$/),
   horarioFim: z.string().regex(/^\d{2}:\d{2}$/),
-  duracaoMinutos: z.number().int().default(20),
-  vagasPorTurno: z.number().int().default(12),
+  duracaoMinutos: z.number().int().min(1).max(720).default(20),
+  vagasPorTurno: z.number().int().min(1).max(150).default(12),
   status: z.enum(['ATIVA', 'FERIAS', 'LICENCA', 'BLOQUEADA']).optional(),
   prefeituraId: z.string().optional(),
   tipoRecorrencia: z.enum(['SEMANAL', 'QUINZENAL', 'DATAS_ESPECIFICAS', 'MUTIRAO']).default('SEMANAL').optional(),
   datasEspecificas: z.array(z.string()).default([]).optional(),
   isMutirao: z.boolean().default(false).optional(),
   intervaloDias: z.number().int().optional(),
-  dataInicioRecorrencia: z.string().optional(),
+  dataInicioRecorrencia: z.string().nullable().optional(),
+  ausenciaInicio: z.string().nullable().optional(),
+  ausenciaFim: z.string().nullable().optional(),
+  acaoAusencia: z.enum(['FILA_ESPERA', 'REMANEJAR']).nullable().optional(),
+  observacoes: z.string().nullable().optional(),
 });
 
 const putEscalaSchema = postEscalaSchema.partial();
@@ -55,10 +63,10 @@ const postSalaSchema = z.object({
 const putSalaSchema = postSalaSchema.partial();
 
 const postEspecialidadeSchema = z.object({
-  nome: z.string().min(2),
-  codigoSigtap: z.string().optional(),
-  tempoPadraoMinutos: z.number().int().default(20),
-  valorTabelaBrl: z.number().default(0),
+  nome: z.string().trim().min(2),
+  codigoSigtap: codigoSigtapSchema,
+  tempoPadraoMinutos: z.number().int().positive('Duração deve ser maior que zero.').max(1440).default(20),
+  valorTabelaBrl: z.number().finite().nonnegative('Valor não pode ser negativo.').default(0),
   documentosObrigatorios: z.array(z.string()).default([]),
   preparoRequerido: z.string().optional(),
   necessitaTriagem: z.boolean().optional(),
@@ -101,7 +109,7 @@ export class CentroGestaoController {
   getCotas = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const centro = req.query.centro as string | undefined;
-    const cotas = await this.cotasUC.listarCotas(scope, centro);
+    const cotas = await this.cotasUC.listarCotas(scope, centro, req.query.competencia as string | undefined);
     res.json(cotas);
   };
 
@@ -117,10 +125,7 @@ export class CentroGestaoController {
       AND: [
         {
           OR: [
-            { role: { in: [RoleAtendente.MEDICO, RoleAtendente.MEDICO_ESPECIALISTA, RoleAtendente.REGULADOR_SMS] } },
-            { cargo: { contains: 'Médic', mode: 'insensitive' } },
-            { cargo: { contains: 'Dentist', mode: 'insensitive' } },
-            { tipoUnidade: { in: ['CEO', 'CEM'] } },
+            { role: { in: [RoleAtendente.MEDICO, RoleAtendente.MEDICO_ESPECIALISTA] } },
           ],
         },
         ...(scope.kind === 'PREFEITURA' || (scope.kind === 'UBS' && scope.prefeituraId)
@@ -129,7 +134,6 @@ export class CentroGestaoController {
                 OR: [
                   { prefeituraId: scope.prefeituraId },
                   { ubs: { prefeituraId: scope.prefeituraId } },
-                  { prefeituraId: null },
                 ],
               },
             ]
@@ -151,6 +155,10 @@ export class CentroGestaoController {
       orderBy: { nome: 'asc' },
     });
 
+    const escalas = await prisma.escalaEspecialista.findMany({
+      where: { medicoId: { in: usuarios.map((u) => u.id) }, ativo: true },
+      select: { medicoId: true, especialidade: true },
+    });
     const lista = usuarios
       .filter((u) => {
         const r = u.role as string;
@@ -167,7 +175,7 @@ export class CentroGestaoController {
         conselho: ehCeo ? 'CRO' : 'CRM',
         cargo: u.cargo,
         role: u.role,
-        especialidade: (u.cargo || '').replace(/^(MÉDICO|CIRURGIÃO-DENTISTA|DENTISTA)\s*(ESPECIALISTA\s*(EM\s*)?)?/i, '').trim() || (ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
+        especialidade: escalas.find((e) => e.medicoId === u.id)?.especialidade ?? '',
       }));
 
     res.json(lista);
@@ -311,11 +319,24 @@ export class CentroGestaoController {
     res.json(result);
   };
 
+  getProducao = async (req: Request, res: Response): Promise<void> => {
+    const input = z.object({ periodo: z.string().optional(), inicio: z.string().optional(), fim: z.string().optional(), centro: z.enum(['CEM', 'CEO', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional() }).parse(req.query);
+    const data = await new RelatoriosCentroUseCase().dados(input, scopeFromRequest(req));
+    res.json({ inicio: data.inicio, fim: data.fim, profissionais: data.profissionais, atendimentos: data.atendimentos });
+  };
+  exportarRelatorio = async (req: Request, res: Response): Promise<void> => {
+    const input = z.object({ periodo: z.string().optional(), inicio: z.string().optional(), fim: z.string().optional(), centro: z.enum(['CEM', 'CEO', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional(), tipo: z.enum(['BPA_SUS', 'ABSENTEISMO_UBS', 'DEMANDA_REPRIMIDA', 'TFD_INTERMUNICIPAL']), formato: z.enum(['PDF', 'XLSX', 'CSV']) }).parse(req.query);
+    const file = await new RelatoriosCentroUseCase().exportar(input, scopeFromRequest(req));
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.nome}"`);
+    res.send(file.buffer);
+  };
+
   getRelatorioBpa = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
     const periodo = req.query.periodo as string | undefined;
 
-    const report = await this.relatorioBpaUC.exec({ periodo }, scope);
+    const report = await this.relatorioBpaUC.exec({ periodo, centro: req.query.centro as string | undefined }, scope);
     res.json(report);
   };
 

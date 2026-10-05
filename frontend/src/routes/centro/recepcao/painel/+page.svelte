@@ -136,37 +136,16 @@
 	async function carregarChamadasRecentes() {
 		carregandoChamadas = true;
 		try {
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 30 }).catch(() => []);
-			chamadasAtivas = res
-				.filter((e: any) => {
-					const esp = (e.solicitacao?.especialidadeSolicitada || '').toLowerCase();
-					const eOdonto =
-						esp.includes('odonto') ||
-						esp.includes('bucal') ||
-						esp.includes('canal') ||
-						esp.includes('periodontia') ||
-						esp.includes('bucomaxilo');
-					return ehCeo ? eOdonto : !eOdonto;
-				})
-				.slice(0, 8)
-				.map((e: any, idx: number) => {
-					const num = ((idx % 6) + 1).toString().padStart(2, '0');
-					return {
-						id: e.id,
-						pacienteNome: e.paciente?.nome || 'Paciente Identificado',
-						consultorio: ehCeo ? `Cadeira Odonto ${num}` : `Consultório ${num}`,
-						medicoNome:
-							e.profissionalAtribuido ||
-							(ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
-						especialidade:
-							e.solicitacao?.especialidadeSolicitada || (ehCeo ? 'Odontologia' : 'Especialidades'),
-						horario: new Date(e.atualizadoEm || e.criadoEm).toLocaleTimeString('pt-BR', {
-							hour: '2-digit',
-							minute: '2-digit'
-						}),
-						status: e.statusAtendimentoCentro || 'AGUARDANDO_ATENDIMENTO'
-					};
-				});
+			const res = await api.centroRecepcao.getTvChamadas(ehCeo ? 'CEO' : 'CEM');
+			chamadasAtivas = [res.chamadaAtual, ...res.ultimasChamadas].filter(Boolean).map((c) => ({
+				id: c.eventoId || c.id,
+				pacienteNome: c.pacienteNome,
+				consultorio: c.consultorio,
+				medicoNome: c.medicoNome,
+				especialidade: c.especialidade,
+				horario: c.horario,
+				status: c.tipo === 'TRIAGEM' ? 'TRIAGEM' : c.status
+			}));
 		} catch (e) {
 			console.info('[UniSISM] Carregando chamadas...', e);
 		} finally {

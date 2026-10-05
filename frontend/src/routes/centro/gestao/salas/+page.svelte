@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
@@ -788,6 +789,7 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs backdrop-blur-xs"
 	>
 		<div
+			use:dialogAccessibility={{ label: modoEdicao ? 'Editar sala' : 'Cadastrar sala', onClose: () => (modalAberto = false) }}
 			class="flex max-h-[90vh] w-full max-w-2xl flex-col border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.15)]"
 		>
 			<!-- Cabeçalho Modal -->

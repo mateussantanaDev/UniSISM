@@ -4,7 +4,7 @@ import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound } from '../../../../shared/errors';
+import { NotFound, Unprocessable } from '../../../../shared/errors';
 
 export interface ChamarPacienteInput {
   encaminhamentoId: string;
@@ -28,6 +28,9 @@ export class ChamarPacienteMedicoUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
+    if (!row.presencaRegistradaEm) throw Unprocessable('PRESENCA_OBRIGATORIA', 'Confirme a presença do paciente antes de chamar');
+    if (row.necessitaTriagem && !row.triagemRealizada) throw Unprocessable('TRIAGEM_OBRIGATORIA', 'Conclua a triagem de enfermagem antes de atender');
+    if (['CONCLUIDO', 'FALTOU'].includes(row.statusAtendimentoCentro || '')) throw Unprocessable('ATENDIMENTO_ENCERRADO', 'Este atendimento já está encerrado');
     const now = new Date();
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -46,7 +49,8 @@ export class ChamarPacienteMedicoUseCase {
         where: { id: row.id },
         data: {
           statusAtendimentoCentro: StatusAtendimentoCentro.EM_ATENDIMENTO,
-          atendimentoIniciadoEm: now,
+          atendimentoIniciadoEm: row.atendimentoIniciadoEm || now,
+          chamadaMedicoEm: now,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

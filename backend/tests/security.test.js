@@ -152,6 +152,7 @@ test('authenticate exige Bearer token e anexa payload validado no request', asyn
     sub: 'user-1',
     role: 'DESENVOLVEDOR',
     prefeituraId: 'pref-1',
+    ubsId: null, tipoUnidade: null, sid: 'session-1',
   };
   const auth = makeAuthenticate({
     verificarAccess(token) {
@@ -160,7 +161,8 @@ test('authenticate exige Bearer token e anexa payload validado no request', asyn
     },
   });
   const { prisma } = require('../dist/infrastructure/database/prisma.js');
-  const restore = patchMethod(prisma.atendente, 'findUnique', async () => ({ ativo: true }));
+  const restore = patchMethod(prisma.atendente, 'findUnique', async () => ({ ativo: true, role: payload.role, prefeituraId: payload.prefeituraId, ubsId: null, tipoUnidade: null }));
+  const restoreSession = patchMethod(prisma.sessao, 'findUnique', async () => ({ atendenteId: payload.sub, expiraEm: new Date(Date.now() + 60000), revogadaEm: null }));
 
   try {
     const missing = await runAsyncMiddleware(auth, reqWithHeaders({}));
@@ -175,6 +177,7 @@ test('authenticate exige Bearer token e anexa payload validado no request', asyn
     assert.deepEqual(validReq.auth, payload);
   } finally {
     restore();
+    restoreSession();
   }
 });
 

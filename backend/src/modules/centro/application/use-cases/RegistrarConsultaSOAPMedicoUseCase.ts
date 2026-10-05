@@ -1,9 +1,10 @@
-import { StatusAtendimentoCentro, TipoAtendimento, TipoEventoTimeline } from '../../../../../generated/prisma';
+import { Prisma, StatusAtendimentoCentro, TipoAtendimento, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
+import { sinaisVitaisCentroSchema } from '../../shared/dadosClinicosCentro';
 import { NotFound, Unprocessable } from '../../../../shared/errors';
 
 export interface RegistrarSOAPInput {
@@ -14,6 +15,8 @@ export interface RegistrarSOAPInput {
     matricula: string;
   };
   soap: {
+    exameFisico?: string;
+    sinaisVitais?: Record<string, unknown>;
     subjetivo?: string;
     objetivo?: string;
     avaliacao?: string;
@@ -44,20 +47,35 @@ export class RegistrarConsultaSOAPMedicoUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
+    const escala = await prisma.escalaEspecialista.findFirst({where:{medicoId:input.doctor.id,prefeituraId:row.ubs.prefeituraId,especialidade:row.especialidadeSolicitada}});
     const now = new Date();
     const unidadeNome = input.soap.unidade || (row.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'Centro de Especialidades Odontológicas' : 'Centro Municipal de Especialidades');
 
     const updated = await prisma.$transaction(async (tx) => {
+      // Serializa a conclusão deste encaminhamento, inclusive entre abas/retries.
+      await tx.$queryRaw`SELECT id FROM encaminhamentos WHERE id = ${row.id} FOR UPDATE`;
+      const atual = await tx.encaminhamento.findUniqueOrThrow({ where: { id: row.id }, include: INCLUDE_ENCAMINHAMENTO_FULL });
+      if (atual.atendimentoId && atual.statusAtendimentoCentro === 'CONCLUIDO') return atual;
+      if (!atual.presencaRegistradaEm) throw Unprocessable('PRESENCA_OBRIGATORIA', 'Confirme a presença do paciente antes de atender');
+      if (atual.necessitaTriagem && !atual.triagemRealizada) throw Unprocessable('TRIAGEM_OBRIGATORIA', 'Conclua a triagem de enfermagem antes de atender');
+      if (atual.statusAtendimentoCentro !== 'EM_ATENDIMENTO') throw Unprocessable('ATENDIMENTO_NAO_INICIADO', 'Inicie o atendimento antes de concluir');
+      const sinaisVitais = sinaisVitaisCentroSchema.parse(input.soap.sinaisVitais || atual.triagemDados || {});
       // 1. Save Atendimento SOAP record in PEC
-      await tx.atendimento.create({
+      const atendimento = await tx.atendimento.create({
         data: {
           pacienteId: row.pacienteId!,
           data: now,
           tipo: row.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? TipoAtendimento.ODONTOLOGICO : TipoAtendimento.CONSULTA_MEDICA,
           profissional: input.doctor.nome,
-          registroProfissional: input.doctor.matricula,
+          registroProfissional: escala?.crm || 'Registro profissional não informado',
           especialidade: row.especialidadeSolicitada,
           unidade: unidadeNome,
+          subjetivo: input.soap.subjetivo,
+          objetivo: input.soap.objetivo,
+          avaliacao: input.soap.avaliacao,
+          plano: input.soap.plano,
+          exameFisico: input.soap.exameFisico || input.soap.objetivo,
+          sinaisVitais: JSON.parse(JSON.stringify(sinaisVitais)),
           queixaPrincipal: input.soap.queixaPrincipal,
           diagnostico: input.soap.diagnostico,
           cid10: input.soap.cid10,
@@ -85,6 +103,9 @@ export class RegistrarConsultaSOAPMedicoUseCase {
         data: {
           statusAtendimentoCentro: StatusAtendimentoCentro.CONCLUIDO,
           atendimentoConcluidoEm: now,
+          atendimentoId: atendimento.id,
+          rascunhoSOAP: Prisma.DbNull,
+          rascunhoSOAPEm: null,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

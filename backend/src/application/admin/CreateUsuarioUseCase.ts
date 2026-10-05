@@ -1,3 +1,4 @@
+import { authorizeUsuarioManagement } from './authorizeUsuarioManagement';
 import { prisma } from '../../infrastructure/database/prisma';
 import { Conflict, Forbidden, NotFound, Unprocessable } from '../../shared/errors';
 import { ensurePrefeituraAcessivel, ensureUbsAcessivel, type AccessScope } from '../../shared/scope';
@@ -241,6 +242,8 @@ export class CreateUsuarioUseCase {
       if (tipo === 'SMS') return 'Regulação e Gestão da Secretaria de Saúde';
       return input.funcao?.trim() || 'Atendimento e Operação da Rede de Saúde';
     })();
+
+    await authorizeUsuarioManagement(criadorId, { role: input.role, ubsId, prefeituraId, tipoUnidade, unidadeId });
 
     const criado = await prisma.atendente.create({
       data: {

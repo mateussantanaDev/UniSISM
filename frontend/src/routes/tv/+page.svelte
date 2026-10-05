@@ -5,6 +5,7 @@
 
 	interface ChamadaPainel {
 		id: string;
+		eventoId?: string;
 		pacienteNome: string;
 		consultorio: string;
 		medicoNome: string;
@@ -60,6 +61,9 @@
 	let timerRelogio: any = null;
 	let timerPolling: any = null;
 	let ultimaChamadaIdProcessada = '';
+	let ultimaChamadaAnunciadaEm = 0;
+	let sincronizando = false;
+	let erroSincronizacao = $state(false);
 
 	// Web Audio API Hospital Double Chime (D5 587.33Hz e A5 880.00Hz)
 	function tocarChimeHospitalar() {
@@ -152,18 +156,18 @@
 	}
 
 	// Autentica e Pareia o Centro diretamente pela URL
-	function parearComSenha(senha: string) {
-		const normalizada = senha.trim().toUpperCase();
-		if (normalizada === 'CEM' || normalizada === 'CEM-2026' || normalizada === '7492') {
-			centroPareado = CENTROS_CONFIG.CEM;
-		} else if (normalizada === 'CEO' || normalizada === 'CEO-2026' || normalizada === '8301') {
-			centroPareado = CENTROS_CONFIG.CEO;
-		} else {
-			erroAutenticacao =
-				'Senha de centro incorreta. Utilize a senha fornecida na recepção (CEM-2026 ou CEO-2026).';
+	async function parearComSenha(senha: string) {
+		if (autenticando) return false;
+		autenticando = true;
+		try {
+			const resultado = await api.centro.recepcao.parearTv(senha.trim());
+			centroPareado = CENTROS_CONFIG[resultado.centro];
+		} catch {
+			erroAutenticacao = 'Não foi possível parear. Confira o código fornecido pela recepção e a conexão.';
 			return false;
+		} finally {
+			autenticando = false;
 		}
-
 		erroAutenticacao = '';
 		if (typeof window !== 'undefined') {
 			const url = new URL(window.location.href);
@@ -176,6 +180,10 @@
 
 	function desparear() {
 		centroPareado = null;
+		chamadaAtual = null;
+		ultimasChamadas = [];
+		ultimaChamadaIdProcessada = '';
+		ultimaChamadaAnunciadaEm = 0;
 		senhaInput = '';
 		erroAutenticacao = '';
 		if (typeof window !== 'undefined') {
@@ -189,110 +197,38 @@
 	}
 
 	async function sincronizarChamadas() {
-		if (!centroPareado) return;
+		if (!centroPareado || sincronizando) return;
+		const centro = centroPareado.sigla;
+		sincronizando = true;
 		try {
-			// 1. Tenta o endpoint direto de TV do backend (/v1/centro/tv/chamadas)
-			const tvRes = await api.centro.recepcao.getTvChamadas(centroPareado.sigla).catch(() => null);
-
-			if (tvRes && tvRes.chamadaAtual) {
-				const maisRecente = tvRes.chamadaAtual;
-				if (maisRecente.id !== ultimaChamadaIdProcessada) {
-					ultimaChamadaIdProcessada = maisRecente.id;
-					chamadaAtual = {
-						id: maisRecente.id,
-						pacienteNome: maisRecente.pacienteNome,
-						consultorio: maisRecente.consultorio,
-						medicoNome: maisRecente.medicoNome,
-						especialidade: maisRecente.especialidade,
-						horario: maisRecente.horario,
-						tipo: (maisRecente.tipo as any) || 'CONSULTA',
-						chamadoEm: new Date(maisRecente.chamadoEm)
-					};
-					ultimasChamadas = tvRes.ultimasChamadas || [];
-
-					piscarDestaque = true;
-					setTimeout(() => {
-						piscarDestaque = false;
-					}, 4000);
-
-					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio, maisRecente.tipo);
-				}
+			const tvRes = await api.centro.recepcao.getTvChamadas(centro);
+			if (centroPareado?.sigla !== centro) return;
+			erroSincronizacao = false;
+			ultimasChamadas = tvRes.ultimasChamadas || [];
+			const recente = tvRes.chamadaAtual;
+			if (!recente) {
+				chamadaAtual = null;
+				ultimaChamadaIdProcessada = '';
 				return;
 			}
-
-			// 2. Fallback: listagem de encaminhamentos ativos
-			const res = await api.encaminhamentos.list({ status: 'APROVADO', limit: 50 }).catch(() => []);
-
-			// Filtra chamadas pelo escopo do centro pareado
-			const ehCeo = centroPareado.sigla === 'CEO';
-			const chamados = res
-				.filter((e: any) => {
-					// FILTRO ESTRITO: Apenas chamadas ativas com status EM_ATENDIMENTO
-					if (e.statusAtendimentoCentro !== 'EM_ATENDIMENTO') return false;
-
-					// Segregação de Órgão CEM vs CEO
-					const esp = (e.solicitacao?.especialidadeSolicitada || '').toLowerCase();
-					const eOdonto =
-						esp.includes('odonto') ||
-						esp.includes('bucal') ||
-						esp.includes('canal') ||
-						esp.includes('periodontia') ||
-						esp.includes('bucomaxilo');
-					return ehCeo ? eOdonto : !eOdonto;
-				})
-				.map((e: any, idx: number) => {
-					const num = ((idx % 8) + 1).toString().padStart(2, '0');
-					const local = ehCeo
-						? `CADEIRA ODONTOLÓGICA ${num} — SETOR B`
-						: `CONSULTÓRIO ${num} — ALA A`;
-					return {
-						id: e.id,
-						pacienteNome: e.paciente?.nome || 'Paciente Identificado',
-						consultorio: local,
-						medicoNome:
-							e.profissionalAtribuido ||
-							(ehCeo ? 'Dr(a). Cirurgião-Dentista' : 'Dr(a). Médico Especialista'),
-						especialidade:
-							e.solicitacao?.especialidadeSolicitada ||
-							(ehCeo ? 'Odontologia Especializada' : 'Clínica Especializada'),
-						horario: new Date(e.atualizadoEm || e.criadoEm).toLocaleTimeString('pt-BR', {
-							hour: '2-digit',
-							minute: '2-digit'
-						}),
-						tipo: 'CONSULTA' as const,
-						chamadoEm: new Date(e.atualizadoEm || e.criadoEm)
-					};
-				});
-
-			if (chamados.length > 0) {
-				const maisRecente = chamados[0];
-
-				if (maisRecente.id !== ultimaChamadaIdProcessada) {
-					ultimaChamadaIdProcessada = maisRecente.id;
-					chamadaAtual = maisRecente;
-					ultimasChamadas = chamados.slice(1, 6);
-
+			const eventoId = recente.eventoId || `${recente.id}:${recente.tipo}:${recente.chamadoEm}`;
+			if (eventoId !== ultimaChamadaIdProcessada) {
+				ultimaChamadaIdProcessada = eventoId;
+				chamadaAtual = { ...recente, eventoId, chamadoEm: new Date(recente.chamadoEm) };
+				// Uma chamada antiga que volta ao topo após uma conclusão não é rechamada.
+				const instante = new Date(recente.chamadoEm).getTime();
+				if (instante > ultimaChamadaAnunciadaEm) {
+					ultimaChamadaAnunciadaEm = instante;
 					piscarDestaque = true;
-					setTimeout(() => {
-						piscarDestaque = false;
-					}, 4000);
-
-					falarChamada(maisRecente.pacienteNome, maisRecente.consultorio);
+					setTimeout(() => (piscarDestaque = false), 4000);
+					falarChamada(recente.pacienteNome, recente.consultorio, recente.tipo);
 				}
-			} else if (!chamadaAtual) {
-				chamadaAtual = {
-					id: 'standby-01',
-					pacienteNome: 'AGUARDANDO PRÓXIMA CHAMADA',
-					consultorio: 'PAINEL CENTRAL DE ATENDIMENTO',
-					medicoNome: 'RECEPÇÃO E TRIAGEM SUS',
-					especialidade: centroPareado.nome,
-					horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-					tipo: 'CONSULTA',
-					chamadoEm: new Date()
-				};
 			}
 		} catch (e) {
-			console.info('[UniSISM TV] Aguardando sinal de chamadas...', e);
+			erroSincronizacao = true;
+			console.info('[UniSISM TV] Não foi possível sincronizar chamadas.', e);
+		} finally {
+			sincronizando = false;
 		}
 	}
 
@@ -515,7 +451,7 @@
 							class="inline-flex items-center gap-1.5 border border-emerald-700 bg-emerald-950 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-emerald-400 uppercase"
 						>
 							<span class="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-400"></span>
-							SINAL AO VIVO
+							{erroSincronizacao ? 'SEM CONEXÃO · TENTANDO NOVAMENTE' : 'SINAL AO VIVO'}
 						</span>
 					</div>
 					<h1 class="mt-0.5 font-mono text-lg font-bold tracking-tight text-white uppercase">

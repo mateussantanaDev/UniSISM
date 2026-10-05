@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
+	import { cpfValido } from '$lib/presentation/utils/cadastroValidation';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
@@ -101,6 +103,17 @@
 		usuarioLogado?.role === 'ADMIN' || usuarioLogado?.role === 'DESENVOLVEDOR'
 	);
 	let isDev = $derived(usuarioLogado?.role === 'DESENVOLVEDOR');
+	let podeGerenciar = $derived(isSuperUser || usuarioLogado?.role === 'REGULADOR_SMS' ||
+		(usuarioLogado?.role === 'COORDENADOR_UBS' && usuarioLogado?.escopo === 'PREFEITURA'));
+	function podeGerenciarUsuario(u: UsuarioListado) {
+		if (!podeGerenciar) return false;
+		if (isDev) return true;
+		if (u.role === 'DESENVOLVEDOR') return false;
+		if (isSuperUser) return true;
+		if (usuarioLogado?.role === 'COORDENADOR_UBS' && u.tipoUnidade !== usuarioLogado.tipoUnidade) return false;
+		return ['ATENDENTE_UBS', 'ATENDENTE_CENTRO', 'MEDICO', 'MEDICO_ESPECIALISTA', 'ENFERMEIRO'].includes(u.role);
+	}
+
 
 	// Form State - Atribuição de Serviço & Atendimento ao Médico
 	let atriEspecialidadeId = $state('');
@@ -272,6 +285,11 @@
 	async function salvarNovoUsuario() {
 		if (!formNome.trim() || !formCpf.trim() || !formEmail.trim()) {
 			erroModalUsuario = 'Preencha os campos obrigatórios (Nome, CPF e E-mail).';
+			return;
+		}
+
+		if (!cpfValido(formCpf)) {
+			erroModalUsuario = 'Informe um CPF válido com 11 dígitos.';
 			return;
 		}
 
@@ -503,6 +521,21 @@
 			return;
 		}
 
+		const minutos = (hora: string) => { const [h, m] = hora.split(':').map(Number); return h * 60 + m; };
+		const inicio = minutos(atriHorarioInicio), fim = minutos(atriHorarioFim);
+		const duracao = Number(atriDuracaoMinutos), vagas = Number(atriVagasPorTurno);
+		if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(atriHorarioInicio) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(atriHorarioFim) || fim <= inicio) {
+			erroModalAtribuicao = 'Horário final deve ser posterior ao início, no mesmo dia.';
+			return;
+		}
+		if (!Number.isInteger(duracao) || duracao <= 0 || duracao > fim - inicio) {
+			erroModalAtribuicao = 'Duração deve ser um número inteiro positivo dentro do turno.';
+			return;
+		}
+		if (!Number.isInteger(vagas) || vagas <= 0 || vagas > Math.floor((fim - inicio) / duracao)) {
+			erroModalAtribuicao = 'Vagas devem ser um número inteiro positivo que caiba no turno informado.';
+			return;
+		}
 		erroModalAtribuicao = '';
 		salvandoAtribuicao = true;
 		try {
@@ -517,8 +550,8 @@
 				diasSemana: atriDias,
 				horarioInicio: atriHorarioInicio,
 				horarioFim: atriHorarioFim,
-				duracaoMinutos: Number(atriDuracaoMinutos) || 20,
-				vagasPorTurno: Number(atriVagasPorTurno) || 12,
+				duracaoMinutos: duracao,
+				vagasPorTurno: vagas,
 				status: 'ATIVA',
 				ativo: true
 			});
@@ -653,6 +686,7 @@
 			</select>
 		</div>
 
+		{#if podeGerenciar}
 		<button
 			type="button"
 			onclick={abrirNovoUsuario}
@@ -660,6 +694,7 @@
 		>
 			<span>+ Novo Profissional / Usuário</span>
 		</button>
+		{/if}
 	</section>
 
 	<!-- Tabela de Usuários do Servidor -->
@@ -717,7 +752,7 @@
 										</span>
 									</td>
 									<td class="p-3 text-slate-800">
-										{#if isProfissional(u)}
+										{#if podeGerenciarUsuario(u) && isProfissional(u)}
 											{@const escalasProf = getEscalasDoUsuario(u)}
 											{#if escalasProf.length > 0}
 												<div class="flex max-w-[280px] flex-col gap-1">
@@ -777,7 +812,7 @@
 									</td>
 									<td class="p-3 text-right">
 										<div class="flex items-center justify-end gap-1.5">
-											{#if isProfissional(u)}
+											{#if podeGerenciarUsuario(u) && isProfissional(u)}
 												<button
 													onclick={() => abrirAtribuicoes(u)}
 													class="flex shrink-0 items-center gap-1 border border-indigo-700 bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-900 hover:bg-indigo-100"
@@ -791,6 +826,7 @@
 													<span>Atribuições</span>
 												</button>
 											{/if}
+											{#if podeGerenciarUsuario(u)}
 											<button
 												onclick={() => abrirEditar(u)}
 												class="flex items-center gap-1 border border-slate-300 bg-white px-2 py-1 text-[10px] font-bold hover:bg-slate-100"
@@ -815,6 +851,7 @@
 											>
 												{u.ativo ? 'Inativar' : 'Ativar'}
 											</button>
+											{/if}
 										</div>
 									</td>
 								</tr>
@@ -828,12 +865,13 @@
 </div>
 
 <!-- Modal 1: Novo Profissional / Usuário -->
-{#if modalNovoAberto}
+{#if modalNovoAberto && podeGerenciar}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
-			class="w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+			use:dialogAccessibility={{ label: 'Cadastrar novo usuário', onClose: () => (modalNovoAberto = false) }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-xl border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
 				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
@@ -983,19 +1021,19 @@
 							bind:value={formPerfil}
 							class="border border-slate-300 bg-white p-2 text-xs font-bold"
 						>
-							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
-							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
+							{#if isSuperUser}<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>{/if}
+							{#if isSuperUser}<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>{/if}
 							{#if ehCeo}
 								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
-								<option value="REGULADOR_SMS">Regulador do CEO</option>
+								{#if isSuperUser}<option value="REGULADOR_SMS">Regulador do CEO</option>{/if}
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
 								<option value="ENFERMEIRO">Enfermeiro(a) / Triagem CEM</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
-								<option value="REGULADOR_SMS">Regulador do CEM</option>
+								{#if isSuperUser}<option value="REGULADOR_SMS">Regulador do CEM</option>{/if}
 							{/if}
 						</select>
 					</div>
@@ -1057,12 +1095,13 @@
 {/if}
 
 <!-- Modal 2: Editar Usuário -->
-{#if modalEditarAberto && usuarioEdicao}
+{#if modalEditarAberto && usuarioEdicao && podeGerenciarUsuario(usuarioEdicao)}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
-			class="w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+			use:dialogAccessibility={{ label: 'Editar usuário', onClose: () => (modalEditarAberto = false) }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-lg border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
 				class="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 text-white"
@@ -1178,19 +1217,19 @@
 							bind:value={formPerfil}
 							class="border border-slate-300 bg-white p-2 text-xs font-bold"
 						>
-							<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>
-							<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>
+							{#if isSuperUser}<option value="ADMIN">Gestor Geral / Diretor do {siglaOrgao} (Administrador)</option>{/if}
+							{#if isSuperUser}<option value="COORDENADOR_UBS">Coordenação / Supervisão do {siglaOrgao}</option>{/if}
 							{#if ehCeo}
 								<option value="MEDICO">Cirurgião-Dentista Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
-								<option value="REGULADOR_SMS">Regulador do CEO</option>
+								{#if isSuperUser}<option value="REGULADOR_SMS">Regulador do CEO</option>{/if}
 							{:else}
 								<option value="MEDICO">Médico Especialista</option>
 								<option value="MEDICO_ESPECIALISTA">Médico Plantonista / Clínico</option>
 								<option value="ENFERMEIRO">Enfermeiro(a) / Triagem CEM</option>
 								<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
-								<option value="REGULADOR_SMS">Regulador do CEM</option>
+								{#if isSuperUser}<option value="REGULADOR_SMS">Regulador do CEM</option>{/if}
 							{/if}
 						</select>
 					</div>
@@ -1234,12 +1273,13 @@
 {/if}
 
 <!-- Modal 3: Reset de Senha -->
-{#if modalResetSenhaAberto && usuarioEdicao}
+{#if modalResetSenhaAberto && usuarioEdicao && podeGerenciarUsuario(usuarioEdicao)}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
-			class="w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
+			use:dialogAccessibility={{ label: 'Redefinir senha', onClose: () => (modalResetSenhaAberto = false) }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-md border-2 border-slate-900 bg-white shadow-[8px_8px_0_rgba(15,23,42,0.12)]"
 		>
 			<div
 				class="flex items-center justify-between border-b border-slate-200 bg-amber-900 px-4 py-3 text-white"
@@ -1303,7 +1343,8 @@
 		class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 font-mono text-xs"
 	>
 		<div
-			class="my-8 w-full max-w-3xl border-2 border-slate-900 bg-white shadow-[10px_10px_0_rgba(15,23,42,0.15)]"
+			use:dialogAccessibility={{ label: 'Atribuições clínicas e agenda', onClose: () => (modalAtribuicoesAberto = false) }}
+			class="max-h-[calc(100dvh-2rem)] overflow-y-auto my-8 w-full max-w-3xl border-2 border-slate-900 bg-white shadow-[10px_10px_0_rgba(15,23,42,0.15)]"
 		>
 			<!-- Header Modal -->
 			<div

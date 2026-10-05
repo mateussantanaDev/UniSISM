@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { montarChamadasTv } from '../src/modules/centro/application/use-cases/ListarChamadasTvUseCase';
+const base = { id:'enc-1', protocolo:'QA', pacienteNome:'QA TV', profissionalAgendado:'QA MED', especialidadeSolicitada:'Cardiologia', localAgendamento:'Consultório real 21', consultorioTriagem:'Triagem real 3', triagemPorNome:'QA ENF', triagemRealizada:false, chamadaTriagemEm:null, chamadaMedicoEm:null, statusAtendimentoCentro:'AGUARDANDO_ATENDIMENTO' };
+assert.deepEqual(montarChamadasTv([base]), [], 'Presença não gera chamada');
+const triagem = montarChamadasTv([{ ...base, chamadaTriagemEm: new Date('2026-10-05T12:00:00Z') }])[0];
+assert.equal(triagem.tipo, 'TRIAGEM'); assert.equal(triagem.consultorio, 'Triagem real 3'); assert.equal(triagem.horario, '09:00');
+assert.deepEqual(montarChamadasTv([{ ...base, triagemRealizada:true, chamadaTriagemEm: new Date() }]), [], 'Triagem concluída sai do painel se médico ainda não chamou');
+const medical = { ...base, triagemRealizada:true, statusAtendimentoCentro:'EM_ATENDIMENTO', chamadaTriagemEm:new Date('2026-10-05T12:00:00Z'), chamadaMedicoEm:new Date('2026-10-05T12:10:00Z') };
+const consulta = montarChamadasTv([medical])[0];assert.equal(consulta.tipo,'CONSULTA');assert.equal(consulta.consultorio,'Consultório real 21');assert.notEqual(consulta.eventoId,triagem.eventoId);
+const repetida = montarChamadasTv([{...medical,chamadaMedicoEm:new Date('2026-10-05T12:11:00Z')}])[0];assert.notEqual(repetida.eventoId,consulta.eventoId,'Repetir chamada precisa nova identidade');
+assert.equal(montarChamadasTv([{ ...medical,localAgendamento:null }])[0].consultorio,'Consulte a recepção','Nunca fabricar consultório');
+assert.deepEqual(montarChamadasTv([{ ...medical,statusAtendimentoCentro:'CONCLUIDO' }]),[],'Conclusão não aparece como chamada');
+assert.equal(montarChamadasTv([medical,{ ...medical,id:'enc-2',chamadaMedicoEm:new Date('2026-10-05T12:12:00Z') }])[0].id,'enc-2');
+console.log('PASS: 8 casos de montagem de chamadas TV');

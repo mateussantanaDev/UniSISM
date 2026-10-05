@@ -1,7 +1,8 @@
 <script lang="ts">
 	import SidebarCem from '$lib/presentation/components/SidebarCem.svelte';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
+	import { dialogAccessibility } from '$lib/presentation/actions/dialogAccessibility';
 	import { onMount } from 'svelte';
 	import { api, ApiError } from '$lib/api';
 	import type { MeResponse } from '$lib/api/types';
@@ -11,6 +12,9 @@
 
 	let me = $state<MeResponse | null>(null);
 	let autenticando = $state(true);
+	let erroAutenticacao = $state('');
+	let menuAberto = $state(false);
+	afterNavigate(() => (menuAberto = false));
 
 	async function logout() {
 		try {
@@ -49,7 +53,9 @@
 		logout
 	});
 
-	onMount(async () => {
+	async function autenticar() {
+		autenticando = true;
+		erroAutenticacao = '';
 		if (!api.tokens.get()) {
 			goto('/login', { replaceState: true });
 			return;
@@ -87,12 +93,17 @@
 				goto(sessao.role === 'ENFERMEIRO' ? '/cem/enfermagem/triagem' : '/cem/recepcao/fila');
 			}
 		} catch (e) {
-			api.tokens.set(null);
-			goto('/login', { replaceState: true });
+			if (e instanceof ApiError && e.status === 401) {
+				if (e.code === 'TROCA_SENHA_OBRIGATORIA') goto('/login/trocar-senha', { replaceState: true });
+				else { api.tokens.set(null); goto('/login', { replaceState: true }); }
+			} else {
+				erroAutenticacao = 'Não foi possível verificar a sessão. Confira a conexão e tente novamente.';
+			}
 		} finally {
 			autenticando = false;
 		}
-	});
+	}
+	onMount(() => { void autenticar(); });
 
 	const pageTitles: Record<string, { label: string; crumb: string }> = {
 		'/cem/enfermagem/triagem': {
@@ -178,30 +189,41 @@
 	<title>{meta.label} · CEM · UniSISM</title>
 </svelte:head>
 
-<div class="flex h-screen w-screen overflow-hidden bg-slate-100 font-mono text-slate-900">
-	<SidebarCem />
+<svelte:window onresize={() => { if (window.innerWidth >= 768) menuAberto = false; }} />
 
-	<div class="flex flex-1 flex-col overflow-hidden">
+<div class="flex h-dvh w-full overflow-hidden bg-slate-100 font-mono text-slate-900">
+	<div class="hidden md:block"><SidebarCem /></div>
+	{#if menuAberto}
+		<div class="fixed inset-0 z-50 bg-slate-900/60 md:hidden">
+			<div id="menu-cem-mobile" class="relative h-dvh w-60 bg-white" use:dialogAccessibility={{ label: 'Menu do CEM', onClose: () => (menuAberto = false) }}>
+				<button type="button" aria-label="Fechar menu" onclick={() => (menuAberto = false)} class="absolute top-3 right-2 z-10 bg-white px-2 py-1 text-lg">×</button>
+				<SidebarCem />
+			</div>
+		</div>
+	{/if}
+
+	<div class="flex min-w-0 flex-1 flex-col overflow-hidden">
 		<!-- Topbar do CEM -->
 		<header
-			class="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 font-mono text-xs"
+			class="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-2 font-mono text-xs md:px-6"
 		>
-			<div class="flex items-center gap-3">
+			<div class="flex min-w-0 items-center gap-2 md:gap-3">
+				<button type="button" aria-label="Abrir menu" aria-expanded={menuAberto} aria-controls="menu-cem-mobile" onclick={() => (menuAberto = true)} class="border border-slate-300 px-2 py-1 text-base md:hidden">☰</button>
 				<span
 					class="bg-indigo-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white uppercase"
 				>
 					CEM
 				</span>
-				<span class="font-mono text-[11px] font-bold tracking-wider text-slate-500">
+				<span class="hidden font-mono text-[11px] font-bold tracking-wider text-slate-500 xl:inline">
 					{meta.crumb}
 				</span>
-				<span class="text-slate-300">|</span>
-				<h1 class="font-mono text-xs font-extrabold text-slate-900 uppercase">
+				<span class="hidden text-slate-300 xl:inline">|</span>
+				<h1 class="min-w-0 font-mono text-[10px] font-extrabold text-slate-900 uppercase md:text-xs">
 					{meta.label}
 				</h1>
 			</div>
 
-			<div class="flex items-center gap-4 font-mono text-[11px] text-slate-600">
+			<div class="hidden items-center gap-4 font-mono text-[11px] text-slate-600 xl:flex">
 				{#if me?.role === 'ADMIN' || me?.role === 'DESENVOLVEDOR'}
 					<a href="/ceo/recepcao/fila" class="font-bold text-emerald-800 hover:underline">
 						🔄 Alternar para Centro Odontológico (CEO) →
@@ -215,10 +237,15 @@
 		</header>
 
 		<!-- Área de Conteúdo -->
-		<main class="flex-1 overflow-y-auto p-6">
+		<main class="min-w-0 flex-1 overflow-y-auto p-3 sm:p-6">
 			{#if autenticando}
 				<div class="flex h-full items-center justify-center font-mono text-xs text-slate-500">
 					Autenticando sessão do Centro de Especialidades Médicas (CEM)...
+				</div>
+			{:else if erroAutenticacao}
+				<div role="alert" class="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+					<p>{erroAutenticacao}</p>
+					<button type="button" onclick={autenticar} class="mt-3 border border-amber-700 bg-white px-3 py-2 font-bold">Tentar novamente</button>
 				</div>
 			{:else}
 				{@render children()}

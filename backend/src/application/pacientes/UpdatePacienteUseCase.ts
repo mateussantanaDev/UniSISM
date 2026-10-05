@@ -1,3 +1,4 @@
+import { dataNascimentoValida } from '../../shared/cadastroValidation';
 /**
  * Edição de paciente (PEC).
  *
@@ -97,7 +98,7 @@ export class UpdatePacienteUseCase {
     if (input.cartaoSus !== undefined) data.cartaoSus = input.cartaoSus;
     if (input.dataNascimento !== undefined) {
       const d = new Date(`${input.dataNascimento}T00:00:00.000Z`);
-      if (Number.isNaN(d.getTime())) {
+      if (!dataNascimentoValida(input.dataNascimento)) {
         throw Conflict('DATA_NASCIMENTO_INVALIDA', 'Data de nascimento inválida');
       }
       data.dataNascimento = d;

@@ -4,7 +4,7 @@ import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound } from '../../../../shared/errors';
+import { NotFound, Unprocessable } from '../../../../shared/errors';
 
 export interface RegistrarPresencaInput {
   encaminhamentoId: string;
@@ -29,6 +29,9 @@ export class RegistrarPresencaPacienteUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
+    if (['EM_ATENDIMENTO','CONCLUIDO'].includes(input.status)) throw Unprocessable('USAR_FLUXO_CLINICO','Inicie e conclua o atendimento pelo consultório médico');
+    if (row.statusAtendimentoCentro === 'CONCLUIDO') throw Unprocessable('ATENDIMENTO_ENCERRADO','Atendimento já concluído');
+    if (input.status === 'FALTOU' && row.statusAtendimentoCentro === 'EM_ATENDIMENTO') throw Unprocessable('ATENDIMENTO_INICIADO','Não é possível registrar falta durante o atendimento');
     const now = new Date();
     const updateData: Prisma.EncaminhamentoUpdateInput = {
       statusAtendimentoCentro: input.status,
@@ -50,6 +53,7 @@ export class RegistrarPresencaPacienteUseCase {
       eventTitle = 'Consulta Concluída';
       eventDesc = `Consulta médica finalizada às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`;
     } else if (input.status === 'FALTOU') {
+      updateData.presencaRegistradaEm=null; updateData.chamadaMedicoEm=null; updateData.chamadaTriagemEm=null;
       eventTitle = 'Paciente Ausente (Falta)';
       eventDesc = `Registrada falta no horário agendado. ${input.observacao ? `Motivo/Obs: ${input.observacao}` : ''}`;
     }

@@ -51,11 +51,9 @@ export class WhatsAppCloudApiService {
   async sendTextMessage(params: EnviarMensagemTextoParams): Promise<MetaApiResponse> {
     const cleanTo = this.normalizarTelefoneE164(params.to);
 
-    // Se o token for mock / sandbox local, simula o envio sem quebrar
-    if (!params.accessToken || params.accessToken.startsWith('MOCK_') || params.phoneNumberId.startsWith('MOCK_')) {
-      const mockWamid = `wamid.HBg${Date.now()}SIMULATED${Math.floor(Math.random() * 10000)}`;
-      logger.info(`[WhatsAppCloudApi] Mock envio para ${cleanTo}: "${params.text.slice(0, 40)}..."`);
-      return { success: true, messageId: mockWamid };
+    // Credenciais demonstrativas nunca confirmam um envio real.
+    if (!params.accessToken || /^(MOCK_|DEMO_)/i.test(params.accessToken) || /^(MOCK_|DEMO_)/i.test(params.phoneNumberId)) {
+      return { success: false, error: 'Credenciais demonstrativas: nenhuma mensagem foi enviada à Meta.' };
     }
 
     const url = `${this.baseUrl}/${params.phoneNumberId}/messages`;
@@ -103,10 +101,8 @@ export class WhatsAppCloudApiService {
   async sendInteractiveButtons(params: EnviarBotoesInterativosParams): Promise<MetaApiResponse> {
     const cleanTo = this.normalizarTelefoneE164(params.to);
 
-    if (!params.accessToken || params.accessToken.startsWith('MOCK_') || params.phoneNumberId.startsWith('MOCK_')) {
-      const mockWamid = `wamid.HBg${Date.now()}BUTTONS${Math.floor(Math.random() * 10000)}`;
-      logger.info(`[WhatsAppCloudApi] Mock envio de botões para ${cleanTo}`);
-      return { success: true, messageId: mockWamid };
+    if (!params.accessToken || /^(MOCK_|DEMO_)/i.test(params.accessToken) || /^(MOCK_|DEMO_)/i.test(params.phoneNumberId)) {
+      return { success: false, error: 'Credenciais demonstrativas: nenhuma mensagem foi enviada à Meta.' };
     }
 
     const url = `${this.baseUrl}/${params.phoneNumberId}/messages`;
@@ -171,13 +167,8 @@ export class WhatsAppCloudApiService {
       return { valid: false, error: 'Phone Number ID e Access Token são obrigatórios.' };
     }
 
-    if (params.accessToken.startsWith('MOCK_') || params.phoneNumberId.startsWith('MOCK_')) {
-      return {
-        valid: true,
-        name: 'UNISISM Central (Modo Sandbox)',
-        displayPhoneNumber: '+55 75 99999-0000',
-        qualityRating: 'GREEN',
-      };
+    if (/^(MOCK_|DEMO_)/i.test(params.accessToken) || /^(MOCK_|DEMO_)/i.test(params.phoneNumberId)) {
+      return { valid: false, error: 'Configuração demonstrativa; conexão real não verificada.' };
     }
 
     const url = `${this.baseUrl}/${params.phoneNumberId}?fields=verified_name,display_phone_number,quality_rating,code_verification_status`;

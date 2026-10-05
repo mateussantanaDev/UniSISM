@@ -1,3 +1,4 @@
+import { authorizeUsuarioManagement } from './authorizeUsuarioManagement';
 import { prisma } from '../../infrastructure/database/prisma';
 import { Forbidden, NotFound, Unprocessable } from '../../shared/errors';
 import type { IPasswordHasher } from '../../domain/services/IPasswordHasher';
@@ -7,8 +8,7 @@ import { ensurePrefeituraAcessivel } from '../../shared/scope';
 
 /**
  * Admin define uma nova senha pro usuário (provisória). Todas as sessões ativas
- * são revogadas. O usuário deve trocar a senha no próximo login (flag
- * `senhaAlteradaEm` retroage pra forçar expiração).
+ * são revogadas. O usuário deve trocar a senha no próximo login.
  */
 export class ResetarSenhaUsuarioUseCase {
   constructor(
@@ -33,6 +33,7 @@ export class ResetarSenhaUsuarioUseCase {
     if (!alvo || alvo.deletadoEm) {
       throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
     }
+    await authorizeUsuarioManagement(editorId, alvo);
     if (alvo.role === 'DESENVOLVEDOR' && scope.kind !== 'GLOBAL') {
       throw Forbidden('PERMISSAO_INSUFICIENTE', 'Apenas DEV pode resetar senha de outro DEV');
     }
@@ -40,19 +41,21 @@ export class ResetarSenhaUsuarioUseCase {
     if (alvoPref) ensurePrefeituraAcessivel(scope, alvoPref);
 
     const hash = await this.hasher.hash(novaSenha);
-    await prisma.atendente.update({
-      where: { id: alvoId },
-      data: { senhaHash: hash, senhaAlteradaEm: new Date() },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.atendente.update({
+        where: { id: alvoId },
+        data: { senhaHash: hash, senhaAlteradaEm: new Date(), trocaSenhaObrigatoria: true },
+      });
 
-    // Revoga todas as sessões
-    await prisma.sessao.updateMany({
-      where: { atendenteId: alvoId, revogadaEm: null },
-      data: { revogadaEm: new Date() },
-    });
-    await prisma.refreshToken.updateMany({
-      where: { atendenteId: alvoId, revogadoEm: null },
-      data: { revogadoEm: new Date() },
+      // Revoga todas as sessões
+      await tx.sessao.updateMany({
+        where: { atendenteId: alvoId, revogadaEm: null },
+        data: { revogadaEm: new Date() },
+      });
+      await tx.refreshToken.updateMany({
+        where: { atendenteId: alvoId, revogadoEm: null },
+        data: { revogadoEm: new Date() },
+      });
     });
 
     await this.audit?.registrar({

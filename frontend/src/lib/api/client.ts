@@ -1,3 +1,4 @@
+import { validationMessage } from './validation-message';
 /**
  * UNISISM · UBS — Cliente HTTP tipado
  * ───────────────────────────────────────────────
@@ -88,6 +89,15 @@ import type {
 	SolicitacaoMedica,
 	TipoAnexo,
 	TrocarSenhaPacienteRequest,
+	TfdViagemPacienteDto,
+	TfdSolicitacaoPacienteDto,
+	CriarSolicitacaoTfdPacienteRequest,
+	DossieResumoDto,
+	AtendimentoDto,
+	VacinacaoDto,
+	ExameDto,
+	UbsMinhaDto,
+	BannerPacienteDto,
 	Ubs,
 	UsuarioListado,
 	VerifyCodeRequest,
@@ -201,7 +211,7 @@ export class ApiError extends Error {
 
 	constructor(status: number, body: ApiErrorBody | { error?: Partial<ApiErrorBody['error']> }) {
 		const code = body?.error?.code ?? 'ERRO_INTERNO';
-		const msg = body?.error?.message ?? 'Erro desconhecido';
+		const msg = (code === 'PAYLOAD_INVALIDO' ? validationMessage(body?.error?.details) : undefined) ?? body?.error?.message ?? 'Erro desconhecido';
 		super(msg);
 		this.status = status;
 		this.code = code;
@@ -1160,6 +1170,100 @@ class PacienteAppApi {
 		const fnMatch = /filename="?([^"]+)"?/i.exec(cd);
 		return { blob: await res.blob(), filename: fnMatch?.[1] ?? 'documento.pdf' };
 	}
+
+	hasToken(): boolean {
+		return !!this.getPacToken();
+	}
+
+	encaminhamentoAtivo(): Promise<Encaminhamento | null> {
+		return this.req<Encaminhamento | null>('GET', '/encaminhamentos/ativo');
+	}
+
+	encaminhamentoById(id: string): Promise<Encaminhamento> {
+		return this.req<Encaminhamento>('GET', `/encaminhamentos/${encodeURIComponent(id)}`);
+	}
+
+	encaminhamentoTimeline(id: string): Promise<any[]> {
+		return this.req<any[]>('GET', `/encaminhamentos/${encodeURIComponent(id)}/timeline`);
+	}
+
+	minhaUbs(): Promise<UbsMinhaDto> {
+		return this.req<UbsMinhaDto>('GET', '/ubs/minha');
+	}
+
+	dossieResumo(): Promise<DossieResumoDto> {
+		return this.req<DossieResumoDto>('GET', '/dossie/resumo');
+	}
+
+	dossieAtendimentos(params?: {
+		cursor?: string;
+		limit?: number;
+	}): Promise<{ items: AtendimentoDto[]; nextCursor: string | null }> {
+		const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+		return this.req<{ items: AtendimentoDto[]; nextCursor: string | null }>(
+			'GET',
+			`/dossie/atendimentos${qs}`
+		);
+	}
+
+	dossieVacinacoes(params?: {
+		cursor?: string;
+		limit?: number;
+	}): Promise<{ items: VacinacaoDto[]; nextCursor: string | null }> {
+		const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+		return this.req<{ items: VacinacaoDto[]; nextCursor: string | null }>(
+			'GET',
+			`/dossie/vacinacoes${qs}`
+		);
+	}
+
+	dossieExames(params?: {
+		cursor?: string;
+		limit?: number;
+	}): Promise<{ items: ExameDto[]; nextCursor: string | null }> {
+		const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+		return this.req<{ items: ExameDto[]; nextCursor: string | null }>('GET', `/dossie/exames${qs}`);
+	}
+
+	banners(): Promise<BannerPacienteDto[]> {
+		return this.req<BannerPacienteDto[]>('GET', '/banners');
+	}
+
+	marcarBannerVisto(id: string): Promise<void> {
+		return this.req<void>('POST', `/banners/${encodeURIComponent(id)}/visto`);
+	}
+
+	tfdViagens(): Promise<TfdViagemPacienteDto[]> {
+		return this.req<TfdViagemPacienteDto[]>('GET', '/tfd/viagens');
+	}
+
+	tfdViagem(viagemId: string): Promise<TfdViagemPacienteDto> {
+		return this.req<TfdViagemPacienteDto>(
+			'GET',
+			`/tfd/viagens/${encodeURIComponent(viagemId)}`
+		);
+	}
+
+	tfdSolicitacoes(): Promise<TfdSolicitacaoPacienteDto[]> {
+		return this.req<TfdSolicitacaoPacienteDto[]>('GET', '/tfd/solicitacoes');
+	}
+
+	tfdSolicitacaoById(id: string): Promise<TfdSolicitacaoPacienteDto> {
+		return this.req<TfdSolicitacaoPacienteDto>(
+			'GET',
+			`/tfd/solicitacoes/${encodeURIComponent(id)}`
+		);
+	}
+
+	tfdCriarSolicitacao(
+		req: CriarSolicitacaoTfdPacienteRequest
+	): Promise<TfdSolicitacaoPacienteDto> {
+		return this.req<TfdSolicitacaoPacienteDto>('POST', '/tfd/solicitacoes', req);
+	}
+
+	tfdCancelarSolicitacao(id: string): Promise<void> {
+		return this.req<void>('DELETE', `/tfd/solicitacoes/${encodeURIComponent(id)}`);
+	}
 }
 
 // ============================================================
@@ -1633,12 +1737,23 @@ export class CentroRecepcaoApi {
 export class CentroMedicoApi {
 	constructor(private readonly api: ApiClient) {}
 
+	listRegistros(query?: { centro?: 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO'; status?: Encaminhamento['status']; statusAtendimento?: string }): Promise<Encaminhamento[]> {
+		return this.api.get<Encaminhamento[]>('/centro/atendimentos', query);
+	}
+
 	/** Agenda do dia do médico especialista (GET /v1/centro/medico/agenda). */
 	listAgenda(query?: ListAgendaMedicoQuery): Promise<ListAgendaMedicoResponse> {
 		return this.api.get<ListAgendaMedicoResponse>(
 			'/centro/medico/agenda',
 			query as Record<string, unknown> | undefined
 		);
+	}
+
+	emitirDocumento(id:string, body:{tipo:string;conteudo:string;dias?:number}):Promise<{id:string;hash:string}> { return this.api.post(`/centro/medico/atendimentos/${encodeURIComponent(id)}/documentos`,body); }
+	downloadDocumento(id:string) { return this.api.getBlob(`/centro/medico/documentos/${encodeURIComponent(id)}`); }
+	registrarFalta(id: string) { return this.api.post(`/centro/medico/atendimentos/${encodeURIComponent(id)}/falta`); }
+	salvarRascunhoSoap(id: string, draft: Record<string, unknown>): Promise<{ salvo: boolean }> {
+		return this.api.put(`/centro/medico/atendimentos/${encodeURIComponent(id)}/rascunho`, draft);
 	}
 
 	/** Chamar paciente para consultório (POST /v1/centro/medico/chamar/:id). */
@@ -1697,6 +1812,13 @@ export class CentroMedicoApi {
 		);
 	}
 
+	listarProcedimentos(id: string): Promise<{ procedimentos: { id: string; codigoSigtap: string | null; nome: string; quantidade: number; valorUnitario: number }[] }> {
+		return this.api.get(`/centro/atendimentos/${encodeURIComponent(id)}/procedimentos`);
+	}
+	removerProcedimento(id: string, procedimentoId: string): Promise<{ sucesso: boolean }> {
+		return this.api.delete(`/centro/atendimentos/${encodeURIComponent(id)}/procedimentos/${encodeURIComponent(procedimentoId)}`);
+	}
+
 	/** Agendar retorno direto do paciente com data manual (POST /v1/centro/medico/retorno). */
 	agendarRetornoDirect(req: AgendarRetornoDirectRequest): Promise<AgendarRetornoDirectResponse> {
 		return this.api.post<AgendarRetornoDirectResponse>('/centro/medico/retorno', req);
@@ -1715,7 +1837,7 @@ export class CentroGestaoApi {
 	}
 
 	/** Listar cotas mensais das UBSs (GET /v1/centro/gestao/cotas). */
-	listCotas(query?: { centro?: string }): Promise<CotaUbsCentro[]> {
+	listCotas(query?: { centro?: string; competencia?: string }): Promise<CotaUbsCentro[]> {
 		return this.api.get<CotaUbsCentro[]>(
 			'/centro/gestao/cotas',
 			query as Record<string, unknown> | undefined
@@ -1868,6 +1990,13 @@ export class CentroGestaoApi {
 	/** Executar remanejamento emergencial em lote (POST /v1/centro/gestao/remanejamento-lote). */
 	remanejarEmLote(req: RemanejamentoLoteCentroRequest): Promise<RemanejamentoLoteCentroResponse> {
 		return this.api.post<RemanejamentoLoteCentroResponse>('/centro/gestao/remanejamento-lote', req);
+	}
+
+	obterProducao(query: { periodo: string; centro: string }): Promise<{ profissionais: any[]; atendimentos: any[]; inicio: string; fim: string }> {
+		return this.api.get('/centro/gestao/producao', query);
+	}
+	exportarRelatorio(query: { inicio: string; fim: string; centro: string; tipo: string; formato: string }): Promise<{ blob: Blob; filename: string }> {
+		return this.api.getBlob(`/centro/gestao/relatorios/exportar?${new URLSearchParams(query)}`);
 	}
 
 	/** Obter relatório faturável BPA / SIA-SUS (GET /v1/centro/gestao/relatorios/bpa?periodo=YYYY-MM). */

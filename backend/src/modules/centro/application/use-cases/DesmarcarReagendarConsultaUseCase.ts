@@ -1,3 +1,7 @@
+import { CalcularAlocacaoVagaCentroUseCase } from './CalcularAlocacaoVagaCentroUseCase';
+import { validarReservaCentro } from '../../shared/reservaCentro';
+import { dataHoraRecife } from '../../shared/dataCentro';
+import { resolverProfissionalCentro } from '../../shared/profissionalCentro';
 import { TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -5,7 +9,7 @@ import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-c
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound } from '../../../../shared/errors';
+import { NotFound, Unprocessable } from '../../../../shared/errors';
 
 export interface DesmarcarReagendarInput {
   encaminhamentoId: string;
@@ -30,6 +34,7 @@ export class DesmarcarReagendarConsultaUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: row.ubs?.prefeituraId ?? '' });
 
+    if (['EM_ATENDIMENTO','CONCLUIDO'].includes(row.statusAtendimentoCentro || '')) throw Unprocessable('ATENDIMENTO_INICIADO','Não é possível cancelar ou reagendar um atendimento já iniciado');
     if (input.acao === 'DESMARCAR') {
       const updated = await prisma.$transaction(async (tx) => {
         await tx.eventoTimeline.create({
@@ -46,8 +51,11 @@ export class DesmarcarReagendarConsultaUseCase {
         const res = await tx.encaminhamento.update({
           where: { id: row.id },
           data: {
+            status: 'AGUARDANDO_REGULACAO',
+            presencaRegistradaEm:null, chamadaTriagemEm:null, chamadaMedicoEm:null,
             agendamentoPrevisto: null,
             profissionalAgendado: null,
+            profissionalAgendadoId: null,
             statusAtendimentoCentro: null,
           },
           include: INCLUDE_ENCAMINHAMENTO_FULL,
@@ -73,14 +81,15 @@ export class DesmarcarReagendarConsultaUseCase {
     } else {
       // REAGENDAR
       const enc = rowParaEncaminhamento(row);
-      const otimizado = await calcularOtimizacaoAgendamento({
-        profissional: row.profissionalAgendado ?? undefined,
-        especialidade: enc.solicitacao.especialidadeSolicitada,
-        prioridade: enc.solicitacao.prioridade,
-        nota: input.motivo,
-      });
+      const resultado = await new CalcularAlocacaoVagaCentroUseCase().exec({medicoId:row.profissionalAgendadoId || undefined, medicoNome:row.profissionalAgendado || undefined, especialidade:row.especialidadeSolicitada, tipoServico:row.tipoServico, centro:row.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'CEO' : 'CEM'}, scope);
+      if (!resultado.alocacao) throw Unprocessable('SEM_VAGA_DISPONIVEL',resultado.mensagem || 'Sem vaga disponível');
+      const a = resultado.alocacao;
+      const otimizado = {dateStr:a.data,timeStr:a.hora,dateTime:dataHoraRecife(a.data,a.hora),doctor:{nome:a.medicoNome}};
 
+      const profissional = await resolverProfissionalCentro(row.ubsId, otimizado.doctor.nome);
       const updated = await prisma.$transaction(async (tx) => {
+        if (!profissional) throw Unprocessable('PROFISSIONAL_OBRIGATORIO','Profissional não vinculado');
+        const escala = await validarReservaCentro(tx, {prefeituraId:row.ubs.prefeituraId, profissionalId:profissional.id, especialidade:row.especialidadeSolicitada, tipoServico:row.tipoServico, data:otimizado.dateTime, ignorarId:row.id});
         await tx.eventoTimeline.create({
           data: {
             encaminhamentoId: row.id,
@@ -97,7 +106,10 @@ export class DesmarcarReagendarConsultaUseCase {
           data: {
             agendamentoPrevisto: otimizado.dateTime,
             profissionalAgendado: otimizado.doctor.nome,
+            profissionalAgendadoId: profissional?.id ?? null,
             statusAtendimentoCentro: 'AGENDADO',
+            necessitaTriagem:escala.necessitaTriagem,
+            presencaRegistradaEm:null, triagemRealizada:false, triagemEm:null, chamadaTriagemEm:null, chamadaMedicoEm:null,
           },
           include: INCLUDE_ENCAMINHAMENTO_FULL,
         });

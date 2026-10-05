@@ -22,12 +22,12 @@
 	let carregando = $state(true);
 	let medicoNome = $state('Especialista');
 	let medicoCrm = $state('Regulação');
-	let medicoEspecialidade = $state('Cardiologia');
+	let medicoEspecialidade = $state('Especialidade não informada');
 
 	// Metrics
 	let totalConsultasMes = $state(0);
-	let tempoMedioMinutos = $state(20);
-	let taxaPresenca = $state(100);
+	let tempoMedioMinutos = $state<number | null>(null);
+	let taxaPresenca = $state(0);
 	let totalPrescricoes = $state(0);
 	let totalExamesPedidos = $state(0);
 
@@ -36,10 +36,9 @@
 
 	onMount(async () => {
 		try {
-			const [me, dash, encs] = await Promise.all([
+			const [me, encs] = await Promise.all([
 				api.auth.me().catch(() => null),
-				api.centroGestao.obterDashboard().catch(() => null),
-				api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 }).catch(() => [])
+				api.centroMedico.listRegistros({ status: 'APROVADO', centro: ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES' }).catch(() => [])
 			]);
 
 			const encsCentro = encs.filter((e) => {
@@ -58,28 +57,24 @@
 
 			if (me && me.nome) {
 				medicoNome = me.nome;
-				medicoEspecialidade = (me as any).especialidade || (ehCeo ? 'Endodontia' : 'Cardiologia');
-				medicoCrm = (me as any).crm
-					? `${rotuloRegistro} ${(me as any).crm}`
-					: (me as any).cpf
-						? `${rotuloRegistro} ${(me as any).cpf.substring(0, 6)}`
-						: `${rotuloRegistro} Regulação`;
+				medicoEspecialidade = (me as any).especialidade || 'Especialidade não informada';
+				medicoCrm = (me as any).crm || 'Registro na escala';
 			}
 
-			if (dash?.mesAtual) {
-				totalConsultasMes = dash.mesAtual.totalConcluidos || encsCentro.length;
-				taxaPresenca = Math.round(100 - (dash.mesAtual.taxaAbsenteismoPorcento || 0));
-			} else {
-				totalConsultasMes = encsCentro.length;
-			}
+			const mes = new Date().toISOString().slice(0, 7);
+			const consultasMes = encsCentro.filter(e => { const data=e.atendimentoConcluidoEm || e.agendamentoPrevisto; return data && new Intl.DateTimeFormat('en-CA',{timeZone:'America/Recife',year:'numeric',month:'2-digit'}).format(new Date(data))===mes; });
+			const concluidas=consultasMes.filter(e=>e.statusAtendimentoCentro==='CONCLUIDO');
+			const duracoes=concluidas.filter(e=>e.atendimentoIniciadoEm && e.atendimentoConcluidoEm).map(e=>(Date.parse(e.atendimentoConcluidoEm!)-Date.parse(e.atendimentoIniciadoEm!))/60000).filter(n=>n>=0);
+			tempoMedioMinutos=duracoes.length ? Math.round(duracoes.reduce((a,b)=>a+b,0)/duracoes.length):null;
+			totalConsultasMes = consultasMes.filter(e => e.statusAtendimentoCentro === 'CONCLUIDO').length;
+			const faltas = consultasMes.filter(e => e.statusAtendimentoCentro === 'FALTOU').length;
+			taxaPresenca = totalConsultasMes + faltas ? Math.round(100 * totalConsultasMes / (totalConsultasMes + faltas)) : 0;
 
 			// Agrupa CIDs e estatísticas reais do servidor
 			const mapaCid = new Map<string, { descricao: string; qtd: number }>();
-			for (const e of encsCentro) {
-				const code = e.solicitacao?.cid10 || (ehCeo ? 'K04' : 'I10');
-				const desc =
-					e.solicitacao?.cidDescricao ||
-					(ehCeo ? 'Doenças da Polpa Dentária' : 'Consulta Especializada');
+			for (const e of concluidas) {
+				const code = e.atendimentoSOAP?.cid10; if(!code) continue;
+				const desc = e.atendimentoSOAP?.diagnostico || '';
 				const actual = mapaCid.get(code) || { descricao: desc, qtd: 0 };
 				actual.qtd += 1;
 				mapaCid.set(code, actual);
@@ -94,23 +89,9 @@
 				.sort((a, b) => b.qtd - a.qtd)
 				.slice(0, 5);
 
-			let totalPrescricoesCount = 0;
-			let totalExamesCount = 0;
-			for (const e of encs) {
-				const soap = (e as any).atendimentoSOAP;
-				if (soap?.prescricao || (e as any).prescricao || soap?.prescricaoResumo)
-					totalPrescricoesCount++;
-				if (
-					soap?.exames ||
-					(e as any).examesPedidos ||
-					(e.solicitacao as any)?.tipoServico === 'PROCEDIMENTO'
-				)
-					totalExamesCount++;
-			}
+			totalPrescricoes = concluidas.filter(e=>e.atendimentoSOAP?.prescricaoResumo?.trim()).length;
+			totalExamesPedidos = consultasMes.flatMap(e=>e.documentosClinicos || []).filter(d=>d.tipo==='PEDIDO_EXAMES' && d.emitidoEm.startsWith(mes)).length;
 
-			totalPrescricoes = totalPrescricoesCount > 0 ? totalPrescricoesCount : totalConsultasMes;
-			totalExamesPedidos =
-				totalExamesCount > 0 ? totalExamesCount : Math.round(totalConsultasMes * 0.5);
 		} catch (e) {
 			console.info('[UniSISM] Carregando indicadores do especialista.', e);
 		} finally {
@@ -152,7 +133,7 @@
 			<span
 				class="border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900"
 			>
-				STATUS: EM ESCALA ATIVA
+				INDICADORES DO PROFISSIONAL
 			</span>
 		</div>
 	</section>
@@ -172,10 +153,10 @@
 				TEMPO MÉDIO / CONSULTA
 			</div>
 			<div class="mt-2 font-sans text-3xl font-extrabold text-indigo-700">
-				{tempoMedioMinutos} min
+				{tempoMedioMinutos === null ? 'Sem dados' : `${tempoMedioMinutos} min`}
 			</div>
 			<div class="mt-2 font-mono text-[10px] font-bold text-indigo-900">
-				Ergonomia clínica ideal
+				Calculado pelo início e conclusão registrados
 			</div>
 		</div>
 

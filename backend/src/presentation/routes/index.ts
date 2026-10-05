@@ -81,20 +81,21 @@ interface Deps {
 export function buildRoutes(deps: Deps): Router {
   const router = Router();
   const authenticate = makeAuthenticate(deps.tokens);
+  const authenticatePasswordChange = makeAuthenticate(deps.tokens, true);
 
   // ----- Auth (público) -----
   router.post('/auth/login', validateBody(loginSchema), deps.auth.postLogin);
   router.post('/auth/forgot-password', validateBody(forgotSchema), deps.auth.postForgot);
   router.post('/auth/verify-code', validateBody(verifyCodeSchema), deps.auth.postVerify);
   router.post('/auth/reset-password', validateBody(resetPasswordSchema), deps.auth.postReset);
-  router.post('/auth/logout', authenticate, deps.auth.postLogout);
+  router.post('/auth/logout', authenticatePasswordChange, deps.auth.postLogout);
   router.get('/auth/me', authenticate, deps.auth.getMe);
 
   // ----- Perfil -----
   router.get('/me/profile', authenticate, deps.perfil.get);
   router.post(
     '/me/password',
-    authenticate,
+    authenticatePasswordChange,
     validateBody(changePasswordSchema),
     deps.perfil.postChangePassword,
   );

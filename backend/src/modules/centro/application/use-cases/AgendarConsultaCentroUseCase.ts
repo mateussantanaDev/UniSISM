@@ -1,3 +1,7 @@
+import { CalcularAlocacaoVagaCentroUseCase } from './CalcularAlocacaoVagaCentroUseCase';
+import { validarReservaCentro } from '../../shared/reservaCentro';
+import { dataHoraRecife } from '../../shared/dataCentro';
+import { resolverProfissionalCentro } from '../../shared/profissionalCentro';
 import { StatusEncaminhamento, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
@@ -5,12 +9,13 @@ import { calcularOtimizacaoAgendamento } from '../../../gestao/application/use-c
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
 import { ensureUbsAcessivel } from '../../../../shared/scope';
-import { NotFound } from '../../../../shared/errors';
+import { NotFound, Unprocessable } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 
 export interface AgendarConsultaCentroInput {
   id: string;
   profissional?: string;
+  profissionalId?: string;
   nota?: string;
   localAgendamento?: string;
   dataAgendada?: string; // YYYY-MM-DD
@@ -37,6 +42,7 @@ export class AgendarConsultaCentroUseCase {
 
     ensureUbsAcessivel(scope, { id: row.ubsId, prefeituraId: (row as any).ubs?.prefeituraId ?? '' });
 
+    if (['EM_ATENDIMENTO','CONCLUIDO'].includes(row.statusAtendimentoCentro || '')) throw Unprocessable('ATENDIMENTO_INICIADO','Não é possível reagendar um atendimento já iniciado');
     const enc = rowParaEncaminhamento(row);
 
     let finalDateTime: Date;
@@ -47,24 +53,23 @@ export class AgendarConsultaCentroUseCase {
     if (input.dataAgendada && input.horaAgendada) {
       finalDateStr = input.dataAgendada;
       finalTimeStr = input.horaAgendada;
-      finalDateTime = new Date(`${input.dataAgendada}T${input.horaAgendada}:00`);
+      finalDateTime = dataHoraRecife(input.dataAgendada, input.horaAgendada);
       finalDoctorNome = input.profissional || enc.profissionalAgendado || 'Especialista da Escala';
     } else {
-      const otimizado = await calcularOtimizacaoAgendamento({
-        profissional: input.profissional,
-        nota: input.nota,
-        especialidade: enc.solicitacao.especialidadeSolicitada,
-        prioridade: enc.solicitacao.prioridade,
-      });
-      finalDateStr = otimizado.dateStr;
-      finalTimeStr = otimizado.timeStr;
-      finalDateTime = otimizado.dateTime;
-      finalDoctorNome = otimizado.doctor.nome;
+      const resultado = await new CalcularAlocacaoVagaCentroUseCase().exec({ medicoNome:input.profissional, medicoId:input.profissionalId, especialidade:row.especialidadeSolicitada, tipoServico:row.tipoServico, centro:row.canalRoteamento === 'CENTRO_ODONTOLOGICO' ? 'CEO' : 'CEM' }, scope);
+      if (!resultado.sucesso || !resultado.alocacao) throw Unprocessable('SEM_VAGA_DISPONIVEL', resultado.mensagem || 'Não há vaga disponível');
+      finalDateStr = resultado.alocacao.data; finalTimeStr = resultado.alocacao.hora;
+      finalDateTime = dataHoraRecife(finalDateStr, finalTimeStr); finalDoctorNome = resultado.alocacao.medicoNome;
     }
+
+    const profissional = await resolverProfissionalCentro(row.ubsId, finalDoctorNome, input.profissionalId);
+    if (profissional) finalDoctorNome = profissional.nome;
 
     const localAg = input.localAgendamento || row.localAgendamento || 'Centro Municipal de Especialidades';
 
     const updated = await prisma.$transaction(async (tx) => {
+      if (!profissional) throw Unprocessable('PROFISSIONAL_OBRIGATORIO','Selecione um profissional com escala cadastrada');
+      const escala = await validarReservaCentro(tx, {prefeituraId:row.ubs.prefeituraId, profissionalId:profissional.id, especialidade:row.especialidadeSolicitada, tipoServico:row.tipoServico, data:finalDateTime, ignorarId:row.id});
       // Append timeline entry
       await tx.eventoTimeline.create({
         data: {
@@ -84,9 +89,12 @@ export class AgendarConsultaCentroUseCase {
           status: StatusEncaminhamento.APROVADO,
           agendamentoPrevisto: finalDateTime,
           profissionalAgendado: finalDoctorNome,
+          profissionalAgendadoId: profissional?.id ?? null,
           localAgendamento: localAg,
           observacoesRegulacao: input.nota || `Agendado com ${finalDoctorNome} para ${finalDateStr} às ${finalTimeStr}`,
           statusAtendimentoCentro: 'AGENDADO',
+          necessitaTriagem: escala.necessitaTriagem,
+          presencaRegistradaEm: null, triagemRealizada: false, triagemEm:null, chamadaTriagemEm:null, chamadaMedicoEm:null,
         },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });

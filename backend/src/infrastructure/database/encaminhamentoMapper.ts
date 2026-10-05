@@ -22,9 +22,11 @@ export type EncaminhamentoFull = EncaminhamentoRow & {
   anexos: AnexoRow[];
   timeline: EventoRow[];
   ubs?: any;
+  atendimentoCentro?: import("../../../generated/prisma").Atendimento | null;
 };
 
 export const INCLUDE_ENCAMINHAMENTO_FULL = {
+  atendimentoCentro: true,
   anexos: true,
   timeline: true,
   ubs: { select: { id: true, prefeituraId: true } },
@@ -43,6 +45,7 @@ function safeTime(d: any): number {
 
 export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
   const paciente: Paciente = {
+    ...(r.pacienteId ? { id: r.pacienteId } : {}),
     nome: r.pacienteNome,
     cpf: r.pacienteCpf,
     cartaoSus: r.pacienteCartaoSus,
@@ -55,6 +58,9 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     medicoSolicitante: r.medicoSolicitante,
     crm: r.crm,
     especialidadeSolicitada: r.especialidadeSolicitada,
+    tipoServico: r.tipoServico,
+    procedimentoSolicitado: r.procedimentoSolicitado,
+    codigoSigtapSolicitado: r.codigoSigtapSolicitado,
     cid10: r.cid10,
     cidDescricao: r.cidDescricao,
     justificativaClinica: r.justificativaClinica,
@@ -100,6 +106,10 @@ export function rowParaEncaminhamento(r: EncaminhamentoFull): Encaminhamento {
     agendamentoPrevisto: safeIsoOrNull(r.agendamentoPrevisto),
     localAgendamento: r.localAgendamento ?? null,
     profissionalAgendado: r.profissionalAgendado ?? null,
+    profissionalAgendadoId: r.profissionalAgendadoId ?? null,
+    atendimentoId: r.atendimentoId ?? null,
+    rascunhoSOAP: r.rascunhoSOAP as Record<string, unknown> | null,
+    ...(r.atendimentoCentro ? { atendimentoSOAP: { exameFisico: r.atendimentoCentro.exameFisico, sinaisVitais: r.atendimentoCentro.sinaisVitais, objetivo: r.atendimentoCentro.objetivo, subjetivo: r.atendimentoCentro.subjetivo, avaliacao: r.atendimentoCentro.avaliacao, plano: r.atendimentoCentro.plano, cid10: r.atendimentoCentro.cid10, diagnostico: r.atendimentoCentro.diagnostico, conduta: r.atendimentoCentro.conduta, queixaPrincipal: r.atendimentoCentro.queixaPrincipal, prescricaoResumo: r.atendimentoCentro.prescricaoResumo, concluidoEm: safeIsoString(r.atendimentoCentro.data) } } : {}),
     cidadeAgendamento: r.cidadeAgendamento ?? null,
     ufAgendamento: r.ufAgendamento ?? null,
     motivoRejeicao: r.motivoRejeicao ?? null,

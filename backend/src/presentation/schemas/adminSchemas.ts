@@ -1,3 +1,4 @@
+import { cpfSchema } from '../../shared/cadastroValidation';
 import { z } from 'zod';
 
 export const criarPrefeituraSchema = z.object({
@@ -72,7 +73,7 @@ export const criarUsuarioSchema = z.object({
   nome: z.string().min(2),
   email: z.string().email(),
   matricula: z.string().min(3).optional(),
-  cpf: z.string().min(11),
+  cpf: cpfSchema,
   senha: z.string().min(8),
   role: roleEnum,
   tipoUnidade: tipoUnidadeEnum.optional().nullable(),

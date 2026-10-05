@@ -21,6 +21,9 @@ export interface EscalaProfissionalCentro {
 	isMutirao?: boolean;
 	intervaloDias?: number;
 	dataInicioRecorrencia?: string;
+	ausenciaInicio?: string | null;
+	ausenciaFim?: string | null;
+	tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
 }
 
 export interface ResultadoAlocacaoAutomatica {
@@ -100,22 +103,23 @@ const DIA_SEMANA_MAP: Record<string, number> = {
 	SÁBADO: 6
 };
 
-export function gerarSlotsTurno(inicio: string, fim: string, duracaoMinutos = 20): string[] {
+export function gerarSlotsTurno(inicio: string, fim: string, duracaoMinutos = 20, capacidade = Number.MAX_SAFE_INTEGER): string[] {
 	const slots: string[] = [];
+	if (!Number.isInteger(duracaoMinutos) || duracaoMinutos <= 0 || !Number.isInteger(capacidade) || capacidade <= 0) return [];
 	const [hIni = 8, mIni = 0] = inicio.split(':').map(Number);
 	const [hFim = 12, mFim = 0] = fim.split(':').map(Number);
 
 	let atual = hIni * 60 + mIni;
 	const limite = hFim * 60 + mFim;
 
-	while (atual + duracaoMinutos <= limite) {
+	while (atual + duracaoMinutos <= limite && slots.length < capacidade) {
 		const h = Math.floor(atual / 60);
 		const m = atual % 60;
 		slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
 		atual += duracaoMinutos;
 	}
 
-	return slots.length > 0 ? slots : [inicio];
+	return slots;
 }
 
 export function formatarDataBr(iso: string): string {
@@ -124,211 +128,39 @@ export function formatarDataBr(iso: string): string {
 }
 
 export function escalaAtendeNaData(escala: EscalaProfissionalCentro, data: Date): boolean {
-	const ano = data.getFullYear();
-	const mes = String(data.getMonth() + 1).padStart(2, '0');
-	const dia = String(data.getDate()).padStart(2, '0');
-	const iso = `${ano}-${mes}-${dia}`;
-	const diaSemana = data.getDay(); // 0 a 6
-
-	// 1. Datas Específicas / Pontuais
-	if (escala.datasEspecificas && escala.datasEspecificas.length > 0) {
-		if (escala.datasEspecificas.includes(iso)) return true;
-		if (escala.tipoRecorrencia === 'DATAS_ESPECIFICAS') return false;
-	}
-
-	// 2. Mini Mutirão (sábado, domingo ou datas pontuais)
-	if (escala.isMutirao || escala.tipoRecorrencia === 'MUTIRAO') {
-		if (escala.datasEspecificas && escala.datasEspecificas.length > 0) {
-			return escala.datasEspecificas.includes(iso);
-		}
-		const diasNumericos = Array.from(
-			new Set(
-				(escala.diasSemana || [])
-					.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
-					.filter((n) => typeof n === 'number')
-			)
-		);
-		return diasNumericos.includes(diaSemana);
-	}
-
-	// 3. Recorrência Quinzenal
+	const iso = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Recife'}).format(data);
+	if (escala.status && escala.status !== 'ATIVA' && (!escala.ausenciaInicio || !escala.ausenciaFim || iso >= escala.ausenciaInicio && iso <= escala.ausenciaFim)) return false;
+	if (escala.tipoRecorrencia === 'DATAS_ESPECIFICAS' || escala.tipoRecorrencia === 'MUTIRAO' && escala.datasEspecificas?.length) return escala.datasEspecificas?.includes(iso) ?? false;
+	const diaSemana = new Date(iso+'T12:00:00Z').getUTCDay();
+	if (!escala.diasSemana.some(d => DIA_SEMANA_MAP[d.trim().toUpperCase()] === diaSemana)) return false;
 	if (escala.tipoRecorrencia === 'QUINZENAL') {
-		const diasNumericos = Array.from(
-			new Set(
-				(escala.diasSemana || [])
-					.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
-					.filter((n) => typeof n === 'number')
-			)
-		);
-		if (!diasNumericos.includes(diaSemana)) return false;
-
-		if (escala.dataInicioRecorrencia) {
-			const base = new Date(escala.dataInicioRecorrencia + 'T00:00:00Z');
-			const cur = new Date(iso + 'T00:00:00Z');
-			const diffMs = cur.getTime() - base.getTime();
-			const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-			const diffWeeks = Math.floor(diffDays / 7);
-			return diffWeeks >= 0 && diffWeeks % 2 === 0;
-		} else {
-			const primeiroJan = new Date(data.getFullYear(), 0, 1);
-			const diasDoAno = Math.floor(
-				(data.getTime() - primeiroJan.getTime()) / (24 * 60 * 60 * 1000)
-			);
-			const semanaDoAno = Math.ceil((diasDoAno + primeiroJan.getDay() + 1) / 7);
-			return semanaDoAno % 2 === 0;
-		}
+		if (!escala.dataInicioRecorrencia) return false;
+		const dias = Math.round((Date.parse(iso+'T12:00:00Z') - Date.parse(escala.dataInicioRecorrencia+'T12:00:00Z')) / 86400000);
+		return dias >= 0 && Math.floor(dias / 7) % 2 === 0;
 	}
-
-	// 4. Semanal Padrão
-	const diasNumericos = Array.from(
-		new Set(
-			(escala.diasSemana || [])
-				.map((d) => DIA_SEMANA_MAP[d.trim().toUpperCase()])
-				.filter((n) => typeof n === 'number')
-		)
-	);
-	return diasNumericos.includes(diaSemana);
+	return true;
 }
 
 export function alocarVagaPorProfissionalEEscala(params: {
-	centro: TipoCentro;
-	medicoNome?: string;
-	medicoId?: string;
-	especialidade?: string;
-	prioridade?: PrioridadeClinica;
-	agendamentosExistentes?: AgendamentoOcupado[];
-	escalasDisponiveis?: EscalaProfissionalCentro[];
-	dataBase?: Date;
+	centro: TipoCentro; medicoNome?: string; medicoId?: string; especialidade?: string;
+	tipoServico?: 'CONSULTA' | 'PROCEDIMENTO'; prioridade?: PrioridadeClinica;
+	agendamentosExistentes?: AgendamentoOcupado[]; escalasDisponiveis?: EscalaProfissionalCentro[]; dataBase?: Date;
 }): ResultadoAlocacaoAutomatica | null {
-	const {
-		centro,
-		medicoNome,
-		especialidade,
-		prioridade = 'ELETIVA',
-		agendamentosExistentes = [],
-		escalasDisponiveis = [],
-		dataBase = new Date()
-	} = params;
-
-	if (!medicoNome && !especialidade) {
-		return null;
-	}
-
-	const escalasAtivas = escalasDisponiveis.filter((e) => e.status === 'ATIVA' || !e.status);
-	if (escalasAtivas.length === 0) {
-		return null;
-	}
-
-	let escala: EscalaProfissionalCentro | undefined;
-	if (medicoNome) {
-		escala = escalasAtivas.find((e) => e.nome.toLowerCase() === medicoNome.toLowerCase());
-	}
-	if (!escala && especialidade) {
-		escala = escalasAtivas.find(
-			(e) => e.especialidade.toLowerCase() === especialidade.toLowerCase()
-		);
-	}
-	if (!escala) {
-		escala = escalasAtivas[0];
-	}
-	if (!escala) {
-		return null;
-	}
-
-	const slotsBase = gerarSlotsTurno(escala.horarioInicio, escala.horarioFim, escala.duracaoMinutos);
-	const ehCeo = centro === 'CEO';
-
-	let offsetDias = 15;
-	let prazoTexto = 'Demanda Eletiva Regular (15 a 30 dias)';
-	let justificativaTexto = `Portaria SUS: Atendimento programado. Escala regular de ${escala.nome}.`;
-
-	if (prioridade === 'EMERGENCIA') {
-		offsetDias = 0;
-		prazoTexto = 'Atendimento Imediato (Mesmo Dia / 24h)';
-		justificativaTexto = `Portaria SUS: Demanda de emergência com risco iminente de agravo. Alocado no primeiro horário imediato da escala de ${escala.nome}.`;
-	} else if (prioridade === 'URGENTE') {
-		offsetDias = 1;
-		prazoTexto = 'Demanda Urgente (Até 72 horas)';
-		justificativaTexto = `Portaria SUS: Condição clínica aguda com risco de evolução desfavorável. Priorizado nos primeiros dias da escala de ${escala.nome}.`;
-	} else if (prioridade === 'PRIORITARIA') {
-		offsetDias = 7;
-		prazoTexto = 'Prioridade Legal SUS (7 a 10 dias)';
-		justificativaTexto = `Portaria SUS: Lei nº 10.048/2000 (Idosos 60+, PCD, Gestantes, TEA). Encaixe prioritário na escala de ${escala.nome}.`;
-	}
-
-	let dataCursor = new Date(dataBase);
-	dataCursor.setDate(dataCursor.getDate() + offsetDias);
-
-	const ocupadosSet = new Set(agendamentosExistentes.map((a) => `${a.data}_${a.hora}`));
-
-	let dataIsoFinal = '';
-	let horaFinal = '';
-
-	let maxTentativas = 60;
-	while (maxTentativas > 0) {
-		if (escalaAtendeNaData(escala, dataCursor)) {
-			const ano = dataCursor.getFullYear();
-			const mes = String(dataCursor.getMonth() + 1).padStart(2, '0');
-			const dia = String(dataCursor.getDate()).padStart(2, '0');
-			const dataStr = `${ano}-${mes}-${dia}`;
-
-			for (const slot of slotsBase) {
-				const chave = `${dataStr}_${slot}`;
-				if (!ocupadosSet.has(chave)) {
-					dataIsoFinal = dataStr;
-					horaFinal = slot;
-					break;
-				}
-			}
-
-			if (!horaFinal && prioridade === 'EMERGENCIA') {
-				dataIsoFinal = dataStr;
-				horaFinal = slotsBase[0] || escala.horarioInicio;
-				justificativaTexto += ' [Encaixe de Emergência Autorizado]';
-				break;
-			}
-
-			if (dataIsoFinal && horaFinal) {
-				break;
-			}
+	const { centro, medicoNome, medicoId, especialidade, tipoServico = 'CONSULTA', prioridade = 'ELETIVA', agendamentosExistentes = [], escalasDisponiveis = [], dataBase = new Date() } = params;
+	if (!medicoNome && !medicoId && !especialidade) return null;
+	const candidatas = escalasDisponiveis.filter(e => e.centro === centro && (!medicoId || e.medicoId === medicoId) && (medicoId || !medicoNome || e.nome.toLowerCase() === medicoNome.toLowerCase()) && (!especialidade || e.especialidade.toLowerCase() === especialidade.toLowerCase()) && (e.tipoServico || 'CONSULTA') === tipoServico);
+	const base = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Recife'}).format(new Date(Math.max(dataBase.getTime(), Date.now())));
+	for (let n=0; n<60; n++) {
+		const cursor = new Date(base+'T12:00:00Z'); cursor.setUTCDate(cursor.getUTCDate()+n); const dia = cursor.toISOString().slice(0,10);
+		const vagas = candidatas.filter(e => escalaAtendeNaData(e,cursor)).flatMap(e => gerarSlotsTurno(e.horarioInicio,e.horarioFim,e.duracaoMinutos,e.vagasPorTurno).map(hora => ({e,hora}))).sort((a,b)=>a.hora.localeCompare(b.hora));
+		for (const {e,hora} of vagas) {
+			if (Date.parse(dia+'T'+hora+':00-03:00') <= Date.now()) continue;
+			const min = (h:string) => { const [hh,mm]=h.split(':').map(Number); return hh*60+mm; };
+			if (agendamentosExistentes.some(a => a.data===dia && (!a.medicoNome || a.medicoNome===e.nome) && min(hora)<min(a.hora)+e.duracaoMinutos && min(hora)+e.duracaoMinutos>min(a.hora))) continue;
+			return {data:dia,dataFormatada:formatarDataBr(dia),hora,medicoId:e.medicoId,medicoNome:e.nome,registro:e.registro,especialidade:e.especialidade,centro,centroNome:centro==='CEO'?'Centro de Especialidades Odontológicas (CEO)':'Centro de Especialidades Médicas (CEM)',consultorio:e.consultorio||'Sala a definir',prioridade,diasAteAtendimento:n,prazoLegalSus:'Primeira vaga disponível na escala',justificativaEscala:`Horário disponível de ${e.nome}. A reserva é confirmada pelo servidor ao salvar.`};
 		}
-
-		dataCursor.setDate(dataCursor.getDate() + 1);
-		maxTentativas--;
 	}
-
-	if (!dataIsoFinal || !horaFinal) {
-		const ano = dataCursor.getFullYear();
-		const mes = String(dataCursor.getMonth() + 1).padStart(2, '0');
-		const dia = String(dataCursor.getDate()).padStart(2, '0');
-		dataIsoFinal = `${ano}-${mes}-${dia}`;
-		horaFinal = escala.horarioInicio;
-	}
-
-	const consultorioFinal =
-		escala.consultorio ||
-		(ehCeo
-			? `CADEIRA ODONTOLÓGICA 01 — ${escala.especialidade.toUpperCase()}`
-			: `CONSULTÓRIO 01 — ${escala.especialidade.toUpperCase()}`);
-
-	return {
-		data: dataIsoFinal,
-		dataFormatada: formatarDataBr(dataIsoFinal),
-		hora: horaFinal,
-		medicoId: escala.medicoId,
-		medicoNome: escala.nome,
-		registro: escala.registro,
-		especialidade: escala.especialidade,
-		centro,
-		centroNome: ehCeo
-			? 'Centro de Especialidades Odontológicas (CEO)'
-			: 'Centro Municipal de Especialidades Médicas (CEM)',
-		consultorio: consultorioFinal,
-		prioridade,
-		diasAteAtendimento: offsetDias,
-		prazoLegalSus: prazoTexto,
-		justificativaEscala: `${justificativaTexto} Profissional: ${escala.nome} (${escala.registro}), escala em ${escala.diasSemana.join(', ')} das ${escala.horarioInicio} às ${escala.horarioFim}. Vaga alocada no ${consultorioFinal}.`
-	};
+	return null;
 }
 
 export const TERMOS_ODONTO: readonly string[] = [

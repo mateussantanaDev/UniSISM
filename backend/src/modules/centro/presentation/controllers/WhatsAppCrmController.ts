@@ -7,10 +7,10 @@ import type { WhatsAppCrmUseCase } from '../../application/use-cases/WhatsAppCrm
 import { logger } from '../../../../infrastructure/logger';
 
 const salvarConfigSchema = z.object({
-  phoneNumberId: z.string().min(1),
+  phoneNumberId: z.string().trim(),
   wabaId: z.string().optional(),
-  accessToken: z.string().min(1),
-  webhookVerifyToken: z.string().min(1),
+  accessToken: z.string().optional(),
+  webhookVerifyToken: z.string().optional(),
   businessPhoneNumber: z.string().optional(),
   nomeExibicao: z.string().optional(),
   ativo: z.boolean().optional(),
@@ -81,12 +81,12 @@ export class WhatsAppCrmController {
   }
 
   private getPrefeituraId(scope: any): string | undefined {
-    return scope.kind === 'PREFEITURA' ? scope.prefeituraId : undefined;
+    return scope.kind !== 'GLOBAL' ? scope.prefeituraId : undefined;
   }
 
   getConfig = async (req: Request, res: Response): Promise<void> => {
     const scope = scopeFromRequest(req);
-    const config = await this.whatsAppCrmUC.obterConfig(this.getPrefeituraId(scope));
+    const config = await this.whatsAppCrmUC.obterConfigPublica(this.getPrefeituraId(scope));
     res.json(config);
   };
 
@@ -125,12 +125,14 @@ export class WhatsAppCrmController {
 
   getConversa = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const conversa = await this.whatsAppCrmUC.obterConversaPorId(id);
     res.json(conversa);
   };
 
   assumirConversa = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const { atendenteId, atendenteNome } = await this.getAtendenteDados(req);
     const conversa = await this.whatsAppCrmUC.assumirConversa(id, atendenteId, atendenteNome);
     res.json(conversa);
@@ -138,6 +140,7 @@ export class WhatsAppCrmController {
 
   transferirConversa = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const { atendenteNome: transferidoPor } = await this.getAtendenteDados(req);
     const body = transferirSchema.parse(req.body);
 
@@ -152,6 +155,7 @@ export class WhatsAppCrmController {
 
   enviarMensagem = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const { atendenteId, atendenteNome } = await this.getAtendenteDados(req);
     const body = enviarMensagemSchema.parse(req.body);
 
@@ -171,6 +175,7 @@ export class WhatsAppCrmController {
 
   enviarTemplate = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const { atendenteId, atendenteNome } = await this.getAtendenteDados(req);
     const body = enviarTemplateSchema.parse(req.body);
 
@@ -189,6 +194,7 @@ export class WhatsAppCrmController {
 
   finalizarConversa = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const { atendenteId, atendenteNome } = await this.getAtendenteDados(req);
     const body = finalizarSchema.parse(req.body);
 
@@ -204,6 +210,7 @@ export class WhatsAppCrmController {
 
   atualizarTags = async (req: Request, res: Response): Promise<void> => {
     const id = paramString(req, 'id');
+    await this.whatsAppCrmUC.garantirConversaAcessivel(id, scopeFromRequest(req));
     const body = atualizarTagsSchema.parse(req.body);
     const conversa = await this.whatsAppCrmUC.atualizarTags(id, body.tags);
     res.json(conversa);
@@ -219,8 +226,7 @@ export class WhatsAppCrmController {
     const challenge = req.query['hub.challenge'];
 
     try {
-      const config = await this.whatsAppCrmUC.obterConfig();
-      if (mode === 'subscribe' && token === config.webhookVerifyToken) {
+      if (mode === 'subscribe' && await this.whatsAppCrmUC.verificarWebhookToken(token)) {
         logger.info('[WhatsAppWebhook] Handshake de verificação da Meta aceito com sucesso!');
         res.status(200).send(challenge);
         return;

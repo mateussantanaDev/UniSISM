@@ -1,3 +1,4 @@
+import { statusConfiguracaoWhatsApp } from '../../shared/whatsappConfig';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { AppError, NotFound, BadRequest } from '../../../../shared/errors';
 import type { AccessScope } from '../../../../shared/scope';
@@ -7,8 +8,8 @@ import { WhatsAppCloudApiService } from '../../../../infrastructure/services/Wha
 export interface SalvarConfigInput {
   phoneNumberId: string;
   wabaId?: string;
-  accessToken: string;
-  webhookVerifyToken: string;
+  accessToken?: string;
+  webhookVerifyToken?: string;
   businessPhoneNumber?: string;
   nomeExibicao?: string;
   ativo?: boolean;
@@ -57,112 +58,67 @@ export class WhatsAppCrmUseCase {
    * Obtém a configuração ativa do WhatsApp da prefeitura ou cria um registro padrão inicial.
    */
   async obterConfig(prefeituraId?: string | null) {
-    try {
-      let config = await prisma.whatsAppConfig.findFirst({
-        where: prefeituraId ? { OR: [{ prefeituraId }, { prefeituraId: null }] } : {},
-        orderBy: { updatedAt: 'desc' },
-      });
-
-      if (!config) {
-        config = await prisma.whatsAppConfig.create({
-          data: {
-            prefeituraId: prefeituraId || null,
-            phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || 'MOCK_PHONE_ID_1001',
-            wabaId: process.env.WHATSAPP_WABA_ID || 'MOCK_WABA_ID_2001',
-            accessToken: process.env.WHATSAPP_ACCESS_TOKEN || 'MOCK_ACCESS_TOKEN_EAAB...',
-            webhookVerifyToken: process.env.WHATSAPP_VERIFY_TOKEN || 'unisism_meta_verify_token_2026',
-            businessPhoneNumber: '+55 75 99999-0000',
-            nomeExibicao: 'Central de Especialidades Médicas e Odontológicas',
-            ativo: true,
-            horarioInicio: '07:00',
-            horarioFim: '18:00',
-          },
-        });
-      }
-
-      // Oculta parte do token de acesso por segurança
-      return {
-        ...config,
-        accessTokenMascarado: config.accessToken
-          ? `${config.accessToken.slice(0, 8)}...${config.accessToken.slice(-6)}`
-          : '',
-      };
-    } catch (err: any) {
-      logger.warn(`[WhatsAppCrm] Erro ao obter config: ${err?.message}`);
-      return {
-        id: 'mock-config-id',
-        prefeituraId: prefeituraId || null,
-        phoneNumberId: 'MOCK_PHONE_ID_1001',
-        wabaId: 'MOCK_WABA_ID_2001',
-        accessToken: 'MOCK_ACCESS_TOKEN',
-        accessTokenMascarado: 'MOCK_ACC...TOKEN',
-        webhookVerifyToken: 'unisism_meta_verify_token_2026',
-        businessPhoneNumber: '+55 75 99999-0000',
-        nomeExibicao: 'Central de Regulação e Especialidades',
-        ativo: true,
-        horarioInicio: '07:00',
-        horarioFim: '18:00',
-        mensagemBoasVindas: 'Olá! Bem-vindo(a) ao canal oficial de atendimento do Centro de Especialidades. Como podemos ajudar?',
-        mensagemForaHorario: 'Olá! Nosso horário de atendimento é das 07:00 às 18:00. Retornaremos em breve.',
-        mensagemConfirmacao: 'Olá, {{nome}}! Confirmamos sua consulta de {{especialidade}} com {{medico}} para o dia {{data}} às {{hora}}. Responda SIM para confirmar ou NÃO para reagendar.',
-      };
-    }
+    const config = await prisma.whatsAppConfig.findFirst({
+      where: { prefeituraId: prefeituraId ?? null }, orderBy: { updatedAt: 'desc' },
+    });
+    if (config) return config;
+    return prisma.whatsAppConfig.create({ data: {
+      prefeituraId: prefeituraId ?? null, phoneNumberId: '', wabaId: null,
+      accessToken: '', webhookVerifyToken: '', ativo: false,
+      nomeExibicao: 'Central de Especialidades', horarioInicio: '07:00', horarioFim: '18:00',
+    } });
   }
 
   /**
    * Salva as credenciais da Meta Cloud API.
    */
+  async obterConfigPublica(prefeituraId?: string | null) {
+    return this.configPublica(await this.obterConfig(prefeituraId));
+  }
+
+  private configPublica<T extends { accessToken: string; webhookVerifyToken: string; phoneNumberId: string; ativo: boolean }>(config: T) {
+    const { accessToken, webhookVerifyToken, ...publica } = config;
+    return { ...publica, statusIntegracao: statusConfiguracaoWhatsApp(config),
+      ativo: publica.ativo && statusConfiguracaoWhatsApp(config) === 'CONFIGURADA',
+      accessTokenMascarado: accessToken ? '••••••••' : '',
+      accessTokenConfigurado: Boolean(accessToken), webhookVerifyTokenConfigurado: Boolean(webhookVerifyToken) };
+  }
+
+  async verificarWebhookToken(token: unknown): Promise<boolean> {
+    if (typeof token !== 'string' || !token) return false;
+    return Boolean(await prisma.whatsAppConfig.findFirst({
+      where: { webhookVerifyToken: token, ativo: true }, select: { id: true },
+    }));
+  }
+
   async salvarConfig(input: SalvarConfigInput, prefeituraId?: string | null) {
-    if (!input.phoneNumberId || !input.accessToken || !input.webhookVerifyToken) {
-      throw BadRequest('DADOS_OBRIGATORIOS', 'Phone Number ID, Access Token e Webhook Verify Token são obrigatórios.');
+    return this.configPublica(await this.salvarConfigInterna(input, prefeituraId));
+  }
+
+  private async salvarConfigInterna(input: SalvarConfigInput, prefeituraId?: string | null) {
+    const existente = await prisma.whatsAppConfig.findFirst({ where: { prefeituraId: prefeituraId ?? null } });
+    const credentials = {
+      phoneNumberId: input.phoneNumberId.trim(),
+      accessToken: input.accessToken?.trim() || existente?.accessToken || '',
+      webhookVerifyToken: input.webhookVerifyToken?.trim() || existente?.webhookVerifyToken || '',
+    };
+    const preenchida = statusConfiguracaoWhatsApp(credentials) === 'CONFIGURADA';
+    if (input.ativo === true && !preenchida) {
+      throw BadRequest('CONFIGURACAO_INCOMPLETA', 'Informe credenciais reais antes de habilitar a integração.');
     }
-
-    try {
-      const configExistente = await prisma.whatsAppConfig.findFirst({
-        where: prefeituraId ? { OR: [{ prefeituraId }, { prefeituraId: null }] } : {},
-      });
-
-      if (configExistente) {
-        return await prisma.whatsAppConfig.update({
-          where: { id: configExistente.id },
-          data: {
-            phoneNumberId: input.phoneNumberId.trim(),
-            wabaId: input.wabaId?.trim() || null,
-            accessToken: input.accessToken.trim(),
-            webhookVerifyToken: input.webhookVerifyToken.trim(),
-            businessPhoneNumber: input.businessPhoneNumber?.trim() || null,
-            nomeExibicao: input.nomeExibicao?.trim() || null,
-            ativo: input.ativo !== undefined ? input.ativo : true,
-            mensagemBoasVindas: input.mensagemBoasVindas,
-            mensagemForaHorario: input.mensagemForaHorario,
-            mensagemConfirmacao: input.mensagemConfirmacao,
-            horarioInicio: input.horarioInicio || '07:00',
-            horarioFim: input.horarioFim || '18:00',
-          },
-        });
-      }
-
-      return await prisma.whatsAppConfig.create({
-        data: {
-          prefeituraId: prefeituraId || null,
-          phoneNumberId: input.phoneNumberId.trim(),
-          wabaId: input.wabaId?.trim() || null,
-          accessToken: input.accessToken.trim(),
-          webhookVerifyToken: input.webhookVerifyToken.trim(),
-          businessPhoneNumber: input.businessPhoneNumber?.trim() || null,
-          nomeExibicao: input.nomeExibicao?.trim() || null,
-          ativo: input.ativo !== undefined ? input.ativo : true,
-          mensagemBoasVindas: input.mensagemBoasVindas,
-          mensagemForaHorario: input.mensagemForaHorario,
-          mensagemConfirmacao: input.mensagemConfirmacao,
-          horarioInicio: input.horarioInicio || '07:00',
-          horarioFim: input.horarioFim || '18:00',
-        },
-      });
-    } catch (err: any) {
-      logger.error(`[WhatsAppCrm] Erro ao salvar config: ${err?.message}`);
-      throw BadRequest('ERRO_CONFIGURACAO', `Erro ao persistir configuração: ${err?.message}`);
-    }
+    const data = {
+      ...credentials, wabaId: input.wabaId?.trim() || null,
+      businessPhoneNumber: input.businessPhoneNumber?.trim() || null,
+      nomeExibicao: input.nomeExibicao?.trim() || null,
+      ativo: preenchida && (input.ativo ?? existente?.ativo ?? false),
+      mensagemBoasVindas: input.mensagemBoasVindas,
+      mensagemForaHorario: input.mensagemForaHorario,
+      mensagemConfirmacao: input.mensagemConfirmacao,
+      horarioInicio: input.horarioInicio || '07:00', horarioFim: input.horarioFim || '18:00',
+    };
+    return existente
+      ? prisma.whatsAppConfig.update({ where: { id: existente.id }, data })
+      : prisma.whatsAppConfig.create({ data: { ...data, prefeituraId: prefeituraId ?? null } });
   }
 
   /**
@@ -170,6 +126,7 @@ export class WhatsAppCrmUseCase {
    */
   async testarConexao(prefeituraId?: string | null) {
     const config = await this.obterConfig(prefeituraId);
+    if (statusConfiguracaoWhatsApp(config) !== 'CONFIGURADA') return { valid: false, error: 'Integração não configurada com credenciais reais; nenhuma conexão externa foi realizada.' };
     return await this.metaApi.testConnection({
       phoneNumberId: config.phoneNumberId,
       accessToken: config.accessToken,
@@ -183,8 +140,8 @@ export class WhatsAppCrmUseCase {
     const aba = input.aba || 'TODAS';
     const where: any = {};
 
-    if (scope.kind === 'PREFEITURA') {
-      where.OR = [{ prefeituraId: scope.prefeituraId }, { prefeituraId: null }];
+    if (scope.kind !== 'GLOBAL') {
+      where.prefeituraId = scope.prefeituraId ?? '__SEM_PREFEITURA__';
     }
 
     if (input.centroTipo && input.centroTipo !== 'TODOS') {
@@ -233,13 +190,14 @@ export class WhatsAppCrmUseCase {
         }),
         prisma.whatsAppConversa.count({
           where: {
-            ...(scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}),
+            ...(scope.kind !== 'GLOBAL' ? { prefeituraId: scope.prefeituraId ?? '__SEM_PREFEITURA__' } : {}),
             status: 'PENDENTE',
           },
         }),
         atendenteIdLogado
           ? prisma.whatsAppConversa.count({
               where: {
+                ...(scope.kind !== 'GLOBAL' ? { prefeituraId: scope.prefeituraId ?? '__SEM_PREFEITURA__' } : {}),
                 atendenteId: atendenteIdLogado,
                 status: 'EM_ATENDIMENTO',
               },
@@ -247,7 +205,7 @@ export class WhatsAppCrmUseCase {
           : 0,
         prisma.whatsAppConversa.count({
           where: {
-            ...(scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : {}),
+            ...(scope.kind !== 'GLOBAL' ? { prefeituraId: scope.prefeituraId ?? '__SEM_PREFEITURA__' } : {}),
             createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
           },
         }),
@@ -273,6 +231,15 @@ export class WhatsAppCrmUseCase {
   /**
    * Obtém os dados completos de uma conversa e seu histórico de mensagens ordenado.
    */
+  async garantirConversaAcessivel(conversaId: string, scope: AccessScope) {
+    if (scope.kind === 'GLOBAL') return;
+    const conversa = await prisma.whatsAppConversa.findFirst({
+      where: { id: conversaId, prefeituraId: scope.prefeituraId ?? '__SEM_PREFEITURA__' },
+      select: { id: true },
+    });
+    if (!conversa) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
+  }
+
   async obterConversaPorId(conversaId: string) {
     try {
       const conversa = await prisma.whatsAppConversa.findUnique({
@@ -385,34 +352,30 @@ export class WhatsAppCrmUseCase {
   async transferirConversa(
     conversaId: string,
     novoAtendenteId: string,
-    novoAtendenteNome: string,
+    _novoAtendenteNome: string,
     transferidoPorNome: string,
   ) {
-    try {
-      const conversa = await prisma.whatsAppConversa.update({
-        where: { id: conversaId },
-        data: {
-          atendenteId: novoAtendenteId,
-          atendenteNome: novoAtendenteNome,
-          status: 'EM_ATENDIMENTO',
-        },
-      });
-
-      await prisma.whatsAppMensagem.create({
-        data: {
-          conversaId,
-          direcao: 'SAIDA',
-          origem: 'SISTEMA_BOT',
-          corpo: `Atendimento transferido por ${transferidoPorNome} para ${novoAtendenteNome}.`,
-          tipo: 'TEXTO',
-          statusEnvio: 'ENTREGUE',
-        },
-      });
-
-      return conversa;
-    } catch (err: any) {
-      throw BadRequest('ERRO_TRANSFERIR_CONVERSA', `Erro ao transferir conversa: ${err?.message}`);
+    const origem = await prisma.whatsAppConversa.findUnique({ where: { id: conversaId } });
+    if (!origem) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
+    const destino = await prisma.atendente.findUnique({ where: { id: novoAtendenteId }, include: { ubs: true } });
+    const roles = ['ADMIN', 'REGULADOR_SMS', 'COORDENADOR_UBS', 'ATENDENTE_UBS', 'ATENDENTE_CENTRO', 'ENFERMEIRO'];
+    if (!destino || !destino.ativo || destino.deletadoEm || !roles.includes(destino.role)
+      || (destino.prefeituraId ?? destino.ubs?.prefeituraId ?? null) !== origem.prefeituraId
+      || (destino.tipoUnidade === 'CEM' && origem.centroTipo === 'CEO')
+      || (destino.tipoUnidade === 'CEO' && origem.centroTipo === 'CEM')) {
+      throw BadRequest('ATENDENTE_DESTINO_INVALIDO', 'Selecione um atendente ativo do mesmo município e centro.');
     }
+    return prisma.$transaction(async (tx) => {
+      const conversa = await tx.whatsAppConversa.update({ where: { id: conversaId }, data: {
+        atendenteId: destino.id, atendenteNome: destino.nome, status: 'EM_ATENDIMENTO',
+      } });
+      await tx.whatsAppMensagem.create({ data: {
+        conversaId, direcao: 'SAIDA', origem: 'SISTEMA_BOT',
+        corpo: `Atendimento transferido por ${transferidoPorNome} para ${destino.nome}.`,
+        tipo: 'TEXTO', statusEnvio: 'ENTREGUE',
+      } });
+      return conversa;
+    });
   }
 
   /**
@@ -429,6 +392,10 @@ export class WhatsAppCrmUseCase {
     if (!conversa) throw NotFound('CONVERSA_NAO_ENCONTRADA', 'Conversa não encontrada.');
 
     const config = await this.obterConfig(conversa.prefeituraId);
+    if (!config.ativo || statusConfiguracaoWhatsApp(config) !== 'CONFIGURADA') {
+      throw BadRequest('WHATSAPP_NAO_CONFIGURADO', 'WhatsApp não está habilitado com credenciais reais. Nenhuma mensagem foi enviada.');
+    }
+
 
     // 1. Salva mensagem pendente no banco
     const mensagemCriada = await prisma.whatsAppMensagem.create({

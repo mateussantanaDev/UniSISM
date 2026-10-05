@@ -58,7 +58,7 @@
 		carregando = true;
 		try {
 			// Busca encaminhamentos concluídos do servidor
-			const encs = await api.encaminhamentos.list({ status: 'APROVADO', limit: 1000 });
+			const encs = await api.centroMedico.listRegistros({ status: 'APROVADO', centro: ehCeo ? 'CENTRO_ODONTOLOGICO' : 'CENTRO_ESPECIALIDADES', statusAtendimento: 'CONCLUIDO' });
 			const me = await api.auth.me().catch(() => null);
 
 			listaHistorico = encs
@@ -79,7 +79,8 @@
 					const soap = (enc as any).atendimentoSOAP;
 					const dataAtend =
 						soap?.concluidoEm?.substring(0, 10) ||
-						enc.agendamentoPrevisto ||
+						enc.atendimentoConcluidoEm?.substring(0, 10) ||
+						enc.agendamentoPrevisto?.substring(0, 10) ||
 						new Date(enc.atualizadoEm || enc.criadoEm).toISOString().substring(0, 10);
 					const horaAtend = soap?.concluidoEm
 						? new Date(soap.concluidoEm).toLocaleTimeString('pt-BR', {
@@ -111,9 +112,9 @@
 							soap?.conduta ||
 							(enc as any).conduta ||
 							'Conduta registrada no atendimento especializado.',
-						prescricao: soap?.prescricao || (enc as any).prescricao || '',
+						prescricao: soap?.prescricaoResumo || soap?.prescricao || (enc as any).prescricao || '',
 						atestadoEmitido: (enc as any).atestadoEmitido || '',
-						medicoNome: (enc as any).profissionalAtribuido || me?.nome || 'Médico Especialista',
+						medicoNome: enc.profissionalAgendado || me?.nome || 'Médico Especialista',
 						medicoCrm: (me as any)?.crm ? `CRM ${(me as any).crm}` : 'CRM Regulação'
 					};
 				});

@@ -89,9 +89,12 @@ export function buildCentroRoutes(
   router.post('/encaminhamentos/:id/remarcar', authenticate, recepcaoRoles, recepcaoController.postRemarcar);
   router.post('/centro/notificacoes/ausencia-medica', authenticate, gestaoRoles, recepcaoController.postAusenciaMedica);
   router.post('/centro/gestao/notificacoes-ausencia', authenticate, gestaoRoles, recepcaoController.postAusenciaMedica);
+  router.get('/centro/atendimentos/:id/procedimentos', authenticate, medicoRoles, recepcaoController.getProcedimentos);
+  router.delete('/centro/atendimentos/:id/procedimentos/:procedimentoId', authenticate, gestaoRoles, recepcaoController.deleteProcedimento);
   router.post('/centro/atendimentos/:id/procedimentos', authenticate, medicoRoles, recepcaoController.postProcedimentos);
 
   // ───── Médico Especialista & Consultório Digital ERP (Fase 2 / ERP v3.1.0) ─────
+  router.get('/centro/atendimentos', authenticate, requireRole('MEDICO', 'MEDICO_ESPECIALISTA', 'COORDENADOR_UBS', 'REGULADOR_SMS', 'ADMIN', 'DESENVOLVEDOR', 'ATENDENTE_CENTRO', 'ATENDENTE_UBS', 'ENFERMEIRO'), medicoController.getRegistros);
   router.get('/centro/medico/agenda', authenticate, medicoRoles, medicoController.getAgenda);
   
   router.post('/centro/medico/atendimentos/:id/chamar', authenticate, medicoRoles, medicoController.postChamar);
@@ -100,6 +103,10 @@ export function buildCentroRoutes(
   router.get('/centro/medico/prontuario/:pacienteId', authenticate, medicoRoles, medicoController.getProntuario);
   router.get('/centro/medico/pacientes/:pacienteId/prontuario', authenticate, medicoRoles, medicoController.getProntuario);
   
+  router.post('/centro/medico/atendimentos/:id/documentos', authenticate, medicoRoles, medicoController.postDocumento);
+  router.get('/centro/medico/documentos/:documentoId', authenticate, medicoRoles, medicoController.getDocumento);
+  router.post('/centro/medico/atendimentos/:id/falta', authenticate, medicoRoles, medicoController.postFalta);
+  router.put('/centro/medico/atendimentos/:id/rascunho', authenticate, medicoRoles, medicoController.putRascunhoSOAP);
   router.post('/centro/medico/atendimentos/:id/soap', authenticate, medicoRoles, medicoController.postRegistrarSOAP);
   router.post('/centro/medico/atendimento/:id', authenticate, medicoRoles, medicoController.postRegistrarSOAP);
   
@@ -130,6 +137,8 @@ export function buildCentroRoutes(
   router.delete('/centro/gestao/especialidades/:id', authenticate, gestaoRoles, gestaoController.deleteEspecialidade);
 
   router.post('/centro/gestao/remanejamento-lote', authenticate, gestaoRoles, gestaoController.postRemanejamentoLote);
+  router.get('/centro/gestao/producao', authenticate, gestaoRoles, gestaoController.getProducao);
+  router.get('/centro/gestao/relatorios/exportar', authenticate, gestaoRoles, gestaoController.exportarRelatorio);
   router.get('/centro/gestao/relatorios/bpa', authenticate, gestaoLeituraRoles, gestaoController.getRelatorioBpa);
   router.get('/centro/gestao/auditoria', authenticate, gestaoLeituraRoles, gestaoController.getAuditoria);
 

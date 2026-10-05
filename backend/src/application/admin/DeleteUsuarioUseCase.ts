@@ -1,3 +1,4 @@
+import { authorizeUsuarioManagement } from './authorizeUsuarioManagement';
 import { prisma } from '../../infrastructure/database/prisma';
 import { Conflict, Forbidden, NotFound } from '../../shared/errors';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
@@ -23,6 +24,7 @@ export class DeleteUsuarioUseCase {
     if (!alvo || alvo.deletadoEm) {
       throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
     }
+    await authorizeUsuarioManagement(editorId, alvo);
 
     if (alvo.role === 'DESENVOLVEDOR' && scope.kind !== 'GLOBAL') {
       throw Forbidden('PERMISSAO_INSUFICIENTE', 'Apenas DESENVOLVEDOR pode excluir outro DEV');

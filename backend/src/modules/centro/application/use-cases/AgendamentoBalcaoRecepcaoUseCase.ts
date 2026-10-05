@@ -1,10 +1,15 @@
+import { dataHoraRecife } from '../../shared/dataCentro';
+import { validarReservaCentro } from '../../shared/reservaCentro';
+import { cpfValido, normalizarCpf, dataNascimentoValida, codigoDoProcedimento } from '../../../../shared/cadastroValidation';
+import { ensureUbsAcessivel } from '../../../../shared/scope';
+import { resolverProfissionalCentro } from '../../shared/profissionalCentro';
 import { StatusEncaminhamento, CanalRoteamento, DestinoRegulacao, Sexo, PrioridadeClinica, TipoEventoTimeline } from '../../../../../generated/prisma';
 import { prisma } from '../../../../infrastructure/database/prisma';
 import { rowParaEncaminhamento, INCLUDE_ENCAMINHAMENTO_FULL } from '../../../../infrastructure/database/encaminhamentoMapper';
 import { CalcularAlocacaoVagaCentroUseCase } from './CalcularAlocacaoVagaCentroUseCase';
 import type { Encaminhamento } from '../../../../domain/entities/Encaminhamento';
 import type { AccessScope } from '../../../../shared/scope';
-import { BadRequest, NotFound } from '../../../../shared/errors';
+import { BadRequest, Conflict, NotFound } from '../../../../shared/errors';
 import { NotificacaoPacienteService, MENSAGENS } from '../../../../infrastructure/services/NotificacaoPacienteService';
 import { isEspecialidadeOdonto } from '../../shared/centroClassifier';
 
@@ -28,6 +33,9 @@ export interface AgendamentoBalcaoInput {
     medicoSolicitante: string;
     crm: string;
     especialidadeSolicitada: string;
+    tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+    procedimentoSolicitado?: string;
+    codigoSigtapSolicitado?: string;
     cid10: string;
     cidDescricao: string;
     justificativaClinica: string;
@@ -36,11 +44,14 @@ export interface AgendamentoBalcaoInput {
   };
   nota?: string;
   medicoDesejado?: string;
+  medicoId?: string;
   dataAgendada?: string; // YYYY-MM-DD
   horaAgendada?: string; // HH:MM
   consultorio?: string;
   ubsId?: string;
   centro?: 'CEM' | 'CEO' | 'CENTRO_ESPECIALIDADES' | 'CENTRO_ODONTOLOGICO' | string;
+  modoData?: 'MANUAL' | 'AUTODATA' | 'RETROATIVO';
+  statusRetroativo?: 'CONCLUIDO' | 'AGUARDANDO' | 'FALTOU';
   confirmarPresenca?: boolean;
   statusAtendimento?: string;
   agendarDireto?: boolean;
@@ -57,21 +68,32 @@ export class AgendamentoBalcaoRecepcaoUseCase {
   private readonly alocador = new CalcularAlocacaoVagaCentroUseCase();
 
   async exec(input: AgendamentoBalcaoInput, scope: AccessScope): Promise<Encaminhamento> {
-    const cleanCpf = input.paciente.cpf.replace(/\D/g, '');
-    if (cleanCpf.length !== 11) {
-      throw BadRequest('CPF_INVALIDO', 'CPF do paciente deve ter 11 dígitos');
+    const cleanCpf = normalizarCpf(input.paciente.cpf);
+    if (!cpfValido(cleanCpf)) throw BadRequest('CPF_INVALIDO', 'Informe um CPF válido com 11 dígitos.');
+    if (!dataNascimentoValida(input.paciente.dataNascimento)) {
+      throw BadRequest('NASCIMENTO_INVALIDO', 'Nascimento deve ser uma data válida, não posterior a hoje.');
     }
-
-    // Determine target UBS for patient linkage
-    let targetUbsId = input.ubsId || input.atendente.ubsId;
-    if (!targetUbsId) {
-      const ubs = await prisma.ubs.findFirst({
-        where: scope.kind === 'PREFEITURA' ? { prefeituraId: scope.prefeituraId } : { ativa: true },
-      });
-      if (!ubs) {
-        throw NotFound('UBS_NAO_ENCONTRADA', 'Nenhuma UBS encontrada para vincular o cadastro do paciente');
-      }
-      targetUbsId = ubs.id;
+    if (!input.paciente.nome.trim() || !input.paciente.bairro?.trim() || !input.paciente.endereco.trim() || input.paciente.endereco.trim() === 'S/N') {
+      throw BadRequest('CADASTRO_INCOMPLETO', 'Informe nome, rua e bairro do paciente.');
+    }
+    const targetUbsId = input.ubsId;
+    if (!targetUbsId) throw BadRequest('UBS_OBRIGATORIA', 'Selecione a UBS de origem do paciente.');
+    const unidade = await prisma.ubs.findUnique({ where: { id: targetUbsId } });
+    if (!unidade || !unidade.ativa || unidade.deletadoEm) throw NotFound('UBS_NAO_ENCONTRADA', 'UBS de origem não encontrada ou inativa.');
+    ensureUbsAcessivel(scope, unidade);
+    const tipoServico = input.solicitacao.tipoServico ?? 'CONSULTA';
+    const procedimentoSolicitado = tipoServico === 'PROCEDIMENTO' ? input.solicitacao.procedimentoSolicitado?.trim() : null;
+    if (tipoServico === 'PROCEDIMENTO' && !procedimentoSolicitado) throw BadRequest('PROCEDIMENTO_OBRIGATORIO', 'Selecione o procedimento solicitado.');
+    const servicoCatalogo = await prisma.especialidadeCatalogo.findFirst({ where: {
+      ativa: true, tipoServico, nome: input.solicitacao.especialidadeSolicitada,
+      OR: [{ prefeituraId: unidade.prefeituraId }, { prefeituraId: null }],
+    }, orderBy: { prefeituraId: 'asc' } });
+    const codigoSigtapSolicitado = input.solicitacao.codigoSigtapSolicitado?.replace(/\D/g, '')
+      || codigoDoProcedimento(procedimentoSolicitado ?? undefined)
+      || servicoCatalogo?.codigoSigtap?.replace(/\D/g, '') || null;
+    if (input.paciente.cartaoSus) {
+      const outroPaciente = await prisma.paciente.findUnique({ where: { cartaoSus: input.paciente.cartaoSus } });
+      if (outroPaciente && outroPaciente.cpf !== cleanCpf) throw Conflict('CARTAO_SUS_DUPLICADO', 'Cartão SUS já vinculado a outro paciente.');
     }
 
     const now = new Date();
@@ -93,7 +115,9 @@ export class AgendamentoBalcaoRecepcaoUseCase {
     const ehCeo = centroExplicitamenteCeo || odontoDetectado;
     const centroTipo = ehCeo ? 'CEO' : 'CEM';
 
-    const agendarDireto = input.agendarDireto === true;
+    const retroativo = input.modoData === 'RETROATIVO';
+    const agendarDireto = input.agendarDireto === true || retroativo;
+    if (retroativo && (!input.dataAgendada || !input.horaAgendada || dataHoraRecife(input.dataAgendada, input.horaAgendada) > now)) throw BadRequest('DATA_RETROATIVA_INVALIDA','Informe data e horário históricos, não futuros');
 
     let agendamentoPrevisto: Date | null = null;
     let profissionalAgendado: string | null = input.medicoDesejado || null;
@@ -101,11 +125,13 @@ export class AgendamentoBalcaoRecepcaoUseCase {
     let horaFinalFormatada = '08:00';
 
     if (agendarDireto) {
-      // Optimize scheduling date and slot using real database scales
+      // A data manual também é validada dentro da transação de reserva.
       const resultadoAlocacao = await this.alocador.exec(
         {
           centro: centroTipo,
           medicoNome: input.medicoDesejado,
+          medicoId: input.medicoId,
+          tipoServico,
           especialidade: input.solicitacao.especialidadeSolicitada,
           prioridade: input.solicitacao.prioridade,
         },
@@ -116,7 +142,7 @@ export class AgendamentoBalcaoRecepcaoUseCase {
 
       if (input.dataAgendada && input.horaAgendada) {
         horaFinalFormatada = input.horaAgendada.trim();
-        agendamentoPrevisto = new Date(`${input.dataAgendada}T${horaFinalFormatada}:00`);
+        agendamentoPrevisto = dataHoraRecife(input.dataAgendada, horaFinalFormatada);
         if (input.consultorio) localAg = input.consultorio;
         else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
           localAg = resultadoAlocacao.alocacao.consultorio;
@@ -127,16 +153,26 @@ export class AgendamentoBalcaoRecepcaoUseCase {
       } else if (resultadoAlocacao.sucesso && resultadoAlocacao.alocacao) {
         const aloc = resultadoAlocacao.alocacao;
         horaFinalFormatada = aloc.hora;
-        agendamentoPrevisto = new Date(`${aloc.data}T${aloc.hora}:00`);
+        agendamentoPrevisto = dataHoraRecife(aloc.data, aloc.hora);
         profissionalAgendado = aloc.medicoNome;
         localAg = aloc.consultorio;
       } else {
-        agendamentoPrevisto = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
+        throw BadRequest('SEM_VAGA_DISPONIVEL', resultadoAlocacao.mensagem || 'Não há vaga disponível para este serviço');
       }
     }
 
+    const profissional = await resolverProfissionalCentro(targetUbsId, profissionalAgendado, input.medicoId);
+    if (profissional) profissionalAgendado = profissional.nome;
+
     // Create Encaminhamento record in single atomic transaction
     const createdRow = await prisma.$transaction(async (tx) => {
+      let necessitaTriagem = false;
+      if (agendarDireto && !retroativo) {
+        if (!profissional?.id || !agendamentoPrevisto) throw BadRequest('PROFISSIONAL_OBRIGATORIO','Selecione um profissional vinculado à escala');
+        const escala = await validarReservaCentro(tx, { prefeituraId:unidade.prefeituraId, profissionalId:profissional.id, especialidade:input.solicitacao.especialidadeSolicitada, tipoServico, data:agendamentoPrevisto });
+        necessitaTriagem = escala.necessitaTriagem;
+        if (input.statusAtendimento && !['AGENDADO','AGUARDANDO_ATENDIMENTO','AGUARDANDO'].includes(input.statusAtendimento)) throw BadRequest('MODALIDADE_INVALIDA','Use Registro Retroativo para registrar atendimento histórico concluído ou falta');
+      }
       // 1. Find or create Paciente
       let dbPaciente = await tx.paciente.findUnique({
         where: { cpf: cleanCpf },
@@ -210,6 +246,7 @@ export class AgendamentoBalcaoRecepcaoUseCase {
           medicoSolicitante: input.solicitacao.medicoSolicitante || 'Atendente do Balcão',
           crm: input.solicitacao.crm || '000000',
           especialidadeSolicitada: input.solicitacao.especialidadeSolicitada,
+          tipoServico, procedimentoSolicitado, codigoSigtapSolicitado,
           cid10: input.solicitacao.cid10,
           cidDescricao: input.solicitacao.cidDescricao,
           justificativaClinica: input.solicitacao.justificativaClinica,
@@ -223,14 +260,17 @@ export class AgendamentoBalcaoRecepcaoUseCase {
           criadoPorNome: input.atendente.nome,
           agendamentoPrevisto: agendamentoPrevisto,
           profissionalAgendado: profissionalAgendado,
+          profissionalAgendadoId: profissional?.id ?? null,
           localAgendamento: localAg,
           observacoesRegulacao: agendarDireto
             ? (input.nota ? `${input.nota} (Horário: às ${horaFinalFormatada})` : `Agendamento direto efetuado no balcão do ${centroTipo} às ${horaFinalFormatada}.`)
             : (input.nota ? `${input.nota} | Solicitação acolhida no balcão. Aguardando liberação de data pela Regulação.` : `Acolhimento no balcão do ${centroTipo}. Demanda inserida na fila de espera da Regulação Municipal.`),
-          statusAtendimentoCentro: agendarDireto
-            ? ((input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO') ? 'AGUARDANDO_ATENDIMENTO' : ((input.statusAtendimento as any) || 'AGENDADO'))
+          necessitaTriagem,
+          atendimentoConcluidoEm: retroativo && (input.statusRetroativo || 'CONCLUIDO') === 'CONCLUIDO' ? agendamentoPrevisto : null,
+          statusAtendimentoCentro: retroativo ? (input.statusRetroativo === 'AGUARDANDO' ? 'AGUARDANDO_ATENDIMENTO' : input.statusRetroativo || 'CONCLUIDO') : agendarDireto
+            ? ((input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO') ? 'AGUARDANDO_ATENDIMENTO' : 'AGENDADO')
             : null,
-          presencaRegistradaEm: (agendarDireto && (input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO'))
+          presencaRegistradaEm: retroativo ? (input.statusRetroativo === 'FALTOU' ? null : agendamentoPrevisto) : (agendarDireto && (input.confirmarPresenca || input.statusAtendimento === 'AGUARDANDO_ATENDIMENTO'))
             ? now
             : null,
         },
@@ -317,6 +357,9 @@ export class AgendamentoBalcaoRecepcaoUseCase {
         where: { id: encRow.id },
         include: INCLUDE_ENCAMINHAMENTO_FULL,
       });
+    }).catch((error) => {
+      if (error?.code === 'P2002') throw Conflict('PACIENTE_DUPLICADO', 'CPF ou Cartão SUS já vinculado a outro paciente.');
+      throw error;
     });
 
     if (input.paciente.cpf) {

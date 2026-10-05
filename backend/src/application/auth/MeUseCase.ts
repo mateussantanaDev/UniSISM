@@ -2,6 +2,7 @@ import { NotFound } from '../../shared/errors';
 import type { IAtendenteRepository } from '../../domain/repositories/IAtendenteRepository';
 import { prisma } from '../../infrastructure/database/prisma';
 import { iniciais } from '../utils/iniciais';
+import { buildScope } from '../../shared/scope';
 
 export interface MeOutput {
   id: string;
@@ -32,7 +33,15 @@ export class MeUseCase {
     if (!a) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
 
     const escopo: MeOutput['escopo'] =
-      a.role === 'DESENVOLVEDOR'
+      a.role === 'COORDENADOR_UBS'
+        ? buildScope({
+            atendenteId: a.id,
+            role: a.role,
+            ubsId: a.ubsId,
+            prefeituraId: a.prefeituraId ?? a.ubs?.prefeituraId ?? null,
+            tipoUnidade: a.tipoUnidade,
+          }).kind
+        : a.role === 'DESENVOLVEDOR'
         ? 'GLOBAL'
         : a.ubs
           ? 'UBS'

@@ -14,6 +14,7 @@ export type PrioridadeClinica = 'ELETIVA' | 'PRIORITARIA' | 'URGENTE' | 'EMERGEN
 export type SexoPaciente = 'M' | 'F' | 'OUTRO';
 
 export interface Paciente {
+  id?: string;
   nome: string;
   cpf: string;
   cartaoSus: string;
@@ -27,6 +28,9 @@ export interface SolicitacaoMedica {
   medicoSolicitante: string;
   crm: string;
   especialidadeSolicitada: string;
+  tipoServico?: 'CONSULTA' | 'PROCEDIMENTO';
+  procedimentoSolicitado?: string | null;
+  codigoSigtapSolicitado?: string | null;
   cid10: string;
   cidDescricao: string;
   justificativaClinica: string;
@@ -111,6 +115,10 @@ export interface Encaminhamento {
   localAgendamento?: string | null;
   /** Nome + CRM do profissional agendado. */
   profissionalAgendado?: string | null;
+  profissionalAgendadoId?: string | null;
+  atendimentoId?: string | null;
+  rascunhoSOAP?: Record<string, any> | null;
+  atendimentoSOAP?: { exameFisico?: string | null; sinaisVitais?: any; objetivo?: string | null; subjetivo?: string | null; avaliacao?: string | null; plano?: string | null; cid10: string; diagnostico: string; conduta: string; queixaPrincipal: string; prescricaoResumo: string | null; concluidoEm: string };
   /**
    * Cidade onde a consulta ocorre — EXPLÍCITA, não derivada de string parsing.
    * Usada por `podeSolicitarTfd` (compara com município da UBS de origem).
