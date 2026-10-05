@@ -11,13 +11,8 @@
 	import {
 		IconBus,
 		IconPlus,
-		IconCalendarEvent,
 		IconClock,
-		IconMapPin,
-		IconUser,
-		IconAlertCircle,
 		IconCheck,
-		IconX,
 		IconAlertTriangle,
 		IconRefresh,
 		IconUsers,
@@ -53,19 +48,19 @@
 	function statusBadge(status: string) {
 		switch (status) {
 			case 'AGUARDANDO':
-				return { texto: 'Aguardando Aprovação', cor: 'bg-amber-100 text-amber-900 border-amber-300' };
+				return { texto: 'AGUARDANDO APROVAÇÃO', classes: 'border-amber-600 text-amber-800 bg-amber-50' };
 			case 'APROVADA':
-				return { texto: 'Viagem Confirmada', cor: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
+				return { texto: 'VIAGEM CONFIRMADA', classes: 'border-emerald-700 text-emerald-800 bg-emerald-50' };
 			case 'EMBARCADA':
-				return { texto: 'Em Trânsito / Embarcado', cor: 'bg-blue-100 text-blue-900 border-blue-300' };
+				return { texto: 'EM TRÂNSITO / EMBARCADO', classes: 'border-blue-700 text-blue-800 bg-blue-50' };
 			case 'CONCLUIDA':
-				return { texto: 'Viagem Concluída', cor: 'bg-slate-100 text-slate-700 border-slate-300' };
+				return { texto: 'VIAGEM CONCLUÍDA', classes: 'border-slate-400 text-slate-700 bg-slate-100' };
 			case 'RECUSADA':
-				return { texto: 'Solicitação Recusada', cor: 'bg-rose-100 text-rose-900 border-rose-300' };
+				return { texto: 'SOLICITAÇÃO RECUSADA', classes: 'border-red-700 text-red-800 bg-red-50' };
 			case 'CANCELADA':
-				return { texto: 'Cancelada', cor: 'bg-slate-100 text-slate-500 border-slate-200' };
+				return { texto: 'CANCELADA', classes: 'border-slate-300 text-slate-500 bg-slate-50' };
 			default:
-				return { texto: status, cor: 'bg-slate-100 text-slate-800 border-slate-300' };
+				return { texto: status, classes: 'border-slate-400 text-slate-700 bg-slate-100' };
 		}
 	}
 
@@ -126,7 +121,7 @@
 			});
 
 			modalAberto = false;
-			sucessoMsg = '✓ Sua solicitação de transporte TFD foi enviada com sucesso para a Central Municipal!';
+			sucessoMsg = 'Solicitação de transporte TFD registrada com sucesso na Central Municipal!';
 			setTimeout(() => (sucessoMsg = ''), 6000);
 			await carregarDados();
 		} catch (err: any) {
@@ -141,7 +136,7 @@
 		if (!confirm('Deseja realmente cancelar esta solicitação de viagem?')) return;
 		try {
 			await api.pacienteApp.tfdCancelarSolicitacao(id);
-			sucessoMsg = '✓ Solicitação de viagem cancelada.';
+			sucessoMsg = 'Solicitação de viagem cancelada.';
 			setTimeout(() => (sucessoMsg = ''), 4000);
 			await carregarDados();
 		} catch (err: any) {
@@ -151,19 +146,22 @@
 </script>
 
 <svelte:head>
-	<title>Transporte TFD · UniSISM Paciente</title>
+	<title>Transporte TFD · UniSISM Águas Belas</title>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl px-4 py-5 sm:px-6">
+<div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 space-y-6">
 	<!-- Top Bar -->
-	<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4">
 		<div>
-			<h1 class="text-xl font-black text-slate-900 sm:text-2xl flex items-center gap-2">
-				<IconBus size={26} class="text-purple-700" />
+			<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+				SETOR DE TRANSPORTE SANITÁRIO E TFD
+			</div>
+			<h1 class="font-mono text-lg font-bold tracking-wide text-slate-900 sm:text-xl uppercase flex items-center gap-2">
+				<IconBus size={20} class="text-blue-900" />
 				<span>Tratamento Fora do Domicílio (TFD)</span>
 			</h1>
-			<p class="text-xs text-slate-500 mt-0.5">
-				Solicite vagas na frota municipal de saúde para consultas e procedimentos fora de Águas Belas
+			<p class="text-xs text-slate-600 mt-0.5">
+				Solicitação e acompanhamento de passagens e vagas na frota municipal para Recife, Caruaru e Garanhuns.
 			</p>
 		</div>
 
@@ -171,13 +169,13 @@
 			<button
 				onclick={carregarDados}
 				disabled={carregando}
-				class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+				class="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold tracking-wider text-slate-800 uppercase hover:bg-slate-50 transition-colors"
 			>
-				<IconRefresh size={15} class={carregando ? 'animate-spin' : ''} />
+				<IconRefresh size={14} class={carregando ? 'animate-spin' : ''} />
 			</button>
 			<button
 				onclick={abrirModal}
-				class="inline-flex items-center gap-2 rounded-xl bg-purple-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-800 active:scale-95 transition-all"
+				class="inline-flex items-center gap-2 border border-blue-900 bg-blue-900 px-4 py-2 font-mono text-xs font-bold tracking-widest text-white uppercase hover:bg-blue-950 transition-colors"
 			>
 				<IconPlus size={16} />
 				<span>Solicitar Viagem TFD</span>
@@ -186,63 +184,64 @@
 	</div>
 
 	{#if sucessoMsg}
-		<div class="mb-4 flex items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-bold text-emerald-900 shadow-sm">
-			<IconCheck size={18} class="text-emerald-700 shrink-0" />
-			<span>{sucessoMsg}</span>
+		<div class="border border-emerald-700 bg-emerald-50 p-3 font-mono text-xs font-bold text-emerald-800 flex items-center gap-2">
+			<IconCheck size={16} class="text-emerald-700 shrink-0" />
+			<span>✓ {sucessoMsg}</span>
 		</div>
 	{/if}
 
 	<!-- Lista de Solicitações do Paciente -->
 	{#if carregando}
 		<div class="flex h-48 items-center justify-center">
-			<div class="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+			<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
 		</div>
 	{:else if solicitacoes.length === 0}
-		<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-			<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-purple-700">
-				<IconBus size={24} />
+		<div class="border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+			<div class="font-mono text-xs font-bold text-slate-700 uppercase">
+				Nenhuma viagem solicitada até o momento
 			</div>
-			<h3 class="text-sm font-bold text-slate-800 mt-3">Você ainda não solicitou nenhuma viagem</h3>
 			<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-				Caso você tenha uma consulta ou procedimento agendado em Recife, Caruaru ou Garanhuns, clique no botão acima para pedir sua vaga na van/ônibus da saúde.
+				Caso você tenha uma consulta ou procedimento agendado em centro de referência fora de Águas Belas, clique no botão acima para reservar vaga na van ou ônibus da saúde.
 			</p>
 			<button
 				onclick={abrirModal}
-				class="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-purple-700 px-4 py-2 font-mono text-xs font-bold text-white shadow hover:bg-purple-800"
+				class="mt-4 inline-flex items-center gap-1.5 border border-blue-900 bg-blue-900 px-4 py-2 font-mono text-xs font-bold tracking-widest text-white uppercase hover:bg-blue-950 transition-colors"
 			>
-				<IconPlus size={15} />
-				<span>Fazer Primeira Solicitação</span>
+				<IconPlus size={14} />
+				<span>Fazer Solicitação de Viagem</span>
 			</button>
 		</div>
 	{:else}
 		<div class="flex flex-col gap-3">
 			{#each solicitacoes as s (s.id)}
 				{@const b = statusBadge(s.status)}
-				<div class="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+				<div class="border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-400">
 					<!-- Cabeçalho -->
 					<div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
 						<div>
 							<div class="flex items-center gap-2">
-								<span class="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {b.cor}">
+								<span
+									class="inline-block border px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider {b.classes}"
+								>
 									{b.texto}
 								</span>
 								{#if s.prioridade && s.prioridade !== 'NORMAL'}
-									<span class="rounded bg-rose-100 border border-rose-300 px-2 py-0.5 text-[9px] font-black text-rose-800 uppercase">
+									<span class="border border-red-700 bg-red-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-red-800 uppercase">
 										{s.prioridade}
 									</span>
 								{/if}
 							</div>
-							<h3 class="text-base font-bold text-slate-900 mt-1.5 flex items-center gap-1.5">
-								<span>Destino: {s.viagem.destinoCidade}</span>
+							<h3 class="font-mono text-base font-bold text-slate-900 mt-2 uppercase flex items-center gap-1.5">
+								<span>DESTINO: {s.viagem.destinoCidade}</span>
 								{#if s.viagem.destinoLocal}
-									<span class="text-slate-400 font-normal text-xs">({s.viagem.destinoLocal})</span>
+									<span class="text-slate-500 font-normal text-xs">({s.viagem.destinoLocal})</span>
 								{/if}
 							</h3>
 						</div>
 
-						<div class="text-right">
-							<div class="text-[9px] font-semibold uppercase tracking-widest text-slate-400">PEDIDO EM</div>
-							<div class="font-mono text-xs font-bold text-slate-600">
+						<div class="text-right font-mono text-xs">
+							<div class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">SOLICITADO EM</div>
+							<div class="font-bold text-slate-700 mt-0.5">
 								{formatarData(s.criadaEm)}
 							</div>
 						</div>
@@ -250,37 +249,36 @@
 
 					<!-- Informações da Viagem -->
 					<div class="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 font-mono">
-						<div class="rounded-lg bg-slate-50 p-2.5">
-							<span class="text-slate-400 block text-[9px] uppercase tracking-wider">Data de Saída</span>
-							<strong class="text-slate-800 text-xs">{formatarData(s.viagem.dataPartida)}</strong>
+						<div class="border border-slate-200 bg-slate-50 p-2.5">
+							<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">DATA SAÍDA</span>
+							<strong class="text-slate-900 text-xs block mt-0.5">{formatarData(s.viagem.dataPartida)}</strong>
 						</div>
-						<div class="rounded-lg bg-slate-50 p-2.5">
-							<span class="text-slate-400 block text-[9px] uppercase tracking-wider">Horário</span>
-							<strong class="text-slate-800 text-xs">{s.viagem.horaPartida}</strong>
+						<div class="border border-slate-200 bg-slate-50 p-2.5">
+							<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">HORÁRIO</span>
+							<strong class="text-slate-900 text-xs block mt-0.5">{s.viagem.horaPartida}</strong>
 						</div>
-						<div class="rounded-lg bg-slate-50 p-2.5">
-							<span class="text-slate-400 block text-[9px] uppercase tracking-wider">Ponto de Embarque</span>
-							<strong class="text-slate-800 text-xs truncate block">{s.viagem.localEmbarque}</strong>
+						<div class="border border-slate-200 bg-slate-50 p-2.5">
+							<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">LOCAL EMBARQUE</span>
+							<strong class="text-slate-900 text-xs truncate block mt-0.5">{s.viagem.localEmbarque}</strong>
 						</div>
-						<div class="rounded-lg bg-slate-50 p-2.5">
-							<span class="text-slate-400 block text-[9px] uppercase tracking-wider">Assento Alocado</span>
-							<strong class="text-purple-900 text-xs flex items-center gap-1">
-								<IconArmchair size={14} />
-								<span>{s.numeroAssento || 'Em alocação'}</span>
+						<div class="border border-slate-200 bg-slate-50 p-2.5">
+							<span class="text-slate-500 block text-[9px] font-bold uppercase tracking-wider">ASSENTO ALOCADO</span>
+							<strong class="text-blue-950 font-black text-xs block mt-0.5">
+								{s.numeroAssento || 'EM ALOCAÇÃO'}
 							</strong>
 						</div>
 					</div>
 
 					{#if s.acompanhante}
-						<div class="mt-2 text-xs text-slate-600 flex items-center gap-1.5">
-							<IconUsers size={15} class="text-slate-400" />
-							<span>Acompanhante autorizado: <strong class="text-slate-800">{s.acompanhante}</strong></span>
+						<div class="mt-2.5 font-mono text-xs text-slate-700 flex items-center gap-1.5">
+							<IconUsers size={14} class="text-slate-400" />
+							<span>ACOMPANHANTE AUTORIZADO: <strong class="text-slate-900">{s.acompanhante}</strong></span>
 						</div>
 					{/if}
 
 					{#if s.status === 'RECUSADA' && s.motivoRecusa}
-						<div class="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-900">
-							<strong>Motivo da Recusa:</strong> {s.motivoRecusa}
+						<div class="mt-2.5 border border-red-700 bg-red-50 p-2.5 font-mono text-xs text-red-900">
+							<strong>MOTIVO DA RECUSA:</strong> {s.motivoRecusa}
 						</div>
 					{/if}
 
@@ -289,9 +287,9 @@
 						<div class="mt-3 flex justify-end border-t border-slate-100 pt-2">
 							<button
 								onclick={() => cancelarPedido(s.id)}
-								class="text-xs font-bold text-rose-700 hover:text-rose-900 hover:underline"
+								class="font-mono text-xs font-bold text-red-800 uppercase hover:underline"
 							>
-								Cancelar esta solicitação
+								[ Cancelar Solicitação ]
 							</button>
 						</div>
 					{/if}
@@ -305,14 +303,14 @@
 		<Modal
 			isOpen={modalAberto}
 			onClose={() => (modalAberto = false)}
-			title="Solicitar Transporte TFD"
-			subtitle="Peça sua vaga para tratamento médico fora do município"
+			title="SOLICITAR TRANSPORTE TFD"
+			subtitle="Vaga para tratamento de saúde fora do município de Águas Belas"
 			maxWidth="md"
 		>
 			<div class="flex flex-col gap-4 p-1 text-xs">
 				{#if erroModal}
-					<div class="border border-rose-300 bg-rose-50 p-2.5 font-bold text-rose-900 flex items-center gap-2">
-						<IconAlertTriangle size={16} class="text-rose-700 shrink-0" />
+					<div class="border border-red-700 bg-red-50 p-2.5 font-mono text-[11px] font-bold text-red-800 flex items-center gap-2">
+						<IconAlertTriangle size={16} class="text-red-700 shrink-0" />
 						<span>{erroModal}</span>
 					</div>
 				{/if}
@@ -323,14 +321,14 @@
 						Selecione a Viagem Programada *
 					</label>
 					{#if viagensDisponiveis.length === 0}
-						<div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+						<div class="border border-amber-200 bg-amber-50 p-3 font-mono text-xs text-amber-900">
 							Nenhuma viagem agendada com vagas no momento. Procure o setor de TFD na Secretaria de Saúde.
 						</div>
 					{:else}
 						<select
 							id="viagem-select"
 							bind:value={viagemIdSelecionada}
-							class="w-full rounded-lg border border-slate-300 bg-white p-2.5 font-mono text-xs text-slate-800 focus:border-purple-600 focus:outline-none"
+							class="w-full border border-slate-300 bg-white p-2.5 font-mono text-xs text-slate-800 focus:border-blue-900 focus:outline-none"
 						>
 							{#each viagensDisponiveis as v}
 								<option value={v.id}>
@@ -345,12 +343,12 @@
 				{#if meusEncaminhamentos.length > 0}
 					<div>
 						<label for="enc-select" class="block font-mono text-xs font-semibold text-slate-700 mb-1">
-							Vincular ao seu Encaminhamento (opcional)
+							Vincular ao Encaminhamento Médico (opcional)
 						</label>
 						<select
 							id="enc-select"
 							bind:value={encaminhamentoId}
-							class="w-full rounded-lg border border-slate-300 bg-white p-2.5 font-mono text-xs text-slate-800 focus:border-purple-600 focus:outline-none"
+							class="w-full border border-slate-300 bg-white p-2.5 font-mono text-xs text-slate-800 focus:border-blue-900 focus:outline-none"
 						>
 							<option value="">Nenhum / Consulta Externa Particular</option>
 							{#each meusEncaminhamentos as enc}
@@ -372,24 +370,24 @@
 						rows={3}
 						placeholder="Ex.: Consulta com cardiologista no Hospital Oswaldo Cruz em Recife..."
 						bind:value={justificativa}
-						class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none"
+						class="w-full border border-slate-300 bg-white p-2.5 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-900 focus:outline-none"
 					></textarea>
 				</div>
 
 				<!-- Precisa de Acompanhante? -->
-				<div class="border-t border-slate-100 pt-3">
-					<label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+				<div class="border-t border-slate-200 pt-3">
+					<label class="flex items-center gap-2 cursor-pointer font-mono text-xs font-bold text-slate-800 uppercase">
 						<input
 							type="checkbox"
 							bind:checked={precisaAcompanhante}
-							class="h-4 w-4 rounded border-slate-300 text-purple-700 focus:ring-purple-600"
+							class="h-4 w-4 border-slate-300 text-blue-900 focus:ring-blue-900"
 						/>
-						<span>Necessito de Acompanhante</span>
+						<span>Necessito de Acompanhante (Idoso / Menor / Laudo)</span>
 					</label>
 
 					{#if precisaAcompanhante}
 						<div class="mt-2 pl-6">
-							<label for="nome-acompanhante" class="block text-[11px] text-slate-600 mb-1">
+							<label for="nome-acompanhante" class="block font-mono text-[10px] font-bold text-slate-600 mb-1 uppercase">
 								Nome Completo do Acompanhante *
 							</label>
 							<input
@@ -397,7 +395,7 @@
 								type="text"
 								placeholder="Nome do acompanhante"
 								bind:value={acompanhanteNome}
-								class="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs focus:border-purple-600 focus:outline-none"
+								class="w-full border border-slate-300 bg-white p-2 font-mono text-xs focus:border-blue-900 focus:outline-none"
 							/>
 						</div>
 					{/if}
@@ -408,7 +406,7 @@
 					<button
 						type="button"
 						onclick={() => (modalAberto = false)}
-						class="rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold text-slate-700 hover:bg-slate-100"
+						class="border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold text-slate-700 uppercase hover:bg-slate-100"
 					>
 						Cancelar
 					</button>

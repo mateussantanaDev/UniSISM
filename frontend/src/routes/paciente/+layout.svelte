@@ -13,8 +13,7 @@
 		IconBell,
 		IconUser,
 		IconLogout,
-		IconHeartRateMonitor,
-		IconShieldCheck
+		IconActivity
 	} from '@tabler/icons-svelte';
 
 	let { children } = $props();
@@ -22,6 +21,23 @@
 	let me = $state<PacienteMeResponse | null>(null);
 	let carregando = $state(true);
 	let contagemNotificacoes = $state(0);
+
+	let now = $state(new Date());
+	$effect(() => {
+		const interval = setInterval(() => (now = new Date()), 1000);
+		return () => clearInterval(interval);
+	});
+
+	let relogio = $derived(
+		now.toLocaleString('pt-BR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit'
+		})
+	);
 
 	async function logout() {
 		try {
@@ -44,7 +60,6 @@
 			const dados = await api.pacienteApp.me();
 			me = dados;
 
-			// Busca contador de notificações
 			try {
 				const cont = await api.pacienteApp.contadorNotificacoes();
 				contagemNotificacoes = cont.naoLidas || 0;
@@ -75,11 +90,11 @@
 	});
 
 	const navItems = [
-		{ href: '/paciente', label: 'Início', icon: IconHome, exact: true },
-		{ href: '/paciente/encaminhamentos', label: 'Consultas', icon: IconCalendarEvent },
-		{ href: '/paciente/tfd', label: 'TFD', icon: IconBus },
-		{ href: '/paciente/dossie', label: 'Meu Histórico', icon: IconNotes },
-		{ href: '/paciente/perfil', label: 'Meu Perfil', icon: IconUser }
+		{ href: '/paciente', label: 'Início', crumb: 'INÍCIO', icon: IconHome, exact: true },
+		{ href: '/paciente/encaminhamentos', label: 'Consultas', crumb: 'CONSULTAS & ENCAMINHAMENTOS', icon: IconCalendarEvent },
+		{ href: '/paciente/tfd', label: 'TFD', crumb: 'TRANSPORTE TFD', icon: IconBus },
+		{ href: '/paciente/dossie', label: 'Dossiê Clínico', crumb: 'DOSSIÊ CLÍNICO', icon: IconNotes },
+		{ href: '/paciente/perfil', label: 'Meu Perfil', crumb: 'PERFIL DO CIDADÃO', icon: IconUser }
 	];
 
 	function isAtivo(itemHref: string, exact = false) {
@@ -87,61 +102,93 @@
 		if (exact) return currentPath === itemHref;
 		return currentPath.startsWith(itemHref);
 	}
+
+	let crumbAtual = $derived.by(() => {
+		const item = navItems.find((n) => isAtivo(n.href, n.exact));
+		if (page.url.pathname === '/paciente/notificacoes') return 'NOTIFICAÇÕES';
+		if (page.url.pathname === '/paciente/trocar-senha') return 'SEGURANÇA · TROCAR SENHA';
+		if (page.url.pathname === '/paciente/esqueci-senha') return 'RECUPERAÇÃO DE ACESSO';
+		return item ? item.crumb : 'PORTAL DO CIDADÃO';
+	});
 </script>
 
 <svelte:head>
-	<title>Portal do Paciente · UniSISM Águas Belas</title>
-	<meta name="theme-color" content="#064e3b" />
+	<title>Portal do Cidadão · UniSISM Águas Belas</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col bg-slate-100 font-sans text-slate-800">
-	<!-- Top Bar Mobile & Desktop -->
-	<header class="sticky top-0 z-40 border-b border-emerald-950/20 bg-emerald-900 text-white shadow-md">
-		<div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
-			<!-- Logo / Município -->
-			<a href="/paciente" class="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-				<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-inner">
-					<IconHeartRateMonitor size={22} stroke={2.2} />
-				</div>
-				<div>
-					<div class="flex items-center gap-1.5 leading-none">
-						<span class="font-mono text-sm font-black tracking-tight text-white">UniSISM</span>
-						<span class="rounded bg-emerald-500/30 px-1 py-0.2 text-[9px] font-bold text-emerald-200 uppercase tracking-widest">
-							Cidadão
-						</span>
+<div class="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
+	<!-- Top Bar Municipal -->
+	<header
+		class="sticky top-0 z-40 border-b border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 px-4 py-3 sm:px-6 shadow-sm"
+	>
+		<div class="mx-auto flex max-w-[1600px] items-center justify-between">
+			<!-- Logo / Crumb -->
+			<div class="flex items-center gap-3">
+				<a href="/paciente" class="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+					<div
+						class="flex h-8 w-8 items-center justify-center bg-blue-900 font-mono text-xs font-bold text-white"
+					>
+						SUS
 					</div>
-					<div class="text-[10px] text-emerald-200/80 font-medium">Águas Belas · PE</div>
-				</div>
-			</a>
+					<div class="leading-tight">
+						<div class="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+							ÁGUAS BELAS · PORTAL DO CIDADÃO
+						</div>
+						<div class="font-mono text-sm font-bold tracking-wide text-slate-900 uppercase">
+							UniSISM · {crumbAtual}
+						</div>
+					</div>
+				</a>
+			</div>
 
-			<!-- Desktop Nav Links -->
-			<nav class="hidden md:flex items-center gap-1">
+			<!-- Desktop Nav Tabs -->
+			<nav class="hidden md:flex items-center gap-1 border-x border-slate-200 px-3">
 				{#each navItems as item}
 					{@const ativo = isAtivo(item.href, item.exact)}
 					<a
 						href={item.href}
-						class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all {ativo
-							? 'bg-emerald-800 text-white shadow-sm'
-							: 'text-emerald-100/90 hover:bg-emerald-800/50 hover:text-white'}"
+						class="flex items-center gap-1.5 border px-3 py-1.5 font-mono text-xs font-bold tracking-wider uppercase transition-all {ativo
+							? 'border-blue-900 bg-blue-900 text-white'
+							: 'border-transparent text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900'}"
 					>
-						<item.icon size={16} />
+						<item.icon size={15} />
 						<span>{item.label}</span>
 					</a>
 				{/each}
 			</nav>
 
-			<!-- Right Actions -->
-			<div class="flex items-center gap-2">
+			<!-- Right Status & User Badges -->
+			<div class="flex items-center gap-3">
+				<div class="hidden items-center gap-2 lg:flex">
+					<span
+						class="border border-emerald-700 bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-emerald-800"
+					>
+						SUS · ATIVO
+					</span>
+					{#if me}
+						<span
+							class="border border-slate-300 bg-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-slate-700"
+						>
+							CPF {me.cpfFormatado || me.cpf}
+						</span>
+					{/if}
+				</div>
+
+				<div class="hidden text-right font-mono text-[11px] leading-tight text-slate-700 sm:block">
+					<div class="font-bold">{relogio}</div>
+					<div class="text-[10px] tracking-wider text-slate-500">UTC−03 · BRASÍLIA</div>
+				</div>
+
 				<!-- Notificações -->
 				<a
 					href="/paciente/notificacoes"
-					class="relative flex h-9 w-9 items-center justify-center rounded-full bg-emerald-800/80 text-emerald-100 transition-colors hover:bg-emerald-700 hover:text-white"
+					class="relative flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
 					title="Notificações"
 				>
-					<IconBell size={18} />
+					<IconBell size={16} />
 					{#if contagemNotificacoes > 0}
 						<span
-							class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow"
+							class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center bg-red-700 font-mono text-[9px] font-bold text-white"
 						>
 							{contagemNotificacoes > 9 ? '9+' : contagemNotificacoes}
 						</span>
@@ -149,38 +196,27 @@
 				</a>
 
 				<!-- Perfil / Logout -->
-				<div class="flex items-center gap-2 pl-1 border-l border-emerald-800">
-					<a
-						href="/paciente/perfil"
-						class="hidden sm:flex flex-col text-right leading-tight hover:opacity-90 transition-opacity"
-					>
-						<span class="text-xs font-bold text-white max-w-[140px] truncate">
-							{me?.nome || 'Carregando...'}
-						</span>
-						<span class="font-mono text-[10px] text-emerald-200">
-							CPF {me?.cpfFormatado || '••••••'}
-						</span>
-					</a>
+				{#if me}
 					<button
 						onclick={logout}
-						class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-800/80 text-emerald-200 hover:bg-rose-900/80 hover:text-rose-200 transition-colors"
-						title="Sair da conta"
+						class="flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 transition-colors hover:border-red-700 hover:bg-red-50 hover:text-red-800"
+						title="Encerrar sessão"
 					>
 						<IconLogout size={16} />
 					</button>
-				</div>
+				{/if}
 			</div>
 		</div>
 	</header>
 
 	<!-- Main Content Container with bottom padding on mobile for nav bar -->
-	<main class="flex-1 pb-24 md:pb-12">
+	<main class="flex-1 pb-24 md:pb-8">
 		{#if carregando}
 			<div class="flex h-64 items-center justify-center">
 				<div class="flex flex-col items-center gap-3">
-					<div class="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent"></div>
-					<span class="font-mono text-xs font-semibold text-slate-500 uppercase tracking-widest">
-						Carregando seus dados de saúde...
+					<div class="h-8 w-8 animate-spin border-[3px] border-blue-900 border-t-transparent"></div>
+					<span class="font-mono text-xs font-bold tracking-widest text-slate-600 uppercase">
+						Carregando dados do cidadão...
 					</span>
 				</div>
 			</div>
@@ -189,26 +225,46 @@
 		{/if}
 	</main>
 
-	<!-- Mobile Bottom Navigation Bar (App Experience) -->
-	<nav
-		class="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md md:hidden shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+	<!-- Desktop Municipal Footer -->
+	<footer
+		class="hidden md:flex items-center justify-between border-t border-slate-200 bg-gradient-to-r from-white to-slate-50 px-6 py-2 font-mono text-[10px] tracking-wider text-slate-500"
 	>
-		<div class="grid grid-cols-5 py-1 px-1">
+		<div>UNISISM v0.1.0 · PORTAL DO CIDADÃO · ÁGUAS BELAS - PE</div>
+		<div class="flex items-center gap-3">
+			{#if me}
+				<span>CIDADÃO: {me.nome}</span>
+				<span>CPF: {me.cpfFormatado}</span>
+				{#if me.cns}
+					<span>CNS: {me.cns}</span>
+				{/if}
+			{/if}
+		</div>
+	</footer>
+
+	<!-- Mobile Bottom Navigation Bar (B2G Brutalist) -->
+	<nav
+		class="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-300 bg-white md:hidden shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+	>
+		<div class="grid grid-cols-5">
 			{#each navItems as item}
 				{@const ativo = isAtivo(item.href, item.exact)}
 				<a
 					href={item.href}
-					class="flex flex-col items-center justify-center py-1.5 transition-all {ativo
-						? 'text-emerald-700 font-bold'
-						: 'text-slate-500 hover:text-slate-800 font-medium'}"
+					class="flex flex-col items-center justify-center py-2 transition-all border-r border-slate-100 last:border-r-0 {ativo
+						? 'border-t-2 border-t-blue-900 -mt-[2px] bg-slate-50 text-blue-950 font-bold'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
 				>
 					<div class="relative">
-						<item.icon size={21} stroke={ativo ? 2.5 : 1.8} class={ativo ? 'scale-110 transition-transform' : ''} />
+						<item.icon size={19} stroke={ativo ? 2.4 : 1.8} />
 						{#if item.href === '/paciente/notificacoes' && contagemNotificacoes > 0}
-							<span class="absolute -top-1 -right-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
+							<span
+								class="absolute -top-1 -right-1.5 flex h-3.5 w-3.5 items-center justify-center bg-red-700 font-mono text-[8px] font-bold text-white"
+							>
+								{contagemNotificacoes}
+							</span>
 						{/if}
 					</div>
-					<span class="mt-1 text-[10px] tracking-tight">{item.label}</span>
+					<span class="mt-1 font-mono text-[9px] tracking-wider uppercase">{item.label}</span>
 				</a>
 			{/each}
 		</div>

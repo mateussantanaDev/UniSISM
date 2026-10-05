@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { usePacienteAuth } from '$lib/presentation/contexts/pacienteAuthContext';
 	import { api } from '$lib/api';
+	import PrimaryButton from '$lib/presentation/components/PrimaryButton.svelte';
+	import { IconLock, IconShieldCheck, IconAlertCircle } from '@tabler/icons-svelte';
 
 	const auth = usePacienteAuth();
 
@@ -49,84 +51,92 @@
 </script>
 
 <svelte:head>
-	<title>Definir Nova Senha | UniSISM Cidadão</title>
+	<title>Definir Nova Senha · UniSISM Águas Belas</title>
 </svelte:head>
 
-<div class="min-h-[80vh] flex flex-col justify-center max-w-md mx-auto py-8 px-4">
-	<div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
+<div class="min-h-[70vh] flex flex-col justify-center max-w-md mx-auto py-8 px-4">
+	<div class="border border-slate-200 bg-white shadow-sm">
 		<!-- Header -->
-		<div class="text-center space-y-2">
-			<div class="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-				<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+		<div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+			<div class="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">
+				<span class="inline-block h-2 w-2 bg-blue-900"></span>
+				SEGURANÇA DA CONTA · CIDADÃO
 			</div>
-			<h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Definir Nova Senha</h1>
-			<p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-				Por segurança, altere sua senha de acesso antes de continuar navegando.
+			<h1 class="mt-1 font-mono text-lg font-bold text-slate-900 uppercase">
+				Definir Nova Senha
+			</h1>
+			<p class="mt-1 text-[11px] text-slate-600">
+				Por segurança, altere sua senha de acesso antes de continuar navegando no portal.
 			</p>
 		</div>
 
-		{#if error}
-			<div class="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
-				{error}
-			</div>
-		{/if}
+		<form onsubmit={handleSubmit} class="flex flex-col gap-4 p-6 font-mono text-xs">
+			{#if error}
+				<div class="border border-red-700 bg-red-50 p-2.5 font-bold text-red-800">
+					⚠ {error}
+				</div>
+			{/if}
 
-		{#if success}
-			<div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-				{success}
-			</div>
-		{/if}
+			{#if success}
+				<div class="border border-emerald-700 bg-emerald-50 p-2.5 font-bold text-emerald-800">
+					✓ {success}
+				</div>
+			{/if}
 
-		<form onsubmit={handleSubmit} class="space-y-4">
 			<div>
-				<label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" for="senhaAtual">
-					Senha Atual / Temporária
+				<label class="block font-bold text-slate-700 mb-1" for="senhaAtual">
+					Senha Atual ou Provisória *
 				</label>
 				<input
 					type="password"
 					id="senhaAtual"
 					bind:value={senhaAtual}
-					placeholder="Sua senha atual ou provisória"
+					placeholder="••••••••"
 					required
-					class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500"
+					class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 focus:outline-none"
 				/>
 			</div>
 
 			<div>
-				<label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" for="novaSenha">
-					Nova Senha Segura
+				<label class="block font-bold text-slate-700 mb-1" for="novaSenha">
+					Nova Senha Segura * (mínimo 6 caracteres)
 				</label>
 				<input
 					type="password"
 					id="novaSenha"
 					bind:value={novaSenha}
-					placeholder="Mínimo de 6 dígitos"
+					placeholder="••••••••"
 					required
-					class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500"
+					class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 focus:outline-none"
 				/>
 			</div>
 
 			<div>
-				<label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" for="confirmaSenha">
-					Confirmar Nova Senha
+				<label class="block font-bold text-slate-700 mb-1" for="confirmaSenha">
+					Confirmar Nova Senha *
 				</label>
 				<input
 					type="password"
 					id="confirmaSenha"
 					bind:value={confirmaSenha}
-					placeholder="Digite a mesma senha novamente"
+					placeholder="••••••••"
 					required
-					class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500"
+					class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 focus:outline-none"
 				/>
 			</div>
 
-			<button
+			<PrimaryButton
 				type="submit"
-				disabled={loading}
-				class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition disabled:opacity-50"
-			>
-				{loading ? 'Salvando...' : 'Salvar Nova Senha'}
-			</button>
+				label="Salvar Nova Senha"
+				loading={loading}
+				fullWidth
+			/>
+
+			<div class="border-t border-slate-100 pt-3 text-center">
+				<a href="/paciente" class="font-mono text-[11px] font-bold tracking-wider text-slate-600 hover:text-slate-900 uppercase hover:underline">
+					Cancelar e voltar ao painel
+				</a>
+			</div>
 		</form>
 	</div>
 </div>

@@ -163,10 +163,10 @@
 			type="button"
 			onclick={() => { abaAtiva = 'paciente'; erro = ''; }}
 			class="flex items-center justify-center gap-2 py-3.5 px-4 transition-all {abaAtiva === 'paciente'
-				? 'border-b-2 border-b-emerald-600 bg-white text-emerald-950 font-black'
+				? 'border-b-2 border-b-blue-900 bg-white text-blue-950 font-black'
 				: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}"
 		>
-			<IconUser size={16} class={abaAtiva === 'paciente' ? 'text-emerald-700' : ''} />
+			<IconUser size={16} class={abaAtiva === 'paciente' ? 'text-blue-900' : ''} />
 			<span>Sou Paciente / Cidadão</span>
 		</button>
 	</div>
@@ -174,9 +174,9 @@
 	<!-- Cabeçalho do form -->
 	<div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
 		{#if abaAtiva === 'paciente'}
-			<div class="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-widest text-emerald-700 uppercase">
-				<span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
-				ACESSO DO CIDADÃO
+			<div class="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-widest text-blue-900 uppercase">
+				<span class="inline-block h-2 w-2 bg-blue-900"></span>
+				ACESSO DO CIDADÃO · ÁGUAS BELAS - PE
 			</div>
 			<h2 class="mt-1 font-mono text-lg font-bold text-slate-900">Portal do Paciente</h2>
 			<p class="mt-1 text-[11px] text-slate-600">
@@ -210,7 +210,7 @@
 						placeholder="000.000.000-00"
 						value={pacienteCpf}
 						oninput={handleCpfInput}
-						class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none"
+						class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 focus:outline-none"
 					/>
 				</div>
 
@@ -223,12 +223,12 @@
 						type="password"
 						placeholder="••••••••"
 						bind:value={pacienteSenha}
-						class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none"
+						class="w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 focus:outline-none"
 					/>
 				</div>
 
-				<div class="border border-emerald-200 bg-emerald-50/70 p-3 text-[11px] text-emerald-900 flex items-start gap-2">
-					<IconAlertCircle size={16} class="shrink-0 text-emerald-700 mt-0.5" />
+				<div class="border border-blue-200 bg-blue-50/70 p-3 text-[11px] text-blue-950 flex items-start gap-2">
+					<IconAlertCircle size={16} class="shrink-0 text-blue-900 mt-0.5" />
 					<div>
 						<strong>Primeiro acesso?</strong> Digite os 11 números do seu CPF no campo de senha para ativar seu acesso.
 					</div>
@@ -278,7 +278,7 @@
 			{#if abaAtiva === 'paciente'}
 				<a
 					href="/paciente/esqueci-senha"
-					class="font-mono text-[11px] font-bold tracking-widest text-emerald-800 uppercase hover:underline"
+					class="font-mono text-[11px] font-bold tracking-widest text-blue-900 uppercase hover:underline"
 				>
 					Esqueci a senha →
 				</a>
