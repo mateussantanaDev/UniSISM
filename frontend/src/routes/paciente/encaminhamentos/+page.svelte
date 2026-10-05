@@ -327,7 +327,7 @@
 											Comparecer em {formatarDataHora(item.agendamentoPrevisto)}
 										</strong>
 										<span class="text-emerald-900 text-[11px] block mt-1">
-											Apresentar Cartão SUS, Documento oficial de identificação com foto e exames/laudos anteriores.
+											Apresentar Documento oficial com foto e exames/laudos anteriores se houver.
 										</span>
 									</div>
 								{/if}

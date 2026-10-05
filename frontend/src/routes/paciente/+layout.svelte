@@ -114,13 +114,10 @@
 		<div class="mx-auto flex max-w-2xl items-center justify-between">
 			<!-- Logo / Município -->
 			<a href="/paciente" class="flex items-center gap-2 transition-opacity hover:opacity-90">
-				<div class="flex h-8 w-8 items-center justify-center bg-blue-900 font-mono text-xs font-black text-white">
-					SUS
-				</div>
 				<div class="leading-none">
 					<div class="flex items-center gap-1.5">
-						<span class="font-mono text-sm font-black tracking-tight text-slate-900">UniSISM</span>
-						<span class="border border-blue-900 bg-blue-50 px-1 py-0.2 font-mono text-[9px] font-bold text-blue-900 uppercase">
+						<span class="font-mono text-base font-black tracking-tight text-slate-900">UniSISM</span>
+						<span class="border border-blue-900 bg-blue-50 px-1.5 py-0.2 font-mono text-[9px] font-bold text-blue-900 uppercase">
 							Cidadão
 						</span>
 					</div>

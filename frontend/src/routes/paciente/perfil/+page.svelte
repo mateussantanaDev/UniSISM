@@ -118,12 +118,12 @@
 				<div class="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-slate-600">
 					<span>CPF: <strong>{auth.me?.cpfFormatado || formatarCpf(auth.me?.cpf)}</strong></span>
 					<span class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-800 uppercase">
-						SUS ATIVO
+						CADASTRO ATIVO
 					</span>
 				</div>
 				{#if auth.me?.cns}
 					<div class="mt-0.5 font-mono text-[11px] text-slate-500">
-						Cartão SUS: {auth.me.cns}
+						CNS: {auth.me.cns}
 					</div>
 				{/if}
 			</div>

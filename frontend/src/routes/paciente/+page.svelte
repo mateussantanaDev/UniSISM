@@ -128,7 +128,7 @@
 						Olá, {primeiroNome}!
 					</h1>
 					<span class="border border-emerald-700 bg-emerald-50 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-800 uppercase">
-						SUS Ativo
+						Ativo
 					</span>
 				</div>
 				<p class="font-mono text-xs text-slate-500 mt-0.5">
@@ -246,7 +246,7 @@
 		>
 			<div class="flex items-center justify-between">
 				<IconCalendarEvent size={20} class="text-blue-900" />
-				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">SUS</span>
+				<span class="font-mono text-[9px] font-bold text-slate-400 uppercase">AGENDA</span>
 			</div>
 			<div class="mt-3">
 				<div class="font-mono text-xs font-bold text-slate-900 uppercase">Consultas</div>
