@@ -22,14 +22,17 @@
 	let senha = $state('');
 	let senhaConfirmar = $state('');
 	let cargo = $state('');
-	let role = $state<Role>('ATENDENTE_UBS');
-	let tipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('SMS');
+	let tipoUnidade = $state<'CEO' | 'CEM' | 'UBS' | 'SMS' | 'TFD'>('CEO');
+	let role = $state<Role>('ATENDENTE_CENTRO');
 	let prefeituraId = $state('');
 	let ubsId = $state('');
 
 	let enviando = $state(false);
 	let erro = $state('');
 	let sucesso = $state(false);
+
+	let ehCentro = $derived(tipoUnidade === 'CEO' || tipoUnidade === 'CEM');
+	let ehUbs = $derived(tipoUnidade === 'UBS');
 
 	onMount(async () => {
 		try {
@@ -42,29 +45,70 @@
 		}
 	});
 
-	/** Roles que o usuário atual pode criar (DEV pode tudo, ADMIN não pode criar DEV). */
+	/** Roles permitidas contextualmente de acordo com a Unidade / Face selecionada */
 	let rolesPermitidas = $derived.by<Role[]>(() => {
-		const todas: Role[] = [
-			'COORDENADOR_UBS',
-			'ADMIN',
-			'ATENDENTE_UBS',
-			'ATENDENTE_CENTRO',
-			'ENFERMEIRO',
-			'REGULADOR_SMS',
-			'MEDICO',
-			'MEDICO_ESPECIALISTA',
-			'GESTOR_TFD',
-			'REGULADOR_TFD',
-			'ATENDENTE_TFD',
-			'DESENVOLVEDOR'
-		];
-		if (auth.me?.role === 'DESENVOLVEDOR') return todas;
-		if (auth.me?.role === 'ADMIN') return todas.filter((r) => r !== 'DESENVOLVEDOR');
-		return [];
+		const isDev = auth.me?.role === 'DESENVOLVEDOR';
+		let candidatas: Role[] = [];
+
+		if (tipoUnidade === 'CEO' || tipoUnidade === 'CEM') {
+			candidatas = [
+				'ATENDENTE_CENTRO',
+				'COORDENADOR_UBS',
+				'ADMIN',
+				'MEDICO',
+				'MEDICO_ESPECIALISTA',
+				'ENFERMEIRO',
+				'REGULADOR_SMS'
+			];
+		} else if (tipoUnidade === 'UBS') {
+			candidatas = [
+				'ATENDENTE_UBS',
+				'COORDENADOR_UBS',
+				'ENFERMEIRO',
+				'MEDICO',
+				'ADMIN'
+			];
+		} else if (tipoUnidade === 'TFD') {
+			candidatas = [
+				'GESTOR_TFD',
+				'REGULADOR_TFD',
+				'ATENDENTE_TFD'
+			];
+		} else {
+			// SMS
+			candidatas = [
+				'REGULADOR_SMS',
+				'ADMIN',
+				'ENFERMEIRO',
+				'MEDICO',
+				'MEDICO_ESPECIALISTA'
+			];
+			if (isDev) {
+				candidatas.push('DESENVOLVEDOR');
+			}
+		}
+
+		return candidatas;
+	});
+
+	// Garante consistência de role ao alterar tipo de unidade
+	$effect(() => {
+		if (!rolesPermitidas.includes(role)) {
+			role = rolesPermitidas[0];
+			cargo = formatarCargoPerfil({ role, tipoUnidade });
+		}
+	});
+
+	// Centros de Especialidades NUNCA possuem vínculo com UBS
+	$effect(() => {
+		if (ehCentro) {
+			ubsId = '';
+		}
 	});
 
 	let exigePrefeitura = $derived(
-		role === 'ADMIN' ||
+		ehCentro ||
+			role === 'ADMIN' ||
 			role === 'REGULADOR_SMS' ||
 			role === 'ENFERMEIRO' ||
 			role === 'GESTOR_TFD' ||
@@ -72,11 +116,11 @@
 			role === 'ATENDENTE_TFD' ||
 			role === 'MEDICO' ||
 			role === 'MEDICO_ESPECIALISTA' ||
-			role === 'ATENDENTE_CENTRO' ||
-			(role === 'COORDENADOR_UBS' && (tipoUnidade === 'CEO' || tipoUnidade === 'CEM'))
+			role === 'ATENDENTE_CENTRO'
 	);
+
 	let exigeUbs = $derived(
-		(role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS') && tipoUnidade === 'UBS'
+		ehUbs && (role === 'ATENDENTE_UBS' || role === 'COORDENADOR_UBS')
 	);
 
 	let ubsDaPrefeitura = $derived(
@@ -98,12 +142,19 @@
 			return;
 		}
 		if (exigePrefeitura && !prefeituraId) {
-			erro = 'Selecione a prefeitura para esta role.';
+			erro = 'Selecione a prefeitura.';
 			return;
 		}
 		if (exigeUbs && !ubsId) {
 			erro = 'Selecione a UBS para esta role.';
 			return;
+		}
+
+		if (ehCentro) {
+			ubsId = '';
+			if (role === 'ATENDENTE_UBS') {
+				role = 'ATENDENTE_CENTRO';
+			}
 		}
 
 		enviando = true;
@@ -114,7 +165,7 @@
 				matricula: matricula.trim() || undefined,
 				cpf: cpf.trim(),
 				senha,
-				role,
+				role: ehCentro && role === 'ATENDENTE_UBS' ? 'ATENDENTE_CENTRO' : role,
 				tipoUnidade,
 				ubsId: exigeUbs ? ubsId : undefined,
 				prefeituraId: exigePrefeitura ? prefeituraId : undefined,
@@ -255,27 +306,6 @@
 			<div class="grid grid-cols-12 gap-3">
 				<div class="col-span-6 flex flex-col">
 					<label
-						for="role"
-						class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
-					>
-						Perfil de Acesso
-					</label>
-					<select
-						id="role"
-						bind:value={role}
-						onchange={() => {
-							if (!cargo.trim()) cargo = formatarCargoPerfil({ role, tipoUnidade });
-						}}
-						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
-					>
-						{#each rolesPermitidas as r (r)}
-							<option value={r}>{formatarCargoPerfil({ role: r, tipoUnidade })} ({r})</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="col-span-6 flex flex-col">
-					<label
 						for="tipoUnidade"
 						class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
 					>
@@ -285,7 +315,7 @@
 						id="tipoUnidade"
 						bind:value={tipoUnidade}
 						onchange={() => {
-							if (!cargo.trim()) cargo = formatarCargoPerfil({ role, tipoUnidade });
+							cargo = formatarCargoPerfil({ role, tipoUnidade });
 						}}
 						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
 					>
@@ -297,7 +327,50 @@
 					</select>
 				</div>
 
-				{#if exigePrefeitura}
+				<div class="col-span-6 flex flex-col">
+					<label
+						for="role"
+						class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+					>
+						Perfil de Acesso
+					</label>
+					<select
+						id="role"
+						bind:value={role}
+						onchange={() => {
+							cargo = formatarCargoPerfil({ role, tipoUnidade });
+						}}
+						class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+					>
+						{#each rolesPermitidas as r (r)}
+							<option value={r}>{formatarCargoPerfil({ role: r, tipoUnidade })} ({r})</option>
+						{/each}
+					</select>
+				</div>
+
+				{#if ehCentro}
+					<div class="col-span-12 flex flex-col">
+						<label
+							for="prefeituraIdCentro"
+							class="mb-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase"
+						>
+							Prefeitura / Município do Centro de Especialidades
+						</label>
+						<select
+							id="prefeituraIdCentro"
+							bind:value={prefeituraId}
+							class="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+						>
+							<option value="">— Selecione a Prefeitura —</option>
+							{#each prefeituras as p (p.id)}
+								<option value={p.id}>{p.nome}</option>
+							{/each}
+						</select>
+						<span class="mt-1 font-mono text-[10px] tracking-wide text-slate-500">
+							✓ Centro de especialidades municipal autônomo — escopo municipal sem qualquer vínculo ou dependência de UBS.
+						</span>
+					</div>
+				{:else if exigePrefeitura}
 					<div class="col-span-6 flex flex-col">
 						<label
 							for="prefeituraId"

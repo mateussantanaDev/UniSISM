@@ -32,6 +32,7 @@ export async function authorizeUsuarioManagement(editorId: string, alvo: Usuario
     // Um coordenador de UBS não pode conceder roles de abrangência municipal.
     if (scope.kind === 'UBS' && alvo.role !== 'ATENDENTE_UBS') return deny();
     if (editor.role === 'COORDENADOR_UBS' && alvo.tipoUnidade !== editor.tipoUnidade) return deny();
-    if (editor.role === 'COORDENADOR_UBS' && editor.unidadeId && alvo.unidadeId !== editor.unidadeId) return deny();
+    const ehCentroEditor = editor.tipoUnidade === 'CEM' || editor.tipoUnidade === 'CEO';
+    if (!ehCentroEditor && editor.role === 'COORDENADOR_UBS' && editor.unidadeId && alvo.unidadeId !== editor.unidadeId) return deny();
   }
 }

@@ -35,6 +35,15 @@
 	let erro = $state('');
 
 	function aoMudarTipoOuRole() {
+		if (tipoUnidade === 'CEO' || tipoUnidade === 'CEM') {
+			if (role === 'ATENDENTE_UBS') {
+				role = 'ATENDENTE_CENTRO';
+			}
+		} else if (tipoUnidade === 'UBS') {
+			if (role === 'ATENDENTE_CENTRO') {
+				role = 'ATENDENTE_UBS';
+			}
+		}
 		cargo = formatarCargoPerfil({ role, tipoUnidade });
 	}
 
@@ -47,6 +56,13 @@
 		if (funcao.trim() !== orig.funcao) out.funcao = funcao.trim();
 		if (tipoUnidade !== orig.tipoUnidade) out.tipoUnidade = tipoUnidade as any;
 		if (role !== orig.role) out.role = role;
+		if (tipoUnidade === 'CEO' || tipoUnidade === 'CEM') {
+			out.ubsId = null;
+			out.unidadeId = null;
+			if (role === 'ATENDENTE_UBS') {
+				out.role = 'ATENDENTE_CENTRO';
+			}
+		}
 		return out;
 	}
 
@@ -180,18 +196,20 @@
 					class="w-full border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-900 outline-none focus:border-blue-900"
 				>
 					{#if tipoUnidade === 'CEO'}
+						<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
 						<option value="COORDENADOR_UBS">Coordenador(a) do CEO</option>
 						<option value="ADMIN">Diretor(a) / Gestor Geral do CEO</option>
 						<option value="MEDICO">Cirurgião-Dentista Especialista</option>
 						<option value="MEDICO_ESPECIALISTA">Cirurgião-Dentista Plantonista</option>
-						<option value="ATENDENTE_CENTRO">Atendente / Recepção CEO</option>
+						<option value="ENFERMEIRO">Enfermeiro(a) do CEO</option>
 						<option value="REGULADOR_SMS">Regulador(a) do CEO</option>
 					{:else if tipoUnidade === 'CEM'}
+						<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
 						<option value="COORDENADOR_UBS">Coordenador(a) do CEM</option>
 						<option value="ADMIN">Diretor(a) / Gestor Geral do CEM</option>
 						<option value="MEDICO">Médico(a) Especialista</option>
 						<option value="MEDICO_ESPECIALISTA">Médico(a) Plantonista</option>
-						<option value="ATENDENTE_CENTRO">Atendente / Recepção CEM</option>
+						<option value="ENFERMEIRO">Enfermeiro(a) de Triagem CEM</option>
 						<option value="REGULADOR_SMS">Regulador(a) do CEM</option>
 					{:else}
 						<option value="COORDENADOR_UBS">Coordenador(a) de UBS</option>

@@ -109,7 +109,9 @@ export class MeUseCase {
       }
     }
 
-    const unidadeId = a.unidadeId ?? a.ubsId ?? null;
+    const ehCentroMe = tipoUnidadeResolvido === 'CEM' || tipoUnidadeResolvido === 'CEO';
+    const unidadeId = ehCentroMe ? null : (a.unidadeId ?? a.ubsId ?? null);
+    const unidade = ehCentroMe ? null : (a.ubs?.nome ?? null);
 
     return {
       id: a.id,
@@ -119,7 +121,7 @@ export class MeUseCase {
       iniciais: iniciais(a.nome),
       role: a.role,
       tipoUnidade,
-      unidade: a.ubs?.nome ?? null,
+      unidade,
       unidadeId,
       prefeitura,
       prefeituraInfo,

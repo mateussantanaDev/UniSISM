@@ -123,18 +123,22 @@ export class CreateUsuarioUseCase {
       case 'COORDENADOR_UBS': {
         const ehCentro = resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO';
         if (ehCentro) {
-          // Coordenador/Diretor de Centro de Especialidades é vinculado à prefeitura
+          // Centros de Especialidades (CEM/CEO) são totalmente desconectados de UBS.
+          // Se foi enviado ATENDENTE_UBS para Centro, normaliza para ATENDENTE_CENTRO.
+          if (input.role === 'ATENDENTE_UBS') {
+            input.role = 'ATENDENTE_CENTRO';
+          }
           if (!effectivePrefId && requestedUbsId) {
             const ubsRow = await prisma.ubs.findUnique({ where: { id: requestedUbsId } });
             if (ubsRow) effectivePrefId = ubsRow.prefeituraId;
           }
           if (!effectivePrefId) {
-            throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
+            throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para centros de especialidades');
           }
           const pref = await prisma.prefeitura.findUnique({ where: { id: effectivePrefId } });
           if (!pref) throw NotFound('PREFEITURA_NAO_ENCONTRADA', 'Prefeitura não encontrada');
           ensurePrefeituraAcessivel(criadorScope, pref.id);
-          ubsId = requestedUbsId ?? null;
+          ubsId = null; // Centros NUNCA têm vínculo com UBS
           prefeituraId = pref.id;
           break;
         }
@@ -156,8 +160,12 @@ export class CreateUsuarioUseCase {
         );
     }
 
+    const ehCentroCriado = resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO';
     const tipoUnidade = input.tipoUnidade ?? resolvedTipoUnidade;
-    const unidadeId = input.unidadeId ?? ubsId ?? null;
+    const unidadeId = ehCentroCriado ? null : (input.unidadeId ?? ubsId ?? null);
+    if (ehCentroCriado) {
+      ubsId = null;
+    }
 
     let matricula = input.matricula?.trim().toUpperCase();
     if (!matricula) {
@@ -209,6 +217,7 @@ export class CreateUsuarioUseCase {
         if (r === 'MEDICO') return 'Cirurgião-Dentista Especialista';
         if (r === 'MEDICO_ESPECIALISTA') return 'Cirurgião-Dentista Plantonista';
         if (r === 'ATENDENTE_CENTRO' || r === 'ATENDENTE_UBS') return 'Atendente de Recepção CEO';
+        if (r === 'ENFERMEIRO') return 'Enfermeiro(a) do CEO';
         if (r === 'REGULADOR_SMS') return 'Regulador(a) do CEO';
       }
       if (tipo === 'CEM') {
@@ -217,6 +226,7 @@ export class CreateUsuarioUseCase {
         if (r === 'MEDICO') return 'Médico(a) Especialista';
         if (r === 'MEDICO_ESPECIALISTA') return 'Médico(a) Plantonista';
         if (r === 'ATENDENTE_CENTRO' || r === 'ATENDENTE_UBS') return 'Atendente de Recepção CEM';
+        if (r === 'ENFERMEIRO') return 'Enfermeiro(a) de Triagem CEM';
         if (r === 'REGULADOR_SMS') return 'Regulador(a) do CEM';
       }
       if (tipo === 'TFD') {

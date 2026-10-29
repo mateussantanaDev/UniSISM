@@ -72,18 +72,24 @@ export function makeAuthenticate(tokens: ITokenService, allowPasswordChange = fa
         prefeituraId = prefAtiva?.id ?? 'b2ca1b67-3b6b-4a52-adbe-01df1d64cae6';
       }
 
+      const ehCentroAuth = resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO';
+
       // Normalização automática no banco em background se divergente
       if (
-        (atendente.tipoUnidade !== resolvedTipoUnidade && (resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO')) ||
-        (prefeituraId && !atendente.prefeituraId)
+        (atendente.tipoUnidade !== resolvedTipoUnidade && ehCentroAuth) ||
+        (prefeituraId && !atendente.prefeituraId) ||
+        (ehCentroAuth && (atendente.ubsId || atendente.unidadeId))
       ) {
         prisma.atendente.update({
           where: { id: atendente.id },
           data: {
-            ...(atendente.tipoUnidade !== resolvedTipoUnidade && (resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO')
+            ...(atendente.tipoUnidade !== resolvedTipoUnidade && ehCentroAuth
               ? { tipoUnidade: resolvedTipoUnidade }
               : {}),
             ...(prefeituraId && !atendente.prefeituraId ? { prefeituraId } : {}),
+            ...(ehCentroAuth && (atendente.ubsId || atendente.unidadeId)
+              ? { ubsId: null, unidadeId: null }
+              : {}),
           },
         }).catch(() => {});
       }
@@ -92,12 +98,12 @@ export function makeAuthenticate(tokens: ITokenService, allowPasswordChange = fa
       req.auth = {
         ...payload,
         role: atendente.role,
-        ubsId: atendente.ubsId ?? (resolvedTipoUnidade === 'UBS' ? atendente.unidadeId : null),
+        ubsId: ehCentroAuth ? null : (atendente.ubsId ?? (resolvedTipoUnidade === 'UBS' ? atendente.unidadeId : null)),
         prefeituraId,
         tipoUnidade: resolvedTipoUnidade,
         cargo: atendente.cargo,
         funcao: atendente.funcao,
-        unidadeNome: atendente.ubs?.nome ?? null,
+        unidadeNome: ehCentroAuth ? null : (atendente.ubs?.nome ?? null),
       };
       next();
     } catch (err) {

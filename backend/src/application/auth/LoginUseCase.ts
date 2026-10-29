@@ -133,20 +133,28 @@ export class LoginUseCase {
       ubs: atendente.ubs,
     });
 
+    const ehCentroLogin = tipoUnidadeResolvido === 'CEM' || tipoUnidadeResolvido === 'CEO';
+    const effectiveUbsId = ehCentroLogin ? null : atendente.ubsId;
+
     if (
-      atendente.tipoUnidade !== tipoUnidadeResolvido &&
-      (tipoUnidadeResolvido === 'CEM' || tipoUnidadeResolvido === 'CEO')
+      (atendente.tipoUnidade !== tipoUnidadeResolvido && ehCentroLogin) ||
+      (ehCentroLogin && (atendente.ubsId || atendente.unidadeId))
     ) {
       await prisma.atendente.update({
         where: { id: atendente.id },
-        data: { tipoUnidade: tipoUnidadeResolvido },
+        data: {
+          tipoUnidade: tipoUnidadeResolvido,
+          ...(ehCentroLogin && (atendente.ubsId || atendente.unidadeId)
+            ? { ubsId: null, unidadeId: null }
+            : {}),
+        },
       }).catch(() => {});
     }
 
     const accessToken = this.tokens.assinarAccess({
       sub: atendente.id,
       role: atendente.role,
-      ubsId: atendente.ubsId,
+      ubsId: effectiveUbsId,
       tipoUnidade: tipoUnidadeResolvido,
       prefeituraId,
       sid: sessao.sessaoId,

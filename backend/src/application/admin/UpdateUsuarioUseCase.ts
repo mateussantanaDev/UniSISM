@@ -80,14 +80,29 @@ export class UpdateUsuarioUseCase {
       role: input.role ?? alvo.role,
     });
 
+    const ehCentroAlvo =
+      (input.tipoUnidade ?? alvo.tipoUnidade) === 'CEO' ||
+      (input.tipoUnidade ?? alvo.tipoUnidade) === 'CEM' ||
+      resolvedTipo === 'CEM' ||
+      resolvedTipo === 'CEO';
+
     if (input.tipoUnidade !== undefined) {
       data['tipoUnidade'] = input.tipoUnidade;
     } else if (resolvedTipo === 'CEM' || resolvedTipo === 'CEO') {
       data['tipoUnidade'] = resolvedTipo;
     }
 
-    if (input.unidadeId !== undefined) data['unidadeId'] = input.unidadeId;
-    if (input.ubsId !== undefined) data['ubsId'] = input.ubsId;
+    if (ehCentroAlvo) {
+      // Centros são completamente desconectados de UBS
+      data['ubsId'] = null;
+      data['unidadeId'] = null;
+      if (input.role === 'ATENDENTE_UBS') {
+        data['role'] = 'ATENDENTE_CENTRO';
+      }
+    } else {
+      if (input.unidadeId !== undefined) data['unidadeId'] = input.unidadeId;
+      if (input.ubsId !== undefined) data['ubsId'] = input.ubsId;
+    }
     if (input.prefeituraId !== undefined) data['prefeituraId'] = input.prefeituraId;
 
     if (input.cargo !== undefined) {
