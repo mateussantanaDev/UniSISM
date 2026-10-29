@@ -4,6 +4,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { paramString } from '../../../../shared/http';
 import { scopeFromRequest } from '../../../../shared/requestScope';
+import type { AccessScope } from '../../../../shared/scope';
 import type { IAtendenteRepository } from '../../../../domain/repositories/IAtendenteRepository';
 import type { GestaoCotasUseCase } from '../../application/use-cases/GestaoCotasUseCase';
 import type { GestaoEscalasUseCase } from '../../application/use-cases/GestaoEscalasUseCase';
@@ -99,22 +100,30 @@ export class CentroGestaoController {
     private readonly especialidadesUC: GestaoEspecialidadesCatalogoUseCase,
   ) {}
 
-  getDashboard = async (req: Request, res: Response): Promise<void> => {
+  private ensureGestaoScope(req: Request): AccessScope {
     const scope = scopeFromRequest(req);
+    if (scope.kind === 'UBS' && scope.prefeituraId) {
+      return { kind: 'PREFEITURA', prefeituraId: scope.prefeituraId };
+    }
+    return scope;
+  }
+
+  getDashboard = async (req: Request, res: Response): Promise<void> => {
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const metrics = await this.dashboardUC.exec(scope, centro);
     res.json(metrics);
   };
 
   getCotas = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const cotas = await this.cotasUC.listarCotas(scope, centro, req.query.competencia as string | undefined);
     res.json(cotas);
   };
 
   getProfissionais = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const centroNorm = centro ? centro.toUpperCase() : undefined;
     const ehCeo = centroNorm === 'CEO' || centroNorm === 'CENTRO_ODONTOLOGICO';
@@ -182,7 +191,7 @@ export class CentroGestaoController {
   };
 
   putCota = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const ubsId = paramString(req, 'ubsId');
     const body = putCotaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
@@ -192,14 +201,14 @@ export class CentroGestaoController {
   };
 
   getEscalas = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const escalas = await this.escalasUC.listarEscalas(scope, centro);
     res.json(escalas);
   };
 
   postEscala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const body = postEscalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
@@ -208,7 +217,7 @@ export class CentroGestaoController {
   };
 
   putEscala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const body = putEscalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
@@ -218,7 +227,7 @@ export class CentroGestaoController {
   };
 
   deleteEscala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
@@ -227,14 +236,14 @@ export class CentroGestaoController {
   };
 
   getSalas = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const salas = await this.salasUC.listarSalas(scope, centro);
     res.json(salas);
   };
 
   postSala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const body = postSalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
 
@@ -243,7 +252,7 @@ export class CentroGestaoController {
   };
 
   putSala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const body = putSalaSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
@@ -253,7 +262,7 @@ export class CentroGestaoController {
   };
 
   deleteSala = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
@@ -262,14 +271,14 @@ export class CentroGestaoController {
   };
 
   getEspecialidades = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const centro = req.query.centro as string | undefined;
     const lista = await this.especialidadesUC.listarEspecialidades(scope, centro);
     res.json(lista);
   };
 
   postEspecialidade = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const body = postEspecialidadeSchema.parse(req.body);
     const centro = (body.centro || req.query.centro) as string | undefined;
     const atendenteId = req.auth!.sub;
@@ -279,7 +288,7 @@ export class CentroGestaoController {
   };
 
   putEspecialidade = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const body = putEspecialidadeSchema.parse(req.body);
     const atendenteId = req.auth!.sub;
@@ -289,7 +298,7 @@ export class CentroGestaoController {
   };
 
   deleteEspecialidade = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const id = paramString(req, 'id');
     const atendenteId = req.auth!.sub;
 
@@ -298,7 +307,7 @@ export class CentroGestaoController {
   };
 
   postRemanejamentoLote = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const body = remanejamentoSchema.parse(req.body);
     const atendente = await this.atendentes.buscarPorId(req.auth!.sub);
     if (!atendente) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
@@ -321,19 +330,19 @@ export class CentroGestaoController {
 
   getProducao = async (req: Request, res: Response): Promise<void> => {
     const input = z.object({ periodo: z.string().optional(), inicio: z.string().optional(), fim: z.string().optional(), centro: z.enum(['CEM', 'CEO', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional() }).parse(req.query);
-    const data = await new RelatoriosCentroUseCase().dados(input, scopeFromRequest(req));
+    const data = await new RelatoriosCentroUseCase().dados(input, this.ensureGestaoScope(req));
     res.json({ inicio: data.inicio, fim: data.fim, profissionais: data.profissionais, atendimentos: data.atendimentos });
   };
   exportarRelatorio = async (req: Request, res: Response): Promise<void> => {
     const input = z.object({ periodo: z.string().optional(), inicio: z.string().optional(), fim: z.string().optional(), centro: z.enum(['CEM', 'CEO', 'CENTRO_ESPECIALIDADES', 'CENTRO_ODONTOLOGICO']).optional(), tipo: z.enum(['BPA_SUS', 'ABSENTEISMO_UBS', 'DEMANDA_REPRIMIDA', 'TFD_INTERMUNICIPAL']), formato: z.enum(['PDF', 'XLSX', 'CSV']) }).parse(req.query);
-    const file = await new RelatoriosCentroUseCase().exportar(input, scopeFromRequest(req));
+    const file = await new RelatoriosCentroUseCase().exportar(input, this.ensureGestaoScope(req));
     res.setHeader('Content-Type', file.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${file.nome}"`);
     res.send(file.buffer);
   };
 
   getRelatorioBpa = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const periodo = req.query.periodo as string | undefined;
 
     const report = await this.relatorioBpaUC.exec({ periodo, centro: req.query.centro as string | undefined }, scope);
@@ -341,7 +350,7 @@ export class CentroGestaoController {
   };
 
   getAuditoria = async (req: Request, res: Response): Promise<void> => {
-    const scope = scopeFromRequest(req);
+    const scope = this.ensureGestaoScope(req);
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
     const offset = req.query.offset ? Number(req.query.offset) : undefined;
     const acao = req.query.acao as string | undefined;

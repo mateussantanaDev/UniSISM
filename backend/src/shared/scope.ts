@@ -8,6 +8,7 @@
  */
 import type { RoleAtendente } from '../../generated/prisma';
 import { Forbidden, NotFound } from './errors';
+import { resolverTipoUnidade } from './unitType';
 
 export type AccessScope =
   | { kind: 'GLOBAL' }
@@ -20,9 +21,22 @@ export interface AuthContext {
   ubsId?: string | null;
   prefeituraId?: string | null;
   tipoUnidade?: string | null;
+  cargo?: string | null;
+  funcao?: string | null;
+  unidadeNome?: string | null;
 }
 
 export function buildScope(ctx: AuthContext): AccessScope {
+  const tipoResolvido = resolverTipoUnidade({
+    tipoUnidade: ctx.tipoUnidade,
+    cargo: ctx.cargo,
+    funcao: ctx.funcao,
+    role: ctx.role,
+    unidadeNome: ctx.unidadeNome,
+  });
+
+  const ehCentro = tipoResolvido === 'CEM' || tipoResolvido === 'CEO';
+
   switch (ctx.role) {
     case 'DESENVOLVEDOR':
       return { kind: 'GLOBAL' };
@@ -41,20 +55,15 @@ export function buildScope(ctx: AuthContext): AccessScope {
       }
       return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
     case 'COORDENADOR_UBS':
+    case 'ATENDENTE_UBS':
       // Um vínculo UBS existente nunca é ampliado para toda a prefeitura.
-      // A exceção dos centros exige tipo explícito emitido pelo servidor;
-      // ausência de UBS, sozinha, não concede acesso municipal.
-      if (!ctx.ubsId && (ctx.tipoUnidade === 'CEM' || ctx.tipoUnidade === 'CEO')) {
+      // Coordenadores/atendentes de Centros de Especialidades (CEM/CEO) sem UBS operam em escopo municipal.
+      if (!ctx.ubsId && ehCentro) {
         if (!ctx.prefeituraId) {
           throw Forbidden('USUARIO_SEM_PREFEITURA', 'Usuário sem prefeitura vinculada');
         }
         return { kind: 'PREFEITURA', prefeituraId: ctx.prefeituraId };
       }
-      if (!ctx.ubsId) {
-        throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');
-      }
-      return { kind: 'UBS', ubsId: ctx.ubsId, prefeituraId: ctx.prefeituraId ?? undefined };
-    case 'ATENDENTE_UBS':
       if (!ctx.ubsId) {
         throw Forbidden('USUARIO_SEM_UBS', 'Usuário sem UBS vinculada');
       }

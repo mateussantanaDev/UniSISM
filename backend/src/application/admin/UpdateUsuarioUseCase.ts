@@ -4,6 +4,7 @@ import { Conflict, Forbidden, NotFound } from '../../shared/errors';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
 import type { AccessScope } from '../../shared/scope';
 import { ensurePrefeituraAcessivel, ensureUbsAcessivel } from '../../shared/scope';
+import { resolverTipoUnidade } from '../../shared/unitType';
 
 import type { RoleAtendente } from '../../../generated/prisma';
 
@@ -71,7 +72,20 @@ export class UpdateUsuarioUseCase {
     if (input.email !== undefined) data['email'] = input.email.toLowerCase();
     if (input.telefone !== undefined) data['telefone'] = input.telefone || null;
     if (input.role !== undefined) data['role'] = input.role;
-    if (input.tipoUnidade !== undefined) data['tipoUnidade'] = input.tipoUnidade;
+
+    const resolvedTipo = resolverTipoUnidade({
+      tipoUnidade: input.tipoUnidade ?? alvo.tipoUnidade,
+      cargo: input.cargo ?? alvo.cargo,
+      funcao: input.funcao ?? alvo.funcao,
+      role: input.role ?? alvo.role,
+    });
+
+    if (input.tipoUnidade !== undefined) {
+      data['tipoUnidade'] = input.tipoUnidade;
+    } else if (resolvedTipo === 'CEM' || resolvedTipo === 'CEO') {
+      data['tipoUnidade'] = resolvedTipo;
+    }
+
     if (input.unidadeId !== undefined) data['unidadeId'] = input.unidadeId;
     if (input.ubsId !== undefined) data['ubsId'] = input.ubsId;
     if (input.prefeituraId !== undefined) data['prefeituraId'] = input.prefeituraId;

@@ -2,6 +2,7 @@ import { authorizeUsuarioManagement } from './authorizeUsuarioManagement';
 import { prisma } from '../../infrastructure/database/prisma';
 import { Conflict, Forbidden, NotFound, Unprocessable } from '../../shared/errors';
 import { ensurePrefeituraAcessivel, ensureUbsAcessivel, type AccessScope } from '../../shared/scope';
+import { resolverTipoUnidade } from '../../shared/unitType';
 import type { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger';
 import type { RoleAtendente } from '../../../generated/prisma';
@@ -58,7 +59,15 @@ export class CreateUsuarioUseCase {
 
     let ubsId: string | null = null;
     let prefeituraId: string | null = null;
-    const requestedUbsId = input.ubsId || (input.tipoUnidade === 'UBS' ? input.unidadeId ?? undefined : undefined);
+
+    const resolvedTipoUnidade = resolverTipoUnidade({
+      tipoUnidade: input.tipoUnidade,
+      cargo: input.cargo,
+      funcao: input.funcao,
+      role: input.role,
+    });
+
+    const requestedUbsId = input.ubsId || input.unidadeId || undefined;
 
     // Resolução inteligente da prefeitura conectada/efetiva
     let effectivePrefId = input.prefeituraId || (criadorScope.kind === 'PREFEITURA' ? criadorScope.prefeituraId : null);
@@ -112,16 +121,20 @@ export class CreateUsuarioUseCase {
       }
       case 'ATENDENTE_UBS':
       case 'COORDENADOR_UBS': {
-        const ehCentro = input.tipoUnidade === 'CEM' || input.tipoUnidade === 'CEO';
-        if (ehCentro && !requestedUbsId) {
+        const ehCentro = resolvedTipoUnidade === 'CEM' || resolvedTipoUnidade === 'CEO';
+        if (ehCentro) {
           // Coordenador/Diretor de Centro de Especialidades é vinculado à prefeitura
+          if (!effectivePrefId && requestedUbsId) {
+            const ubsRow = await prisma.ubs.findUnique({ where: { id: requestedUbsId } });
+            if (ubsRow) effectivePrefId = ubsRow.prefeituraId;
+          }
           if (!effectivePrefId) {
             throw Unprocessable('PREFEITURA_OBRIGATORIA', 'prefeituraId é obrigatório para esse role');
           }
           const pref = await prisma.prefeitura.findUnique({ where: { id: effectivePrefId } });
           if (!pref) throw NotFound('PREFEITURA_NAO_ENCONTRADA', 'Prefeitura não encontrada');
           ensurePrefeituraAcessivel(criadorScope, pref.id);
-          ubsId = null;
+          ubsId = requestedUbsId ?? null;
           prefeituraId = pref.id;
           break;
         }
@@ -143,15 +156,7 @@ export class CreateUsuarioUseCase {
         );
     }
 
-    const tipoUnidade =
-      input.tipoUnidade ??
-      (() => {
-        if (['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO', 'ENFERMEIRO'].includes(input.role)) return 'CEM';
-        if (['ATENDENTE_UBS', 'COORDENADOR_UBS'].includes(input.role) || ubsId) return 'UBS';
-        if (['GESTOR_TFD', 'ATENDENTE_TFD', 'REGULADOR_TFD', 'MOTORISTA_TFD'].includes(input.role)) return 'TFD';
-        return 'SMS';
-      })();
-
+    const tipoUnidade = input.tipoUnidade ?? resolvedTipoUnidade;
     const unidadeId = input.unidadeId ?? ubsId ?? null;
 
     let matricula = input.matricula?.trim().toUpperCase();

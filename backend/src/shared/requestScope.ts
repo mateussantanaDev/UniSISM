@@ -12,5 +12,8 @@ export function scopeFromRequest(req: Request): AccessScope {
     ubsId: auth.ubsId ?? null,
     prefeituraId: auth.prefeituraId ?? null,
     tipoUnidade: auth.tipoUnidade ?? null,
+    cargo: (auth as any).cargo ?? null,
+    funcao: (auth as any).funcao ?? null,
+    unidadeNome: (auth as any).unidadeNome ?? null,
   });
 }

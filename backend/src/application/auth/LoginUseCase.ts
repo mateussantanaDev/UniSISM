@@ -7,6 +7,7 @@ import type { IAuditLogger } from '../../infrastructure/audit/PrismaAuditLogger'
 import { authLoginTotal } from '../../infrastructure/metrics/prometheus';
 import { prisma } from '../../infrastructure/database/prisma';
 import { iniciais } from '../utils/iniciais';
+import { resolverTipoUnidade } from '../../shared/unitType';
 
 export interface LoginInput {
   login: string;
@@ -124,11 +125,29 @@ export class LoginUseCase {
       }).catch(() => {});
     }
 
+    const tipoUnidadeResolvido = resolverTipoUnidade({
+      tipoUnidade: atendente.tipoUnidade,
+      cargo: atendente.cargo,
+      funcao: atendente.funcao,
+      role: atendente.role,
+      ubs: atendente.ubs,
+    });
+
+    if (
+      atendente.tipoUnidade !== tipoUnidadeResolvido &&
+      (tipoUnidadeResolvido === 'CEM' || tipoUnidadeResolvido === 'CEO')
+    ) {
+      await prisma.atendente.update({
+        where: { id: atendente.id },
+        data: { tipoUnidade: tipoUnidadeResolvido },
+      }).catch(() => {});
+    }
+
     const accessToken = this.tokens.assinarAccess({
       sub: atendente.id,
       role: atendente.role,
       ubsId: atendente.ubsId,
-      tipoUnidade: atendente.tipoUnidade,
+      tipoUnidade: tipoUnidadeResolvido,
       prefeituraId,
       sid: sessao.sessaoId,
     });

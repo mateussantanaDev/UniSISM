@@ -3,6 +3,7 @@ import type { IAtendenteRepository } from '../../domain/repositories/IAtendenteR
 import { prisma } from '../../infrastructure/database/prisma';
 import { iniciais } from '../utils/iniciais';
 import { buildScope } from '../../shared/scope';
+import { resolverTipoUnidade } from '../../shared/unitType';
 
 export interface MeOutput {
   id: string;
@@ -32,14 +33,25 @@ export class MeUseCase {
     const a = await this.atendentes.buscarPorId(atendenteId);
     if (!a) throw NotFound('ATENDENTE_NAO_ENCONTRADO', 'Atendente não encontrado');
 
+    const tipoUnidadeResolvido = resolverTipoUnidade({
+      tipoUnidade: a.tipoUnidade,
+      cargo: a.cargo,
+      funcao: a.funcao,
+      role: a.role,
+      ubs: a.ubs,
+    });
+
     const escopo: MeOutput['escopo'] =
-      a.role === 'COORDENADOR_UBS'
+      a.role === 'COORDENADOR_UBS' || a.role === 'ATENDENTE_UBS'
         ? buildScope({
             atendenteId: a.id,
             role: a.role,
             ubsId: a.ubsId,
             prefeituraId: a.prefeituraId ?? a.ubs?.prefeituraId ?? null,
-            tipoUnidade: a.tipoUnidade,
+            tipoUnidade: tipoUnidadeResolvido,
+            cargo: a.cargo,
+            funcao: a.funcao,
+            unidadeNome: a.ubs?.nome,
           }).kind
         : a.role === 'DESENVOLVEDOR'
         ? 'GLOBAL'
@@ -73,21 +85,7 @@ export class MeUseCase {
     const cargoUpper = (a.cargo || '').toUpperCase();
     const funcaoUpper = (a.funcao || '').toUpperCase();
 
-    const tipoUnidade =
-      a.tipoUnidade ??
-      (cargoUpper.includes('CEO') || cargoUpper.includes('DENTIST') || cargoUpper.includes('ODONTOL') || funcaoUpper.includes('CEO') || funcaoUpper.includes('ODONTOL')
-        ? 'CEO'
-        : cargoUpper.includes('CEM') || cargoUpper.includes('MÉDIC') || cargoUpper.includes('MEDIC') || funcaoUpper.includes('CEM')
-          ? 'CEM'
-          : a.ubs
-            ? 'UBS'
-            : ['GESTOR_TFD', 'ATENDENTE_TFD', 'REGULADOR_TFD', 'MOTORISTA_TFD'].includes(a.role)
-              ? 'TFD'
-              : ['MEDICO', 'MEDICO_ESPECIALISTA', 'ATENDENTE_CENTRO'].includes(a.role)
-                ? 'CEO'
-                : a.role === 'DESENVOLVEDOR'
-                  ? null
-                  : 'SMS');
+    const tipoUnidade = tipoUnidadeResolvido;
 
     let cargo = a.cargo;
     if (tipoUnidade === 'SMS' || a.role === 'REGULADOR_SMS') {
